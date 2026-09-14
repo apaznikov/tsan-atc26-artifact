@@ -1,0 +1,73 @@
+{
+ "app": "ffmpeg",
+ "config": "tsan-sound",
+ "cycles_in_tsan_pct": 67.31,
+ "of_which": {
+  "access": 59.54,
+  "shadow_stack": 1.99,
+  "atomic": 0.55,
+  "range": 0.0,
+  "sync": 3.33,
+  "tsan_other": 1.91
+ },
+ "share_of_instrumented": {
+  "access": 88.5,
+  "shadow_stack": 2.9,
+  "atomic": 0.8,
+  "range": 0.0,
+  "sync": 4.9,
+  "tsan_other": 2.8
+ },
+ "application_pct": 32.45,
+ "kernel_pct": 0.24,
+ "top_callbacks": [
+  {
+   "symbol": "__tsan_read4",
+   "pct": 22.91
+  },
+  {
+   "symbol": "__tsan_read1",
+   "pct": 10.93
+  },
+  {
+   "symbol": "__tsan_read8",
+   "pct": 6.56
+  },
+  {
+   "symbol": "__tsan_write4",
+   "pct": 5.94
+  },
+  {
+   "symbol": "__tsan_write1",
+   "pct": 3.18
+  },
+  {
+   "symbol": "__tsan_read2",
+   "pct": 2.21
+  },
+  {
+   "symbol": "__tsan_write8",
+   "pct": 1.64
+  },
+  {
+   "symbol": "__tsan_read4@plt",
+   "pct": 1.61
+  },
+  {
+   "symbol": "__tsan_write2",
+   "pct": 1.49
+  },
+  {
+   "symbol": "__tsan_func_entry",
+   "pct": 1.09
+  },
+  {
+   "symbol": "__tsan::MetaMap::GetSync(__tsan::ThreadState*, unsigned long, unsigned long, bool, bool)",
+   "pct": 0.89
+  },
+  {
+   "symbol": "__tsan_read8@plt",
+   "pct": 0.82
+  }
+ ]
+}

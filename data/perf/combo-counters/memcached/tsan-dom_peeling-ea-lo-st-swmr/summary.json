@@ -1,0 +1,27 @@
+{
+ "app": "memcached",
+ "config": "tsan-dom_peeling-ea-lo-st-swmr",
+ "files": 1,
+ "files_with_counts": 1,
+ "totals": {
+  "total": 3495566738,
+  "fast_hit": 743704623,
+  "range_calls": 374901369,
+  "range_bytes": 28773672548,
+  "func_entries": 783324202
+ },
+ "fast_path_hit_rate": 21.2757,
+ "func_entries_per_access": 0.2241,
+ "mean_range_bytes": 76.7,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.186573",
+   "total": 3495566738,
+   "fast_hit": 743704623,
+   "range_calls": 374901369,
+   "range_bytes": 28773672548,
+   "func_entries": 783324202
+  }
+ ]
+}

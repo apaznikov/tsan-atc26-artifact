@@ -1,0 +1,392 @@
+PHASE-B start 2026-09-09T20:57:43+08:00
+[2026-09-09 20:57:43] profile redis/tsan -> results/profile-2026-09-09/redis/tsan  (binary /home/alexey/tsan-experiments/nosql/redis/redis-polygon/old-builds/redis-tsan.d3bf9f8c39fe/src/redis-server)
+{
+ "app": "redis",
+ "config": "tsan",
+ "cycles_in_tsan_pct": 58.0,
+ "of_which": {
+  "access": 43.41,
+  "shadow_stack": 10.2,
+  "atomic": 0.94,
+  "tsan_other": 3.45
+ },
+ "share_of_instrumented": {
+  "access": 74.8,
+  "shadow_stack": 17.6,
+  "atomic": 1.6,
+  "tsan_other": 6.0
+ },
+ "application_pct": 41.96,
+ "kernel_pct": 0.04,
+ "top_callbacks": [
+  {
+   "symbol": "__tsan_read8",
+   "pct": 19.23
+  },
+  {
+   "symbol": "__tsan_read1",
+   "pct": 6.91
+  },
+  {
+   "symbol": "__tsan_read4",
+   "pct": 6.68
+  },
+  {
+   "symbol": "__tsan_func_entry",
+   "pct": 5.71
+  },
+  {
+   "symbol": "__tsan_write8",
+   "pct": 4.57
+  },
+  {
+   "symbol": "__tsan_func_exit",
+   "pct": 4.49
+  },
+  {
+   "symbol": "__tsan_write4",
+   "pct": 3.16
+  },
+  {
+   "symbol": "__tsan_memcpy",
+   "pct": 1.98
+  },
+  {
+   "symbol": "__tsan_write1",
+   "pct": 1.83
+  },
+  {
+   "symbol": "__tsan_memset",
+   "pct": 0.87
+  },
+  {
+   "symbol": "__tsan_unaligned_read4",
+   "pct": 0.69
+  },
+  {
+   "symbol": "__tsan_atomic64_fetch_add",
+   "pct": 0.44
+  }
+ ]
+}
+  ok   redis/tsan
+[2026-09-09 20:57:57] profile redis/tsan-sound -> results/profile-2026-09-09/redis/tsan-sound  (binary /home/alexey/tsan-experiments/nosql/redis/redis-polygon/old-builds/redis-sound.d3bf9f8c39fe/src/redis-server)
+{
+ "app": "redis",
+ "config": "tsan-sound",
+ "cycles_in_tsan_pct": 57.19,
+ "of_which": {
+  "access": 43.12,
+  "shadow_stack": 9.75,
+  "atomic": 0.91,
+  "tsan_other": 3.4
+ },
+ "share_of_instrumented": {
+  "access": 75.4,
+  "shadow_stack": 17.1,
+  "atomic": 1.6,
+  "tsan_other": 6.0
+ },
+ "application_pct": 42.77,
+ "kernel_pct": 0.04,
+ "top_callbacks": [
+  {
+   "symbol": "__tsan_read8",
+   "pct": 19.23
+  },
+  {
+   "symbol": "__tsan_read1",
+   "pct": 6.39
+  },
+  {
+   "symbol": "__tsan_read4",
+   "pct": 6.28
+  },
+  {
+   "symbol": "__tsan_func_entry",
+   "pct": 5.25
+  },
+  {
+   "symbol": "__tsan_write8",
+   "pct": 4.91
+  },
+  {
+   "symbol": "__tsan_func_exit",
+   "pct": 4.51
+  },
+  {
+   "symbol": "__tsan_write4",
+   "pct": 3.36
+  },
+  {
+   "symbol": "__tsan_write1",
+   "pct": 1.91
+  },
+  {
+   "symbol": "__tsan_memcpy",
+   "pct": 1.9
+  },
+  {
+   "symbol": "__tsan_memset",
+   "pct": 0.95
+  },
+  {
+   "symbol": "__tsan_unaligned_read4",
+   "pct": 0.79
+  },
+  {
+   "symbol": "__tsan_atomic64_fetch_add",
+   "pct": 0.41
+  }
+ ]
+}
+  ok   redis/tsan-sound
+[2026-09-09 20:58:10] profile redis/tsan-sound-stmt -> results/profile-2026-09-09/redis/tsan-sound-stmt  (binary /home/alexey/tsan-experiments/nosql/redis/redis-polygon/redis-sound-stmt/src/redis-server)
+{
+ "app": "redis",
+ "config": "tsan-sound-stmt",
+ "cycles_in_tsan_pct": 55.37,
+ "of_which": {
+  "access": 40.34,
+  "shadow_stack": 10.55,
+  "atomic": 0.84,
+  "tsan_other": 3.64
+ },
+ "share_of_instrumented": {
+  "access": 72.9,
+  "shadow_stack": 19.1,
+  "atomic": 1.5,
+  "tsan_other": 6.6
+ },
+ "application_pct": 44.56,
+ "kernel_pct": 0.07,
+ "top_callbacks": [
+  {
+   "symbol": "__tsan_read8",
+   "pct": 18.39
+  },
+  {
+   "symbol": "__tsan_read1",
+   "pct": 6.83
+  },
+  {
+   "symbol": "__tsan_func_entry",
+   "pct": 6.15
+  },
+  {
+   "symbol": "__tsan_read4",
+   "pct": 5.13
+  },
+  {
+   "symbol": "__tsan_write8",
+   "pct": 4.45
+  },
+  {
+   "symbol": "__tsan_func_exit",
+   "pct": 4.4
+  },
+  {
+   "symbol": "__tsan_write4",
+   "pct": 2.83
+  },
+  {
+   "symbol": "__tsan_memcpy",
+   "pct": 1.97
+  },
+  {
+   "symbol": "__tsan_write1",
+   "pct": 1.69
+  },
+  {
+   "symbol": "__tsan_memset",
+   "pct": 0.84
+  },
+  {
+   "symbol": "__tsan_unaligned_read4",
+   "pct": 0.68
+  },
+  {
+   "symbol": "__sanitizer_internal_memcpy",
+   "pct": 0.6
+  }
+ ]
+}
+  ok   redis/tsan-sound-stmt
+[2026-09-09 20:58:23] profile redis/tsan-sound-nofe -> results/profile-2026-09-09/redis/tsan-sound-nofe  (binary /home/alexey/tsan-experiments/nosql/redis/redis-polygon/redis-sound-nofe/src/redis-server)
+{
+ "app": "redis",
+ "config": "tsan-sound-nofe",
+ "cycles_in_tsan_pct": 53.38,
+ "of_which": {
+  "access": 48.63,
+  "shadow_stack": 0.0,
+  "atomic": 1.11,
+  "tsan_other": 3.65
+ },
+ "share_of_instrumented": {
+  "access": 91.1,
+  "shadow_stack": 0.0,
+  "atomic": 2.1,
+  "tsan_other": 6.8
+ },
+ "application_pct": 46.56,
+ "kernel_pct": 0.06,
+ "top_callbacks": [
+  {
+   "symbol": "__tsan_read8",
+   "pct": 21.53
+  },
+  {
+   "symbol": "__tsan_read1",
+   "pct": 7.85
+  },
+  {
+   "symbol": "__tsan_read4",
+   "pct": 7.18
+  },
+  {
+   "symbol": "__tsan_write8",
+   "pct": 5.31
+  },
+  {
+   "symbol": "__tsan_write4",
+   "pct": 3.96
+  },
+  {
+   "symbol": "__tsan_memcpy",
+   "pct": 1.94
+  },
+  {
+   "symbol": "__tsan_write1",
+   "pct": 1.91
+  },
+  {
+   "symbol": "__tsan_memset",
+   "pct": 0.98
+  },
+  {
+   "symbol": "__sanitizer_internal_memcpy",
+   "pct": 0.56
+  },
+  {
+   "symbol": "__tsan_atomic64_fetch_add",
+   "pct": 0.54
+  },
+  {
+   "symbol": "__tsan_unaligned_read4",
+   "pct": 0.53
+  },
+  {
+   "symbol": "__tsan_atomic64_fetch_sub",
+   "pct": 0.37
+  }
+ ]
+}
+  ok   redis/tsan-sound-nofe
+[2026-09-09 20:58:36] profile memcached/tsan -> results/profile-2026-09-09/memcached/tsan  (binary /home/alexey/tsan-experiments/nosql/memcached/old-builds/memcached-tsan.d3bf9f8c39fe/memcached)
+only 0 samples for memcached/tsan (need 2000) — workload did not run; discarding
+  FAIL memcached/tsan
+[2026-09-09 20:58:52] profile memcached/tsan-sound -> results/profile-2026-09-09/memcached/tsan-sound  (binary /home/alexey/tsan-experiments/nosql/memcached/old-builds/memcached-tsan-sound.d3bf9f8c39fe/memcached)
+only 0 samples for memcached/tsan-sound (need 2000) — workload did not run; discarding
+  FAIL memcached/tsan-sound
+[2026-09-09 20:59:08] profile memcached/tsan-sound-stmt -> results/profile-2026-09-09/memcached/tsan-sound-stmt  (binary /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-sound-stmt/memcached)
+only 0 samples for memcached/tsan-sound-stmt (need 2000) — workload did not run; discarding
+  FAIL memcached/tsan-sound-stmt
+[2026-09-09 20:59:25] profile memcached/tsan-sound-nofe -> results/profile-2026-09-09/memcached/tsan-sound-nofe  (binary /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-sound-nofe/memcached)
+only 0 samples for memcached/tsan-sound-nofe (need 2000) — workload did not run; discarding
+  FAIL memcached/tsan-sound-nofe
+[2026-09-09 20:59:41] profile ffmpeg/tsan -> results/profile-2026-09-09/ffmpeg/tsan  (binary /extra/alexey/tsan-experiments/installs/ffmpeg/old-builds/ffmpeg-tsan.d3bf9f8c39fe/bin/ffmpeg)
+only 14 samples for ffmpeg/tsan (need 2000) — workload did not run; discarding
+  FAIL ffmpeg/tsan
+[2026-09-09 20:59:41] profile ffmpeg/tsan-sound -> results/profile-2026-09-09/ffmpeg/tsan-sound  (binary /extra/alexey/tsan-experiments/installs/ffmpeg/old-builds/ffmpeg-tsan-sound.d3bf9f8c39fe/bin/ffmpeg)
+only 14 samples for ffmpeg/tsan-sound (need 2000) — workload did not run; discarding
+  FAIL ffmpeg/tsan-sound
+[2026-09-09 20:59:42] profile ffmpeg/tsan-sound-stmt -> results/profile-2026-09-09/ffmpeg/tsan-sound-stmt  (binary /home/alexey/tsan-experiments/projects/ffmpeg/ffmpeg-tsan-sound-stmt/bin/ffmpeg)
+only 14 samples for ffmpeg/tsan-sound-stmt (need 2000) — workload did not run; discarding
+  FAIL ffmpeg/tsan-sound-stmt
+[2026-09-09 20:59:42] profile ffmpeg/tsan-sound-nofe -> results/profile-2026-09-09/ffmpeg/tsan-sound-nofe  (binary /home/alexey/tsan-experiments/projects/ffmpeg/ffmpeg-tsan-sound-nofe/bin/ffmpeg)
+only 20 samples for ffmpeg/tsan-sound-nofe (need 2000) — workload did not run; discarding
+  FAIL ffmpeg/tsan-sound-nofe
+[2026-09-09 20:59:42] profile sqlite/tsan -> results/profile-2026-09-09/sqlite/tsan  (binary /home/alexey/tsan-experiments/sql/sqlite/build/old-builds/test-tsan.d3bf9f8c39fe/threadtest3)
+no samples captured for sqlite/tsan
+  FAIL sqlite/tsan
+[2026-09-09 20:59:42] profile sqlite/tsan-sound -> results/profile-2026-09-09/sqlite/tsan-sound  (binary /home/alexey/tsan-experiments/sql/sqlite/build/old-builds/test-tsan-sound.d3bf9f8c39fe/threadtest3)
+no samples captured for sqlite/tsan-sound
+  FAIL sqlite/tsan-sound
+[2026-09-09 20:59:42] profile sqlite/tsan-sound-stmt -> results/profile-2026-09-09/sqlite/tsan-sound-stmt  (binary /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-sound-stmt/threadtest3)
+no samples captured for sqlite/tsan-sound-stmt
+  FAIL sqlite/tsan-sound-stmt
+[2026-09-09 20:59:42] profile sqlite/tsan-sound-nofe -> results/profile-2026-09-09/sqlite/tsan-sound-nofe  (binary /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-sound-nofe/threadtest3)
+no samples captured for sqlite/tsan-sound-nofe
+  FAIL sqlite/tsan-sound-nofe
+[2026-09-09 20:59:42] profile mysql/tsan -> results/profile-2026-09-09/mysql/tsan  (binary /extra/alexey/tsan-experiments/installs/mysql/old-builds/mysql-tsan.d3bf9f8c39fe/bin/mysqld)
+Terminated
+{
+ "app": "mysql",
+ "config": "tsan",
+ "cycles_in_tsan_pct": 25.99,
+ "of_which": {
+  "access": 19.92,
+  "shadow_stack": 4.3,
+  "atomic": 1.53,
+  "tsan_other": 0.24
+ },
+ "share_of_instrumented": {
+  "access": 76.6,
+  "shadow_stack": 16.5,
+  "atomic": 5.9,
+  "tsan_other": 0.9
+ },
+ "application_pct": 73.75,
+ "kernel_pct": 0.26,
+ "top_callbacks": [
+  {
+   "symbol": "__tsan_read8",
+   "pct": 8.52
+  },
+  {
+   "symbol": "__tsan_write8",
+   "pct": 3.41
+  },
+  {
+   "symbol": "__tsan_read1",
+   "pct": 3.35
+  },
+  {
+   "symbol": "__tsan_read4",
+   "pct": 2.52
+  },
+  {
+   "symbol": "__tsan_func_entry",
+   "pct": 2.44
+  },
+  {
+   "symbol": "__tsan_func_exit",
+   "pct": 1.86
+  },
+  {
+   "symbol": "__tsan_write4",
+   "pct": 0.83
+  },
+  {
+   "symbol": "__tsan_write1",
+   "pct": 0.51
+  },
+  {
+   "symbol": "__tsan_atomic64_store",
+   "pct": 0.37
+  },
+  {
+   "symbol": "__tsan_atomic8_exchange",
+   "pct": 0.34
+  },
+  {
+   "symbol": "__tsan_atomic32_load",
+   "pct": 0.32
+  },
+  {
+   "symbol": "__tsan_atomic64_load",
+   "pct": 0.31
+  }
+ ]
+}

@@ -9,3 +9,5 @@ redis tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 136.7s outside_busy=0.0835 inside
 redis orig run3 rc=0 18.9s outside_busy=0.4469 inside_busy=0.1129 foreign_cpu_share=0.6063
 redis tsan run3 rc=0 155.9s outside_busy=0.437 inside_busy=0.2514 foreign_cpu_share=0.5897
 redis tsan-stmt run3 rc=0 152.8s outside_busy=0.466 inside_busy=0.2953 foreign_cpu_share=0.6497
+redis tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 156.3s outside_busy=0.4546 inside_busy=0.2602 foreign_cpu_share=0.6198
+redis orig run4 rc=0 18.9s outside_busy=0.4492 inside_busy=0.1278 foreign_cpu_share=0.6184

@@ -20,4 +20,10 @@ ZPOPMIN 379532.62
 LPUSH 171562.70
 LRANGE_100 16667.30
 LRANGE_300 6850.96
-LRANGE_500 
+LRANGE_500 4202.27
+LRANGE_600 3517.76
+MSET 47181.89
+==> Found running redis-server process(es): 2712517
+==> Stopping redis-server with SIGTERM
+==> redis-server stopped gracefully.
+==> Script finished successfully. All results are in __results_redis__

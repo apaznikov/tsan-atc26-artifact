@@ -1,0 +1,22 @@
+tsan_compiler.sh: ignoring LLVM_ROOT_PATH=/home/alexey/dev/llvm-project/llvm/build (not the TSan prototype tree)
+tsan_compiler.sh: using /home/alexey/dev/llvm-project-focs-lab/llvm/build/bin/clang (clang version 19.0.0git (https://github.com/focs-lab/llvm-project 729521af89653b1bac211c03203ab160d5cb71d0))
+==> Running in test-only mode.
+==> Checking for pre-existing redis-server processes before running benchmarks.
+==> Switching to polygon directory for tests.
+==> Testing tsan
+PING_INLINE 319224.00
+PING_MBULK 551819.12
+SET 260219.14
+GET 330387.69
+INCR 300092.44
+RPUSH 200361.91
+LPOP 178913.45
+RPOP 374840.03
+SADD 277640.91
+HSET 208857.33
+SPOP 391564.75
+ZADD 214525.05
+ZPOPMIN 371086.03
+LPUSH 171312.27
+LRANGE_100 17462.95
+LRANGE_300 

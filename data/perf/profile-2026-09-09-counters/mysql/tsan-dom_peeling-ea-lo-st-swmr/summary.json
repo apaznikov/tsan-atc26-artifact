@@ -1,0 +1,131 @@
+{
+ "app": "mysql",
+ "config": "tsan-dom_peeling-ea-lo-st-swmr",
+ "files": 12,
+ "files_with_counts": 12,
+ "totals": {
+  "total": 6926368106,
+  "fast_hit": 3777457676,
+  "range_calls": 112104063,
+  "range_bytes": 5921215252,
+  "func_entries": 4606437339
+ },
+ "warning_identical_totals": [
+  {
+   "total": 35627,
+   "files": [
+    "astats.3201220",
+    "astats.3201225",
+    "astats.3201280",
+    "astats.3201343",
+    "astats.3201376",
+    "astats.3201403",
+    "astats.3201432",
+    "astats.3201448"
+   ]
+  }
+ ],
+ "note_fork": "files in this directory report byte-identical totals: likely fork inheritance, so the sum across files double-counts by that amount",
+ "fast_path_hit_rate": 54.5374,
+ "func_entries_per_access": 0.6651,
+ "mean_range_bytes": 52.8,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.3201220",
+   "total": 35627,
+   "fast_hit": 11278,
+   "range_calls": 4710,
+   "range_bytes": 184177,
+   "func_entries": 27810
+  },
+  {
+   "file": "astats.3201223",
+   "total": 6925317693,
+   "fast_hit": 3776840793,
+   "range_calls": 111690687,
+   "range_bytes": 5913547168,
+   "func_entries": 4605773808
+  },
+  {
+   "file": "astats.3201225",
+   "total": 35627,
+   "fast_hit": 11278,
+   "range_calls": 4710,
+   "range_bytes": 184177,
+   "func_entries": 27810
+  },
+  {
+   "file": "astats.3201280",
+   "total": 35627,
+   "fast_hit": 11278,
+   "range_calls": 4710,
+   "range_bytes": 184177,
+   "func_entries": 27810
+  },
+  {
+   "file": "astats.3201343",
+   "total": 35627,
+   "fast_hit": 11278,
+   "range_calls": 4710,
+   "range_bytes": 184177,
+   "func_entries": 27810
+  },
+  {
+   "file": "astats.3201376",
+   "total": 35627,
+   "fast_hit": 11278,
+   "range_calls": 4710,
+   "range_bytes": 184177,
+   "func_entries": 27810
+  },
+  {
+   "file": "astats.3201403",
+   "total": 35627,
+   "fast_hit": 11278,
+   "range_calls": 4710,
+   "range_bytes": 184177,
+   "func_entries": 27810
+  },
+  {
+   "file": "astats.3201432",
+   "total": 35627,
+   "fast_hit": 11278,
+   "range_calls": 4710,
+   "range_bytes": 184177,
+   "func_entries": 27810
+  },
+  {
+   "file": "astats.3201448",
+   "total": 35627,
+   "fast_hit": 11278,
+   "range_calls": 4710,
+   "range_bytes": 184177,
+   "func_entries": 27810
+  },
+  {
+   "file": "astats.3201478",
+   "total": 241340,
+   "fast_hit": 170649,
+   "range_calls": 124728,
+   "range_bytes": 2042767,
+   "func_entries": 141072
+  },
+  {
+   "file": "astats.3201483",
+   "total": 258717,
+   "fast_hit": 176435,
+   "range_calls": 125317,
+   "range_bytes": 2064855,
+   "func_entries": 148609
+  },
+  {
+   "file": "astats.3201485",
+   "total": 265340,
+   "fast_hit": 179575,
+   "range_calls": 125651,
+   "range_bytes": 2087046,
+   "func_entries": 151370
+  }
+ ]
+}

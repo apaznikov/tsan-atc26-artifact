@@ -1,0 +1,27 @@
+{
+ "app": "redis",
+ "config": "tsan-sound-wp",
+ "files": 1,
+ "files_with_counts": 1,
+ "totals": {
+  "total": 2011372761,
+  "fast_hit": 1925702861,
+  "range_calls": 190180270,
+  "range_bytes": 4671889746,
+  "func_entries": 513364999
+ },
+ "fast_path_hit_rate": 95.7407,
+ "func_entries_per_access": 0.2552,
+ "mean_range_bytes": 24.6,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.164130",
+   "total": 2011372761,
+   "fast_hit": 1925702861,
+   "range_calls": 190180270,
+   "range_bytes": 4671889746,
+   "func_entries": 513364999
+  }
+ ]
+}

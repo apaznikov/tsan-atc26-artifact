@@ -815,3 +815,7 @@ DISTURBED
 DISTURBED
 [2026-09-14 15:42:49] redis tsan-stmt run3 rc=0 152.8s outside_busy=0.466 inside_busy=0.2953 foreign_cpu_share=0.6497
 DISTURBED
+[2026-09-14 15:45:26] redis tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 156.3s outside_busy=0.4546 inside_busy=0.2602 foreign_cpu_share=0.6198
+DISTURBED
+[2026-09-14 15:45:45] redis orig run4 rc=0 18.9s outside_busy=0.4492 inside_busy=0.1278 foreign_cpu_share=0.6184
+DISTURBED

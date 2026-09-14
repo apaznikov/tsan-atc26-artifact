@@ -1,0 +1,27 @@
+{
+ "app": "ffmpeg",
+ "config": "tsan-sound",
+ "files": 1,
+ "files_with_counts": 1,
+ "totals": {
+  "total": 2148096363,
+  "fast_hit": 1867766695,
+  "range_calls": 12830516,
+  "range_bytes": 1140726322,
+  "func_entries": 84545440
+ },
+ "fast_path_hit_rate": 86.9499,
+ "func_entries_per_access": 0.0394,
+ "mean_range_bytes": 88.9,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.83286",
+   "total": 2148096363,
+   "fast_hit": 1867766695,
+   "range_calls": 12830516,
+   "range_bytes": 1140726322,
+   "func_entries": 84545440
+  }
+ ]
+}

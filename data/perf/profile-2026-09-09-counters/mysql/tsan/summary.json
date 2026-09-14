@@ -1,0 +1,115 @@
+{
+ "app": "mysql",
+ "config": "tsan",
+ "files": 12,
+ "files_with_counts": 12,
+ "totals": {
+  "total": 6910084165,
+  "fast_hit": 3861310678,
+  "range_calls": 109390024,
+  "range_bytes": 5802622590,
+  "func_entries": 4429340859
+ },
+ "fast_path_hit_rate": 55.8794,
+ "func_entries_per_access": 0.641,
+ "mean_range_bytes": 53.0,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.270096",
+   "total": 35508,
+   "fast_hit": 11397,
+   "range_calls": 4705,
+   "range_bytes": 183468,
+   "func_entries": 27812
+  },
+  {
+   "file": "astats.270100",
+   "total": 6908913477,
+   "fast_hit": 3860571857,
+   "range_calls": 108976719,
+   "range_bytes": 5794963809,
+   "func_entries": 4428677292
+  },
+  {
+   "file": "astats.270102",
+   "total": 35508,
+   "fast_hit": 11397,
+   "range_calls": 4705,
+   "range_bytes": 183468,
+   "func_entries": 27812
+  },
+  {
+   "file": "astats.270132",
+   "total": 35508,
+   "fast_hit": 11397,
+   "range_calls": 4705,
+   "range_bytes": 183468,
+   "func_entries": 27812
+  },
+  {
+   "file": "astats.270148",
+   "total": 35508,
+   "fast_hit": 11397,
+   "range_calls": 4705,
+   "range_bytes": 183468,
+   "func_entries": 27812
+  },
+  {
+   "file": "astats.270166",
+   "total": 35508,
+   "fast_hit": 11397,
+   "range_calls": 4705,
+   "range_bytes": 183468,
+   "func_entries": 27812
+  },
+  {
+   "file": "astats.270184",
+   "total": 35508,
+   "fast_hit": 11397,
+   "range_calls": 4705,
+   "range_bytes": 183468,
+   "func_entries": 27812
+  },
+  {
+   "file": "astats.270198",
+   "total": 35508,
+   "fast_hit": 11397,
+   "range_calls": 4705,
+   "range_bytes": 183468,
+   "func_entries": 27812
+  },
+  {
+   "file": "astats.270215",
+   "total": 35508,
+   "fast_hit": 11397,
+   "range_calls": 4705,
+   "range_bytes": 183468,
+   "func_entries": 27812
+  },
+  {
+   "file": "astats.270226",
+   "total": 281570,
+   "fast_hit": 210989,
+   "range_calls": 124728,
+   "range_bytes": 2041106,
+   "func_entries": 141058
+  },
+  {
+   "file": "astats.270231",
+   "total": 299157,
+   "fast_hit": 216816,
+   "range_calls": 125308,
+   "range_bytes": 2063920,
+   "func_entries": 148619
+  },
+  {
+   "file": "astats.270233",
+   "total": 305897,
+   "fast_hit": 219840,
+   "range_calls": 125629,
+   "range_bytes": 2086011,
+   "func_entries": 151394
+  }
+ ]
+}

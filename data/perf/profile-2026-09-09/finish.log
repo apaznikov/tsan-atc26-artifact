@@ -1,0 +1,449 @@
+FINISH start 2026-09-10T00:24:35+08:00
+[2026-09-10 00:24:35] profile mysql/tsan-sound -> /home/alexey/tsan-experiments/tools/perf/results/profile-2026-09-09/mysql/tsan-sound  (binary /extra/alexey/tsan-experiments/installs/mysql/old-builds/mysql-tsan-sound.d3bf9f8c39fe/bin/mysqld)
+{
+ "app": "mysql",
+ "config": "tsan-sound",
+ "cycles_in_tsan_pct": 32.47,
+ "of_which": {
+  "access": 24.64,
+  "shadow_stack": 5.39,
+  "atomic": 2.12,
+  "tsan_other": 0.33
+ },
+ "share_of_instrumented": {
+  "access": 75.9,
+  "shadow_stack": 16.6,
+  "atomic": 6.5,
+  "tsan_other": 1.0
+ },
+ "application_pct": 67.17,
+ "kernel_pct": 0.36,
+ "top_callbacks": [
+  {
+   "symbol": "__tsan_read8",
+   "pct": 10.7
+  },
+  {
+   "symbol": "__tsan_read1",
+   "pct": 4.39
+  },
+  {
+   "symbol": "__tsan_write8",
+   "pct": 4.0
+  },
+  {
+   "symbol": "__tsan_read4",
+   "pct": 3.21
+  },
+  {
+   "symbol": "__tsan_func_entry",
+   "pct": 3.14
+  },
+  {
+   "symbol": "__tsan_func_exit",
+   "pct": 2.24
+  },
+  {
+   "symbol": "__tsan_write4",
+   "pct": 0.92
+  },
+  {
+   "symbol": "__tsan_write1",
+   "pct": 0.58
+  },
+  {
+   "symbol": "__tsan_atomic64_store",
+   "pct": 0.57
+  },
+  {
+   "symbol": "__tsan_atomic8_exchange",
+   "pct": 0.56
+  },
+  {
+   "symbol": "__tsan_atomic32_load",
+   "pct": 0.38
+  },
+  {
+   "symbol": "__tsan_atomic64_load",
+   "pct": 0.35
+  }
+ ]
+}
+  ok   profile mysql/tsan-sound
+[2026-09-10 00:25:33] profile mysql/tsan-sound-stmt -> /home/alexey/tsan-experiments/tools/perf/results/profile-2026-09-09/mysql/tsan-sound-stmt  (binary /home/alexey/tsan-experiments/sql/mysql/mysql-tsan-sound-stmt/bin/mysqld)
+{
+ "app": "mysql",
+ "config": "tsan-sound-stmt",
+ "cycles_in_tsan_pct": 24.53,
+ "of_which": {
+  "access": 18.88,
+  "shadow_stack": 3.97,
+  "atomic": 1.48,
+  "tsan_other": 0.22
+ },
+ "share_of_instrumented": {
+  "access": 76.9,
+  "shadow_stack": 16.2,
+  "atomic": 6.0,
+  "tsan_other": 0.9
+ },
+ "application_pct": 75.22,
+ "kernel_pct": 0.25,
+ "top_callbacks": [
+  {
+   "symbol": "__tsan_read8",
+   "pct": 8.09
+  },
+  {
+   "symbol": "__tsan_write8",
+   "pct": 3.24
+  },
+  {
+   "symbol": "__tsan_read1",
+   "pct": 3.16
+  },
+  {
+   "symbol": "__tsan_read4",
+   "pct": 2.49
+  },
+  {
+   "symbol": "__tsan_func_entry",
+   "pct": 2.25
+  },
+  {
+   "symbol": "__tsan_func_exit",
+   "pct": 1.71
+  },
+  {
+   "symbol": "__tsan_write4",
+   "pct": 0.76
+  },
+  {
+   "symbol": "__tsan_write1",
+   "pct": 0.45
+  },
+  {
+   "symbol": "__tsan_atomic64_store",
+   "pct": 0.38
+  },
+  {
+   "symbol": "__tsan_atomic8_exchange",
+   "pct": 0.35
+  },
+  {
+   "symbol": "__tsan_atomic32_load",
+   "pct": 0.3
+  },
+  {
+   "symbol": "__tsan_atomic64_load",
+   "pct": 0.29
+  }
+ ]
+}
+  ok   profile mysql/tsan-sound-stmt
+[2026-09-10 00:26:31] profile mysql/tsan-sound-nofe -> /home/alexey/tsan-experiments/tools/perf/results/profile-2026-09-09/mysql/tsan-sound-nofe  (binary /home/alexey/tsan-experiments/sql/mysql/mysql-tsan-sound-nofe/bin/mysqld)
+{
+ "app": "mysql",
+ "config": "tsan-sound-nofe",
+ "cycles_in_tsan_pct": 22.92,
+ "of_which": {
+  "access": 21.28,
+  "shadow_stack": 0.0,
+  "atomic": 1.41,
+  "tsan_other": 0.24
+ },
+ "share_of_instrumented": {
+  "access": 92.8,
+  "shadow_stack": 0.0,
+  "atomic": 6.2,
+  "tsan_other": 1.0
+ },
+ "application_pct": 76.87,
+ "kernel_pct": 0.2,
+ "top_callbacks": [
+  {
+   "symbol": "__tsan_read8",
+   "pct": 8.92
+  },
+  {
+   "symbol": "__tsan_write8",
+   "pct": 3.58
+  },
+  {
+   "symbol": "__tsan_read1",
+   "pct": 3.49
+  },
+  {
+   "symbol": "__tsan_read4",
+   "pct": 3.11
+  },
+  {
+   "symbol": "__tsan_write4",
+   "pct": 0.83
+  },
+  {
+   "symbol": "__tsan_write1",
+   "pct": 0.53
+  },
+  {
+   "symbol": "__tsan_atomic64_store",
+   "pct": 0.34
+  },
+  {
+   "symbol": "__tsan_atomic64_load",
+   "pct": 0.31
+  },
+  {
+   "symbol": "__tsan_atomic32_load",
+   "pct": 0.31
+  },
+  {
+   "symbol": "__tsan_atomic8_exchange",
+   "pct": 0.29
+  },
+  {
+   "symbol": "__tsan_unaligned_read8",
+   "pct": 0.2
+  },
+  {
+   "symbol": "__tsan_read2",
+   "pct": 0.17
+  }
+ ]
+}
+  ok   profile mysql/tsan-sound-nofe
+[2026-09-10 00:27:27] profile mysql/tsan -> /home/alexey/tsan-experiments/tools/perf/results/profile-2026-09-09-counters/mysql/tsan  (binary /home/alexey/tsan-experiments/sql/mysql/mysql-tsan/bin/mysqld)
+{
+ "app": "mysql",
+ "config": "tsan",
+ "files": 12,
+ "files_with_counts": 12,
+ "totals": {
+  "total": 6910084165,
+  "fast_hit": 3861310678,
+  "range_calls": 109390024,
+  "range_bytes": 5802622590,
+  "func_entries": 4429340859
+ },
+ "fast_path_hit_rate": 55.8794,
+ "func_entries_per_access": 0.641,
+ "mean_range_bytes": 53.0,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.270096",
+   "total": 35508,
+   "fast_hit": 11397,
+   "range_calls": 4705,
+   "range_bytes": 183468,
+   "func_entries": 27812
+  },
+  {
+   "file": "astats.270100",
+   "total": 6908913477,
+   "fast_hit": 3860571857,
+   "range_calls": 108976719,
+   "range_bytes": 5794963809,
+   "func_entries": 4428677292
+  },
+  {
+   "file": "astats.270102",
+   "total": 35508,
+   "fast_hit": 11397,
+   "range_calls": 4705,
+   "range_bytes": 183468,
+   "func_entries": 27812
+  },
+  {
+   "file": "astats.270132",
+   "total": 35508,
+   "fast_hit": 11397,
+   "range_calls": 4705,
+   "range_bytes": 183468,
+   "func_entries": 27812
+  },
+  {
+   "file": "astats.270148",
+   "total": 35508,
+   "fast_hit": 11397,
+   "range_calls": 4705,
+   "range_bytes": 183468,
+   "func_entries": 27812
+  },
+  {
+   "file": "astats.270166",
+   "total": 35508,
+   "fast_hit": 11397,
+   "range_calls": 4705,
+   "range_bytes": 183468,
+   "func_entries": 27812
+  },
+  {
+   "file": "astats.270184",
+   "total": 35508,
+   "fast_hit": 11397,
+   "range_calls": 4705,
+   "range_bytes": 183468,
+   "func_entries": 27812
+  },
+  {
+   "file": "astats.270198",
+   "total": 35508,
+   "fast_hit": 11397,
+   "range_calls": 4705,
+   "range_bytes": 183468,
+   "func_entries": 27812
+  },
+  {
+   "file": "astats.270215",
+   "total": 35508,
+   "fast_hit": 11397,
+   "range_calls": 4705,
+   "range_bytes": 183468,
+   "func_entries": 27812
+  },
+  {
+   "file": "astats.270226",
+   "total": 281570,
+   "fast_hit": 210989,
+   "range_calls": 124728,
+   "range_bytes": 2041106,
+   "func_entries": 141058
+  },
+  {
+   "file": "astats.270231",
+   "total": 299157,
+   "fast_hit": 216816,
+   "range_calls": 125308,
+   "range_bytes": 2063920,
+   "func_entries": 148619
+  },
+  {
+   "file": "astats.270233",
+   "total": 305897,
+   "fast_hit": 219840,
+   "range_calls": 125629,
+   "range_bytes": 2086011,
+   "func_entries": 151394
+  }
+ ]
+}
+  ok   counters mysql/tsan
+[2026-09-10 00:28:21] profile mysql/tsan-sound -> /home/alexey/tsan-experiments/tools/perf/results/profile-2026-09-09-counters/mysql/tsan-sound  (binary /home/alexey/tsan-experiments/sql/mysql/mysql-tsan-sound/bin/mysqld)
+{
+ "app": "mysql",
+ "config": "tsan-sound",
+ "files": 12,
+ "files_with_counts": 12,
+ "totals": {
+  "total": 6885418180,
+  "fast_hit": 3830265362,
+  "range_calls": 110273521,
+  "range_bytes": 5860955100,
+  "func_entries": 4438181068
+ },
+ "fast_path_hit_rate": 55.6287,
+ "func_entries_per_access": 0.6446,
+ "mean_range_bytes": 53.1,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.272540",
+   "total": 35595,
+   "fast_hit": 11389,
+   "range_calls": 4710,
+   "range_bytes": 183760,
+   "func_entries": 27835
+  },
+  {
+   "file": "astats.272543",
+   "total": 6884312170,
+   "fast_hit": 3829592302,
+   "range_calls": 109860119,
+   "range_bytes": 5853290398,
+   "func_entries": 4437517332
+  },
+  {
+   "file": "astats.272546",
+   "total": 35595,
+   "fast_hit": 11389,
+   "range_calls": 4710,
+   "range_bytes": 183760,
+   "func_entries": 27835
+  },
+  {
+   "file": "astats.272560",
+   "total": 35595,
+   "fast_hit": 11389,
+   "range_calls": 4710,
+   "range_bytes": 183760,
+   "func_entries": 27835
+  },
+  {
+   "file": "astats.272577",
+   "total": 35595,
+   "fast_hit": 11389,
+   "range_calls": 4710,
+   "range_bytes": 183760,
+   "func_entries": 27835
+  },
+  {
+   "file": "astats.272606",
+   "total": 35595,
+   "fast_hit": 11389,
+   "range_calls": 4710,
+   "range_bytes": 183760,
+   "func_entries": 27835
+  },
+  {
+   "file": "astats.272610",
+   "total": 35595,
+   "fast_hit": 11389,
+   "range_calls": 4710,
+   "range_bytes": 183760,
+   "func_entries": 27835
+  },
+  {
+   "file": "astats.272627",
+   "total": 35595,
+   "fast_hit": 11389,
+   "range_calls": 4710,
+   "range_bytes": 183760,
+   "func_entries": 27835
+  },
+  {
+   "file": "astats.272639",
+   "total": 35595,
+   "fast_hit": 11389,
+   "range_calls": 4710,
+   "range_bytes": 183760,
+   "func_entries": 27835
+  },
+  {
+   "file": "astats.272648",
+   "total": 259789,
+   "fast_hit": 189035,
+   "range_calls": 124727,
+   "range_bytes": 2041930,
+   "func_entries": 141077
+  },
+  {
+   "file": "astats.272653",
+   "total": 277387,
+   "fast_hit": 194926,
+   "range_calls": 125333,
+   "range_bytes": 2064737,
+   "func_entries": 148609
+  },
+  {
+   "file": "astats.272655",
+   "total": 284074,
+   "fast_hit": 197987,
+   "range_calls": 125662,
+   "range_bytes": 2087955,
+   "func_entries": 151370
+  }
+ ]
+}
+  ok   counters mysql/tsan-sound
+MYSQL-CELLS DONE 2026-09-10T00:29:15+08:00

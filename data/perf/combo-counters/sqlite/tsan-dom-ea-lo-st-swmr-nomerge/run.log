@@ -1,0 +1,14 @@
+Running walthread1 for 20 seconds...
+Thread 11 says: 40 checkpoints
+Thread 10 says: 261 iterations
+Thread 9 says: 267 iterations
+Thread 8 says: 257 iterations
+Thread 7 says: 250 iterations
+Thread 6 says: 248 iterations
+Thread 5 says: 254 iterations
+Thread 4 says: 241 iterations
+Thread 3 says: 259 iterations
+Thread 2 says: 241 iterations
+Thread 1 says: 262 iterations
+ThreadSanitizer: accesses total=12955151732 fast_hit=11995462266 range_calls=474981301 range_bytes=33039168306 func_entries=997774986
+0 errors out of 1 tests

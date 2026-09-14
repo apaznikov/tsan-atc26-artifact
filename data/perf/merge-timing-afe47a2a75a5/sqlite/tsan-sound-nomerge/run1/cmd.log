@@ -1,0 +1,8 @@
+--- Running Benchmark for: tsan-sound-nomerge ---
+Executable: build/test-tsan-sound-nomerge/threadtest3
+Full Command: build/test-tsan-sound-nomerge/threadtest3
+Output will be saved to: results/tsan-sound-nomerge.log
+Memory usage will be saved to: results/memory.txt
+Running, please wait...
+--- Benchmark for [tsan-sound-nomerge] completed successfully. ---
+

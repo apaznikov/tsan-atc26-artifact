@@ -1,0 +1,6 @@
+[2026-09-11 16:59:50] waiting for the machine job lock (exclusive: build sqlite, jobs 8)
+[2026-09-11 16:59:50] build sqlite tsan-sound (jobs 8) -> /home/alexey/tsan-experiments/tools/perf/results/merge-timing-afe47a2a75a5/build/sqlite-tsan-sound.log
+[2026-09-11 17:00:28] built sqlite tsan-sound in 37s: 52573 memory-access sites (57168 tsan calls)
+[2026-09-11 17:00:28] build sqlite tsan-sound-nomerge (jobs 8) -> /home/alexey/tsan-experiments/tools/perf/results/merge-timing-afe47a2a75a5/build/sqlite-tsan-sound-nomerge.log
+[2026-09-11 17:01:01] built sqlite tsan-sound-nomerge in 32s: 57025 memory-access sites (61619 tsan calls)
+[2026-09-11 17:01:01] builds of sqlite done (fail=0); static counts in /home/alexey/tsan-experiments/tools/perf/results/merge-timing-afe47a2a75a5/static-counts.csv

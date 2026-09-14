@@ -1,0 +1,73 @@
+{
+ "app": "mysql",
+ "config": "tsan",
+ "cycles_in_tsan_pct": 87.09,
+ "of_which": {
+  "access": 21.73,
+  "shadow_stack": 4.66,
+  "atomic": 1.76,
+  "range": 0.0,
+  "sync": 54.87,
+  "tsan_other": 4.07
+ },
+ "share_of_instrumented": {
+  "access": 25.0,
+  "shadow_stack": 5.4,
+  "atomic": 2.0,
+  "range": 0.0,
+  "sync": 63.0,
+  "tsan_other": 4.7
+ },
+ "application_pct": 12.62,
+ "kernel_pct": 0.3,
+ "top_callbacks": [
+  {
+   "symbol": "__tsan::MutexReadOrWriteUnlock(__tsan::ThreadState*, unsigned long, unsigned long)",
+   "pct": 23.43
+  },
+  {
+   "symbol": "__tsan_read8",
+   "pct": 9.37
+  },
+  {
+   "symbol": "__tsan::MutexPostReadLock(__tsan::ThreadState*, unsigned long, unsigned long, unsigned int)",
+   "pct": 9.17
+  },
+  {
+   "symbol": "__tsan::MutexPreReadLock(__tsan::ThreadState*, unsigned long, unsigned long, unsigned int)",
+   "pct": 8.61
+  },
+  {
+   "symbol": "__tsan::MetaMap::GetSync(__tsan::ThreadState*, unsigned long, unsigned long, bool, bool)",
+   "pct": 5.01
+  },
+  {
+   "symbol": "__tsan_write8",
+   "pct": 3.69
+  },
+  {
+   "symbol": "__tsan_read1",
+   "pct": 3.61
+  },
+  {
+   "symbol": "__tsan_read4",
+   "pct": 2.93
+  },
+  {
+   "symbol": "__tsan::MemoryAccess(__tsan::ThreadState*, unsigned long, unsigned long, unsigned long, unsigned long)",
+   "pct": 2.82
+  },
+  {
+   "symbol": "__tsan_func_entry",
+   "pct": 2.65
+  },
+  {
+   "symbol": "__tsan::SlotLock(__tsan::ThreadState*)",
+   "pct": 2.42
+  },
+  {
+   "symbol": "__tsan::VectorClock::Acquire(__tsan::VectorClock const*)",
+   "pct": 2.04
+  }
+ ]
+}

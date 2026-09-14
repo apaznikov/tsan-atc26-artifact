@@ -1,0 +1,913 @@
+==================
+WARNING: ThreadSanitizer: data race (pid=186573)
+  Write of size 4 at 0x555556a3b968 by main thread:
+    #0 clock_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c (memcached+0xf5c3e)
+    #1 <null> <null> (libevent-2.1.so.7+0x20a57) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+    #2 __libc_start_call_main csu/../sysdeps/nptl/libc_start_call_main.h:58:16 (libc.so.6+0x2a1c9) (BuildId: 282c2c16e7b6600b0b22ea0c99010d2795752b5f)
+
+  Previous read of size 4 at 0x555556a3b968 by thread T2:
+    #0 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:493:24 (memcached+0x113db9)
+    #1 try_read_command_negotiate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2427:12 (memcached+0xeb067)
+    #2 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #3 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #4 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is global 'current_time' of size 4 at 0x555556a3b968 (memcached+0x14e7968)
+
+  Thread T2 'mc-worker' (tid=186579, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x10817a)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x10817a)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c in clock_handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=186573)
+  Write of size 2 at 0x7fffec7fff9e by thread T9 (mutexes: write M0):
+    #0 do_item_unlink /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:516:22 (memcached+0xffc2a)
+    #1 do_item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:589:5 (memcached+0x1006b5)
+    #2 item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:934:12 (memcached+0x106ceb)
+    #3 do_store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:1715:13 (memcached+0xed4e6)
+    #4 store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:974:11 (memcached+0x107012)
+    #5 complete_nread_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:184:13 (memcached+0x11323b)
+    #6 complete_nread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:1485:9 (memcached+0xe7f10)
+    #7 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3239:17 (memcached+0xe7f10)
+    #8 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous read of size 2 at 0x7fffec7fff9e by thread T4:
+    #0 item_remove /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:921:15 (memcached+0x106bf2)
+    #1 complete_nread_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:241:5 (memcached+0x113419)
+    #2 complete_nread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:1485:9 (memcached+0xe7f10)
+    #3 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3239:17 (memcached+0xe7f10)
+    #4 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #5 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 1048576 at 0x7fffec700000 allocated by thread T4:
+    #0 malloc /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:666:5 (memcached+0x6265f)
+    #1 memory_allocate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:615:15 (memcached+0xfd62c)
+    #2 do_slabs_newslab /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:386:17 (memcached+0xfd62c)
+    #3 do_slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:423:9 (memcached+0xfa8c2)
+    #4 slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:661:11 (memcached+0xfa8c2)
+    #5 do_item_alloc_pull /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:181:14 (memcached+0xfdc50)
+    #6 do_item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:298:14 (memcached+0xff284)
+    #7 item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:876:10 (memcached+0x1068e2)
+    #8 process_update_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:2044:10 (memcached+0x118931)
+    #9 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c (memcached+0x1145a7)
+    #10 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:494:5 (memcached+0x113dd8)
+    #11 try_read_command_negotiate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2427:12 (memcached+0xeb067)
+    #12 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #13 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #14 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Mutex M0 (0x7ffff5331f48) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1132:9 (memcached+0x107d48)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T9 'mc-worker' (tid=186586, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T4 'mc-worker' (tid=186581, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:516:22 in do_item_unlink
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=186573)
+  Read of size 2 at 0x7fffec7ff45e by thread T28 (mutexes: write M0, write M1):
+    #0 lru_pull_tail /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1137:28 (memcached+0xfdf94)
+    #1 lru_maintainer_juggle /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1448:13 (memcached+0x103807)
+    #2 lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1645:29 (memcached+0x103807)
+
+  Previous write of size 2 at 0x7fffec7ff45e by thread T20 (mutexes: write M2):
+    #0 do_item_unlink /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:516:22 (memcached+0xffc2a)
+    #1 do_item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:589:5 (memcached+0x1006b5)
+    #2 item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:934:12 (memcached+0x106ceb)
+    #3 do_store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:1715:13 (memcached+0xed4e6)
+    #4 store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:974:11 (memcached+0x107012)
+    #5 complete_nread_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:184:13 (memcached+0x11323b)
+    #6 complete_nread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:1485:9 (memcached+0xe7f10)
+    #7 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3239:17 (memcached+0xe7f10)
+    #8 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 1048576 at 0x7fffec700000 allocated by thread T4:
+    #0 malloc /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:666:5 (memcached+0x6265f)
+    #1 memory_allocate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:615:15 (memcached+0xfd62c)
+    #2 do_slabs_newslab /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:386:17 (memcached+0xfd62c)
+    #3 do_slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:423:9 (memcached+0xfa8c2)
+    #4 slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:661:11 (memcached+0xfa8c2)
+    #5 do_item_alloc_pull /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:181:14 (memcached+0xfdc50)
+    #6 do_item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:298:14 (memcached+0xff284)
+    #7 item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:876:10 (memcached+0x1068e2)
+    #8 process_update_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:2044:10 (memcached+0x118931)
+    #9 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c (memcached+0x1145a7)
+    #10 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:494:5 (memcached+0x113dd8)
+    #11 try_read_command_negotiate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2427:12 (memcached+0xeb067)
+    #12 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #13 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #14 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Mutex M0 (0x555556a48cf0) created at:
+    #0 pthread_mutex_lock /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x65dfe)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1725:5 (memcached+0x10311c)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6170:33 (memcached+0xf2ec1)
+
+  Mutex M1 (0x555556a496f0) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1093:9 (memcached+0x107c0a)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Mutex M2 (0x7ffff53a3788) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1132:9 (memcached+0x107d48)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T28 'mc-lrumaint' (tid=186605, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1728:16 (memcached+0x103166)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6170:33 (memcached+0xf2ec1)
+
+  Thread T20 'mc-worker' (tid=186597, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T4 'mc-worker' (tid=186581, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1137:28 in lru_pull_tail
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=186573)
+  Read of size 2 at 0x7fffec7fd1ae by thread T28 (mutexes: write M0, write M1):
+    #0 lru_pull_tail /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1137:28 (memcached+0xfe3b1)
+    #1 lru_maintainer_juggle /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1448:13 (memcached+0x103807)
+    #2 lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1645:29 (memcached+0x103807)
+
+  Previous write of size 2 at 0x7fffec7fd1ae by thread T17 (mutexes: write M2):
+    #0 do_item_unlink /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:516:22 (memcached+0xffc2a)
+    #1 do_item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:589:5 (memcached+0x1006b5)
+    #2 item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:934:12 (memcached+0x106ceb)
+    #3 do_store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:1715:13 (memcached+0xed4e6)
+    #4 store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:974:11 (memcached+0x107012)
+    #5 complete_nread_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:184:13 (memcached+0x11323b)
+    #6 complete_nread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:1485:9 (memcached+0xe7f10)
+    #7 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3239:17 (memcached+0xe7f10)
+    #8 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 1048576 at 0x7fffec700000 allocated by thread T4:
+    #0 malloc /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:666:5 (memcached+0x6265f)
+    #1 memory_allocate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:615:15 (memcached+0xfd62c)
+    #2 do_slabs_newslab /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:386:17 (memcached+0xfd62c)
+    #3 do_slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:423:9 (memcached+0xfa8c2)
+    #4 slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:661:11 (memcached+0xfa8c2)
+    #5 do_item_alloc_pull /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:181:14 (memcached+0xfdc50)
+    #6 do_item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:298:14 (memcached+0xff284)
+    #7 item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:876:10 (memcached+0x1068e2)
+    #8 process_update_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:2044:10 (memcached+0x118931)
+    #9 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c (memcached+0x1145a7)
+    #10 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:494:5 (memcached+0x113dd8)
+    #11 try_read_command_negotiate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2427:12 (memcached+0xeb067)
+    #12 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #13 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #14 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Mutex M0 (0x555556a48cf0) created at:
+    #0 pthread_mutex_lock /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x65dfe)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1725:5 (memcached+0x10311c)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6170:33 (memcached+0xf2ec1)
+
+  Mutex M1 (0x555556a496f0) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1093:9 (memcached+0x107c0a)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Mutex M2 (0x7ffff53c6058) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1132:9 (memcached+0x107d48)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T28 'mc-lrumaint' (tid=186605, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1728:16 (memcached+0x103166)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6170:33 (memcached+0xf2ec1)
+
+  Thread T17 'mc-worker' (tid=186594, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T4 'mc-worker' (tid=186581, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1137:28 in lru_pull_tail
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=186573)
+  Read of size 2 at 0x7fffec7fd83e by thread T28 (mutexes: write M0, write M1):
+    #0 lru_pull_tail /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1137:28 (memcached+0xfdf94)
+    #1 lru_maintainer_juggle /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1448:13 (memcached+0x10375e)
+    #2 lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1645:29 (memcached+0x10375e)
+
+  Previous write of size 2 at 0x7fffec7fd83e by thread T17 (mutexes: write M2):
+    #0 do_item_unlink /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:516:22 (memcached+0xffc2a)
+    #1 do_item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:589:5 (memcached+0x1006b5)
+    #2 item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:934:12 (memcached+0x106ceb)
+    #3 do_store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:1715:13 (memcached+0xed4e6)
+    #4 store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:974:11 (memcached+0x107012)
+    #5 complete_nread_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:184:13 (memcached+0x11323b)
+    #6 complete_nread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:1485:9 (memcached+0xe7f10)
+    #7 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3239:17 (memcached+0xe7f10)
+    #8 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 1048576 at 0x7fffec700000 allocated by thread T4:
+    #0 malloc /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:666:5 (memcached+0x6265f)
+    #1 memory_allocate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:615:15 (memcached+0xfd62c)
+    #2 do_slabs_newslab /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:386:17 (memcached+0xfd62c)
+    #3 do_slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:423:9 (memcached+0xfa8c2)
+    #4 slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:661:11 (memcached+0xfa8c2)
+    #5 do_item_alloc_pull /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:181:14 (memcached+0xfdc50)
+    #6 do_item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:298:14 (memcached+0xff284)
+    #7 item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:876:10 (memcached+0x1068e2)
+    #8 process_update_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:2044:10 (memcached+0x118931)
+    #9 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c (memcached+0x1145a7)
+    #10 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:494:5 (memcached+0x113dd8)
+    #11 try_read_command_negotiate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2427:12 (memcached+0xeb067)
+    #12 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #13 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #14 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Mutex M0 (0x555556a48cf0) created at:
+    #0 pthread_mutex_lock /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x65dfe)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1725:5 (memcached+0x10311c)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6170:33 (memcached+0xf2ec1)
+
+  Mutex M1 (0x555556a496f0) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1093:9 (memcached+0x107c0a)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Mutex M2 (0x7ffff531b3d8) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1132:9 (memcached+0x107d48)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T28 'mc-lrumaint' (tid=186605, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1728:16 (memcached+0x103166)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6170:33 (memcached+0xf2ec1)
+
+  Thread T17 'mc-worker' (tid=186594, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T4 'mc-worker' (tid=186581, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1137:28 in lru_pull_tail
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=186573)
+  Read of size 8 at 0x555556a3bc10 by main thread:
+    #0 clock_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:4009:36 (memcached+0xf5b36)
+    #1 <null> <null> (libevent-2.1.so.7+0x20a57) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+    #2 __libc_start_call_main csu/../sysdeps/nptl/libc_start_call_main.h:58:16 (libc.so.6+0x2a1c9) (BuildId: 282c2c16e7b6600b0b22ea0c99010d2795752b5f)
+
+  Previous write of size 8 at 0x555556a3bc10 by thread T19 (mutexes: write M0, write M1):
+    #0 do_item_link /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:499:28 (memcached+0xff930)
+    #1 do_item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:590:12 (memcached+0x1006c2)
+    #2 item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:934:12 (memcached+0x106ceb)
+    #3 do_store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:1715:13 (memcached+0xed4e6)
+    #4 store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:974:11 (memcached+0x107012)
+    #5 complete_nread_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:184:13 (memcached+0x11323b)
+    #6 complete_nread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:1485:9 (memcached+0xe7f10)
+    #7 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3239:17 (memcached+0xe7f10)
+    #8 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is global 'stats_state' of size 56 at 0x555556a3bc10 (memcached+0x14e7c10)
+
+  Mutex M0 (0x7ffff5306c80) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1132:9 (memcached+0x107d48)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Mutex M1 (0x555556a49678) created at:
+    #0 pthread_mutex_lock /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x65dfe)
+    #1 STATS_LOCK /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:982:5 (memcached+0x107086)
+    #2 assoc_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/assoc.c:64:5 (memcached+0x1047cd)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6082:5 (memcached+0xf2cf4)
+
+  Thread T19 'mc-worker' (tid=186596, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:4009:36 in clock_handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=186573)
+  Write of size 4 at 0x555556a3b968 by main thread:
+    #0 clock_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c (memcached+0xf5c3e)
+    #1 <null> <null> (libevent-2.1.so.7+0x20a57) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+    #2 __libc_start_call_main csu/../sysdeps/nptl/libc_start_call_main.h:58:16 (libc.so.6+0x2a1c9) (BuildId: 282c2c16e7b6600b0b22ea0c99010d2795752b5f)
+
+  Previous read of size 4 at 0x555556a3b968 by thread T18:
+    #0 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:493:24 (memcached+0x113db9)
+    #1 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #2 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is global 'current_time' of size 4 at 0x555556a3b968 (memcached+0x14e7968)
+
+  Thread T18 'mc-worker' (tid=186595, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c in clock_handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=186573)
+  Write of size 4 at 0x555556a3b968 by main thread:
+    #0 clock_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c (memcached+0xf5c3e)
+    #1 <null> <null> (libevent-2.1.so.7+0x20a57) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+    #2 __libc_start_call_main csu/../sysdeps/nptl/libc_start_call_main.h:58:16 (libc.so.6+0x2a1c9) (BuildId: 282c2c16e7b6600b0b22ea0c99010d2795752b5f)
+
+  Previous read of size 4 at 0x555556a3b968 by thread T4 (mutexes: write M0):
+    #0 do_item_link /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:495:16 (memcached+0xff8ad)
+    #1 do_item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:590:12 (memcached+0x1006c2)
+    #2 item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:934:12 (memcached+0x106ceb)
+    #3 do_store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:1715:13 (memcached+0xed4e6)
+    #4 store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:974:11 (memcached+0x107012)
+    #5 complete_nread_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:184:13 (memcached+0x11323b)
+    #6 complete_nread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:1485:9 (memcached+0xe7f10)
+    #7 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3239:17 (memcached+0xe7f10)
+    #8 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is global 'current_time' of size 4 at 0x555556a3b968 (memcached+0x14e7968)
+
+  Mutex M0 (0x7ffff5343cc0) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1132:9 (memcached+0x107d48)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T4 'mc-worker' (tid=186581, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c in clock_handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=186573)
+  Read of size 2 at 0x7fffec7f4ee6 by thread T28 (mutexes: write M0, write M1):
+    #0 lru_pull_tail /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1137:28 (memcached+0xfdf94)
+    #1 lru_maintainer_juggle /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1449:13 (memcached+0x103781)
+    #2 lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1645:29 (memcached+0x103781)
+
+  Previous write of size 2 at 0x7fffec7f4ee6 by thread T6 (mutexes: write M2):
+    #0 do_item_bump /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1077:30 (memcached+0x102dc8)
+    #1 do_item_get /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1047:17 (memcached+0x102949)
+    #2 item_get /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:889:10 (memcached+0x10699e)
+    #3 limited_get /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2253:14 (memcached+0xefc70)
+    #4 process_get_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:581:18 (memcached+0x117e1c)
+    #5 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c (memcached+0x114600)
+    #6 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:494:5 (memcached+0x113dd8)
+    #7 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #8 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 1048576 at 0x7fffec700000 allocated by thread T4:
+    #0 malloc /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:666:5 (memcached+0x6265f)
+    #1 memory_allocate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:615:15 (memcached+0xfd62c)
+    #2 do_slabs_newslab /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:386:17 (memcached+0xfd62c)
+    #3 do_slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:423:9 (memcached+0xfa8c2)
+    #4 slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:661:11 (memcached+0xfa8c2)
+    #5 do_item_alloc_pull /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:181:14 (memcached+0xfdc50)
+    #6 do_item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:298:14 (memcached+0xff284)
+    #7 item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:876:10 (memcached+0x1068e2)
+    #8 process_update_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:2044:10 (memcached+0x118931)
+    #9 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c (memcached+0x1145a7)
+    #10 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:494:5 (memcached+0x113dd8)
+    #11 try_read_command_negotiate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2427:12 (memcached+0xeb067)
+    #12 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #13 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #14 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Mutex M0 (0x555556a48cf0) created at:
+    #0 pthread_mutex_lock /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x65dfe)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1725:5 (memcached+0x10311c)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6170:33 (memcached+0xf2ec1)
+
+  Mutex M1 (0x555556a4a0f0) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1093:9 (memcached+0x107c0a)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Mutex M2 (0x7ffff53023d8) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1132:9 (memcached+0x107d48)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T28 'mc-lrumaint' (tid=186605, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1728:16 (memcached+0x103166)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6170:33 (memcached+0xf2ec1)
+
+  Thread T6 'mc-worker' (tid=186583, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T4 'mc-worker' (tid=186581, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1137:28 in lru_pull_tail
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=186573)
+  Read of size 2 at 0x7fffec7f4ee6 by thread T4:
+    #0 process_get_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:651:26 (memcached+0x1182b7)
+    #1 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c (memcached+0x114600)
+    #2 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:494:5 (memcached+0x113dd8)
+    #3 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #4 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #5 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous write of size 2 at 0x7fffec7f4ee6 by thread T28 (mutexes: write M0, write M1, write M2):
+    #0 lru_pull_tail /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1191:38 (memcached+0xfe972)
+    #1 lru_maintainer_juggle /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1449:13 (memcached+0x103781)
+    #2 lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1645:29 (memcached+0x103781)
+
+  Location is heap block of size 1048576 at 0x7fffec700000 allocated by thread T4:
+    #0 malloc /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:666:5 (memcached+0x6265f)
+    #1 memory_allocate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:615:15 (memcached+0xfd62c)
+    #2 do_slabs_newslab /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:386:17 (memcached+0xfd62c)
+    #3 do_slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:423:9 (memcached+0xfa8c2)
+    #4 slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:661:11 (memcached+0xfa8c2)
+    #5 do_item_alloc_pull /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:181:14 (memcached+0xfdc50)
+    #6 do_item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:298:14 (memcached+0xff284)
+    #7 item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:876:10 (memcached+0x1068e2)
+    #8 process_update_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:2044:10 (memcached+0x118931)
+    #9 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c (memcached+0x1145a7)
+    #10 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:494:5 (memcached+0x113dd8)
+    #11 try_read_command_negotiate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2427:12 (memcached+0xeb067)
+    #12 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #13 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #14 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Mutex M0 (0x555556a48cf0) created at:
+    #0 pthread_mutex_lock /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x65dfe)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1725:5 (memcached+0x10311c)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6170:33 (memcached+0xf2ec1)
+
+  Mutex M1 (0x555556a4a0f0) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1093:9 (memcached+0x107c0a)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Mutex M2 (0x7ffff53023d8) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1132:9 (memcached+0x107d48)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T4 'mc-worker' (tid=186581, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T28 'mc-lrumaint' (tid=186605, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1728:16 (memcached+0x103166)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6170:33 (memcached+0xf2ec1)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:651:26 in process_get_command
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=186573)
+  Read of size 2 at 0x7fffec7f4ee6 by thread T4:
+    #0 item_remove /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:921:15 (memcached+0x106bf2)
+    #1 resp_finish /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:1237:9 (memcached+0xeb331)
+    #2 _transmit_post /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c (memcached+0xe6f7d)
+    #3 transmit /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2773:9 (memcached+0xe6f7d)
+    #4 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3394:45 (memcached+0xe6f7d)
+    #5 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #6 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous write of size 2 at 0x7fffec7f4ee6 by thread T28 (mutexes: write M0, write M1, write M2):
+    #0 lru_pull_tail /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1191:38 (memcached+0xfe972)
+    #1 lru_maintainer_juggle /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1449:13 (memcached+0x10382a)
+    #2 lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1645:29 (memcached+0x10382a)
+
+  Location is heap block of size 1048576 at 0x7fffec700000 allocated by thread T4:
+    #0 malloc /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:666:5 (memcached+0x6265f)
+    #1 memory_allocate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:615:15 (memcached+0xfd62c)
+    #2 do_slabs_newslab /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:386:17 (memcached+0xfd62c)
+    #3 do_slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:423:9 (memcached+0xfa8c2)
+    #4 slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:661:11 (memcached+0xfa8c2)
+    #5 do_item_alloc_pull /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:181:14 (memcached+0xfdc50)
+    #6 do_item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:298:14 (memcached+0xff284)
+    #7 item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:876:10 (memcached+0x1068e2)
+    #8 process_update_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:2044:10 (memcached+0x118931)
+    #9 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c (memcached+0x1145a7)
+    #10 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:494:5 (memcached+0x113dd8)
+    #11 try_read_command_negotiate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2427:12 (memcached+0xeb067)
+    #12 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #13 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #14 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Mutex M0 (0x555556a48cf0) created at:
+    #0 pthread_mutex_lock /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x65dfe)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1725:5 (memcached+0x10311c)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6170:33 (memcached+0xf2ec1)
+
+  Mutex M1 (0x555556a4a0f0) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1093:9 (memcached+0x107c0a)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Mutex M2 (0x7ffff53023d8) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1132:9 (memcached+0x107d48)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T4 'mc-worker' (tid=186581, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T28 'mc-lrumaint' (tid=186605, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1728:16 (memcached+0x103166)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6170:33 (memcached+0xf2ec1)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:921:15 in item_remove
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=186573)
+  Write of size 2 at 0x7fffec7f4ee4 by thread T28 (mutexes: write M0, write M1, write M2):
+    #0 lru_pull_tail /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1143:13 (memcached+0xfdfe3)
+    #1 lru_maintainer_juggle /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1449:13 (memcached+0x103781)
+    #2 lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1645:29 (memcached+0x103781)
+
+  Previous read of size 2 at 0x7fffec7f4ee4 by thread T17:
+    #0 limited_get /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2255:19 (memcached+0xefc86)
+    #1 process_get_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:581:18 (memcached+0x117e1c)
+    #2 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c (memcached+0x114600)
+    #3 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:494:5 (memcached+0x113dd8)
+    #4 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #5 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #6 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 1048576 at 0x7fffec700000 allocated by thread T4:
+    #0 malloc /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:666:5 (memcached+0x6265f)
+    #1 memory_allocate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:615:15 (memcached+0xfd62c)
+    #2 do_slabs_newslab /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:386:17 (memcached+0xfd62c)
+    #3 do_slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:423:9 (memcached+0xfa8c2)
+    #4 slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:661:11 (memcached+0xfa8c2)
+    #5 do_item_alloc_pull /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:181:14 (memcached+0xfdc50)
+    #6 do_item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:298:14 (memcached+0xff284)
+    #7 item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:876:10 (memcached+0x1068e2)
+    #8 process_update_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:2044:10 (memcached+0x118931)
+    #9 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c (memcached+0x1145a7)
+    #10 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:494:5 (memcached+0x113dd8)
+    #11 try_read_command_negotiate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2427:12 (memcached+0xeb067)
+    #12 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #13 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #14 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Mutex M0 (0x555556a48cf0) created at:
+    #0 pthread_mutex_lock /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x65dfe)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1725:5 (memcached+0x10311c)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6170:33 (memcached+0xf2ec1)
+
+  Mutex M1 (0x555556a4a0f0) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1093:9 (memcached+0x107c0a)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Mutex M2 (0x7ffff53023d8) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1132:9 (memcached+0x107d48)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T28 'mc-lrumaint' (tid=186605, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1728:16 (memcached+0x103166)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6170:33 (memcached+0xf2ec1)
+
+  Thread T17 'mc-worker' (tid=186594, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T4 'mc-worker' (tid=186581, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1143:13 in lru_pull_tail
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=186573)
+  Write of size 2 at 0x7fffec7f4ee4 by thread T28 (mutexes: write M0, write M1, write M2):
+    #0 lru_pull_tail /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1143:13 (memcached+0xfdfe3)
+    #1 lru_maintainer_juggle /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1449:13 (memcached+0x10382a)
+    #2 lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1645:29 (memcached+0x10382a)
+
+  Previous read of size 2 at 0x7fffec7f4ee4 by thread T7:
+    #0 limited_get /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2255:19 (memcached+0xefc86)
+    #1 process_get_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:581:18 (memcached+0x117e1c)
+    #2 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c (memcached+0x114600)
+    #3 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:494:5 (memcached+0x113dd8)
+    #4 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #5 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #6 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 1048576 at 0x7fffec700000 allocated by thread T4:
+    #0 malloc /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:666:5 (memcached+0x6265f)
+    #1 memory_allocate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:615:15 (memcached+0xfd62c)
+    #2 do_slabs_newslab /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:386:17 (memcached+0xfd62c)
+    #3 do_slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:423:9 (memcached+0xfa8c2)
+    #4 slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:661:11 (memcached+0xfa8c2)
+    #5 do_item_alloc_pull /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:181:14 (memcached+0xfdc50)
+    #6 do_item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:298:14 (memcached+0xff284)
+    #7 item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:876:10 (memcached+0x1068e2)
+    #8 process_update_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:2044:10 (memcached+0x118931)
+    #9 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c (memcached+0x1145a7)
+    #10 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:494:5 (memcached+0x113dd8)
+    #11 try_read_command_negotiate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2427:12 (memcached+0xeb067)
+    #12 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #13 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #14 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Mutex M0 (0x555556a48cf0) created at:
+    #0 pthread_mutex_lock /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x65dfe)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1725:5 (memcached+0x10311c)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6170:33 (memcached+0xf2ec1)
+
+  Mutex M1 (0x555556a4a0f0) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1093:9 (memcached+0x107c0a)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Mutex M2 (0x7ffff53023d8) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1132:9 (memcached+0x107d48)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T28 'mc-lrumaint' (tid=186605, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1728:16 (memcached+0x103166)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6170:33 (memcached+0xf2ec1)
+
+  Thread T7 'mc-worker' (tid=186584, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T4 'mc-worker' (tid=186581, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1143:13 in lru_pull_tail
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=186573)
+  Write of size 2 at 0x7fffec7f4ee4 by thread T11 (mutexes: write M0):
+    #0 do_item_get /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:983:9 (memcached+0x102810)
+    #1 item_get /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:889:10 (memcached+0x10699e)
+    #2 limited_get /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2253:14 (memcached+0xefc70)
+    #3 process_get_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:581:18 (memcached+0x117e1c)
+    #4 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c (memcached+0x114600)
+    #5 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:494:5 (memcached+0x113dd8)
+    #6 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #7 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #8 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous read of size 2 at 0x7fffec7f4ee4 by thread T17:
+    #0 limited_get /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2255:19 (memcached+0xefc86)
+    #1 process_get_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:581:18 (memcached+0x117e1c)
+    #2 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c (memcached+0x114600)
+    #3 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:494:5 (memcached+0x113dd8)
+    #4 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #5 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #6 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 1048576 at 0x7fffec700000 allocated by thread T4:
+    #0 malloc /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:666:5 (memcached+0x6265f)
+    #1 memory_allocate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:615:15 (memcached+0xfd62c)
+    #2 do_slabs_newslab /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:386:17 (memcached+0xfd62c)
+    #3 do_slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:423:9 (memcached+0xfa8c2)
+    #4 slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:661:11 (memcached+0xfa8c2)
+    #5 do_item_alloc_pull /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:181:14 (memcached+0xfdc50)
+    #6 do_item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:298:14 (memcached+0xff284)
+    #7 item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:876:10 (memcached+0x1068e2)
+    #8 process_update_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:2044:10 (memcached+0x118931)
+    #9 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c (memcached+0x1145a7)
+    #10 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:494:5 (memcached+0x113dd8)
+    #11 try_read_command_negotiate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2427:12 (memcached+0xeb067)
+    #12 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #13 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #14 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Mutex M0 (0x7ffff53023d8) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1132:9 (memcached+0x107d48)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T11 'mc-worker' (tid=186588, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T17 'mc-worker' (tid=186594, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T4 'mc-worker' (tid=186581, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:983:9 in do_item_get
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=186573)
+  Write of size 2 at 0x7fffec7f4ee4 by thread T13 (mutexes: write M0):
+    #0 do_item_remove /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:549:9 (memcached+0xfff20)
+    #1 item_remove /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:924:5 (memcached+0x106c73)
+    #2 resp_finish /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:1237:9 (memcached+0xeb331)
+    #3 _transmit_post /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c (memcached+0xe6f7d)
+    #4 transmit /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2773:9 (memcached+0xe6f7d)
+    #5 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3394:45 (memcached+0xe6f7d)
+    #6 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #7 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous read of size 2 at 0x7fffec7f4ee4 by thread T10:
+    #0 limited_get /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2255:19 (memcached+0xefc86)
+    #1 process_get_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:581:18 (memcached+0x117e1c)
+    #2 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c (memcached+0x114600)
+    #3 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:494:5 (memcached+0x113dd8)
+    #4 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #5 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #6 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 1048576 at 0x7fffec700000 allocated by thread T4:
+    #0 malloc /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:666:5 (memcached+0x6265f)
+    #1 memory_allocate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:615:15 (memcached+0xfd62c)
+    #2 do_slabs_newslab /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:386:17 (memcached+0xfd62c)
+    #3 do_slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:423:9 (memcached+0xfa8c2)
+    #4 slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:661:11 (memcached+0xfa8c2)
+    #5 do_item_alloc_pull /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:181:14 (memcached+0xfdc50)
+    #6 do_item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:298:14 (memcached+0xff284)
+    #7 item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:876:10 (memcached+0x1068e2)
+    #8 process_update_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:2044:10 (memcached+0x118931)
+    #9 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c (memcached+0x1145a7)
+    #10 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:494:5 (memcached+0x113dd8)
+    #11 try_read_command_negotiate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2427:12 (memcached+0xeb067)
+    #12 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #13 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #14 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Mutex M0 (0x7ffff53023d8) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1132:9 (memcached+0x107d48)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T13 'mc-worker' (tid=186590, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T10 'mc-worker' (tid=186587, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T4 'mc-worker' (tid=186581, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:549:9 in do_item_remove
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=186573)
+  Read of size 2 at 0x7fffec7f4ee6 by thread T28 (mutexes: write M0, write M1):
+    #0 lru_pull_tail /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1137:28 (memcached+0xfdf94)
+    #1 lru_maintainer_juggle /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1449:13 (memcached+0x10382a)
+    #2 lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1645:29 (memcached+0x10382a)
+
+  Previous write of size 2 at 0x7fffec7f4ee6 by thread T13 (mutexes: write M2):
+    #0 do_item_bump /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1077:30 (memcached+0x102dc8)
+    #1 do_item_get /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1047:17 (memcached+0x102949)
+    #2 item_get /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:889:10 (memcached+0x10699e)
+    #3 limited_get /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2253:14 (memcached+0xefc70)
+    #4 process_get_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:581:18 (memcached+0x117e1c)
+    #5 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c (memcached+0x114600)
+    #6 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:494:5 (memcached+0x113dd8)
+    #7 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #8 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 1048576 at 0x7fffec700000 allocated by thread T4:
+    #0 malloc /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:666:5 (memcached+0x6265f)
+    #1 memory_allocate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:615:15 (memcached+0xfd62c)
+    #2 do_slabs_newslab /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:386:17 (memcached+0xfd62c)
+    #3 do_slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:423:9 (memcached+0xfa8c2)
+    #4 slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/slabs.c:661:11 (memcached+0xfa8c2)
+    #5 do_item_alloc_pull /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:181:14 (memcached+0xfdc50)
+    #6 do_item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:298:14 (memcached+0xff284)
+    #7 item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:876:10 (memcached+0x1068e2)
+    #8 process_update_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:2044:10 (memcached+0x118931)
+    #9 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c (memcached+0x1145a7)
+    #10 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/proto_text.c:494:5 (memcached+0x113dd8)
+    #11 try_read_command_negotiate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:2427:12 (memcached+0xeb067)
+    #12 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3193:17 (memcached+0xe76f7)
+    #13 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:3476:5 (memcached+0xeb11f)
+    #14 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Mutex M0 (0x555556a48cf0) created at:
+    #0 pthread_mutex_lock /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x65dfe)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1725:5 (memcached+0x10311c)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6170:33 (memcached+0xf2ec1)
+
+  Mutex M1 (0x555556a4a0f0) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1093:9 (memcached+0x107c0a)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Mutex M2 (0x7ffff53023d8) created at:
+    #0 pthread_mutex_init /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x65ad3)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1132:9 (memcached+0x107d48)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T28 'mc-lrumaint' (tid=186605, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1728:16 (memcached+0x103166)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6170:33 (memcached+0xf2ec1)
+
+  Thread T13 'mc-worker' (tid=186590, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+  Thread T4 'mc-worker' (tid=186581, running) created by main thread at:
+    #0 pthread_create /extra/alexey/worktrees/perf-msize/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x6419f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:385:16 (memcached+0x1081fa)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/thread.c:1155:9 (memcached+0x1081fa)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached.c:6138:5 (memcached+0xf2e5c)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/items.c:1137:28 in lru_pull_tail
+==================
+ThreadSanitizer: reported 16 warnings
+ThreadSanitizer: accesses total=3495566738 fast_hit=743704623 range_calls=374901369 range_bytes=28773672548 func_entries=783324202

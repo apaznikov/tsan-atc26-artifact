@@ -1,0 +1,73 @@
+{
+ "app": "sqlite",
+ "config": "tsan",
+ "cycles_in_tsan_pct": 69.85,
+ "of_which": {
+  "access": 62.01,
+  "shadow_stack": 3.05,
+  "atomic": 0.23,
+  "range": 0.0,
+  "sync": 0.98,
+  "tsan_other": 3.59
+ },
+ "share_of_instrumented": {
+  "access": 88.8,
+  "shadow_stack": 4.4,
+  "atomic": 0.3,
+  "range": 0.0,
+  "sync": 1.4,
+  "tsan_other": 5.1
+ },
+ "application_pct": 30.07,
+ "kernel_pct": 0.08,
+ "top_callbacks": [
+  {
+   "symbol": "__tsan_read1",
+   "pct": 21.91
+  },
+  {
+   "symbol": "__tsan_read8",
+   "pct": 12.51
+  },
+  {
+   "symbol": "__tsan_read4",
+   "pct": 10.61
+  },
+  {
+   "symbol": "__tsan_read2",
+   "pct": 5.39
+  },
+  {
+   "symbol": "__tsan_write4",
+   "pct": 3.63
+  },
+  {
+   "symbol": "__tsan_write8",
+   "pct": 2.76
+  },
+  {
+   "symbol": "__tsan_write2",
+   "pct": 2.66
+  },
+  {
+   "symbol": "__tsan_write1",
+   "pct": 2.5
+  },
+  {
+   "symbol": "__tsan_func_entry",
+   "pct": 1.59
+  },
+  {
+   "symbol": "__tsan_func_exit",
+   "pct": 1.45
+  },
+  {
+   "symbol": "__tsan::ScopedInterceptor::ScopedInterceptor(__tsan::ThreadState*, char const*, unsigned long)",
+   "pct": 1.09
+  },
+  {
+   "symbol": "__tsan_memcpy",
+   "pct": 0.63
+  }
+ ]
+}

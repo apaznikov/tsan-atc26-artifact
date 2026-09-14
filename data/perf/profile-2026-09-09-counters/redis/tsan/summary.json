@@ -1,0 +1,27 @@
+{
+ "app": "redis",
+ "config": "tsan",
+ "files": 1,
+ "files_with_counts": 1,
+ "totals": {
+  "total": 2065035366,
+  "fast_hit": 1977717165,
+  "range_calls": 189376257,
+  "range_bytes": 4671284542,
+  "func_entries": 512560385
+ },
+ "fast_path_hit_rate": 95.7716,
+ "func_entries_per_access": 0.2482,
+ "mean_range_bytes": 24.7,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.82062",
+   "total": 2065035366,
+   "fast_hit": 1977717165,
+   "range_calls": 189376257,
+   "range_bytes": 4671284542,
+   "func_entries": 512560385
+  }
+ ]
+}

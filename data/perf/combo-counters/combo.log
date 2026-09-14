@@ -1,0 +1,352 @@
+COMBO start 2026-09-11T21:18:42+08:00
+  built sqlite rc=0
+  built memcached rc=0
+[2026-09-11 21:22:52] profile sqlite/tsan-sound -> /home/alexey/tsan-experiments/tools/perf/results/combo-counters/sqlite/tsan-sound  (binary /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-sound/threadtest3)
+{
+ "app": "sqlite",
+ "config": "tsan-sound",
+ "files": 1,
+ "files_with_counts": 1,
+ "totals": {
+  "total": 14201366946,
+  "fast_hit": 13426564371,
+  "range_calls": 546970723,
+  "range_bytes": 37967742142,
+  "func_entries": 1147999629
+ },
+ "fast_path_hit_rate": 94.5442,
+ "func_entries_per_access": 0.0808,
+ "mean_range_bytes": 69.4,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.184284",
+   "total": 14201366946,
+   "fast_hit": 13426564371,
+   "range_calls": 546970723,
+   "range_bytes": 37967742142,
+   "func_entries": 1147999629
+  }
+ ]
+}
+  ok   sqlite/tsan-sound
+[2026-09-11 21:23:12] profile sqlite/tsan-sound-nomerge -> /home/alexey/tsan-experiments/tools/perf/results/combo-counters/sqlite/tsan-sound-nomerge  (binary /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-sound-nomerge/threadtest3)
+{
+ "app": "sqlite",
+ "config": "tsan-sound-nomerge",
+ "files": 1,
+ "files_with_counts": 1,
+ "totals": {
+  "total": 13306345000,
+  "fast_hit": 12338711737,
+  "range_calls": 477389182,
+  "range_bytes": 33147149024,
+  "func_entries": 1002717626
+ },
+ "fast_path_hit_rate": 92.728,
+ "func_entries_per_access": 0.0754,
+ "mean_range_bytes": 69.4,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.184424",
+   "total": 13306345000,
+   "fast_hit": 12338711737,
+   "range_calls": 477389182,
+   "range_bytes": 33147149024,
+   "func_entries": 1002717626
+  }
+ ]
+}
+  ok   sqlite/tsan-sound-nomerge
+[2026-09-11 21:23:32] profile sqlite/tsan-dom-ea-lo-st-swmr -> /home/alexey/tsan-experiments/tools/perf/results/combo-counters/sqlite/tsan-dom-ea-lo-st-swmr  (binary /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-dom-ea-lo-st-swmr/threadtest3)
+{
+ "app": "sqlite",
+ "config": "tsan-dom-ea-lo-st-swmr",
+ "files": 1,
+ "files_with_counts": 1,
+ "totals": {
+  "total": 12105346334,
+  "fast_hit": 11438378655,
+  "range_calls": 471910914,
+  "range_bytes": 32783685321,
+  "func_entries": 991234178
+ },
+ "fast_path_hit_rate": 94.4903,
+ "func_entries_per_access": 0.0819,
+ "mean_range_bytes": 69.5,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.184580",
+   "total": 12105346334,
+   "fast_hit": 11438378655,
+   "range_calls": 471910914,
+   "range_bytes": 32783685321,
+   "func_entries": 991234178
+  }
+ ]
+}
+  ok   sqlite/tsan-dom-ea-lo-st-swmr
+[2026-09-11 21:23:53] profile sqlite/tsan-dom-ea-lo-st-swmr-nomerge -> /home/alexey/tsan-experiments/tools/perf/results/combo-counters/sqlite/tsan-dom-ea-lo-st-swmr-nomerge  (binary /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-dom-ea-lo-st-swmr-nomerge/threadtest3)
+{
+ "app": "sqlite",
+ "config": "tsan-dom-ea-lo-st-swmr-nomerge",
+ "files": 1,
+ "files_with_counts": 1,
+ "totals": {
+  "total": 12955151732,
+  "fast_hit": 11995462266,
+  "range_calls": 474981301,
+  "range_bytes": 33039168306,
+  "func_entries": 997774986
+ },
+ "fast_path_hit_rate": 92.5922,
+ "func_entries_per_access": 0.077,
+ "mean_range_bytes": 69.6,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.184749",
+   "total": 12955151732,
+   "fast_hit": 11995462266,
+   "range_calls": 474981301,
+   "range_bytes": 33039168306,
+   "func_entries": 997774986
+  }
+ ]
+}
+  ok   sqlite/tsan-dom-ea-lo-st-swmr-nomerge
+[2026-09-11 21:24:13] profile sqlite/tsan-dom_peeling-ea-lo-st-swmr -> /home/alexey/tsan-experiments/tools/perf/results/combo-counters/sqlite/tsan-dom_peeling-ea-lo-st-swmr  (binary /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-dom_peeling-ea-lo-st-swmr/threadtest3)
+{
+ "app": "sqlite",
+ "config": "tsan-dom_peeling-ea-lo-st-swmr",
+ "files": 1,
+ "files_with_counts": 1,
+ "totals": {
+  "total": 12451074523,
+  "fast_hit": 11763449327,
+  "range_calls": 486577151,
+  "range_bytes": 33819139393,
+  "func_entries": 1021959960
+ },
+ "fast_path_hit_rate": 94.4774,
+ "func_entries_per_access": 0.0821,
+ "mean_range_bytes": 69.5,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.184887",
+   "total": 12451074523,
+   "fast_hit": 11763449327,
+   "range_calls": 486577151,
+   "range_bytes": 33819139393,
+   "func_entries": 1021959960
+  }
+ ]
+}
+  ok   sqlite/tsan-dom_peeling-ea-lo-st-swmr
+[2026-09-11 21:24:33] profile sqlite/tsan-dom_peeling-ea-lo-st-swmr-nomerge -> /home/alexey/tsan-experiments/tools/perf/results/combo-counters/sqlite/tsan-dom_peeling-ea-lo-st-swmr-nomerge  (binary /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-dom_peeling-ea-lo-st-swmr-nomerge/threadtest3)
+{
+ "app": "sqlite",
+ "config": "tsan-dom_peeling-ea-lo-st-swmr-nomerge",
+ "files": 1,
+ "files_with_counts": 1,
+ "totals": {
+  "total": 12823027431,
+  "fast_hit": 11868191275,
+  "range_calls": 471335953,
+  "range_bytes": 32723925698,
+  "func_entries": 989652841
+ },
+ "fast_path_hit_rate": 92.5537,
+ "func_entries_per_access": 0.0772,
+ "mean_range_bytes": 69.4,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.185027",
+   "total": 12823027431,
+   "fast_hit": 11868191275,
+   "range_calls": 471335953,
+   "range_bytes": 32723925698,
+   "func_entries": 989652841
+  }
+ ]
+}
+  ok   sqlite/tsan-dom_peeling-ea-lo-st-swmr-nomerge
+[2026-09-11 21:24:53] profile memcached/tsan-sound -> /home/alexey/tsan-experiments/tools/perf/results/combo-counters/memcached/tsan-sound  (binary /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-sound/memcached)
+{
+ "app": "memcached",
+ "config": "tsan-sound",
+ "files": 1,
+ "files_with_counts": 1,
+ "totals": {
+  "total": 3600598135,
+  "fast_hit": 817478987,
+  "range_calls": 374885126,
+  "range_bytes": 28773371974,
+  "func_entries": 783352580
+ },
+ "fast_path_hit_rate": 22.704,
+ "func_entries_per_access": 0.2176,
+ "mean_range_bytes": 76.8,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.185197",
+   "total": 3600598135,
+   "fast_hit": 817478987,
+   "range_calls": 374885126,
+   "range_bytes": 28773371974,
+   "func_entries": 783352580
+  }
+ ]
+}
+  ok   memcached/tsan-sound
+[2026-09-11 21:25:12] profile memcached/tsan-sound-nomerge -> /home/alexey/tsan-experiments/tools/perf/results/combo-counters/memcached/tsan-sound-nomerge  (binary /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-sound-nomerge/memcached)
+{
+ "app": "memcached",
+ "config": "tsan-sound-nomerge",
+ "files": 1,
+ "files_with_counts": 1,
+ "totals": {
+  "total": 3613366852,
+  "fast_hit": 827053125,
+  "range_calls": 374894291,
+  "range_bytes": 28774123190,
+  "func_entries": 783464064
+ },
+ "fast_path_hit_rate": 22.8887,
+ "func_entries_per_access": 0.2168,
+ "mean_range_bytes": 76.8,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.185972",
+   "total": 3613366852,
+   "fast_hit": 827053125,
+   "range_calls": 374894291,
+   "range_bytes": 28774123190,
+   "func_entries": 783464064
+  }
+ ]
+}
+  ok   memcached/tsan-sound-nomerge
+[2026-09-11 21:25:30] profile memcached/tsan-dom-ea-lo-st-swmr -> /home/alexey/tsan-experiments/tools/perf/results/combo-counters/memcached/tsan-dom-ea-lo-st-swmr  (binary /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom-ea-lo-st-swmr/memcached)
+{
+ "app": "memcached",
+ "config": "tsan-dom-ea-lo-st-swmr",
+ "files": 1,
+ "files_with_counts": 1,
+ "totals": {
+  "total": 3495689022,
+  "fast_hit": 742793074,
+  "range_calls": 374878890,
+  "range_bytes": 28772882532,
+  "func_entries": 783386692
+ },
+ "fast_path_hit_rate": 21.2488,
+ "func_entries_per_access": 0.2241,
+ "mean_range_bytes": 76.8,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.186176",
+   "total": 3495689022,
+   "fast_hit": 742793074,
+   "range_calls": 374878890,
+   "range_bytes": 28772882532,
+   "func_entries": 783386692
+  }
+ ]
+}
+  ok   memcached/tsan-dom-ea-lo-st-swmr
+[2026-09-11 21:25:48] profile memcached/tsan-dom-ea-lo-st-swmr-nomerge -> /home/alexey/tsan-experiments/tools/perf/results/combo-counters/memcached/tsan-dom-ea-lo-st-swmr-nomerge  (binary /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom-ea-lo-st-swmr-nomerge/memcached)
+{
+ "app": "memcached",
+ "config": "tsan-dom-ea-lo-st-swmr-nomerge",
+ "files": 1,
+ "files_with_counts": 1,
+ "totals": {
+  "total": 3504449421,
+  "fast_hit": 748008535,
+  "range_calls": 374885748,
+  "range_bytes": 28772802420,
+  "func_entries": 783378661
+ },
+ "fast_path_hit_rate": 21.3445,
+ "func_entries_per_access": 0.2235,
+ "mean_range_bytes": 76.8,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.186366",
+   "total": 3504449421,
+   "fast_hit": 748008535,
+   "range_calls": 374885748,
+   "range_bytes": 28772802420,
+   "func_entries": 783378661
+  }
+ ]
+}
+  ok   memcached/tsan-dom-ea-lo-st-swmr-nomerge
+[2026-09-11 21:26:06] profile memcached/tsan-dom_peeling-ea-lo-st-swmr -> /home/alexey/tsan-experiments/tools/perf/results/combo-counters/memcached/tsan-dom_peeling-ea-lo-st-swmr  (binary /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached)
+{
+ "app": "memcached",
+ "config": "tsan-dom_peeling-ea-lo-st-swmr",
+ "files": 1,
+ "files_with_counts": 1,
+ "totals": {
+  "total": 3495566738,
+  "fast_hit": 743704623,
+  "range_calls": 374901369,
+  "range_bytes": 28773672548,
+  "func_entries": 783324202
+ },
+ "fast_path_hit_rate": 21.2757,
+ "func_entries_per_access": 0.2241,
+ "mean_range_bytes": 76.7,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.186573",
+   "total": 3495566738,
+   "fast_hit": 743704623,
+   "range_calls": 374901369,
+   "range_bytes": 28773672548,
+   "func_entries": 783324202
+  }
+ ]
+}
+  ok   memcached/tsan-dom_peeling-ea-lo-st-swmr
+[2026-09-11 21:26:24] profile memcached/tsan-dom_peeling-ea-lo-st-swmr-nomerge -> /home/alexey/tsan-experiments/tools/perf/results/combo-counters/memcached/tsan-dom_peeling-ea-lo-st-swmr-nomerge  (binary /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr-nomerge/memcached)
+{
+ "app": "memcached",
+ "config": "tsan-dom_peeling-ea-lo-st-swmr-nomerge",
+ "files": 1,
+ "files_with_counts": 1,
+ "totals": {
+  "total": 3504628027,
+  "fast_hit": 746551666,
+  "range_calls": 374895295,
+  "range_bytes": 28774510188,
+  "func_entries": 783407222
+ },
+ "fast_path_hit_rate": 21.3019,
+ "func_entries_per_access": 0.2235,
+ "mean_range_bytes": 76.8,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.186738",
+   "total": 3504628027,
+   "fast_hit": 746551666,
+   "range_calls": 374895295,
+   "range_bytes": 28774510188,
+   "func_entries": 783407222
+  }
+ ]
+}
+  ok   memcached/tsan-dom_peeling-ea-lo-st-swmr-nomerge
+COMBO DONE 2026-09-11T21:26:42+08:00

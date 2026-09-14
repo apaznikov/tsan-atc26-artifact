@@ -1,0 +1,8 @@
+--- Running Benchmark for: tsan-sound-yoff ---
+Executable: build/test-tsan-sound-yoff/threadtest3
+Full Command: build/test-tsan-sound-yoff/threadtest3
+Output will be saved to: results/tsan-sound-yoff.log
+Memory usage will be saved to: results/memory.txt
+Running, please wait...
+--- Benchmark for [tsan-sound-yoff] completed successfully. ---
+

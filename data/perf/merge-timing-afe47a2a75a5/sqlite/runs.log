@@ -1,0 +1,11 @@
+sqlite tsan-sound run1 rc=0 296.0s outside_busy=0.0176 inside_busy=0.0575 foreign_cpu_share=0.0382
+sqlite tsan-sound-nomerge run1 rc=0 301.4s outside_busy=0.0054 inside_busy=0.0485 foreign_cpu_share=0.0103
+sqlite tsan-sound run2 rc=0 305.4s outside_busy=0.0072 inside_busy=0.0487 foreign_cpu_share=0.0151
+sqlite tsan-sound-nomerge run2 rc=0 317.9s outside_busy=0.0059 inside_busy=0.0457 foreign_cpu_share=0.0112
+sqlite tsan-sound run3 rc=0 279.3s outside_busy=0.0048 inside_busy=0.0476 foreign_cpu_share=0.0086
+sqlite tsan-sound-nomerge run3 rc=0 244.9s outside_busy=0.0056 inside_busy=0.0504 foreign_cpu_share=0.0123
+sqlite tsan-sound run4 rc=0 293.1s outside_busy=0.0072 inside_busy=0.0499 foreign_cpu_share=0.0155
+sqlite tsan-sound-nomerge run4 rc=0 290.0s outside_busy=0.0064 inside_busy=0.0488 foreign_cpu_share=0.0139
+sqlite tsan-sound run5 rc=0 355.0s outside_busy=0.0065 inside_busy=0.0492 foreign_cpu_share=0.0136
+sqlite tsan-sound-nomerge run5 rc=0 304.0s outside_busy=0.013 inside_busy=0.0636 foreign_cpu_share=0.0351
+DONE sqlite

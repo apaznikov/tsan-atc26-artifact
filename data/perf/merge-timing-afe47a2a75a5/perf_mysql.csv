@@ -1,0 +1,11 @@
+config,test,n,median,mean,sd
+tsan-sound,oltp_read_only,5,127504.0,130835.2,9335.190367635789
+tsan-sound,oltp_read_write,5,124034.0,130567.4,9986.300656399246
+tsan-sound,oltp_write_only,5,145526.0,145699.6,2648.9852396719766
+tsan-sound,select_random_points,5,56041.0,56362.0,834.2880198109044
+tsan-sound,select_random_ranges,5,109553.0,107185.0,6742.483370391061
+tsan-sound-nomerge,oltp_read_only,5,133712.0,133456.0,4790.924754157594
+tsan-sound-nomerge,oltp_read_write,5,122907.0,123619.4,6076.218626744762
+tsan-sound-nomerge,oltp_write_only,5,146784.0,144670.4,3384.1819247788676
+tsan-sound-nomerge,select_random_points,5,57015.0,57731.4,2358.949829903129
+tsan-sound-nomerge,select_random_ranges,5,108269.0,108610.6,3908.694321637342

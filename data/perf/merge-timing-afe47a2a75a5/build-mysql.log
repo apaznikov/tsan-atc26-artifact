@@ -1,0 +1,6 @@
+[2026-09-11 17:51:08] waiting for the machine job lock (exclusive: build mysql, jobs 56)
+[2026-09-11 17:51:08] build mysql tsan-sound (jobs 56) -> /home/alexey/tsan-experiments/tools/perf/results/merge-timing-afe47a2a75a5/build/mysql-tsan-sound.log
+[2026-09-11 17:57:35] built mysql tsan-sound in 365s: 588059 memory-access sites (1206871 tsan calls)
+[2026-09-11 17:57:35] build mysql tsan-sound-nomerge (jobs 56) -> /home/alexey/tsan-experiments/tools/perf/results/merge-timing-afe47a2a75a5/build/mysql-tsan-sound-nomerge.log
+[2026-09-11 18:03:59] built mysql tsan-sound-nomerge in 361s: 597140 memory-access sites (1215954 tsan calls)
+[2026-09-11 18:03:59] builds of mysql done (fail=0); static counts in /home/alexey/tsan-experiments/tools/perf/results/merge-timing-afe47a2a75a5/static-counts.csv

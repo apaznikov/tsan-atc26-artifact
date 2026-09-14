@@ -1,0 +1,27 @@
+{
+ "app": "memcached",
+ "config": "tsan-sound-nomerge",
+ "files": 1,
+ "files_with_counts": 1,
+ "totals": {
+  "total": 3613366852,
+  "fast_hit": 827053125,
+  "range_calls": 374894291,
+  "range_bytes": 28774123190,
+  "func_entries": 783464064
+ },
+ "fast_path_hit_rate": 22.8887,
+ "func_entries_per_access": 0.2168,
+ "mean_range_bytes": 76.8,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.185972",
+   "total": 3613366852,
+   "fast_hit": 827053125,
+   "range_calls": 374894291,
+   "range_bytes": 28774123190,
+   "func_entries": 783464064
+  }
+ ]
+}

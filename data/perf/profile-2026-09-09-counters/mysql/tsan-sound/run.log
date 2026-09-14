@@ -1,0 +1,12 @@
+[95m../mysql-tsan-sound/bin/mysqld --datadir=/tmp/mysql-benchmarks-datadir &[0m
+[94mWaiting for estabilishing the server main worker loop (1/900)...[m
+[94mWaiting for estabilishing the server main worker loop (2/900)...[m
+[94mWaiting for estabilishing the server main worker loop (3/900)...[m
+[94mWaiting for estabilishing the server main worker loop (4/900)...[m
+[94mWaiting for estabilishing the server main worker loop (5/900)...[m
+[94mWaiting for estabilishing the server main worker loop (6/900)...[m
+[94mWaiting for estabilishing the server main worker loop (7/900)...[m
+[94mWaiting finished at 7/900.
+ThreadSanitizer: accesses total=284074 fast_hit=197987 range_calls=125662 range_bytes=2087955 func_entries=151370
+Table 'sbtest1' already exists,
+Skipping command 'sysbench "/usr/share/sysbench/oltp_read_write.lua" --mysql-user=root --mysql-socket=/tmp/mysql.sock  prepare'.

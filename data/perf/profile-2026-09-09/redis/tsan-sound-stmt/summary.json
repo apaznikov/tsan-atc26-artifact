@@ -1,0 +1,73 @@
+{
+ "app": "redis",
+ "config": "tsan-sound-stmt",
+ "cycles_in_tsan_pct": 66.84,
+ "of_which": {
+  "access": 41.41,
+  "shadow_stack": 9.55,
+  "atomic": 0.98,
+  "range": 0.0,
+  "sync": 2.6,
+  "tsan_other": 12.3
+ },
+ "share_of_instrumented": {
+  "access": 61.9,
+  "shadow_stack": 14.3,
+  "atomic": 1.5,
+  "range": 0.0,
+  "sync": 3.9,
+  "tsan_other": 18.4
+ },
+ "application_pct": 33.13,
+ "kernel_pct": 0.03,
+ "top_callbacks": [
+  {
+   "symbol": "__tsan_read8",
+   "pct": 17.88
+  },
+  {
+   "symbol": "__tsan_read1",
+   "pct": 7.44
+  },
+  {
+   "symbol": "__tsan_func_entry",
+   "pct": 5.8
+  },
+  {
+   "symbol": "__tsan_read4",
+   "pct": 5.49
+  },
+  {
+   "symbol": "__tsan_write8",
+   "pct": 4.76
+  },
+  {
+   "symbol": "__tsan::ScopedInterceptor::ScopedInterceptor(__tsan::ThreadState*, char const*, unsigned long)",
+   "pct": 3.92
+  },
+  {
+   "symbol": "__tsan_func_exit",
+   "pct": 3.76
+  },
+  {
+   "symbol": "__tsan_write4",
+   "pct": 2.79
+  },
+  {
+   "symbol": "__tsan_write1",
+   "pct": 1.95
+  },
+  {
+   "symbol": "__tsan_memcpy",
+   "pct": 1.44
+  },
+  {
+   "symbol": "__tsan::ScopedInterceptor::~ScopedInterceptor()",
+   "pct": 1.41
+  },
+  {
+   "symbol": "__tsan::MemoryRangeFreed(__tsan::ThreadState*, unsigned long, unsigned long, unsigned long)",
+   "pct": 0.99
+  }
+ ]
+}

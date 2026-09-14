@@ -1,0 +1,8 @@
+--- Running Benchmark for: tsan-stmt-yoff ---
+Executable: build/test-tsan-stmt-yoff/threadtest3
+Full Command: build/test-tsan-stmt-yoff/threadtest3
+Output will be saved to: results/tsan-stmt-yoff.log
+Memory usage will be saved to: results/memory.txt
+Running, please wait...
+--- Benchmark for [tsan-stmt-yoff] completed successfully. ---
+

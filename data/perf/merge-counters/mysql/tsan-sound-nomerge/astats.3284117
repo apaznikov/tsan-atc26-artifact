@@ -1,0 +1,5 @@
+uptime_ns=100389000 total=32547 fast_hit=11079 range_calls=4674 range_bytes=180742 func_entries=24038
+uptime_ns=200666000 total=32547 fast_hit=11079 range_calls=4674 range_bytes=180742 func_entries=24038
+uptime_ns=300911000 total=32547 fast_hit=11079 range_calls=4674 range_bytes=180742 func_entries=24038
+uptime_ns=401086000 total=32547 fast_hit=11079 range_calls=4674 range_bytes=180742 func_entries=24038
+uptime_ns=411198000 total=259993 fast_hit=189129 range_calls=124732 range_bytes=2041955 func_entries=141072

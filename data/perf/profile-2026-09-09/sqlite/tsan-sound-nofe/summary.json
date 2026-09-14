@@ -1,0 +1,73 @@
+{
+ "app": "sqlite",
+ "config": "tsan-sound-nofe",
+ "cycles_in_tsan_pct": 68.88,
+ "of_which": {
+  "access": 63.98,
+  "shadow_stack": 0.0,
+  "atomic": 0.25,
+  "range": 0.0,
+  "sync": 1.04,
+  "tsan_other": 3.61
+ },
+ "share_of_instrumented": {
+  "access": 92.9,
+  "shadow_stack": 0.0,
+  "atomic": 0.4,
+  "range": 0.0,
+  "sync": 1.5,
+  "tsan_other": 5.2
+ },
+ "application_pct": 31.04,
+ "kernel_pct": 0.08,
+ "top_callbacks": [
+  {
+   "symbol": "__tsan_read1",
+   "pct": 22.34
+  },
+  {
+   "symbol": "__tsan_read8",
+   "pct": 12.87
+  },
+  {
+   "symbol": "__tsan_read4",
+   "pct": 11.18
+  },
+  {
+   "symbol": "__tsan_read2",
+   "pct": 5.92
+  },
+  {
+   "symbol": "__tsan_write4",
+   "pct": 3.63
+  },
+  {
+   "symbol": "__tsan_write8",
+   "pct": 2.77
+  },
+  {
+   "symbol": "__tsan_write2",
+   "pct": 2.65
+  },
+  {
+   "symbol": "__tsan_write1",
+   "pct": 2.57
+  },
+  {
+   "symbol": "__tsan::ScopedInterceptor::ScopedInterceptor(__tsan::ThreadState*, char const*, unsigned long)",
+   "pct": 1.07
+  },
+  {
+   "symbol": "__tsan_memcpy",
+   "pct": 0.67
+  },
+  {
+   "symbol": "__tsan::ScopedInterceptor::~ScopedInterceptor()",
+   "pct": 0.43
+  },
+  {
+   "symbol": "__tsan::MemoryAccess(__tsan::ThreadState*, unsigned long, unsigned long, unsigned long, unsigned long)",
+   "pct": 0.42
+  }
+ ]
+}

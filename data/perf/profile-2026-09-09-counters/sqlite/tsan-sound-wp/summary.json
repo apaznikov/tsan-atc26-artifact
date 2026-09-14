@@ -1,0 +1,27 @@
+{
+ "app": "sqlite",
+ "config": "tsan-sound-wp",
+ "files": 1,
+ "files_with_counts": 1,
+ "totals": {
+  "total": 15288535753,
+  "fast_hit": 14182176456,
+  "range_calls": 549773715,
+  "range_bytes": 38154607908,
+  "func_entries": 1152602029
+ },
+ "fast_path_hit_rate": 92.7635,
+ "func_entries_per_access": 0.0754,
+ "mean_range_bytes": 69.4,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.173009",
+   "total": 15288535753,
+   "fast_hit": 14182176456,
+   "range_calls": 549773715,
+   "range_bytes": 38154607908,
+   "func_entries": 1152602029
+  }
+ ]
+}

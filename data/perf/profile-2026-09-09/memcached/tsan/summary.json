@@ -1,0 +1,73 @@
+{
+ "app": "memcached",
+ "config": "tsan",
+ "cycles_in_tsan_pct": 74.59,
+ "of_which": {
+  "access": 37.57,
+  "shadow_stack": 0.8,
+  "atomic": 0.0,
+  "range": 0.0,
+  "sync": 30.93,
+  "tsan_other": 5.29
+ },
+ "share_of_instrumented": {
+  "access": 50.4,
+  "shadow_stack": 1.1,
+  "atomic": 0.0,
+  "range": 0.0,
+  "sync": 41.5,
+  "tsan_other": 7.1
+ },
+ "application_pct": 25.15,
+ "kernel_pct": 0.26,
+ "top_callbacks": [
+  {
+   "symbol": "__tsan_read4",
+   "pct": 15.12
+  },
+  {
+   "symbol": "__tsan_read8",
+   "pct": 8.71
+  },
+  {
+   "symbol": "__tsan_read1",
+   "pct": 6.25
+  },
+  {
+   "symbol": "__tsan::SlotLock(__tsan::ThreadState*)",
+   "pct": 5.2
+  },
+  {
+   "symbol": "__tsan::MutexUnlock(__tsan::ThreadState*, unsigned long, unsigned long, unsigned int)",
+   "pct": 3.87
+  },
+  {
+   "symbol": "__tsan::Release(__tsan::ThreadState*, unsigned long, unsigned long)",
+   "pct": 3.82
+  },
+  {
+   "symbol": "__tsan::MutexPreLock(__tsan::ThreadState*, unsigned long, unsigned long, unsigned int)",
+   "pct": 3.63
+  },
+  {
+   "symbol": "__tsan::MutexPostLock(__tsan::ThreadState*, unsigned long, unsigned long, unsigned int, int)",
+   "pct": 3.41
+  },
+  {
+   "symbol": "__tsan::VectorClock::Acquire(__tsan::VectorClock const*)",
+   "pct": 3.32
+  },
+  {
+   "symbol": "__tsan_write8",
+   "pct": 3.16
+  },
+  {
+   "symbol": "__tsan::MetaMap::GetSync(__tsan::ThreadState*, unsigned long, unsigned long, bool, bool)",
+   "pct": 2.55
+  },
+  {
+   "symbol": "__tsan::SlotUnlock(__tsan::ThreadState*)",
+   "pct": 2.48
+  }
+ ]
+}

@@ -1,0 +1,27 @@
+{
+ "app": "sqlite",
+ "config": "tsan-dom_peeling-ea-lo-st-swmr",
+ "files": 1,
+ "files_with_counts": 1,
+ "totals": {
+  "total": 12451074523,
+  "fast_hit": 11763449327,
+  "range_calls": 486577151,
+  "range_bytes": 33819139393,
+  "func_entries": 1021959960
+ },
+ "fast_path_hit_rate": 94.4774,
+ "func_entries_per_access": 0.0821,
+ "mean_range_bytes": 69.5,
+ "note": "counts, not costs: these ratios say how often each happens and nothing about where the time goes; converting them to a share of time needs a per-call cost this runtime does not measure",
+ "per_file": [
+  {
+   "file": "astats.184887",
+   "total": 12451074523,
+   "fast_hit": 11763449327,
+   "range_calls": 486577151,
+   "range_bytes": 33819139393,
+   "func_entries": 1021959960
+  }
+ ]
+}
