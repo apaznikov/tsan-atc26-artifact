@@ -86,6 +86,15 @@ machine state since Stage B: the JetBrains remote-development stack started 8 Se
 unpinned since; a full `-j28` LLVM build ran on 14 Sep between the Redis repeat and anything
 measured after it. Both are conditions, not explanations.
 
+**Builds and benchmark legs cannot share the machine.** A 29-way LLVM build correctly pinned away from
+the bench set still puts the bench CPUs four to five times over the 0.10 foreign-activity gate and
+retires every run in flight; the harness retries disturbed runs once at the end of the leg, and if
+the build is still running the retry fails too and the leg reports DONE with cells missing (14 Sep:
+the Redis c=112 leg lost runs 3-5 of every configuration this way). Every table is therefore computed
+from run directories, never from a completion marker. For the campaign, either the machine is
+exclusive for its duration or builds are announced in advance so a leg can be paused; this is
+Alexey's decision and is recorded here as a condition either way.
+
 ## Open, and blocking
 
 1. **Baseline drift.** Byte-identical Redis binaries give stock TSan 14% less throughput on
