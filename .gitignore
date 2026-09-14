@@ -1,0 +1,10 @@
+results/
+build/
+*.o
+*.ll
+*.bc
+__pycache__/
+*.pyc
+perf.data*
+test.db*
+.env
