@@ -1,0 +1,29 @@
+tsan_compiler.sh: ignoring LLVM_ROOT_PATH=/home/alexey/dev/llvm-project/llvm/build (not the TSan prototype tree)
+tsan_compiler.sh: using /home/alexey/dev/llvm-project-focs-lab/llvm/build/bin/clang (clang version 19.0.0git (https://github.com/focs-lab/llvm-project 729521af89653b1bac211c03203ab160d5cb71d0))
+==> Running in test-only mode.
+==> Checking for pre-existing redis-server processes before running benchmarks.
+==> Switching to polygon directory for tests.
+==> Testing dom_peeling
+PING_INLINE 508357.72
+PING_MBULK 807464.12
+SET 336851.19
+GET 432906.94
+INCR 441894.00
+RPUSH 270610.75
+LPOP 246780.47
+RPOP 507326.56
+SADD 385380.59
+HSET 293644.84
+SPOP 531587.69
+ZADD 297045.12
+ZPOPMIN 551211.00
+LPUSH 245388.27
+LRANGE_100 28493.01
+LRANGE_300 9675.04
+LRANGE_500 5885.75
+LRANGE_600 4891.59
+MSET 67073.76
+==> Found running redis-server process(es): 2448876
+==> Stopping redis-server with SIGTERM
+==> redis-server stopped gracefully.
+==> Script finished successfully. All results are in __results_redis__

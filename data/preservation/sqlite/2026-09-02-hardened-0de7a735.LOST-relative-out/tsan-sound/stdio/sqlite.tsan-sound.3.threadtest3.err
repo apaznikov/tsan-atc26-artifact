@@ -1,0 +1,1 @@
+/home/alexey/dev/llvm-project-focs-lab/llvm/build/bin/llvm-symbolizer: error: '/dev/shm/preservation-sqlite-tsan-sound/tsan-sound.3/test.db-shm': The file was not recognized as a valid object file

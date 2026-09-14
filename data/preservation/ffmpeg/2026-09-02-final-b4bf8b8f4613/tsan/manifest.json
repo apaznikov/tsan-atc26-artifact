@@ -1,0 +1,146 @@
+{
+ "app": "ffmpeg",
+ "created": "2026-09-02T21:24:05",
+ "host": "focs-server",
+ "cpus": 112,
+ "argv": [
+  "run_preservation.py",
+  "--app",
+  "ffmpeg",
+  "--configs",
+  "tsan",
+  "--runs",
+  "10",
+  "--threads",
+  "4",
+  "--no-ninja-check",
+  "--llvm-root",
+  "/home/alexey/dev/llvm-project-focs-lab/llvm/build",
+  "--out",
+  "results/ffmpeg/2026-09-02-final-b4bf8b8f4613/tsan",
+  "--workdir",
+  "/dev/shm/preservation-ffmpeg-final-b4bf8b8f4613-tsan"
+ ],
+ "scale": "paper",
+ "out": "/home/alexey/tsan-experiments/tools/preservation/results/ffmpeg/2026-09-02-final-b4bf8b8f4613/tsan",
+ "workload": {
+  "input": "/home/alexey/tsan-experiments/projects/ffmpeg/input/WatchingEyeTexture.mkv",
+  "threads": 4,
+  "codecs": [
+   "h264_libx264",
+   "h265_libx265",
+   "mjpeg",
+   "copy_passthrough"
+  ],
+  "smoke_duration_s": null
+ },
+ "tsan_options_template": "log_path=/home/alexey/tsan-experiments/tools/preservation/results/ffmpeg/2026-09-02-final-b4bf8b8f4613/tsan/logs/ffmpeg.<cfg>.0 exitcode=0 external_symbolizer_path=/home/alexey/dev/llvm-project-focs-lab/llvm/build/bin/llvm-symbolizer",
+ "compiler": {
+  "llvm_root": "/home/alexey/dev/llvm-project-focs-lab/llvm/build",
+  "tree": "/home/alexey/dev/llvm-project-focs-lab",
+  "clang_version": "clang version 19.0.0git (https://github.com/focs-lab/llvm-project b4bf8b8f46132f7844819510ad5055babf57307a)",
+  "clang_mtime": "2026-09-02T21:12:39.510510",
+  "tsan_rt_mtime": "2026-09-02T18:36:12.337972",
+  "git_branch": "tsan-dev",
+  "git_head": "b4bf8b8f46132f7844819510ad5055babf57307a",
+  "git_dirty_files": 1
+ },
+ "configs": {
+  "tsan": {
+   "artifacts": [
+    {
+     "path": "/home/alexey/tsan-experiments/projects/ffmpeg/ffmpeg-tsan/bin/ffmpeg",
+     "mtime": "2026-09-02T21:14:34.871636",
+     "size": 3888680,
+     "sha256": "c9016f6670bc7ba37dae685bc405302f17dca74313511069bdadfd9c9f282b3b",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "Ubuntu clang version 18.1.3 (1ubuntu1)",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project b4bf8b8f46132f7844819510ad5055babf57307a)"
+     ]
+    },
+    {
+     "path": "/home/alexey/tsan-experiments/projects/ffmpeg/ffmpeg-tsan/lib/libavcodec.so.58.91.100",
+     "mtime": "2026-09-02T21:14:34.696636",
+     "size": 55655872,
+     "sha256": "ca911c7ae2011fb10391df30b76737b86698b2fda3efd66dbd5a4ba03bfb282c",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project b4bf8b8f46132f7844819510ad5055babf57307a)"
+     ]
+    },
+    {
+     "path": "/home/alexey/tsan-experiments/projects/ffmpeg/ffmpeg-tsan/lib/libavdevice.so.58.10.100",
+     "mtime": "2026-09-02T21:14:33.577635",
+     "size": 658088,
+     "sha256": "18b885fdb4cd3d99cd700c610f9d3fe16c65b467d366d6a3c4f5f4ea95e7f72f",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project b4bf8b8f46132f7844819510ad5055babf57307a)"
+     ]
+    },
+    {
+     "path": "/home/alexey/tsan-experiments/projects/ffmpeg/ffmpeg-tsan/lib/libavfilter.so.7.85.100",
+     "mtime": "2026-09-02T21:14:33.845635",
+     "size": 14545264,
+     "sha256": "f03b169f6567f9f055c700771ed14db6ac66509eaa562bcccba2fb77f79ff333",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project b4bf8b8f46132f7844819510ad5055babf57307a)"
+     ]
+    },
+    {
+     "path": "/home/alexey/tsan-experiments/projects/ffmpeg/ffmpeg-tsan/lib/libavformat.so.58.45.100",
+     "mtime": "2026-09-02T21:14:34.124635",
+     "size": 17617488,
+     "sha256": "8965a4b31b24b13fd6289c1410c2a1500bd14f5d06d3a72e0bb42051beeb3de4",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project b4bf8b8f46132f7844819510ad5055babf57307a)"
+     ]
+    },
+    {
+     "path": "/home/alexey/tsan-experiments/projects/ffmpeg/ffmpeg-tsan/lib/libavutil.so.56.51.100",
+     "mtime": "2026-09-02T21:14:34.861636",
+     "size": 1720376,
+     "sha256": "639946b1fea842a178dc0ec6029a8d8850139aa3983ebdb5f57a52bc19bb6488",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project b4bf8b8f46132f7844819510ad5055babf57307a)"
+     ]
+    },
+    {
+     "path": "/home/alexey/tsan-experiments/projects/ffmpeg/ffmpeg-tsan/lib/libpostproc.so.55.7.100",
+     "mtime": "2026-09-02T21:14:34.729636",
+     "size": 268952,
+     "sha256": "b7af593f950e5b015818c7a7577478a4c5ae4fe23ff327e261a72eeb633c7ee5",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project b4bf8b8f46132f7844819510ad5055babf57307a)"
+     ]
+    },
+    {
+     "path": "/home/alexey/tsan-experiments/projects/ffmpeg/ffmpeg-tsan/lib/libswresample.so.3.7.100",
+     "mtime": "2026-09-02T21:14:34.764636",
+     "size": 433824,
+     "sha256": "9fdfa6dbfe8f91275c6bee3bad797990c0949e6563cc82a4ae59c6f960c34e98",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project b4bf8b8f46132f7844819510ad5055babf57307a)"
+     ]
+    },
+    {
+     "path": "/home/alexey/tsan-experiments/projects/ffmpeg/ffmpeg-tsan/lib/libswscale.so.5.7.100",
+     "mtime": "2026-09-02T21:14:34.810636",
+     "size": 2753152,
+     "sha256": "94159b4ae8c7a9eb308482508c73782048681d151553447d50a5dd003e27e2ba",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project b4bf8b8f46132f7844819510ad5055babf57307a)"
+     ]
+    }
+   ],
+   "build_info": "date: 2026-09-02T21:14:34+08:00\nhost: focs-server\ncompiler: /home/alexey/dev/llvm-project-focs-lab/llvm/cmake-build-release/bin/clang-19\ncompiler_version: clang version 19.0.0git (https://github.com/focs-lab/llvm-project b4bf8b8f46132f7844819510ad5055babf57307a)\ncompiler_mtime: 2026-09-02T21:12:39+08:00\ncompiler_tree: /home/alexey/dev/llvm-project-focs-lab\ncompiler_branch: tsan-dev\ncompiler_head: b4bf8b8f46132f7844819510ad5055babf57307a\ncompiler_dirty_files: 0\nflags: -fsanitize=thread -g -O2\ncwd: /dev/shm/ffmpeg-tsan\ntsan-logs: <none>\nconfig: tsan\nsummaries: n/a\n"
+  }
+ }
+}

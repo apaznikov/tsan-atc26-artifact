@@ -1,0 +1,5 @@
+Codec,FFBUILD,runs_completed,mean_time_s,stddev_time_s,min_time_s,max_time_s,mean_user_s,mean_system_s,max_mem_kb,command_template
+"h264_libx264","ffmpeg-orig","1/1",65.7100,0.0000,65.7100,65.7100,154.5700,0.4300,303368,"ffmpeg-orig/bin/ffmpeg -hide_banner -i ""./input/WatchingEyeTexture.mkv"" -threads 2 -y -c:v libx264 -preset medium -crf 23  -loglevel error /dev/shm/out.mp4"
+"copy_passthrough","ffmpeg-orig","1/1",0.1300,0.0000,0.1300,0.1300,0.0800,0.0400,24024,"ffmpeg-orig/bin/ffmpeg -hide_banner -i ""./input/WatchingEyeTexture.mkv"" -threads 2 -y -c:v copy -c:a copy  -loglevel error /dev/shm/out.mkv"
+"mjpeg","ffmpeg-orig","1/1",6.4600,0.0000,6.4600,6.4600,35.1900,0.3300,107352,"ffmpeg-orig/bin/ffmpeg -hide_banner -i ""./input/WatchingEyeTexture.mkv"" -threads 2 -y -c:v mjpeg -pix_fmt yuvj420p -q:v 2  -loglevel error /dev/shm/out.avi"
+"h265_libx265","ffmpeg-orig","1/1",48.8200,0.0000,48.8200,48.8200,371.6200,2.7600,499800,"ffmpeg-orig/bin/ffmpeg -hide_banner -i ""./input/WatchingEyeTexture.mkv"" -threads 2 -y -c:v libx265 -preset medium -crf 28 -tag:v hvc1  -loglevel error /dev/shm/out.mp4"

@@ -1,0 +1,141 @@
+[2026-09-08 07:29:00] redis orig run1 rc=0 20.7s outside_busy=0.0026 inside_busy=0.0394 foreign_cpu_share=0.0046
+ok
+[2026-09-08 07:30:21] redis tsan run1 rc=0 81.0s outside_busy=0.0035 inside_busy=0.1963 foreign_cpu_share=0.0055
+ok
+[2026-09-08 07:31:40] redis tsan-sound run1 rc=0 78.8s outside_busy=0.005 inside_busy=0.1964 foreign_cpu_share=0.0075
+ok
+[2026-09-08 07:32:59] redis tsan-dom-ea-lo-st-swmr run1 rc=0 78.5s outside_busy=0.0047 inside_busy=0.1951 foreign_cpu_share=0.0072
+ok
+[2026-09-08 07:34:18] redis tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 78.9s outside_busy=0.0042 inside_busy=0.1907 foreign_cpu_share=0.0063
+ok
+[2026-09-08 07:35:35] redis tsan-dom_peeling-ea-lo-st-swmr-wp run1 rc=0 76.9s outside_busy=0.0045 inside_busy=0.1874 foreign_cpu_share=0.007
+ok
+[2026-09-08 07:36:55] redis tsan-st run1 rc=0 79.0s outside_busy=0.0044 inside_busy=0.1993 foreign_cpu_share=0.0068
+ok
+[2026-09-08 07:38:18] redis tsan-stmt run1 rc=0 82.8s outside_busy=0.0036 inside_busy=0.1925 foreign_cpu_share=0.0057
+ok
+[2026-09-08 07:39:36] redis tsan-swmr run1 rc=0 78.1s outside_busy=0.0029 inside_busy=0.2002 foreign_cpu_share=0.0044
+ok
+[2026-09-08 07:40:55] redis tsan-lo run1 rc=0 78.7s outside_busy=0.003 inside_busy=0.2058 foreign_cpu_share=0.0045
+ok
+[2026-09-08 07:42:14] redis tsan-ea run1 rc=0 78.7s outside_busy=0.0029 inside_busy=0.1934 foreign_cpu_share=0.0044
+ok
+[2026-09-08 07:43:31] redis tsan-dom run1 rc=0 77.0s outside_busy=0.0028 inside_busy=0.1802 foreign_cpu_share=0.0043
+ok
+[2026-09-08 07:44:49] redis tsan-dom_peeling run1 rc=0 77.0s outside_busy=0.0029 inside_busy=0.1866 foreign_cpu_share=0.0043
+ok
+[2026-09-08 07:46:08] redis tsan-sound-wp run1 rc=0 79.3s outside_busy=0.0028 inside_busy=0.2043 foreign_cpu_share=0.0044
+ok
+[2026-09-08 07:46:29] redis orig run2 rc=0 20.6s outside_busy=0.003 inside_busy=0.0418 foreign_cpu_share=0.0047
+ok
+[2026-09-08 07:47:48] redis tsan run2 rc=0 78.1s outside_busy=0.0029 inside_busy=0.1861 foreign_cpu_share=0.0044
+ok
+[2026-09-08 07:49:07] redis tsan-sound run2 rc=0 79.0s outside_busy=0.0028 inside_busy=0.1976 foreign_cpu_share=0.0043
+ok
+[2026-09-08 07:50:25] redis tsan-dom-ea-lo-st-swmr run2 rc=0 77.3s outside_busy=0.0027 inside_busy=0.1885 foreign_cpu_share=0.0042
+ok
+[2026-09-08 07:51:43] redis tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 78.4s outside_busy=0.003 inside_busy=0.1964 foreign_cpu_share=0.0042
+ok
+[2026-09-08 07:53:01] redis tsan-dom_peeling-ea-lo-st-swmr-wp run2 rc=0 77.1s outside_busy=0.0028 inside_busy=0.1863 foreign_cpu_share=0.0042
+ok
+[2026-09-08 07:54:21] redis tsan-st run2 rc=0 79.6s outside_busy=0.0028 inside_busy=0.1963 foreign_cpu_share=0.0042
+ok
+[2026-09-08 07:55:42] redis tsan-stmt run2 rc=0 81.2s outside_busy=0.0028 inside_busy=0.1938 foreign_cpu_share=0.0044
+ok
+[2026-09-08 07:57:01] redis tsan-swmr run2 rc=0 78.8s outside_busy=0.0026 inside_busy=0.1966 foreign_cpu_share=0.0041
+ok
+[2026-09-08 07:58:20] redis tsan-lo run2 rc=0 78.8s outside_busy=0.0029 inside_busy=0.1885 foreign_cpu_share=0.0042
+ok
+[2026-09-08 07:59:39] redis tsan-ea run2 rc=0 78.1s outside_busy=0.0028 inside_busy=0.1949 foreign_cpu_share=0.0042
+ok
+[2026-09-08 08:00:56] redis tsan-dom run2 rc=0 77.3s outside_busy=0.0028 inside_busy=0.1851 foreign_cpu_share=0.0043
+ok
+[2026-09-08 08:02:16] redis tsan-dom_peeling run2 rc=0 79.0s outside_busy=0.0027 inside_busy=0.1984 foreign_cpu_share=0.004
+ok
+[2026-09-08 08:03:33] redis tsan-sound-wp run2 rc=0 77.1s outside_busy=0.0026 inside_busy=0.1888 foreign_cpu_share=0.0042
+ok
+[2026-09-08 08:03:54] redis orig run3 rc=0 20.6s outside_busy=0.0028 inside_busy=0.0377 foreign_cpu_share=0.0043
+ok
+[2026-09-08 08:05:15] redis tsan run3 rc=0 80.1s outside_busy=0.0027 inside_busy=0.2038 foreign_cpu_share=0.0043
+ok
+[2026-09-08 08:06:33] redis tsan-sound run3 rc=0 78.1s outside_busy=0.0026 inside_busy=0.1917 foreign_cpu_share=0.0042
+ok
+[2026-09-08 08:07:52] redis tsan-dom-ea-lo-st-swmr run3 rc=0 78.6s outside_busy=0.0028 inside_busy=0.2002 foreign_cpu_share=0.0042
+ok
+[2026-09-08 08:09:10] redis tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 77.8s outside_busy=0.0027 inside_busy=0.1855 foreign_cpu_share=0.0041
+ok
+[2026-09-08 08:10:27] redis tsan-dom_peeling-ea-lo-st-swmr-wp run3 rc=0 76.8s outside_busy=0.0024 inside_busy=0.1943 foreign_cpu_share=0.0043
+ok
+[2026-09-08 08:11:45] redis tsan-st run3 rc=0 78.0s outside_busy=0.0027 inside_busy=0.1935 foreign_cpu_share=0.0041
+ok
+[2026-09-08 08:13:07] redis tsan-stmt run3 rc=0 80.9s outside_busy=0.0027 inside_busy=0.188 foreign_cpu_share=0.0043
+ok
+[2026-09-08 08:14:25] redis tsan-swmr run3 rc=0 77.9s outside_busy=0.0027 inside_busy=0.1919 foreign_cpu_share=0.0043
+ok
+[2026-09-08 08:15:43] redis tsan-lo run3 rc=0 78.3s outside_busy=0.0025 inside_busy=0.1934 foreign_cpu_share=0.0042
+ok
+[2026-09-08 08:17:03] redis tsan-ea run3 rc=0 79.1s outside_busy=0.003 inside_busy=0.202 foreign_cpu_share=0.0046
+ok
+[2026-09-08 08:18:21] redis tsan-dom run3 rc=0 78.3s outside_busy=0.0028 inside_busy=0.1926 foreign_cpu_share=0.0043
+ok
+[2026-09-08 08:19:39] redis tsan-dom_peeling run3 rc=0 77.4s outside_busy=0.0029 inside_busy=0.1965 foreign_cpu_share=0.0042
+ok
+[2026-09-08 08:20:57] redis tsan-sound-wp run3 rc=0 77.6s outside_busy=0.0027 inside_busy=0.1912 foreign_cpu_share=0.0044
+ok
+[2026-09-08 08:21:13] redis orig run4 rc=0 15.6s outside_busy=0.0031 inside_busy=0.0528 foreign_cpu_share=0.0044
+ok
+[2026-09-08 08:22:31] redis tsan run4 rc=0 78.1s outside_busy=0.0027 inside_busy=0.1943 foreign_cpu_share=0.0041
+ok
+[2026-09-08 08:23:51] redis tsan-sound run4 rc=0 79.5s outside_busy=0.0029 inside_busy=0.1876 foreign_cpu_share=0.0042
+ok
+[2026-09-08 08:25:10] redis tsan-dom-ea-lo-st-swmr run4 rc=0 78.8s outside_busy=0.0028 inside_busy=0.1997 foreign_cpu_share=0.0043
+ok
+[2026-09-08 08:26:29] redis tsan-dom_peeling-ea-lo-st-swmr run4 rc=0 77.9s outside_busy=0.0028 inside_busy=0.1934 foreign_cpu_share=0.0043
+ok
+[2026-09-08 08:27:46] redis tsan-dom_peeling-ea-lo-st-swmr-wp run4 rc=0 77.2s outside_busy=0.0028 inside_busy=0.1934 foreign_cpu_share=0.0042
+ok
+[2026-09-08 08:29:05] redis tsan-st run4 rc=0 78.4s outside_busy=0.0028 inside_busy=0.1844 foreign_cpu_share=0.0042
+ok
+[2026-09-08 08:30:27] redis tsan-stmt run4 rc=0 81.4s outside_busy=0.0026 inside_busy=0.1884 foreign_cpu_share=0.0042
+ok
+[2026-09-08 08:31:45] redis tsan-swmr run4 rc=0 78.5s outside_busy=0.0025 inside_busy=0.1983 foreign_cpu_share=0.0041
+ok
+[2026-09-08 08:33:04] redis tsan-lo run4 rc=0 78.5s outside_busy=0.0029 inside_busy=0.192 foreign_cpu_share=0.0046
+ok
+[2026-09-08 08:34:23] redis tsan-ea run4 rc=0 78.5s outside_busy=0.0027 inside_busy=0.19 foreign_cpu_share=0.0042
+ok
+[2026-09-08 08:35:40] redis tsan-dom run4 rc=0 76.9s outside_busy=0.0027 inside_busy=0.1925 foreign_cpu_share=0.0042
+ok
+[2026-09-08 08:36:58] redis tsan-dom_peeling run4 rc=0 77.5s outside_busy=0.0026 inside_busy=0.1908 foreign_cpu_share=0.0043
+ok
+[2026-09-08 08:38:18] redis tsan-sound-wp run4 rc=0 79.0s outside_busy=0.0034 inside_busy=0.1909 foreign_cpu_share=0.0052
+ok
+[2026-09-08 08:38:39] redis orig run5 rc=0 20.6s outside_busy=0.003 inside_busy=0.0419 foreign_cpu_share=0.0047
+ok
+[2026-09-08 08:39:57] redis tsan run5 rc=0 78.3s outside_busy=0.0029 inside_busy=0.1974 foreign_cpu_share=0.0045
+ok
+[2026-09-08 08:41:17] redis tsan-sound run5 rc=0 79.1s outside_busy=0.0029 inside_busy=0.1954 foreign_cpu_share=0.0044
+ok
+[2026-09-08 08:42:35] redis tsan-dom-ea-lo-st-swmr run5 rc=0 78.1s outside_busy=0.0027 inside_busy=0.198 foreign_cpu_share=0.0041
+ok
+[2026-09-08 08:43:53] redis tsan-dom_peeling-ea-lo-st-swmr run5 rc=0 77.2s outside_busy=0.0026 inside_busy=0.1854 foreign_cpu_share=0.0041
+ok
+[2026-09-08 08:45:10] redis tsan-dom_peeling-ea-lo-st-swmr-wp run5 rc=0 77.0s outside_busy=0.0028 inside_busy=0.1949 foreign_cpu_share=0.0042
+ok
+[2026-09-08 08:46:28] redis tsan-st run5 rc=0 77.7s outside_busy=0.0029 inside_busy=0.1814 foreign_cpu_share=0.0045
+ok
+[2026-09-08 08:47:50] redis tsan-stmt run5 rc=0 81.7s outside_busy=0.0028 inside_busy=0.1912 foreign_cpu_share=0.0043
+ok
+[2026-09-08 08:49:09] redis tsan-swmr run5 rc=0 78.5s outside_busy=0.0029 inside_busy=0.1892 foreign_cpu_share=0.0043
+ok
+[2026-09-08 08:50:27] redis tsan-lo run5 rc=0 78.1s outside_busy=0.0029 inside_busy=0.1922 foreign_cpu_share=0.0042
+ok
+[2026-09-08 08:51:46] redis tsan-ea run5 rc=0 78.5s outside_busy=0.0027 inside_busy=0.1919 foreign_cpu_share=0.0041
+ok
+[2026-09-08 08:53:05] redis tsan-dom run5 rc=0 78.2s outside_busy=0.0026 inside_busy=0.1948 foreign_cpu_share=0.004
+ok
+[2026-09-08 08:54:24] redis tsan-dom_peeling run5 rc=0 78.5s outside_busy=0.0027 inside_busy=0.1896 foreign_cpu_share=0.0044
+ok
+[2026-09-08 08:55:42] redis tsan-sound-wp run5 rc=0 77.6s outside_busy=0.0028 inside_busy=0.1976 foreign_cpu_share=0.0044
+ok
+[2026-09-08 08:55:43] done: redis N=5 -> /home/alexey/tsan-experiments/tools/perf/results/stageB-d3bf9f8c39fe/redis

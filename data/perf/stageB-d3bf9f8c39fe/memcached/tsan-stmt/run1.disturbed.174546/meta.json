@@ -1,0 +1,9 @@
+{
+ "app": "memcached",
+ "config": "tsan-stmt",
+ "run": 1,
+ "rc": 1,
+ "foreign_cpu_share": 0,
+ "error": "./bench_one.sh: line 113: unexpected EOF while looking for matching `'",
+ "disturbed": true
+}

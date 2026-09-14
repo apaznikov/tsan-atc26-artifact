@@ -1,0 +1,86 @@
+{
+ "app": "sqlite",
+ "created": "2026-09-13T16:47:39",
+ "host": "focs-server",
+ "cpus": 112,
+ "argv": [
+  "./run_preservation.py",
+  "--app",
+  "sqlite",
+  "--configs",
+  "tsan,tsan-sound,tsan-sound-nofe",
+  "--runs",
+  "10",
+  "--build-root",
+  "../../sql/sqlite/build/nofe-d3bf",
+  "--llvm-root",
+  "/extra/alexey/builds/tsan-perf-d3bf9f8c39fe",
+  "--out",
+  "results/sqlite/2026-09-13-nofe-d3bf9f8c39fe",
+  "--no-ninja-check"
+ ],
+ "scale": "paper",
+ "out": "/home/alexey/tsan-experiments/tools/preservation/results/sqlite/2026-09-13-nofe-d3bf9f8c39fe",
+ "workload": {
+  "tests": "all",
+  "cwd": "fresh dir per run under workdir"
+ },
+ "tsan_options_template": "log_path=/home/alexey/tsan-experiments/tools/preservation/results/sqlite/2026-09-13-nofe-d3bf9f8c39fe/logs/sqlite.<cfg>.0 exitcode=0 external_symbolizer_path=/extra/alexey/builds/tsan-perf-d3bf9f8c39fe/bin/llvm-symbolizer",
+ "compiler": {
+  "llvm_root": "/extra/alexey/builds/tsan-perf-d3bf9f8c39fe",
+  "tree": "/extra/alexey",
+  "clang_version": "clang version 19.0.0git (https://github.com/focs-lab/llvm-project d3bf9f8c39fe88278b78222901fea4a4c8971e0b)",
+  "clang_mtime": "2026-09-05T11:11:04.369563",
+  "tsan_rt_mtime": "2026-09-05T05:49:22.179611"
+ },
+ "configs": {
+  "tsan": {
+   "artifacts": [
+    {
+     "path": "/home/alexey/tsan-experiments/sql/sqlite/build/nofe-d3bf/test-tsan/threadtest3",
+     "mtime": "2026-09-05T11:26:04.196856",
+     "size": 8462336,
+     "sha256": "1b6d7ff0966a5b0799563627630d8b6baf3f05ccf23ee64cacd11b755306dfc2",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "Ubuntu clang version 18.1.3 (1ubuntu1)",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project d3bf9f8c39fe88278b78222901fea4a4c8971e0b)"
+     ]
+    }
+   ],
+   "build_info": "date: 2026-09-05T11:26:04+08:00\nhost: focs-server\ncompiler: /extra/alexey/builds/tsan-perf-d3bf9f8c39fe/bin/clang-19\ncompiler_version: clang version 19.0.0git (https://github.com/focs-lab/llvm-project d3bf9f8c39fe88278b78222901fea4a4c8971e0b)\ncompiler_mtime: 2026-09-05T11:11:04+08:00\ncompiler_tree: /extra/alexey/builds/tsan-perf-d3bf9f8c39fe (frozen copy)\ncompiler_head: d3bf9f8c39fe\ncompiler_consolidated: perf/stage-b: RT-3 eviction counters behind COMPILER_RT_TSAN_EVICTION_STATS (OFF in this copy; access path byte-identical to upstream), EA fixpoint fix + fail-closed budget (verdict-identical), shapes 18-21 fixed (HEAD d3bf9f8c39fe; code hash = stamp = d3bf9f8c39fe)\nflags: -fsanitize=thread -g -O2 -fno-omit-frame-pointer\ncwd: /home/alexey/tsan-experiments/sql/sqlite\ntsan-logs: <none>\nconfig: tsan\nsummaries: none\n"
+  },
+  "tsan-sound": {
+   "artifacts": [
+    {
+     "path": "/home/alexey/tsan-experiments/sql/sqlite/build/nofe-d3bf/test-tsan-sound/threadtest3",
+     "mtime": "2026-09-05T15:01:43.962640",
+     "size": 8444664,
+     "sha256": "833ec4ba9a12f52c9454926490ff99cc0e72a5b447cfa4203945a945e7b5d1d7",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "Ubuntu clang version 18.1.3 (1ubuntu1)",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project d3bf9f8c39fe88278b78222901fea4a4c8971e0b)"
+     ]
+    }
+   ],
+   "build_info": "date: 2026-09-05T15:01:44+08:00\nhost: focs-server\ncompiler: /extra/alexey/builds/tsan-perf-d3bf9f8c39fe/bin/clang-19\ncompiler_version: clang version 19.0.0git (https://github.com/focs-lab/llvm-project d3bf9f8c39fe88278b78222901fea4a4c8971e0b)\ncompiler_mtime: 2026-09-05T11:11:04+08:00\ncompiler_tree: /extra/alexey/builds/tsan-perf-d3bf9f8c39fe (frozen copy)\ncompiler_head: d3bf9f8c39fe\ncompiler_consolidated: perf/stage-b: RT-3 eviction counters behind COMPILER_RT_TSAN_EVICTION_STATS (OFF in this copy; access path byte-identical to upstream), EA fixpoint fix + fail-closed budget (verdict-identical), shapes 18-21 fixed (HEAD d3bf9f8c39fe; code hash = stamp = d3bf9f8c39fe)\nflags: -fsanitize=thread -g -O2 -fno-omit-frame-pointer -mllvm -tsan-use-escape-analysis-global -mllvm -tsan-use-lock-ownership -mllvm -tsan-use-single-threaded -mllvm -tsan-use-swmr -mllvm -tsan-use-analysis-summaries -mllvm -tsan-summary-dir=/home/alexey/tsan-experiments/sql/sqlite/summaries-d3bf9f8c39fe -mllvm -tsan-summary-id=d3bf9f8c39fe\ncwd: /home/alexey/tsan-experiments/sql/sqlite\ntsan-logs: <none>\nconfig: tsan-sound\nsummaries: /home/alexey/tsan-experiments/sql/sqlite/summaries-d3bf9f8c39fe id=d3bf9f8c39fe (9eb15832 c5784bf2 acc00633 )\n"
+  },
+  "tsan-sound-nofe": {
+   "artifacts": [
+    {
+     "path": "/home/alexey/tsan-experiments/sql/sqlite/build/nofe-d3bf/test-tsan-sound-nofe/threadtest3",
+     "mtime": "2026-09-09T20:12:16.937889",
+     "size": 8426688,
+     "sha256": "ecfc4e8223f101cc07cf97d07c67b1a4e554014257d5bb17fdce9c26f61ee9a3",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "Ubuntu clang version 18.1.3 (1ubuntu1)",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project d3bf9f8c39fe88278b78222901fea4a4c8971e0b)"
+     ]
+    }
+   ],
+   "build_info": "date: 2026-09-09T20:12:16+08:00\nhost: focs-server\ncompiler: /extra/alexey/builds/tsan-perf-d3bf9f8c39fe/bin/clang-19\ncompiler_version: clang version 19.0.0git (https://github.com/focs-lab/llvm-project d3bf9f8c39fe88278b78222901fea4a4c8971e0b)\ncompiler_mtime: 2026-09-05T11:11:04+08:00\ncompiler_tree: /extra/alexey/builds/tsan-perf-d3bf9f8c39fe (frozen copy)\ncompiler_head: d3bf9f8c39fe\ncompiler_consolidated: perf/stage-b: RT-3 eviction counters behind COMPILER_RT_TSAN_EVICTION_STATS (OFF in this copy; access path byte-identical to upstream), EA fixpoint fix + fail-closed budget (verdict-identical), shapes 18-21 fixed (HEAD d3bf9f8c39fe; code hash = stamp = d3bf9f8c39fe)\nflags: -fsanitize=thread -g -O2 -fno-omit-frame-pointer -mllvm -tsan-use-escape-analysis-global -mllvm -tsan-use-lock-ownership -mllvm -tsan-use-single-threaded -mllvm -tsan-use-swmr -mllvm -tsan-instrument-func-entry-exit=false\ncwd: /home/alexey/tsan-experiments/sql/sqlite\ntsan-logs: <none>\nconfig: tsan-sound-nofe\nsummaries: none\n"
+  }
+ }
+}

@@ -1,0 +1,54 @@
+{
+ "app": "sqlite",
+ "created": "2026-09-02T08:52:18",
+ "host": "focs-server",
+ "cpus": 112,
+ "argv": [
+  "run_preservation.py",
+  "--app",
+  "sqlite",
+  "--configs",
+  "tsan",
+  "--runs",
+  "10",
+  "--no-ninja-check",
+  "--build-root",
+  "../../sql/sqlite/build/paper-compiler",
+  "--llvm-root",
+  "/extra/alexey/llvm-project-paper/llvm/build",
+  "--out",
+  "results/sqlite/2026-09-02-paper-e90a3fc4/tsan",
+  "--workdir",
+  "/dev/shm/preservation-sqlite-paper-tsan"
+ ],
+ "scale": "paper",
+ "out": "results/sqlite/2026-09-02-paper-e90a3fc4/tsan",
+ "workload": {
+  "tests": "all",
+  "cwd": "fresh dir per run under workdir"
+ },
+ "tsan_options_template": "log_path=results/sqlite/2026-09-02-paper-e90a3fc4/tsan/logs/sqlite.<cfg>.0 exitcode=0 external_symbolizer_path=/extra/alexey/llvm-project-paper/llvm/build/bin/llvm-symbolizer",
+ "compiler": {
+  "llvm_root": "/extra/alexey/llvm-project-paper/llvm/build",
+  "tree": "/extra/alexey/llvm-project-paper",
+  "clang_version": "clang version 19.0.0git (/home/alexey/dev/llvm-project-focs-lab e90a3fc410043575326f83373d018d39f505b8de)",
+  "clang_mtime": "2026-09-02T08:25:25.063395",
+  "tsan_rt_mtime": "2026-09-02T08:21:25.401365",
+  "git_branch": "paper-state",
+  "git_head": "e90a3fc410043575326f83373d018d39f505b8de",
+  "git_dirty_files": 0
+ },
+ "configs": {
+  "tsan": {
+   "artifacts": [
+    {
+     "path": "/home/alexey/tsan-experiments/sql/sqlite/build/paper-compiler/test-tsan/threadtest3",
+     "mtime": "2026-09-02T08:50:56.650718",
+     "size": 8485064,
+     "sha256": "70827df733ba47682bee949f6db24dd1aae22782c69cb53f9b9ba085eed88901"
+    }
+   ],
+   "build_info": "date: 2026-09-02T08:50:56+08:00\nhost: focs-server\ncompiler: /extra/alexey/llvm-project-paper/llvm/build/bin/clang-19\ncompiler_version: clang version 19.0.0git (/home/alexey/dev/llvm-project-focs-lab e90a3fc410043575326f83373d018d39f505b8de)\ncompiler_mtime: 2026-09-02T08:25:25+08:00\ncompiler_tree: /extra/alexey/llvm-project-paper\ncompiler_branch: paper-state\ncompiler_head: e90a3fc410043575326f83373d018d39f505b8de\ncompiler_dirty_files: 0\nflags: -fsanitize=thread -g -O2 -fno-omit-frame-pointer\ncwd: /home/alexey/tsan-experiments/sql/sqlite\ntsan-logs: -rw-rw-r-- 503 ea_summary.txt;-rw-rw-r-- 117 st_summary.txt;\nconfig: tsan\n"
+  }
+ }
+}

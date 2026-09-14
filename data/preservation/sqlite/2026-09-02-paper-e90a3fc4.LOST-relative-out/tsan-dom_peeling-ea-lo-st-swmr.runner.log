@@ -1,0 +1,1 @@
+[warn] $LLVM_ROOT_PATH=/home/alexey/dev/llvm-project/llvm/build differs from --llvm-root=/extra/alexey/llvm-project-paper/llvm/build; the manifest describes the latter

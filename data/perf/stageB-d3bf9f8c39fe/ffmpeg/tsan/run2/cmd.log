@@ -1,0 +1,40 @@
+jq found, will generate JSON output to /home/alexey/tsan-experiments/tools/perf/results/stageB-d3bf9f8c39fe/ffmpeg/tsan/run2/summary.json.
+--- FFmpeg Benchmark Start (using /usr/bin/time) ---
+Builds to test: ffmpeg-tsan
+Video file: ./input/WatchingEyeTexture.mkv
+Runs per test: 1
+
+--- Benchmarking: Codec [h264_libx264], Build [ffmpeg-tsan] ---
+
+[96;1mffmpeg-tsan/bin/ffmpeg -hide_banner -i "./input/WatchingEyeTexture.mkv" -threads 4 -y -c:v libx264 -preset medium -crf 23  -loglevel error /dev/shm/out.mp4[0m
+
+  Run 1/1... OK (Time: 42.49s, Mem: 579364KB)
+  Results: Time(avg±std): 42.4900s ± 0s | Mem(peak): 579364KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [copy_passthrough], Build [ffmpeg-tsan] ---
+
+[96;1mffmpeg-tsan/bin/ffmpeg -hide_banner -i "./input/WatchingEyeTexture.mkv" -threads 4 -y -c:v copy -c:a copy  -loglevel error /dev/shm/out.mkv[0m
+
+  Run 1/1... OK (Time: 0.67s, Mem: 81476KB)
+  Results: Time(avg±std): .6700s ± 0s | Mem(peak): 81476KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [mjpeg], Build [ffmpeg-tsan] ---
+
+[96;1mffmpeg-tsan/bin/ffmpeg -hide_banner -i "./input/WatchingEyeTexture.mkv" -threads 4 -y -c:v mjpeg -pix_fmt yuvj420p -q:v 2  -loglevel error /dev/shm/out.avi[0m
+
+  Run 1/1... OK (Time: 23.57s, Mem: 428248KB)
+  Results: Time(avg±std): 23.5700s ± 0s | Mem(peak): 428248KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [h265_libx265], Build [ffmpeg-tsan] ---
+
+[96;1mffmpeg-tsan/bin/ffmpeg -hide_banner -i "./input/WatchingEyeTexture.mkv" -threads 4 -y -c:v libx265 -preset medium -crf 28 -tag:v hvc1  -loglevel error /dev/shm/out.mp4[0m
+
+  Run 1/1... OK (Time: 51.71s, Mem: 1656344KB)
+  Results: Time(avg±std): 51.7100s ± 0s | Mem(peak): 1656344KB | Runs: 1/1
+--------------------------------------------------------
+
+JSON results have been finalized in /home/alexey/tsan-experiments/tools/perf/results/stageB-d3bf9f8c39fe/ffmpeg/tsan/run2/summary.json
+Benchmark finished. CSV results are in /home/alexey/tsan-experiments/tools/perf/results/stageB-d3bf9f8c39fe/ffmpeg/tsan/run2/summary.csv

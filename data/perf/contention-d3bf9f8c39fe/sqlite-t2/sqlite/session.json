@@ -1,0 +1,18 @@
+{
+ "app": "sqlite",
+ "hash": "d3bf9f8c39fe",
+ "N": 5,
+ "configs": [
+  "orig",
+  "tsan",
+  "tsan-dom",
+  "tsan-dom_peeling-ea-lo-st-swmr"
+ ],
+ "cpuset": "4-27,60-83",
+ "mode": "pinned",
+ "started": "2026-09-14T03:18:47",
+ "host": "focs-server",
+ "nproc_machine": 112,
+ "governor": "powersave",
+ "no_turbo": "0"
+}

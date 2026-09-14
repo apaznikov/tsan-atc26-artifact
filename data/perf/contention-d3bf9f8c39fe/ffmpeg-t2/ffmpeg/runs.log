@@ -1,0 +1,21 @@
+ffmpeg orig run1 rc=0 122.3s outside_busy=0.0378 inside_busy=0.0815 foreign_cpu_share=0.0363
+ffmpeg tsan run1 rc=0 196.0s outside_busy=0.0345 inside_busy=0.0881 foreign_cpu_share=0.0309
+ffmpeg tsan-stmt run1 rc=0 193.9s outside_busy=0.0267 inside_busy=0.0963 foreign_cpu_share=0.0301
+ffmpeg tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 197.0s outside_busy=0.034 inside_busy=0.0857 foreign_cpu_share=0.0315
+ffmpeg orig run2 rc=0 121.5s outside_busy=0.0329 inside_busy=0.0831 foreign_cpu_share=0.0306
+ffmpeg tsan run2 rc=0 198.0s outside_busy=0.039 inside_busy=0.0826 foreign_cpu_share=0.031
+ffmpeg tsan-stmt run2 rc=0 195.6s outside_busy=0.0349 inside_busy=0.0846 foreign_cpu_share=0.0312
+ffmpeg tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 194.8s outside_busy=0.0334 inside_busy=0.0896 foreign_cpu_share=0.0315
+ffmpeg orig run3 rc=0 121.3s outside_busy=0.0457 inside_busy=0.0676 foreign_cpu_share=0.0309
+ffmpeg tsan run3 rc=0 195.7s outside_busy=0.034 inside_busy=0.0799 foreign_cpu_share=0.03
+ffmpeg tsan-stmt run3 rc=0 195.9s outside_busy=0.0311 inside_busy=0.0845 foreign_cpu_share=0.0315
+ffmpeg tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 195.8s outside_busy=0.0287 inside_busy=0.0919 foreign_cpu_share=0.0309
+ffmpeg orig run4 rc=0 121.2s outside_busy=0.0344 inside_busy=0.0739 foreign_cpu_share=0.0301
+ffmpeg tsan run4 rc=0 195.9s outside_busy=0.0418 inside_busy=0.0786 foreign_cpu_share=0.0308
+ffmpeg tsan-stmt run4 rc=0 194.7s outside_busy=0.0403 inside_busy=0.0797 foreign_cpu_share=0.0302
+ffmpeg tsan-dom_peeling-ea-lo-st-swmr run4 rc=0 195.1s outside_busy=0.0402 inside_busy=0.0803 foreign_cpu_share=0.0306
+ffmpeg orig run5 rc=0 120.0s outside_busy=0.0366 inside_busy=0.0775 foreign_cpu_share=0.0297
+ffmpeg tsan run5 rc=0 196.9s outside_busy=0.0381 inside_busy=0.082 foreign_cpu_share=0.0442
+ffmpeg tsan-stmt run5 rc=0 196.1s outside_busy=0.0411 inside_busy=0.079 foreign_cpu_share=0.0351
+ffmpeg tsan-dom_peeling-ea-lo-st-swmr run5 rc=0 196.8s outside_busy=0.0392 inside_busy=0.0815 foreign_cpu_share=0.0303
+DONE ffmpeg

@@ -1,0 +1,2 @@
+{"cfg": "tsan", "run": 1, "step": "threadtest3", "cmd": ["/home/alexey/tsan-experiments/sql/sqlite/build/paper-compiler/test-tsan/threadtest3"], "cwd": "/dev/shm/preservation-sqlite-paper-tsan/tsan.1", "rc": 0, "seconds": 264.9, "ts": "2026-09-02T08:56:43"}
+{"cfg": "tsan", "run": 2, "step": "threadtest3", "cmd": ["/home/alexey/tsan-experiments/sql/sqlite/build/paper-compiler/test-tsan/threadtest3"], "cwd": "/dev/shm/preservation-sqlite-paper-tsan/tsan.2", "rc": 0, "seconds": 251.9, "ts": "2026-09-02T09:00:55"}

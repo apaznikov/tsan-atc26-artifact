@@ -1,0 +1,92 @@
+{
+  "benchmarks": [
+    {
+      "codec": "h264_libx264",
+      "build": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr",
+      "runs": {
+        "successful": 1,
+        "total": 1
+      },
+      "time": {
+        "mean_s": 26.7300,
+        "stddev_s": 0,
+        "min_s": 26.73,
+        "max_s": 26.73
+      },
+      "cpu": {
+        "mean_user_s": 250.5600,
+        "mean_system_s": 10.2500
+      },
+      "memory": {
+        "max_peak_kb": 638308
+      },
+      "command_template": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr/bin/ffmpeg -hide_banner -i \"./input/WatchingEyeTexture.mkv\" -threads 8 -y -c:v libx264 -preset medium -crf 23  -loglevel error /dev/shm/out.mp4"
+    },
+    {
+      "codec": "copy_passthrough",
+      "build": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr",
+      "runs": {
+        "successful": 1,
+        "total": 1
+      },
+      "time": {
+        "mean_s": 0.7500,
+        "stddev_s": 0,
+        "min_s": 0.75,
+        "max_s": 0.75
+      },
+      "cpu": {
+        "mean_user_s": 0.6500,
+        "mean_system_s": 0.0900
+      },
+      "memory": {
+        "max_peak_kb": 82636
+      },
+      "command_template": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr/bin/ffmpeg -hide_banner -i \"./input/WatchingEyeTexture.mkv\" -threads 8 -y -c:v copy -c:a copy  -loglevel error /dev/shm/out.mkv"
+    },
+    {
+      "codec": "mjpeg",
+      "build": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr",
+      "runs": {
+        "successful": 1,
+        "total": 1
+      },
+      "time": {
+        "mean_s": 15.6100,
+        "stddev_s": 0,
+        "min_s": 15.61,
+        "max_s": 15.61
+      },
+      "cpu": {
+        "mean_user_s": 205.8800,
+        "mean_system_s": 2.0400
+      },
+      "memory": {
+        "max_peak_kb": 565632
+      },
+      "command_template": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr/bin/ffmpeg -hide_banner -i \"./input/WatchingEyeTexture.mkv\" -threads 8 -y -c:v mjpeg -pix_fmt yuvj420p -q:v 2  -loglevel error /dev/shm/out.avi"
+    },
+    {
+      "codec": "h265_libx265",
+      "build": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr",
+      "runs": {
+        "successful": 1,
+        "total": 1
+      },
+      "time": {
+        "mean_s": 52.8100,
+        "stddev_s": 0,
+        "min_s": 52.81,
+        "max_s": 52.81
+      },
+      "cpu": {
+        "mean_user_s": 581.1900,
+        "mean_system_s": 8.2300
+      },
+      "memory": {
+        "max_peak_kb": 1861380
+      },
+      "command_template": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr/bin/ffmpeg -hide_banner -i \"./input/WatchingEyeTexture.mkv\" -threads 8 -y -c:v libx265 -preset medium -crf 28 -tag:v hvc1  -loglevel error /dev/shm/out.mp4"
+    }
+  ]
+}

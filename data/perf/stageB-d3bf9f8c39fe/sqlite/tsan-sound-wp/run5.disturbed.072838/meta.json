@@ -1,0 +1,9 @@
+{
+ "app": "sqlite",
+ "config": "tsan-sound-wp",
+ "run": 5,
+ "rc": 1,
+ "foreign_cpu_share": 0,
+ "error": "[2026-09-08 07:28:35] ERROR: STALE BINARY for sqlite tsan-sound-wp: build_info compiler_head=c38c1e7e94ec, sweep hash=d3bf9f8c39fe (rebuild with build.sh)",
+ "disturbed": true
+}

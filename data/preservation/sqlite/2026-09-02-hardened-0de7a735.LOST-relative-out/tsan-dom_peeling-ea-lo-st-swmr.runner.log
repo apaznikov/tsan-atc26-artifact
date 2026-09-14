@@ -1,0 +1,36 @@
+[warn] $LLVM_ROOT_PATH=/home/alexey/dev/llvm-project/llvm/build differs from --llvm-root=/home/alexey/dev/llvm-project-focs-lab/llvm/build; the manifest describes the latter
+output: results/sqlite/2026-09-02-hardened-0de7a735/tsan-dom_peeling-ea-lo-st-swmr
+compiler: clang version 19.0.0git (https://github.com/focs-lab/llvm-project 89e5d0078d2fce140fa3034fed47611bc32cc2e8) branch=tsan-dev head=0de7a7350375 ninja=None
+TSAN_OPTIONS template: log_path=results/sqlite/2026-09-02-hardened-0de7a735/tsan-dom_peeling-ea-lo-st-swmr/logs/sqlite.<cfg>.0 exitcode=0 external_symbolizer_path=/home/alexey/dev/llvm-project-focs-lab/llvm/build/bin/llvm-symbolizer
+=== [1/10] sqlite cfg=tsan-dom_peeling-ea-lo-st-swmr run=1  (elapsed 0s)
+[2026-09-02T08:09:40] sqlite/tsan-dom_peeling-ea-lo-st-swmr/run1/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-dom_peeling-ea-lo-st-swmr/threadtest3  (cwd=/dev/shm/preservation-sqlite-tsan-dom_peeling-ea-lo-st-swmr/tsan-dom_peeling-ea-lo-st-swmr.1)
+    log files for this run: 0
+=== [2/10] sqlite cfg=tsan-dom_peeling-ea-lo-st-swmr run=2  (elapsed 308s)
+[2026-09-02T08:14:49] sqlite/tsan-dom_peeling-ea-lo-st-swmr/run2/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-dom_peeling-ea-lo-st-swmr/threadtest3  (cwd=/dev/shm/preservation-sqlite-tsan-dom_peeling-ea-lo-st-swmr/tsan-dom_peeling-ea-lo-st-swmr.2)
+    log files for this run: 0
+=== [3/10] sqlite cfg=tsan-dom_peeling-ea-lo-st-swmr run=3  (elapsed 620s)
+[2026-09-02T08:20:00] sqlite/tsan-dom_peeling-ea-lo-st-swmr/run3/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-dom_peeling-ea-lo-st-swmr/threadtest3  (cwd=/dev/shm/preservation-sqlite-tsan-dom_peeling-ea-lo-st-swmr/tsan-dom_peeling-ea-lo-st-swmr.3)
+    log files for this run: 0
+=== [4/10] sqlite cfg=tsan-dom_peeling-ea-lo-st-swmr run=4  (elapsed 901s)
+[2026-09-02T08:24:41] sqlite/tsan-dom_peeling-ea-lo-st-swmr/run4/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-dom_peeling-ea-lo-st-swmr/threadtest3  (cwd=/dev/shm/preservation-sqlite-tsan-dom_peeling-ea-lo-st-swmr/tsan-dom_peeling-ea-lo-st-swmr.4)
+    log files for this run: 0
+=== [5/10] sqlite cfg=tsan-dom_peeling-ea-lo-st-swmr run=5  (elapsed 1177s)
+[2026-09-02T08:29:17] sqlite/tsan-dom_peeling-ea-lo-st-swmr/run5/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-dom_peeling-ea-lo-st-swmr/threadtest3  (cwd=/dev/shm/preservation-sqlite-tsan-dom_peeling-ea-lo-st-swmr/tsan-dom_peeling-ea-lo-st-swmr.5)
+    log files for this run: 0
+=== [6/10] sqlite cfg=tsan-dom_peeling-ea-lo-st-swmr run=6  (elapsed 1461s)
+[2026-09-02T08:34:02] sqlite/tsan-dom_peeling-ea-lo-st-swmr/run6/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-dom_peeling-ea-lo-st-swmr/threadtest3  (cwd=/dev/shm/preservation-sqlite-tsan-dom_peeling-ea-lo-st-swmr/tsan-dom_peeling-ea-lo-st-swmr.6)
+    log files for this run: 0
+=== [7/10] sqlite cfg=tsan-dom_peeling-ea-lo-st-swmr run=7  (elapsed 1763s)
+[2026-09-02T08:39:03] sqlite/tsan-dom_peeling-ea-lo-st-swmr/run7/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-dom_peeling-ea-lo-st-swmr/threadtest3  (cwd=/dev/shm/preservation-sqlite-tsan-dom_peeling-ea-lo-st-swmr/tsan-dom_peeling-ea-lo-st-swmr.7)
+    log files for this run: 0
+=== [8/10] sqlite cfg=tsan-dom_peeling-ea-lo-st-swmr run=8  (elapsed 2053s)
+[2026-09-02T08:43:53] sqlite/tsan-dom_peeling-ea-lo-st-swmr/run8/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-dom_peeling-ea-lo-st-swmr/threadtest3  (cwd=/dev/shm/preservation-sqlite-tsan-dom_peeling-ea-lo-st-swmr/tsan-dom_peeling-ea-lo-st-swmr.8)
+    log files for this run: 0
+=== [9/10] sqlite cfg=tsan-dom_peeling-ea-lo-st-swmr run=9  (elapsed 2324s)
+[2026-09-02T08:48:25] sqlite/tsan-dom_peeling-ea-lo-st-swmr/run9/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-dom_peeling-ea-lo-st-swmr/threadtest3  (cwd=/dev/shm/preservation-sqlite-tsan-dom_peeling-ea-lo-st-swmr/tsan-dom_peeling-ea-lo-st-swmr.9)
+    log files for this run: 0
+=== [10/10] sqlite cfg=tsan-dom_peeling-ea-lo-st-swmr run=10  (elapsed 2624s)
+[2026-09-02T08:53:25] sqlite/tsan-dom_peeling-ea-lo-st-swmr/run10/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-dom_peeling-ea-lo-st-swmr/threadtest3  (cwd=/dev/shm/preservation-sqlite-tsan-dom_peeling-ea-lo-st-swmr/tsan-dom_peeling-ea-lo-st-swmr.10)
+    log files for this run: 0
+done in 2892s. Aggregate with:
+  /home/alexey/tsan-experiments/tools/preservation/tsan_reports.py aggregate --results-dir results/sqlite/2026-09-02-hardened-0de7a735/tsan-dom_peeling-ea-lo-st-swmr/logs --baseline tsan-dom_peeling-ea-lo-st-swmr

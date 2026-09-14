@@ -1,0 +1,54 @@
+[04:26:18] compiler: clang version 19.0.0git (https://github.com/focs-lab/llvm-project ad0623610ef68937899cd84deebcae3910c66797)
+[04:26:18] build memcached tsan-sound
+[04:26:18] build sqlite tsan-sound
+[04:26:27] build memcached tsan-all
+[04:27:05] build sqlite tsan-dom_peeling-ea-lo-st-swmr
+[04:27:56] builds done
+[04:27:56] port 7777 busy; waiting
+[04:28:56] port 7777 busy; waiting
+[04:29:56] port 7777 busy; waiting
+[04:30:56] port 7777 busy; waiting
+[04:31:56] port 7777 busy; waiting
+[04:32:56] port 7777 busy; waiting
+[04:33:56] port 7777 busy; waiting
+[04:34:56] port 7777 busy; waiting
+[04:35:56] port 7777 busy; waiting
+[04:36:56] port 7777 busy; waiting
+[04:37:56] port 7777 busy; waiting
+[04:38:56] port 7777 busy; waiting
+[04:39:56] port 7777 busy; waiting
+[04:40:56] port 7777 busy; waiting
+[04:41:56] port 7777 busy; waiting
+[04:42:56] port 7777 busy; waiting
+[04:43:56] port 7777 busy; waiting
+[04:44:57] port 7777 busy; waiting
+[04:45:57] port 7777 busy; waiting
+[04:46:57] port 7777 busy; waiting
+[04:47:57] port 7777 busy; waiting
+[04:48:57] port 7777 busy; waiting
+[04:49:57] port 7777 busy; waiting
+[04:50:57] port 7777 busy; waiting
+[04:51:57] port 7777 busy; waiting
+[04:52:57] port 7777 busy; waiting
+[04:53:57] port 7777 busy; waiting
+[04:54:57] port 7777 busy; waiting
+[04:55:57] port 7777 busy; waiting
+[04:56:57] port 7777 busy; waiting
+[04:57:57] port 7777 busy; waiting
+[04:58:57] port 7777 busy; waiting
+[04:59:57] port 7777 busy; waiting
+[05:00:57] port 7777 busy; waiting
+[05:01:57] port 7777 busy; waiting
+[05:02:57] port 7777 busy; waiting
+[05:03:57] port 7777 busy; waiting
+[05:04:57] port 7777 busy; waiting
+[05:05:57] port 7777 busy; waiting
+[05:06:57] port 7777 busy; waiting
+[05:07:57] port 7777 busy; waiting
+[05:08:57] port 7777 busy; waiting
+[05:09:57] port 7777 busy; waiting
+[05:10:57] port 7777 busy; waiting
+[05:11:57] port 7777 busy; waiting
+[05:12:57] port 7777 busy; waiting
+[05:13:57] port 7777 busy; waiting
+[05:15:00] runners launched

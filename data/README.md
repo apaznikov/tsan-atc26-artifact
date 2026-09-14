@@ -1,0 +1,27 @@
+# Recorded data
+
+Every run the paper's tables rest on, as recorded, plus the scripts that turn them into tables.
+`scripts/90-tables.sh` regenerates every table from here without running anything.
+
+| Directory | What it is | Compiler | Notes |
+|---|---|---|---|
+| `perf/stageB-d3bf9f8c39fe/` | the full performance campaign: five applications, 14 configurations, N = 5, pinned 48 CPUs, run-major | `d3bf9f8c39fe` | measured 8-9 Sep 2026; see the drift note below |
+| `perf/contention-d3bf9f8c39fe/` | the concurrency sweep: SQLite walthread1 2-112 threads, Redis 50-512 clients, FFmpeg 2-16 threads, four configurations, N = 5 | `d3bf9f8c39fe` | 13-14 Sep; each comparison is within one window |
+| `perf/redis-recheck-2026-09-14/`, `perf/redis-stageB-repeat-2026-09-14/` | the same Redis binaries as Stage B, re-measured six days later | `d3bf9f8c39fe` | the baseline drift evidence |
+| `perf/nofe-d3bf9f8c39fe/` | the upstream `-tsan-instrument-func-entry-exit=false` flag, measured for completeness | `d3bf9f8c39fe` | not a contribution of the paper and not in its tables |
+| `preservation/` | race reports per run for SQLite, memcached, FFmpeg, Redis under stock, sound and AllOpt; L1/L2/L3 keys | several, named per tree | `memcached-10k` excluded: a short-iteration client artefact |
+| `eviction-stress/` | the synthetic bounded-shadow experiments, 1000 runs per cell | `f80e80b1dbe6` and earlier | `*.mod4-artefact` excluded: a sweep that sampled one residue class of a period-4 mechanism |
+| `eviction-counters/` | per-granule eviction counters on SQLite | runtime `a08292850aee`, `43111f84d936` | `clock-samples.csv` excluded: a misleading three-CPU sampler |
+| `tools/` | `aggregate.py`, `report.py`, `results_ledger.py`, `tsan_reports.py`, `static_count_tsan_instrumentation.py`, unchanged from the harness | | |
+| `notes/` | the pre-registration, the campaign definition, the run-1 note, the March provenance note, the method document and the results ledger | | |
+
+Every performance run carries a `meta.json` with the binary's sha256, the compiler stamp, the CPU
+set, the governor and turbo state, the load before and after, the foreign-CPU share and a
+"disturbed" flag; `session.json` per leg records the host state. `notes/results-ledger.md` is the
+standing summary of what each configuration is worth, regenerated from these trees.
+
+**Drift note.** Byte-identical Redis binaries measured on 8 Sep (Stage B) and on 14 Sep give stock
+ThreadSanitizer 14% less throughput on the later date and native 5% less, so Stage B's Redis rows
+and the repeat's disagree by up to 12 points. The cause was under investigation when this snapshot
+was taken; `notes/run1-cold-start-2026-09-13.md` has the eliminated hypotheses. Which set the paper
+reports, and the clean re-measurement that replaces Stage B, are stated in `CLAIMS.md`.

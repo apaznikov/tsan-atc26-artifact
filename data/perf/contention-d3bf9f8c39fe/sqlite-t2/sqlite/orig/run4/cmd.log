@@ -1,0 +1,8 @@
+--- Running Benchmark for: orig ---
+Executable: build/test-orig/threadtest3
+Full Command: build/test-orig/threadtest3 --w1-threads 2 walthread1
+Output will be saved to: results/contention/orig_2threads.log
+Memory usage will be saved to: results/memory.txt
+Running, please wait...
+--- Benchmark for [orig] completed successfully. ---
+

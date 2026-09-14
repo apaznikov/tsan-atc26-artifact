@@ -1,0 +1,334 @@
+==================
+WARNING: ThreadSanitizer: data race (pid=3652636)
+  Atomic read of size 4 at 0x7ffff7e17060 by thread T15:
+    #0 walTryBeginRead /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:68991:20 (threadtest3+0x142268)
+    #1 walBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69269:10 (threadtest3+0x138fef)
+    #2 sqlite3WalBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69353:10 (threadtest3+0x138fef)
+    #3 pagerBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:61315:8 (threadtest3+0x138fef)
+    #4 sqlite3PagerSharedLock /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:63484:10 (threadtest3+0x138fef)
+    #5 lockBtree /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:74833:8 (threadtest3+0x137aa0)
+    #6 btreeBeginTrans /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:75230:47 (threadtest3+0x137aa0)
+    #7 sqlite3BtreeBeginTrans /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:75330:12 (threadtest3+0x17b63d)
+    #8 sqlite3InitOne /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:143982:10 (threadtest3+0x17b63d)
+    #9 sqlite3Init /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:144169:10 (threadtest3+0x19763b)
+    #10 sqlite3ReadSchema /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:144195:10 (threadtest3+0x19763b)
+    #11 sqlite3Pragma /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:141150:9 (threadtest3+0x1c1425)
+    #12 yy_reduce /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c (threadtest3+0x19f4e1)
+    #13 sqlite3Parser /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:180680:15 (threadtest3+0x11ffd1)
+    #14 sqlite3RunParser /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:182021:5 (threadtest3+0x11ffd1)
+    #15 sqlite3Prepare /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:144506:5 (threadtest3+0x190eea)
+    #16 sqlite3LockAndPrepare /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:144581:10 (threadtest3+0x11d40d)
+    #17 sqlite3_prepare_v2 /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:144668:8 (threadtest3+0x10aade)
+    #18 sqlite3_exec /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:138235:10 (threadtest3+0x10aade)
+    #19 opendb_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:565:7 (threadtest3+0xf4140)
+    #20 walthread2_thread /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1080:5 (threadtest3+0xf641b)
+    #21 launch_thread_main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:788:13 (threadtest3+0xf5950)
+
+  Previous write of size 4 at 0x7ffff7e17060 by thread T12:
+    #0 walIndexRecover /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:67450:22 (threadtest3+0x143585)
+    #1 walIndexReadHdr /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:68587:18 (threadtest3+0x143585)
+    #2 walTryBeginRead /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:68939:12 (threadtest3+0x141e28)
+    #3 walBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69269:10 (threadtest3+0x138fef)
+    #4 sqlite3WalBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69353:10 (threadtest3+0x138fef)
+    #5 pagerBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:61315:8 (threadtest3+0x138fef)
+    #6 sqlite3PagerSharedLock /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:63484:10 (threadtest3+0x138fef)
+    #7 lockBtree /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:74833:8 (threadtest3+0x137aa0)
+    #8 btreeBeginTrans /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:75230:47 (threadtest3+0x137aa0)
+    #9 sqlite3BtreeBeginTrans /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:75330:12 (threadtest3+0x10d43f)
+    #10 sqlite3VdbeExec /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:98410:10 (threadtest3+0x163ca9)
+    #11 sqlite3Step /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:92304:10 (threadtest3+0x108cff)
+    #12 sqlite3_step /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:92365:16 (threadtest3+0x108cff)
+    #13 sqlite3_exec /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:138249:12 (threadtest3+0x10ab60)
+    #14 sql_script_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:600:16 (threadtest3+0xf6533)
+    #15 walthread2_thread /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1085:5 (threadtest3+0xf6533)
+    #16 launch_thread_main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:788:13 (threadtest3+0xf5950)
+
+  Location is global '??' at 0x7ffff7e17000 (test.db-shm+0x60)
+
+  Thread T15 (tid=3652940, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x6cccf)
+    #1 launch_thread_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0xef81c)
+    #2 walthread2 /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1118:3 (threadtest3+0xef81c)
+    #3 main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xeec6c)
+
+  Thread T12 (tid=3652937, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x6cccf)
+    #1 launch_thread_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0xef562)
+    #2 walthread2 /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1115:3 (threadtest3+0xef562)
+    #3 main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xeec6c)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:68991:20 in walTryBeginRead
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3652636)
+  Atomic read of size 4 at 0x7ffff7e17060 by thread T16:
+    #0 walTryBeginRead /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:68991:20 (threadtest3+0x142268)
+    #1 walBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69269:10 (threadtest3+0x138fef)
+    #2 sqlite3WalBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69353:10 (threadtest3+0x138fef)
+    #3 pagerBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:61315:8 (threadtest3+0x138fef)
+    #4 sqlite3PagerSharedLock /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:63484:10 (threadtest3+0x138fef)
+    #5 lockBtree /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:74833:8 (threadtest3+0x137aa0)
+    #6 btreeBeginTrans /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:75230:47 (threadtest3+0x137aa0)
+    #7 sqlite3BtreeBeginTrans /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:75330:12 (threadtest3+0x17b63d)
+    #8 sqlite3InitOne /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:143982:10 (threadtest3+0x17b63d)
+    #9 sqlite3Init /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:144169:10 (threadtest3+0x19763b)
+    #10 sqlite3ReadSchema /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:144195:10 (threadtest3+0x19763b)
+    #11 sqlite3Pragma /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:141150:9 (threadtest3+0x1c1425)
+    #12 yy_reduce /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c (threadtest3+0x19f4e1)
+    #13 sqlite3Parser /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:180680:15 (threadtest3+0x11ffd1)
+    #14 sqlite3RunParser /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:182021:5 (threadtest3+0x11ffd1)
+    #15 sqlite3Prepare /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:144506:5 (threadtest3+0x190eea)
+    #16 sqlite3LockAndPrepare /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:144581:10 (threadtest3+0x11d40d)
+    #17 sqlite3_prepare_v2 /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:144668:8 (threadtest3+0x10aade)
+    #18 sqlite3_exec /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:138235:10 (threadtest3+0x10aade)
+    #19 opendb_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:565:7 (threadtest3+0xf4140)
+    #20 walthread3_thread /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1130:3 (threadtest3+0xf685a)
+    #21 launch_thread_main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:788:13 (threadtest3+0xf5950)
+
+  Previous write of size 4 at 0x7ffff7e17060 by thread T17:
+    #0 walIndexRecover /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:67450:22 (threadtest3+0x143585)
+    #1 walIndexReadHdr /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:68587:18 (threadtest3+0x143585)
+    #2 walTryBeginRead /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:68939:12 (threadtest3+0x141e28)
+    #3 walBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69269:10 (threadtest3+0x138fef)
+    #4 sqlite3WalBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69353:10 (threadtest3+0x138fef)
+    #5 pagerBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:61315:8 (threadtest3+0x138fef)
+    #6 sqlite3PagerSharedLock /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:63484:10 (threadtest3+0x138fef)
+    #7 lockBtree /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:74833:8 (threadtest3+0x137aa0)
+    #8 btreeBeginTrans /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:75230:47 (threadtest3+0x137aa0)
+    #9 sqlite3BtreeBeginTrans /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:75330:12 (threadtest3+0x17b63d)
+    #10 sqlite3InitOne /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:143982:10 (threadtest3+0x17b63d)
+    #11 sqlite3Init /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:144169:10 (threadtest3+0x19763b)
+    #12 sqlite3ReadSchema /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:144195:10 (threadtest3+0x19763b)
+    #13 sqlite3Pragma /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:141150:9 (threadtest3+0x1c1425)
+    #14 yy_reduce /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c (threadtest3+0x19f4e1)
+    #15 sqlite3Parser /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:180680:15 (threadtest3+0x11ffd1)
+    #16 sqlite3RunParser /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:182021:5 (threadtest3+0x11ffd1)
+    #17 sqlite3Prepare /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:144506:5 (threadtest3+0x190eea)
+    #18 sqlite3LockAndPrepare /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:144581:10 (threadtest3+0x11d40d)
+    #19 sqlite3_prepare_v2 /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:144668:8 (threadtest3+0x10aade)
+    #20 sqlite3_exec /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:138235:10 (threadtest3+0x10aade)
+    #21 opendb_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:565:7 (threadtest3+0xf4140)
+    #22 walthread3_thread /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1130:3 (threadtest3+0xf685a)
+    #23 launch_thread_main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:788:13 (threadtest3+0xf5950)
+
+  Location is global '??' at 0x7ffff7e17000 (test.db-shm+0x60)
+
+  Thread T16 (tid=3653249, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x6cccf)
+    #1 launch_thread_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0xefc08)
+    #2 walthread3 /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1179:5 (threadtest3+0xefc08)
+    #3 main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xeec6c)
+
+  Thread T17 (tid=3653250, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x6cccf)
+    #1 launch_thread_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0xefc08)
+    #2 walthread3 /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1179:5 (threadtest3+0xefc08)
+    #3 main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xeec6c)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:68991:20 in walTryBeginRead
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3652636)
+  Write of size 4 at 0x7ffff7e1706c by thread T23:
+    #0 walRestartHdr /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:68035:52 (threadtest3+0x1484be)
+    #1 walRestartLog /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69750:9 (threadtest3+0x1484be)
+    #2 walFrames /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69933:24 (threadtest3+0x1484be)
+    #3 sqlite3WalFrames /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:70139:10 (threadtest3+0x1484be)
+    #4 pagerWalFrames /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:61274:8 (threadtest3+0x1484be)
+    #5 sqlite3PagerCommitPhaseOne /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:64552:14 (threadtest3+0x10e5e0)
+    #6 sqlite3BtreeCommitPhaseOne /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:75849:10 (threadtest3+0x10ed54)
+    #7 vdbeCommit /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:88894:14 (threadtest3+0x153486)
+    #8 sqlite3VdbeHalt /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:89304:16 (threadtest3+0x15231f)
+    #9 sqlite3VdbeExec /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:95662:8 (threadtest3+0x16e78e)
+    #10 sqlite3Step /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:92304:10 (threadtest3+0x108cff)
+    #11 sqlite3_step /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:92365:16 (threadtest3+0x108cff)
+    #12 execsql_i64_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:692:26 (threadtest3+0xf5a54)
+    #13 walthread4_writer_thread /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1208:5 (threadtest3+0xf6ffd)
+    #14 launch_thread_main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:788:13 (threadtest3+0xf5950)
+
+  Previous atomic read of size 4 at 0x7ffff7e1706c by thread T22:
+    #0 walTryBeginRead /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69040:22 (threadtest3+0x141b9b)
+    #1 walBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69269:10 (threadtest3+0x138fef)
+    #2 sqlite3WalBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69353:10 (threadtest3+0x138fef)
+    #3 pagerBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:61315:8 (threadtest3+0x138fef)
+    #4 sqlite3PagerSharedLock /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:63484:10 (threadtest3+0x138fef)
+    #5 lockBtree /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:74833:8 (threadtest3+0x137aa0)
+    #6 btreeBeginTrans /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:75230:47 (threadtest3+0x137aa0)
+    #7 sqlite3BtreeBeginTrans /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:75330:12 (threadtest3+0x10d43f)
+    #8 sqlite3VdbeExec /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:98410:10 (threadtest3+0x163ca9)
+    #9 sqlite3Step /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:92304:10 (threadtest3+0x108cff)
+    #10 sqlite3_step /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:92365:16 (threadtest3+0x108cff)
+    #11 integrity_check_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:758:26 (threadtest3+0xf5b6f)
+    #12 walthread4_reader_thread /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1192:5 (threadtest3+0xf6d64)
+    #13 launch_thread_main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:788:13 (threadtest3+0xf5950)
+
+  Location is global '??' at 0x7ffff7e17000 (test.db-shm+0x6c)
+
+  Thread T23 (tid=3653687, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x6cccf)
+    #1 launch_thread_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0xf006d)
+    #2 walthread4 /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1234:3 (threadtest3+0xf006d)
+    #3 main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xeec6c)
+
+  Thread T22 (tid=3653686, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x6cccf)
+    #1 launch_thread_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0xeff80)
+    #2 walthread4 /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1233:3 (threadtest3+0xeff80)
+    #3 main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xeec6c)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:68035:52 in walRestartHdr
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3652636)
+  Write of size 4 at 0x7ffff7e17070 by thread T23:
+    #0 walRestartHdr /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:68035:52 (threadtest3+0x1484cf)
+    #1 walRestartLog /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69750:9 (threadtest3+0x1484cf)
+    #2 walFrames /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69933:24 (threadtest3+0x1484cf)
+    #3 sqlite3WalFrames /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:70139:10 (threadtest3+0x1484cf)
+    #4 pagerWalFrames /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:61274:8 (threadtest3+0x1484cf)
+    #5 sqlite3PagerCommitPhaseOne /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:64552:14 (threadtest3+0x10e5e0)
+    #6 sqlite3BtreeCommitPhaseOne /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:75849:10 (threadtest3+0x10ed54)
+    #7 vdbeCommit /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:88894:14 (threadtest3+0x153486)
+    #8 sqlite3VdbeHalt /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:89304:16 (threadtest3+0x15231f)
+    #9 sqlite3VdbeExec /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:95662:8 (threadtest3+0x16e78e)
+    #10 sqlite3Step /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:92304:10 (threadtest3+0x108cff)
+    #11 sqlite3_step /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:92365:16 (threadtest3+0x108cff)
+    #12 execsql_i64_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:692:26 (threadtest3+0xf5a54)
+    #13 walthread4_writer_thread /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1208:5 (threadtest3+0xf6ffd)
+    #14 launch_thread_main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:788:13 (threadtest3+0xf5950)
+
+  Previous atomic read of size 4 at 0x7ffff7e17070 by thread T22:
+    #0 walTryBeginRead /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69040:22 (threadtest3+0x141bc6)
+    #1 walBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69269:10 (threadtest3+0x138fef)
+    #2 sqlite3WalBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69353:10 (threadtest3+0x138fef)
+    #3 pagerBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:61315:8 (threadtest3+0x138fef)
+    #4 sqlite3PagerSharedLock /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:63484:10 (threadtest3+0x138fef)
+    #5 lockBtree /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:74833:8 (threadtest3+0x137aa0)
+    #6 btreeBeginTrans /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:75230:47 (threadtest3+0x137aa0)
+    #7 sqlite3BtreeBeginTrans /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:75330:12 (threadtest3+0x10d43f)
+    #8 sqlite3VdbeExec /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:98410:10 (threadtest3+0x163ca9)
+    #9 sqlite3Step /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:92304:10 (threadtest3+0x108cff)
+    #10 sqlite3_step /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:92365:16 (threadtest3+0x108cff)
+    #11 integrity_check_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:758:26 (threadtest3+0xf5b6f)
+    #12 walthread4_reader_thread /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1192:5 (threadtest3+0xf6d64)
+    #13 launch_thread_main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:788:13 (threadtest3+0xf5950)
+
+  Location is global '??' at 0x7ffff7e17000 (test.db-shm+0x70)
+
+  Thread T23 (tid=3653687, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x6cccf)
+    #1 launch_thread_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0xf006d)
+    #2 walthread4 /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1234:3 (threadtest3+0xf006d)
+    #3 main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xeec6c)
+
+  Thread T22 (tid=3653686, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x6cccf)
+    #1 launch_thread_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0xeff80)
+    #2 walthread4 /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1233:3 (threadtest3+0xeff80)
+    #3 main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xeec6c)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:68035:52 in walRestartHdr
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3652636)
+  Atomic read of size 4 at 0x7ffff7e17068 by thread T22:
+    #0 walTryBeginRead /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69040:22 (threadtest3+0x141b80)
+    #1 walBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69269:10 (threadtest3+0x138fef)
+    #2 sqlite3WalBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69353:10 (threadtest3+0x138fef)
+    #3 pagerBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:61315:8 (threadtest3+0x138fef)
+    #4 sqlite3PagerSharedLock /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:63484:10 (threadtest3+0x138fef)
+    #5 lockBtree /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:74833:8 (threadtest3+0x137aa0)
+    #6 btreeBeginTrans /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:75230:47 (threadtest3+0x137aa0)
+    #7 sqlite3BtreeBeginTrans /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:75330:12 (threadtest3+0x10d43f)
+    #8 sqlite3VdbeExec /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:98410:10 (threadtest3+0x163ca9)
+    #9 sqlite3Step /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:92304:10 (threadtest3+0x108cff)
+    #10 sqlite3_step /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:92365:16 (threadtest3+0x108cff)
+    #11 integrity_check_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:758:26 (threadtest3+0xf5b6f)
+    #12 walthread4_reader_thread /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1192:5 (threadtest3+0xf6d64)
+    #13 launch_thread_main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:788:13 (threadtest3+0xf5950)
+
+  Previous write of size 4 at 0x7ffff7e17068 by thread T23:
+    #0 walRestartHdr /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:68034:23 (threadtest3+0x1484ad)
+    #1 walRestartLog /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69750:9 (threadtest3+0x1484ad)
+    #2 walFrames /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69933:24 (threadtest3+0x1484ad)
+    #3 sqlite3WalFrames /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:70139:10 (threadtest3+0x1484ad)
+    #4 pagerWalFrames /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:61274:8 (threadtest3+0x1484ad)
+    #5 sqlite3PagerCommitPhaseOne /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:64552:14 (threadtest3+0x10e5e0)
+    #6 sqlite3BtreeCommitPhaseOne /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:75849:10 (threadtest3+0x10ed54)
+    #7 vdbeCommit /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:88894:14 (threadtest3+0x153486)
+    #8 sqlite3VdbeHalt /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:89304:16 (threadtest3+0x15231f)
+    #9 sqlite3VdbeExec /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:95662:8 (threadtest3+0x16e78e)
+    #10 sqlite3Step /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:92304:10 (threadtest3+0x108cff)
+    #11 sqlite3_step /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:92365:16 (threadtest3+0x108cff)
+    #12 execsql_i64_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:692:26 (threadtest3+0xf5a54)
+    #13 walthread4_writer_thread /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1208:5 (threadtest3+0xf6ffd)
+    #14 launch_thread_main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:788:13 (threadtest3+0xf5950)
+
+  Location is global '??' at 0x7ffff7e17000 (test.db-shm+0x68)
+
+  Thread T22 (tid=3653686, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x6cccf)
+    #1 launch_thread_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0xeff80)
+    #2 walthread4 /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1233:3 (threadtest3+0xeff80)
+    #3 main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xeec6c)
+
+  Thread T23 (tid=3653687, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x6cccf)
+    #1 launch_thread_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0xf006d)
+    #2 walthread4 /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1234:3 (threadtest3+0xf006d)
+    #3 main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xeec6c)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69040:22 in walTryBeginRead
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3652636)
+  Write of size 4 at 0x7ffff7e17074 by thread T23:
+    #0 walRestartHdr /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:68035:52 (threadtest3+0x1484e0)
+    #1 walRestartLog /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69750:9 (threadtest3+0x1484e0)
+    #2 walFrames /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69933:24 (threadtest3+0x1484e0)
+    #3 sqlite3WalFrames /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:70139:10 (threadtest3+0x1484e0)
+    #4 pagerWalFrames /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:61274:8 (threadtest3+0x1484e0)
+    #5 sqlite3PagerCommitPhaseOne /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:64552:14 (threadtest3+0x10e5e0)
+    #6 sqlite3BtreeCommitPhaseOne /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:75849:10 (threadtest3+0x10ed54)
+    #7 vdbeCommit /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:88894:14 (threadtest3+0x153486)
+    #8 sqlite3VdbeHalt /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:89304:16 (threadtest3+0x15231f)
+    #9 sqlite3VdbeExec /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:95662:8 (threadtest3+0x16e78e)
+    #10 sqlite3Step /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:92304:10 (threadtest3+0x108cff)
+    #11 sqlite3_step /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:92365:16 (threadtest3+0x108cff)
+    #12 execsql_i64_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:692:26 (threadtest3+0xf5a54)
+    #13 walthread4_writer_thread /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1208:5 (threadtest3+0xf6ffd)
+    #14 launch_thread_main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:788:13 (threadtest3+0xf5950)
+
+  Previous atomic read of size 4 at 0x7ffff7e17074 by thread T22:
+    #0 walTryBeginRead /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69040:22 (threadtest3+0x141bf0)
+    #1 walBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69269:10 (threadtest3+0x138fef)
+    #2 sqlite3WalBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:69353:10 (threadtest3+0x138fef)
+    #3 pagerBeginReadTransaction /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:61315:8 (threadtest3+0x138fef)
+    #4 sqlite3PagerSharedLock /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:63484:10 (threadtest3+0x138fef)
+    #5 lockBtree /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:74833:8 (threadtest3+0x137aa0)
+    #6 btreeBeginTrans /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:75230:47 (threadtest3+0x137aa0)
+    #7 sqlite3BtreeBeginTrans /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:75330:12 (threadtest3+0x10d43f)
+    #8 sqlite3VdbeExec /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:98410:10 (threadtest3+0x163ca9)
+    #9 sqlite3Step /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:92304:10 (threadtest3+0x108cff)
+    #10 sqlite3_step /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:92365:16 (threadtest3+0x108cff)
+    #11 integrity_check_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:758:26 (threadtest3+0xf5b6f)
+    #12 walthread4_reader_thread /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1192:5 (threadtest3+0xf6d64)
+    #13 launch_thread_main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:788:13 (threadtest3+0xf5950)
+
+  Location is global '??' at 0x7ffff7e17000 (test.db-shm+0x74)
+
+  Thread T23 (tid=3653687, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x6cccf)
+    #1 launch_thread_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0xf006d)
+    #2 walthread4 /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1234:3 (threadtest3+0xf006d)
+    #3 main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xeec6c)
+
+  Thread T22 (tid=3653686, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x6cccf)
+    #1 launch_thread_x /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0xeff80)
+    #2 walthread4 /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1233:3 (threadtest3+0xeff80)
+    #3 main /home/alexey/tsan-experiments/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xeec6c)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/sql/sqlite/build/sqlite3.c:68035:52 in walRestartHdr
+==================
+ThreadSanitizer: reported 6 warnings

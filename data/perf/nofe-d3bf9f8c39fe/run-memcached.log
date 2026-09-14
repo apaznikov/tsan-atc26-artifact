@@ -1,0 +1,21 @@
+[2026-09-10 14:13:26] memcached tsan-sound run1 rc=0 193.3s outside_busy=0.0593 inside_busy=0.5611 foreign_cpu_share=0.0821
+ok
+[2026-09-10 14:19:20] memcached tsan-sound-nofe run1 rc=0 181.2s outside_busy=0.046 inside_busy=0.5758 foreign_cpu_share=0.0656
+ok
+[2026-09-10 14:22:37] memcached tsan-sound run2 rc=0 183.2s outside_busy=0.0335 inside_busy=0.5656 foreign_cpu_share=0.043
+ok
+[2026-09-10 14:25:48] memcached tsan-sound-nofe run2 rc=0 184.2s outside_busy=0.0226 inside_busy=0.5568 foreign_cpu_share=0.0274
+ok
+[2026-09-10 14:28:44] memcached tsan-sound run3 rc=0 170.2s outside_busy=0.0167 inside_busy=0.5784 foreign_cpu_share=0.0199
+ok
+[2026-09-10 14:31:39] memcached tsan-sound-nofe run3 rc=0 170.2s outside_busy=0.0097 inside_busy=0.5704 foreign_cpu_share=0.0097
+ok
+[2026-09-10 14:34:38] memcached tsan-sound run4 rc=0 174.2s outside_busy=0.0234 inside_busy=0.5763 foreign_cpu_share=0.033
+ok
+[2026-09-10 14:37:36] memcached tsan-sound-nofe run4 rc=0 178.2s outside_busy=0.0256 inside_busy=0.5676 foreign_cpu_share=0.0328
+ok
+[2026-09-10 14:40:42] memcached tsan-sound run5 rc=0 185.2s outside_busy=0.0539 inside_busy=0.5697 foreign_cpu_share=0.0753
+ok
+[2026-09-10 14:43:45] memcached tsan-sound-nofe run5 rc=0 182.2s outside_busy=0.0319 inside_busy=0.5682 foreign_cpu_share=0.0419
+ok
+[2026-09-10 14:43:45] done: memcached N=5 -> /home/alexey/tsan-experiments/tools/perf/results/nofe-d3bf9f8c39fe/memcached

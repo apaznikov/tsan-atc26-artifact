@@ -1,0 +1,29 @@
+Sysbench script: /usr/share/sysbench/oltp_read_only.lua
+[95msysbench /usr/share/sysbench/oltp_read_only.lua --mysql-user=root --mysql-socket=/tmp/mysql.sock  --threads=18 --time=180 --rand-type=special run | awk '/Latency \(ms\):/ { exit; } 1'[0m
+sysbench 1.0.20 (using system LuaJIT 2.1.0-beta3)
+
+Running the test with following options:
+Number of threads: 18
+Initializing random number generator from current time
+
+
+Initializing worker threads...
+
+Threads started!
+
+SQL statistics:
+    queries performed:
+        read:                            114408
+        write:                           0
+        other:                           16344
+        total:                           130752
+    transactions:                        8172   (45.34 per sec.)
+    queries:                             130752 (725.46 per sec.)
+    ignored errors:                      0      (0.00 per sec.)
+    reconnects:                          0      (0.00 per sec.)
+
+General statistics:
+    total time:                          180.2315s
+    total number of events:              8172
+
+MySQL build: ..

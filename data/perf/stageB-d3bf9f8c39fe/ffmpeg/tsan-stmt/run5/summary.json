@@ -1,0 +1,92 @@
+{
+  "benchmarks": [
+    {
+      "codec": "h264_libx264",
+      "build": "ffmpeg-tsan-stmt",
+      "runs": {
+        "successful": 1,
+        "total": 1
+      },
+      "time": {
+        "mean_s": 42.4200,
+        "stddev_s": 0,
+        "min_s": 42.42,
+        "max_s": 42.42
+      },
+      "cpu": {
+        "mean_user_s": 217.1100,
+        "mean_system_s": 6.7600
+      },
+      "memory": {
+        "max_peak_kb": 582112
+      },
+      "command_template": "ffmpeg-tsan-stmt/bin/ffmpeg -hide_banner -i \"./input/WatchingEyeTexture.mkv\" -threads 4 -y -c:v libx264 -preset medium -crf 23  -loglevel error /dev/shm/out.mp4"
+    },
+    {
+      "codec": "copy_passthrough",
+      "build": "ffmpeg-tsan-stmt",
+      "runs": {
+        "successful": 1,
+        "total": 1
+      },
+      "time": {
+        "mean_s": 0.4400,
+        "stddev_s": 0,
+        "min_s": 0.44,
+        "max_s": 0.44
+      },
+      "cpu": {
+        "mean_user_s": 0.3500,
+        "mean_system_s": 0.0900
+      },
+      "memory": {
+        "max_peak_kb": 83840
+      },
+      "command_template": "ffmpeg-tsan-stmt/bin/ffmpeg -hide_banner -i \"./input/WatchingEyeTexture.mkv\" -threads 4 -y -c:v copy -c:a copy  -loglevel error /dev/shm/out.mkv"
+    },
+    {
+      "codec": "mjpeg",
+      "build": "ffmpeg-tsan-stmt",
+      "runs": {
+        "successful": 1,
+        "total": 1
+      },
+      "time": {
+        "mean_s": 23.9100,
+        "stddev_s": 0,
+        "min_s": 23.91,
+        "max_s": 23.91
+      },
+      "cpu": {
+        "mean_user_s": 172.9100,
+        "mean_system_s": 1.5400
+      },
+      "memory": {
+        "max_peak_kb": 430160
+      },
+      "command_template": "ffmpeg-tsan-stmt/bin/ffmpeg -hide_banner -i \"./input/WatchingEyeTexture.mkv\" -threads 4 -y -c:v mjpeg -pix_fmt yuvj420p -q:v 2  -loglevel error /dev/shm/out.avi"
+    },
+    {
+      "codec": "h265_libx265",
+      "build": "ffmpeg-tsan-stmt",
+      "runs": {
+        "successful": 1,
+        "total": 1
+      },
+      "time": {
+        "mean_s": 51.7300,
+        "stddev_s": 0,
+        "min_s": 51.73,
+        "max_s": 51.73
+      },
+      "cpu": {
+        "mean_user_s": 548.0700,
+        "mean_system_s": 7.1300
+      },
+      "memory": {
+        "max_peak_kb": 1645544
+      },
+      "command_template": "ffmpeg-tsan-stmt/bin/ffmpeg -hide_banner -i \"./input/WatchingEyeTexture.mkv\" -threads 4 -y -c:v libx265 -preset medium -crf 28 -tag:v hvc1  -loglevel error /dev/shm/out.mp4"
+    }
+  ]
+}

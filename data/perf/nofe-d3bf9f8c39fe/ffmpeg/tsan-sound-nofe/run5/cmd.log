@@ -1,0 +1,40 @@
+jq found, will generate JSON output to /home/alexey/tsan-experiments/tools/perf/results/nofe-d3bf9f8c39fe/ffmpeg/tsan-sound-nofe/run5/summary.json.
+--- FFmpeg Benchmark Start (using /usr/bin/time) ---
+Builds to test: ffmpeg-tsan-sound-nofe
+Video file: ./input/WatchingEyeTexture.mkv
+Runs per test: 1
+
+--- Benchmarking: Codec [h264_libx264], Build [ffmpeg-tsan-sound-nofe] ---
+
+[96;1mffmpeg-tsan-sound-nofe/bin/ffmpeg -hide_banner -i "./input/WatchingEyeTexture.mkv" -threads 4 -y -c:v libx264 -preset medium -crf 23  -loglevel error /dev/shm/out.mp4[0m
+
+  Run 1/1... OK (Time: 47.5s, Mem: 574376KB)
+  Results: Time(avg±std): 47.5000s ± 0s | Mem(peak): 574376KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [copy_passthrough], Build [ffmpeg-tsan-sound-nofe] ---
+
+[96;1mffmpeg-tsan-sound-nofe/bin/ffmpeg -hide_banner -i "./input/WatchingEyeTexture.mkv" -threads 4 -y -c:v copy -c:a copy  -loglevel error /dev/shm/out.mkv[0m
+
+  Run 1/1... OK (Time: 0.76s, Mem: 79344KB)
+  Results: Time(avg±std): .7600s ± 0s | Mem(peak): 79344KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [mjpeg], Build [ffmpeg-tsan-sound-nofe] ---
+
+[96;1mffmpeg-tsan-sound-nofe/bin/ffmpeg -hide_banner -i "./input/WatchingEyeTexture.mkv" -threads 4 -y -c:v mjpeg -pix_fmt yuvj420p -q:v 2  -loglevel error /dev/shm/out.avi[0m
+
+  Run 1/1... OK (Time: 26.41s, Mem: 423236KB)
+  Results: Time(avg±std): 26.4100s ± 0s | Mem(peak): 423236KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [h265_libx265], Build [ffmpeg-tsan-sound-nofe] ---
+
+[96;1mffmpeg-tsan-sound-nofe/bin/ffmpeg -hide_banner -i "./input/WatchingEyeTexture.mkv" -threads 4 -y -c:v libx265 -preset medium -crf 28 -tag:v hvc1  -loglevel error /dev/shm/out.mp4[0m
+
+  Run 1/1... OK (Time: 54.83s, Mem: 1650796KB)
+  Results: Time(avg±std): 54.8300s ± 0s | Mem(peak): 1650796KB | Runs: 1/1
+--------------------------------------------------------
+
+JSON results have been finalized in /home/alexey/tsan-experiments/tools/perf/results/nofe-d3bf9f8c39fe/ffmpeg/tsan-sound-nofe/run5/summary.json
+Benchmark finished. CSV results are in /home/alexey/tsan-experiments/tools/perf/results/nofe-d3bf9f8c39fe/ffmpeg/tsan-sound-nofe/run5/summary.csv

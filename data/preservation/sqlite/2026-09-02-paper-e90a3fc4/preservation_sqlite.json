@@ -1,0 +1,169 @@
+{
+ "app": "sqlite",
+ "baseline": "tsan",
+ "configs": {
+  "tsan": {
+   "runs": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "reports_per_run": [
+    2,
+    3,
+    5,
+    4,
+    4,
+    2,
+    3,
+    3,
+    3,
+    0
+   ],
+   "distinct_l1_per_run": [
+    2,
+    3,
+    3,
+    4,
+    4,
+    2,
+    3,
+    3,
+    3,
+    0
+   ],
+   "distinct_l2_per_run": [
+    1,
+    2,
+    2,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    0
+   ],
+   "union_l1": {
+    "data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm+0x70": 9,
+    "data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68034 | mapped:test.db-shm+0x68": 9,
+    "data race | atomic read:walTryBeginRead@sqlite3.c:68991 | write:walIndexRecover@sqlite3.c:67450 | mapped:test.db-shm+0x60": 5,
+    "data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm+0x6c": 2,
+    "data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm+0x74": 2
+   },
+   "union_l2": {
+    "data race | atomic read:walTryBeginRead | write:walRestartHdr | mapped:test.db-shm": 9,
+    "data race | atomic read:walTryBeginRead | write:walIndexRecover | mapped:test.db-shm": 5
+   },
+   "kinds": {
+    "data race": 29
+   },
+   "reported_counter": [
+    2,
+    3,
+    5,
+    4,
+    4,
+    2,
+    3,
+    3,
+    3,
+    null
+   ]
+  },
+  "tsan-dom_peeling-ea-lo-st-swmr": {
+   "runs": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "reports_per_run": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   "distinct_l1_per_run": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   "distinct_l2_per_run": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   "union_l1": {
+    "data race | atomic read:walTryBeginRead@sqlite3.c:68991 | write:walIndexRecover@sqlite3.c:67450 | mapped:test.db-shm+0x60": 1
+   },
+   "union_l2": {
+    "data race | atomic read:walTryBeginRead | write:walIndexRecover | mapped:test.db-shm": 1
+   },
+   "kinds": {
+    "data race": 1
+   },
+   "reported_counter": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    1,
+    null,
+    null,
+    null
+   ]
+  }
+ },
+ "compare": {
+  "tsan-dom_peeling-ea-lo-st-swmr": {
+   "lost_l1": [
+    "data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68034 | mapped:test.db-shm+0x68",
+    "data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm+0x6c",
+    "data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm+0x70",
+    "data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm+0x74"
+   ],
+   "new_l1": [],
+   "lost_l2": [
+    "data race | atomic read:walTryBeginRead | write:walRestartHdr | mapped:test.db-shm"
+   ],
+   "new_l2": [],
+   "relocated": []
+  }
+ }
+}

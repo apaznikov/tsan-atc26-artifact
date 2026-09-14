@@ -1,0 +1,286 @@
+{
+ "app": "sqlite",
+ "baseline": "tsan",
+ "configs": {
+  "tsan": {
+   "runs": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "reports_per_run": [
+    5,
+    4,
+    5,
+    4,
+    5,
+    5,
+    5,
+    5,
+    4,
+    4
+   ],
+   "distinct_l1_per_run": [
+    5,
+    4,
+    5,
+    4,
+    5,
+    5,
+    5,
+    5,
+    4,
+    4
+   ],
+   "distinct_l2_per_run": [
+    2,
+    2,
+    2,
+    1,
+    2,
+    2,
+    2,
+    2,
+    1,
+    1
+   ],
+   "union_l1": {
+    "data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm+0x74": 9,
+    "data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm+0x6c": 10,
+    "data race | atomic read:walTryBeginRead@sqlite3.c:68991 | write:walIndexRecover@sqlite3.c:67450 | mapped:test.db-shm+0x60": 6,
+    "data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68034 | mapped:test.db-shm+0x68": 10,
+    "data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm+0x70": 10,
+    "data race | read:sqlite3BtreeSchema@sqlite3.c | write:sqlite3BtreeSchema@sqlite3.c:82865 | heap:sqlite3MemMalloc@sqlite3.c:27279": 1
+   },
+   "union_l2": {
+    "data race | atomic read:walTryBeginRead | write:walRestartHdr | mapped:test.db-shm": 10,
+    "data race | atomic read:walTryBeginRead | write:walIndexRecover | mapped:test.db-shm": 6,
+    "data race | read:sqlite3BtreeSchema | write:sqlite3BtreeSchema | heap:sqlite3MemMalloc": 1
+   },
+   "union_l3": {
+    "data race | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm": 10,
+    "data race | write:walRestartHdr@sqlite3.c:68034 | mapped:test.db-shm": 10,
+    "data race | write:walIndexRecover@sqlite3.c:67450 | mapped:test.db-shm": 6,
+    "data race | write:sqlite3BtreeSchema@sqlite3.c:82865 | heap:sqlite3MemMalloc": 1
+   },
+   "kinds": {
+    "data race": 46
+   },
+   "reported_counter": [
+    5,
+    4,
+    5,
+    4,
+    5,
+    5,
+    5,
+    5,
+    4,
+    4
+   ]
+  },
+  "tsan-dom_peeling-ea-lo-st-swmr": {
+   "runs": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "reports_per_run": [
+    8,
+    5,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    3,
+    4
+   ],
+   "distinct_l1_per_run": [
+    5,
+    5,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    3,
+    4
+   ],
+   "distinct_l2_per_run": [
+    2,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "union_l1": {
+    "data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm+0x74": 9,
+    "data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm+0x6c": 10,
+    "data race | atomic read:walTryBeginRead@sqlite3.c:68991 | write:walIndexRecover@sqlite3.c:67450 | mapped:test.db-shm+0x60": 2,
+    "data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68034 | mapped:test.db-shm+0x68": 10,
+    "data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm+0x70": 10
+   },
+   "union_l2": {
+    "data race | atomic read:walTryBeginRead | write:walRestartHdr | mapped:test.db-shm": 10,
+    "data race | atomic read:walTryBeginRead | write:walIndexRecover | mapped:test.db-shm": 2
+   },
+   "union_l3": {
+    "data race | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm": 10,
+    "data race | write:walRestartHdr@sqlite3.c:68034 | mapped:test.db-shm": 10,
+    "data race | write:walIndexRecover@sqlite3.c:67450 | mapped:test.db-shm": 2
+   },
+   "kinds": {
+    "data race": 44
+   },
+   "reported_counter": [
+    8,
+    5,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    3,
+    4
+   ]
+  },
+  "tsan-sound": {
+   "runs": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "reports_per_run": [
+    3,
+    4,
+    4,
+    5,
+    4,
+    4,
+    4,
+    5,
+    4,
+    4
+   ],
+   "distinct_l1_per_run": [
+    3,
+    4,
+    4,
+    5,
+    4,
+    4,
+    4,
+    5,
+    4,
+    4
+   ],
+   "distinct_l2_per_run": [
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1
+   ],
+   "union_l1": {
+    "data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm+0x70": 10,
+    "data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68034 | mapped:test.db-shm+0x68": 10,
+    "data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm+0x6c": 10,
+    "data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm+0x74": 9,
+    "data race | atomic read:walTryBeginRead@sqlite3.c:68991 | write:walIndexRecover@sqlite3.c:67450 | mapped:test.db-shm+0x60": 2
+   },
+   "union_l2": {
+    "data race | atomic read:walTryBeginRead | write:walRestartHdr | mapped:test.db-shm": 10,
+    "data race | atomic read:walTryBeginRead | write:walIndexRecover | mapped:test.db-shm": 2
+   },
+   "union_l3": {
+    "data race | write:walRestartHdr@sqlite3.c:68034 | mapped:test.db-shm": 10,
+    "data race | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm": 10,
+    "data race | write:walIndexRecover@sqlite3.c:67450 | mapped:test.db-shm": 2
+   },
+   "kinds": {
+    "data race": 41
+   },
+   "reported_counter": [
+    3,
+    4,
+    4,
+    5,
+    4,
+    4,
+    4,
+    5,
+    4,
+    4
+   ]
+  }
+ },
+ "compare": {
+  "tsan-dom_peeling-ea-lo-st-swmr": {
+   "lost_l1": [
+    "data race | read:sqlite3BtreeSchema@sqlite3.c | write:sqlite3BtreeSchema@sqlite3.c:82865 | heap:sqlite3MemMalloc@sqlite3.c:27279"
+   ],
+   "new_l1": [],
+   "lost_l2": [
+    "data race | read:sqlite3BtreeSchema | write:sqlite3BtreeSchema | heap:sqlite3MemMalloc"
+   ],
+   "new_l2": [],
+   "relocated": [],
+   "lost_l3": [
+    "data race | write:sqlite3BtreeSchema@sqlite3.c:82865 | heap:sqlite3MemMalloc"
+   ],
+   "new_l3": [],
+   "relocated_l3": []
+  },
+  "tsan-sound": {
+   "lost_l1": [
+    "data race | read:sqlite3BtreeSchema@sqlite3.c | write:sqlite3BtreeSchema@sqlite3.c:82865 | heap:sqlite3MemMalloc@sqlite3.c:27279"
+   ],
+   "new_l1": [],
+   "lost_l2": [
+    "data race | read:sqlite3BtreeSchema | write:sqlite3BtreeSchema | heap:sqlite3MemMalloc"
+   ],
+   "new_l2": [],
+   "relocated": [],
+   "lost_l3": [
+    "data race | write:sqlite3BtreeSchema@sqlite3.c:82865 | heap:sqlite3MemMalloc"
+   ],
+   "new_l3": [],
+   "relocated_l3": []
+  }
+ }
+}

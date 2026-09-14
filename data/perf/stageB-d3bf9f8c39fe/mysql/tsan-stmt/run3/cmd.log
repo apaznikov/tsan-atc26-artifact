@@ -1,0 +1,99 @@
+[95m../mysql-tsan-stmt/bin/mysqld --datadir=/tmp/mysql-benchmarks-datadir &[0m
+[94mWaiting for estabilishing the server main worker loop (1/900)...[m
+[94mWaiting for estabilishing the server main worker loop (2/900)...[m
+[94mWaiting for estabilishing the server main worker loop (3/900)...[m
+[94mWaiting for estabilishing the server main worker loop (4/900)...[m
+[94mWaiting for estabilishing the server main worker loop (5/900)...[m
+[94mWaiting for estabilishing the server main worker loop (6/900)...[m
+[94mWaiting for estabilishing the server main worker loop (7/900)...[m
+[94mWaiting finished at 7/900.
+sysbench 1.0.20 (using system LuaJIT 2.1.0-beta3)
+
+Creating table 'sbtest1'...
+Inserting 10000 records into 'sbtest1'
+Creating a secondary index on 'sbtest1'...
+sysbench 1.0.20 (using system LuaJIT 2.1.0-beta3)
+
+Dropping table 'sbtest1'...
+oltp_read_write.lua rc=0
+[95m../mysql-tsan-stmt/bin/mysqld --datadir=/tmp/mysql-benchmarks-datadir &[0m
+[94mWaiting for estabilishing the server main worker loop (1/900)...[m
+[94mWaiting for estabilishing the server main worker loop (2/900)...[m
+[94mWaiting for estabilishing the server main worker loop (3/900)...[m
+[94mWaiting for estabilishing the server main worker loop (4/900)...[m
+[94mWaiting for estabilishing the server main worker loop (5/900)...[m
+[94mWaiting for estabilishing the server main worker loop (6/900)...[m
+[94mWaiting for estabilishing the server main worker loop (7/900)...[m
+[94mWaiting for estabilishing the server main worker loop (8/900)...[m
+[94mWaiting for estabilishing the server main worker loop (9/900)...[m
+[94mWaiting finished at 9/900.
+sysbench 1.0.20 (using system LuaJIT 2.1.0-beta3)
+
+Creating table 'sbtest1'...
+Inserting 10000 records into 'sbtest1'
+Creating a secondary index on 'sbtest1'...
+sysbench 1.0.20 (using system LuaJIT 2.1.0-beta3)
+
+Dropping table 'sbtest1'...
+oltp_read_only.lua rc=0
+[95m../mysql-tsan-stmt/bin/mysqld --datadir=/tmp/mysql-benchmarks-datadir &[0m
+[94mWaiting for estabilishing the server main worker loop (1/900)...[m
+[94mWaiting for estabilishing the server main worker loop (2/900)...[m
+[94mWaiting for estabilishing the server main worker loop (3/900)...[m
+[94mWaiting for estabilishing the server main worker loop (4/900)...[m
+[94mWaiting for estabilishing the server main worker loop (5/900)...[m
+[94mWaiting for estabilishing the server main worker loop (6/900)...[m
+[94mWaiting for estabilishing the server main worker loop (7/900)...[m
+[94mWaiting finished at 7/900.
+sysbench 1.0.20 (using system LuaJIT 2.1.0-beta3)
+
+Creating table 'sbtest1'...
+Inserting 10000 records into 'sbtest1'
+Creating a secondary index on 'sbtest1'...
+sysbench 1.0.20 (using system LuaJIT 2.1.0-beta3)
+
+Dropping table 'sbtest1'...
+oltp_write_only.lua rc=0
+[95m../mysql-tsan-stmt/bin/mysqld --datadir=/tmp/mysql-benchmarks-datadir &[0m
+[94mWaiting for estabilishing the server main worker loop (1/900)...[m
+[94mWaiting for estabilishing the server main worker loop (2/900)...[m
+[94mWaiting for estabilishing the server main worker loop (3/900)...[m
+[94mWaiting for estabilishing the server main worker loop (4/900)...[m
+[94mWaiting for estabilishing the server main worker loop (5/900)...[m
+[94mWaiting for estabilishing the server main worker loop (6/900)...[m
+[94mWaiting for estabilishing the server main worker loop (7/900)...[m
+[94mWaiting for estabilishing the server main worker loop (8/900)...[m
+[94mWaiting for estabilishing the server main worker loop (9/900)...[m
+[94mWaiting for estabilishing the server main worker loop (10/900)...[m
+[94mWaiting for estabilishing the server main worker loop (11/900)...[m
+[94mWaiting for estabilishing the server main worker loop (12/900)...[m
+[94mWaiting for estabilishing the server main worker loop (13/900)...[m
+[94mWaiting for estabilishing the server main worker loop (14/900)...[m
+[94mWaiting finished at 14/900.
+sysbench 1.0.20 (using system LuaJIT 2.1.0-beta3)
+
+Creating table 'sbtest1'...
+Inserting 10000 records into 'sbtest1'
+Creating a secondary index on 'sbtest1'...
+sysbench 1.0.20 (using system LuaJIT 2.1.0-beta3)
+
+Dropping table 'sbtest1'...
+select_random_ranges.lua rc=0
+[95m../mysql-tsan-stmt/bin/mysqld --datadir=/tmp/mysql-benchmarks-datadir &[0m
+[94mWaiting for estabilishing the server main worker loop (1/900)...[m
+[94mWaiting for estabilishing the server main worker loop (2/900)...[m
+[94mWaiting for estabilishing the server main worker loop (3/900)...[m
+[94mWaiting for estabilishing the server main worker loop (4/900)...[m
+[94mWaiting for estabilishing the server main worker loop (5/900)...[m
+[94mWaiting for estabilishing the server main worker loop (6/900)...[m
+[94mWaiting for estabilishing the server main worker loop (7/900)...[m
+[94mWaiting finished at 7/900.
+sysbench 1.0.20 (using system LuaJIT 2.1.0-beta3)
+
+Creating table 'sbtest1'...
+Inserting 10000 records into 'sbtest1'
+Creating a secondary index on 'sbtest1'...
+sysbench 1.0.20 (using system LuaJIT 2.1.0-beta3)
+
+Dropping table 'sbtest1'...
+select_random_points.lua rc=0

@@ -1,0 +1,126 @@
+[warn] $LLVM_ROOT_PATH=/home/alexey/dev/llvm-project/llvm/build differs from --llvm-root=/home/alexey/dev/llvm-project-focs-lab/llvm/build; the manifest describes the latter
+output: /home/alexey/tsan-experiments/tools/preservation/results/memcached/2026-09-02-final-b4bf8b8f4613
+compiler: clang version 19.0.0git (https://github.com/focs-lab/llvm-project b4bf8b8f46132f7844819510ad5055babf57307a) branch=tsan-dev head=b4bf8b8f4613 ninja=None
+TSAN_OPTIONS template: log_path=/home/alexey/tsan-experiments/tools/preservation/results/memcached/2026-09-02-final-b4bf8b8f4613/logs/memcached.<cfg>.0 exitcode=0 external_symbolizer_path=/home/alexey/dev/llvm-project-focs-lab/llvm/build/bin/llvm-symbolizer
+=== [1/30] memcached cfg=tsan run=1  (elapsed 0s)
+[2026-09-02T21:24:29] memcached/tsan/run1/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T21:24:30] memcached/tsan/run1/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [2/30] memcached cfg=tsan-sound run=1  (elapsed 224s)
+[2026-09-02T21:28:13] memcached/tsan-sound/run1/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-sound/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T21:28:15] memcached/tsan-sound/run1/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [3/30] memcached cfg=tsan-all run=1  (elapsed 434s)
+[2026-09-02T21:31:44] memcached/tsan-all/run1/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-all/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T21:31:45] memcached/tsan-all/run1/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [4/30] memcached cfg=tsan run=2  (elapsed 645s)
+[2026-09-02T21:35:14] memcached/tsan/run2/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T21:35:16] memcached/tsan/run2/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [5/30] memcached cfg=tsan-sound run=2  (elapsed 867s)
+[2026-09-02T21:38:56] memcached/tsan-sound/run2/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-sound/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T21:38:58] memcached/tsan-sound/run2/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [6/30] memcached cfg=tsan-all run=2  (elapsed 1046s)
+[2026-09-02T21:41:56] memcached/tsan-all/run2/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-all/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T21:41:57] memcached/tsan-all/run2/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [7/30] memcached cfg=tsan run=3  (elapsed 1214s)
+[2026-09-02T21:44:43] memcached/tsan/run3/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T21:44:45] memcached/tsan/run3/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [8/30] memcached cfg=tsan-sound run=3  (elapsed 1389s)
+[2026-09-02T21:47:38] memcached/tsan-sound/run3/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-sound/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T21:47:40] memcached/tsan-sound/run3/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [9/30] memcached cfg=tsan-all run=3  (elapsed 1560s)
+[2026-09-02T21:50:30] memcached/tsan-all/run3/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-all/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T21:50:31] memcached/tsan-all/run3/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [10/30] memcached cfg=tsan run=4  (elapsed 1720s)
+[2026-09-02T21:53:09] memcached/tsan/run4/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T21:53:11] memcached/tsan/run4/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [11/30] memcached cfg=tsan-sound run=4  (elapsed 1900s)
+[2026-09-02T21:56:10] memcached/tsan-sound/run4/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-sound/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T21:56:11] memcached/tsan-sound/run4/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [12/30] memcached cfg=tsan-all run=4  (elapsed 2029s)
+[2026-09-02T21:58:18] memcached/tsan-all/run4/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-all/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T21:58:19] memcached/tsan-all/run4/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [13/30] memcached cfg=tsan run=5  (elapsed 2142s)
+[2026-09-02T22:00:11] memcached/tsan/run5/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T22:00:13] memcached/tsan/run5/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [14/30] memcached cfg=tsan-sound run=5  (elapsed 2270s)
+[2026-09-02T22:02:19] memcached/tsan-sound/run5/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-sound/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T22:02:21] memcached/tsan-sound/run5/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [15/30] memcached cfg=tsan-all run=5  (elapsed 2378s)
+[2026-09-02T22:04:08] memcached/tsan-all/run5/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-all/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T22:04:09] memcached/tsan-all/run5/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [16/30] memcached cfg=tsan run=6  (elapsed 2486s)
+[2026-09-02T22:05:55] memcached/tsan/run6/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T22:05:57] memcached/tsan/run6/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [17/30] memcached cfg=tsan-sound run=6  (elapsed 2614s)
+[2026-09-02T22:08:03] memcached/tsan-sound/run6/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-sound/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T22:08:05] memcached/tsan-sound/run6/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [18/30] memcached cfg=tsan-all run=6  (elapsed 2732s)
+[2026-09-02T22:10:02] memcached/tsan-all/run6/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-all/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T22:10:03] memcached/tsan-all/run6/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [19/30] memcached cfg=tsan run=7  (elapsed 2840s)
+[2026-09-02T22:11:49] memcached/tsan/run7/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T22:11:50] memcached/tsan/run7/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [20/30] memcached cfg=tsan-sound run=7  (elapsed 2968s)
+[2026-09-02T22:13:57] memcached/tsan-sound/run7/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-sound/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T22:13:59] memcached/tsan-sound/run7/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [21/30] memcached cfg=tsan-all run=7  (elapsed 3077s)
+[2026-09-02T22:15:46] memcached/tsan-all/run7/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-all/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T22:15:48] memcached/tsan-all/run7/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [22/30] memcached cfg=tsan run=8  (elapsed 3181s)
+[2026-09-02T22:17:31] memcached/tsan/run8/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T22:17:32] memcached/tsan/run8/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [23/30] memcached cfg=tsan-sound run=8  (elapsed 3310s)
+[2026-09-02T22:19:39] memcached/tsan-sound/run8/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-sound/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T22:19:40] memcached/tsan-sound/run8/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [24/30] memcached cfg=tsan-all run=8  (elapsed 3414s)
+[2026-09-02T22:21:23] memcached/tsan-all/run8/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-all/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T22:21:25] memcached/tsan-all/run8/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [25/30] memcached cfg=tsan run=9  (elapsed 3518s)
+[2026-09-02T22:23:07] memcached/tsan/run9/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T22:23:09] memcached/tsan/run9/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [26/30] memcached cfg=tsan-sound run=9  (elapsed 3646s)
+[2026-09-02T22:25:16] memcached/tsan-sound/run9/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-sound/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T22:25:17] memcached/tsan-sound/run9/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [27/30] memcached cfg=tsan-all run=9  (elapsed 3751s)
+[2026-09-02T22:27:00] memcached/tsan-all/run9/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-all/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T22:27:01] memcached/tsan-all/run9/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [28/30] memcached cfg=tsan run=10  (elapsed 3855s)
+[2026-09-02T22:28:44] memcached/tsan/run10/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T22:28:46] memcached/tsan/run10/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [29/30] memcached cfg=tsan-sound run=10  (elapsed 3983s)
+[2026-09-02T22:30:53] memcached/tsan-sound/run10/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-sound/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T22:30:54] memcached/tsan-sound/run10/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+=== [30/30] memcached cfg=tsan-all run=10  (elapsed 4088s)
+[2026-09-02T22:32:37] memcached/tsan-all/run10/memcached: START /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-all/memcached -c 4096 -t 112 -p 7777 -U 0  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+[2026-09-02T22:32:38] memcached/tsan-all/run10/memtier: /home/alexey/tsan-experiments/nosql/memcached/memtier_benchmark-2.1.1/memtier_benchmark --hide-histogram -t 10 -p 7777 -x 25 --pipeline 16 -P memcache_text --random-data  (cwd=/home/alexey/tsan-experiments/nosql/memcached)
+    log files for this run: 1
+done in 4192s. Aggregate with:
+  /home/alexey/tsan-experiments/tools/preservation/tsan_reports.py aggregate --results-dir /home/alexey/tsan-experiments/tools/preservation/results/memcached/2026-09-02-final-b4bf8b8f4613/logs --baseline tsan

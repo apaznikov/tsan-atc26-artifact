@@ -1,0 +1,8 @@
+app,key_level,key,tsan_runs_hit,tsan-dom_peeling-ea-lo-st-swmr_runs_hit,tsan-old_runs_hit,tsan-sound_runs_hit,tsan_runs,tsan-dom_peeling-ea-lo-st-swmr_runs,tsan-old_runs,tsan-sound_runs
+sqlite,1,data race | atomic read:walTryBeginRead@sqlite3.c:68991 | write:walIndexRecover@sqlite3.c:67450 | mapped:test.db-shm+0x60,3,3,7,6,10,10,10,10
+sqlite,1,data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68034 | mapped:test.db-shm+0x68,10,10,10,10,10,10,10,10
+sqlite,1,data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm+0x6c,10,9,10,9,10,10,10,10
+sqlite,1,data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm+0x70,10,10,10,10,10,10,10,10
+sqlite,1,data race | atomic read:walTryBeginRead@sqlite3.c:69040 | write:walRestartHdr@sqlite3.c:68035 | mapped:test.db-shm+0x74,6,9,7,9,10,10,10,10
+sqlite,2,data race | atomic read:walTryBeginRead | write:walIndexRecover | mapped:test.db-shm,3,3,7,6,10,10,10,10
+sqlite,2,data race | atomic read:walTryBeginRead | write:walRestartHdr | mapped:test.db-shm,10,10,10,10,10,10,10,10

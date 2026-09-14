@@ -1,0 +1,15 @@
+config,test,n,median,mean,sd
+tsan-sound,walthread1,5,2724.0,2703.0,47.38143096192854
+tsan-sound,walthread2,5,6378.0,6381.8,64.14592738436322
+tsan-sound,dynamic_triggers,5,109000.0,122600.0,31188.780033851916
+tsan-sound,checkpoint_starvation_1,5,165095,164067.2,2463.0480506884146
+tsan-sound,checkpoint_starvation_2,5,766,766,0.0
+tsan-sound,stress1,5,101734.0,100837.0,11563.369015991835
+tsan-sound,stress2,5,29478.0,29887.2,1356.2336450626788
+tsan-sound-nofe,walthread1,5,2841.0,2835.4,32.516149833582695
+tsan-sound-nofe,walthread2,5,6850.0,6845.4,46.19848482363897
+tsan-sound-nofe,dynamic_triggers,5,105000.0,127160.0,53021.20330584737
+tsan-sound-nofe,checkpoint_starvation_1,5,174796,172529.6,4555.658876606105
+tsan-sound-nofe,checkpoint_starvation_2,5,766,766,0.0
+tsan-sound-nofe,stress1,5,120483.0,130617.0,27968.423275186607
+tsan-sound-nofe,stress2,5,32146.0,32316.6,1912.0502869956115

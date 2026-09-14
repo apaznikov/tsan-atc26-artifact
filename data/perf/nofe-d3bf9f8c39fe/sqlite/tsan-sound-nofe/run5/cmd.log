@@ -1,0 +1,8 @@
+--- Running Benchmark for: tsan-sound-nofe ---
+Executable: build/test-tsan-sound-nofe/threadtest3
+Full Command: build/test-tsan-sound-nofe/threadtest3
+Output will be saved to: results/tsan-sound-nofe.log
+Memory usage will be saved to: results/memory.txt
+Running, please wait...
+--- Benchmark for [tsan-sound-nofe] completed successfully. ---
+

@@ -1,0 +1,17 @@
+compiler: clang version 19.0.0git (https://github.com/focs-lab/llvm-project a08292850aee825f0d4ae5e6ea18e16325610995)
+tsan-sound run=1 reports=7 ThreadSanitizer: shadow evictions total=2751194719 concurrent_foreign=193119507 concurrent_foreign_plain=34035117
+tsan run=1 reports=5 ThreadSanitizer: shadow evictions total=3028616624 concurrent_foreign=338192615 concurrent_foreign_plain=64119506
+tsan-dom_peeling-ea-lo-st-swmr run=1 reports=6 ThreadSanitizer: shadow evictions total=4317437836 concurrent_foreign=1549988209 concurrent_foreign_plain=296016720
+tsan-sound run=2 reports=5 ThreadSanitizer: shadow evictions total=3381922414 concurrent_foreign=698292183 concurrent_foreign_plain=131622092
+tsan-dom_peeling-ea-lo-st-swmr run=2 reports=4 ThreadSanitizer: shadow evictions total=3451043987 concurrent_foreign=800977751 concurrent_foreign_plain=125165070
+tsan run=2 reports=5 ThreadSanitizer: shadow evictions total=4945497468 concurrent_foreign=1793315831 concurrent_foreign_plain=325203147
+tsan-sound run=3 reports=4 ThreadSanitizer: shadow evictions total=3836359444 concurrent_foreign=1028825096 concurrent_foreign_plain=230589889
+tsan-dom_peeling-ea-lo-st-swmr run=3 reports=5 ThreadSanitizer: shadow evictions total=3381450526 concurrent_foreign=404177705 concurrent_foreign_plain=89914659
+tsan run=3 reports=6 ThreadSanitizer: shadow evictions total=3801846330 concurrent_foreign=950523864 concurrent_foreign_plain=204302297
+tsan-sound run=4 reports=5 ThreadSanitizer: shadow evictions total=3372461827 concurrent_foreign=722983571 concurrent_foreign_plain=109270338
+tsan-dom_peeling-ea-lo-st-swmr run=4 reports=4 ThreadSanitizer: shadow evictions total=2613303234 concurrent_foreign=142123357 concurrent_foreign_plain=30599310
+tsan run=4 reports=4 ThreadSanitizer: shadow evictions total=4052328725 concurrent_foreign=1121658840 concurrent_foreign_plain=140527413
+tsan-dom_peeling-ea-lo-st-swmr run=5 reports=5 ThreadSanitizer: shadow evictions total=3438440429 concurrent_foreign=776072967 concurrent_foreign_plain=134043366
+tsan-sound run=5 reports=4 ThreadSanitizer: shadow evictions total=4449930125 concurrent_foreign=1622318771 concurrent_foreign_plain=331130130
+tsan run=5 reports=5 ThreadSanitizer: shadow evictions total=3834233123 concurrent_foreign=722766609 concurrent_foreign_plain=96252991
+COUNTERS DONE

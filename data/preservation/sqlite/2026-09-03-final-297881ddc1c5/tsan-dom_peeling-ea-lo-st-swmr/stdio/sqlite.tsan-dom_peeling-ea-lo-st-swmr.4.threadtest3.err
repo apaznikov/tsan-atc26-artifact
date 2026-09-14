@@ -1,0 +1,1 @@
+/extra/alexey/builds/tsan-audit-297881ddc1c5/bin/llvm-symbolizer: error: '/dev/shm/preservation-sqlite-final-297881ddc1c5-tsan-dom_peeling-ea-lo-st-swmr/tsan-dom_peeling-ea-lo-st-swmr.4/test.db-shm': The file was not recognized as a valid object file

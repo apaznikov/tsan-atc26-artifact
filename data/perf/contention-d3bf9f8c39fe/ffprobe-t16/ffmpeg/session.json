@@ -1,0 +1,15 @@
+{
+ "app": "ffmpeg",
+ "hash": "d3bf9f8c39fe",
+ "N": 1,
+ "configs": [
+  "tsan"
+ ],
+ "cpuset": "4-27,60-83",
+ "mode": "pinned",
+ "started": "2026-09-14T00:41:19",
+ "host": "focs-server",
+ "nproc_machine": 112,
+ "governor": "powersave",
+ "no_turbo": "0"
+}

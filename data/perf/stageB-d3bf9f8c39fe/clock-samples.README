@@ -1,0 +1,15 @@
+clock-samples.csv   — FIRST, MISLEADING INSTRUMENT. Kept only so the numbers in it are not read as evidence.
+                      It sampled three CPUs of the pinned set (4, 12, 70) every 30 s. With 36 sysbench threads
+                      on 48 CPUs, an individual core is idle much of the time, so the file cannot tell "this
+                      core is parked at 800 MHz" from "the clock is low". Joined against run intervals it
+                      appeared to show a median of 1781 MHz inside measured runs, which is an artefact of
+                      sampling idle cores, not a measurement of the working clock.
+
+clock-samples2.csv  — the instrument to use. Samples all 48 CPUs of the pinned set (4-27, 60-83) every 30 s and
+                      records how many are above 1 GHz, the median and p90 among those, the median over all,
+                      and the load average. During a MySQL sysbench run it shows 35-38 cores busy with the busy
+                      median steady at about 2900 MHz, so the powersave governor is not a significant noise
+                      source while a workload is actually running.
+
+Both files start after 2026-09-08 16:30, so they cover the tail of the MySQL leg, the top-up and the yield
+stage, not the legs that finished earlier.

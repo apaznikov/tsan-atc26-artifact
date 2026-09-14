@@ -1,0 +1,56 @@
+{
+ "app": "sqlite",
+ "created": "2026-09-03T03:16:32",
+ "host": "focs-server",
+ "cpus": 112,
+ "argv": [
+  "run_preservation.py",
+  "--app",
+  "sqlite",
+  "--configs",
+  "tsan-dom_peeling-ea-lo-st-swmr",
+  "--runs",
+  "10",
+  "--no-ninja-check",
+  "--llvm-root",
+  "/extra/alexey/builds/tsan-audit-297881ddc1c5",
+  "--build-root",
+  "../../sql/sqlite/build/297881ddc1c5",
+  "--out",
+  "results/sqlite/2026-09-03-final-297881ddc1c5/tsan-dom_peeling-ea-lo-st-swmr",
+  "--workdir",
+  "/dev/shm/preservation-sqlite-final-297881ddc1c5-tsan-dom_peeling-ea-lo-st-swmr"
+ ],
+ "scale": "paper",
+ "out": "/home/alexey/tsan-experiments/tools/preservation/results/sqlite/2026-09-03-final-297881ddc1c5/tsan-dom_peeling-ea-lo-st-swmr",
+ "workload": {
+  "tests": "all",
+  "cwd": "fresh dir per run under workdir"
+ },
+ "tsan_options_template": "log_path=/home/alexey/tsan-experiments/tools/preservation/results/sqlite/2026-09-03-final-297881ddc1c5/tsan-dom_peeling-ea-lo-st-swmr/logs/sqlite.<cfg>.0 exitcode=0 external_symbolizer_path=/extra/alexey/builds/tsan-audit-297881ddc1c5/bin/llvm-symbolizer",
+ "compiler": {
+  "llvm_root": "/extra/alexey/builds/tsan-audit-297881ddc1c5",
+  "tree": "/extra/alexey",
+  "clang_version": "clang version 19.0.0git (https://github.com/focs-lab/llvm-project 297881ddc1c5afe1542b672bc6c3186d11026352)",
+  "clang_mtime": "2026-09-03T03:03:41.035567",
+  "tsan_rt_mtime": "2026-09-02T18:36:12.337972"
+ },
+ "configs": {
+  "tsan-dom_peeling-ea-lo-st-swmr": {
+   "artifacts": [
+    {
+     "path": "/home/alexey/tsan-experiments/sql/sqlite/build/297881ddc1c5/test-tsan-dom_peeling-ea-lo-st-swmr/threadtest3",
+     "mtime": "2026-09-03T03:16:32.603987",
+     "size": 8904896,
+     "sha256": "147861236901479602aba203fd058827257ff25fd1958156fed81b8d5e0db28a",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "Ubuntu clang version 18.1.3 (1ubuntu1)",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project 297881ddc1c5afe1542b672bc6c3186d11026352)"
+     ]
+    }
+   ],
+   "build_info": "date: 2026-09-03T03:16:32+08:00\nhost: focs-server\ncompiler: /extra/alexey/builds/tsan-audit-297881ddc1c5/bin/clang-19\ncompiler_version: clang version 19.0.0git (https://github.com/focs-lab/llvm-project 297881ddc1c5afe1542b672bc6c3186d11026352)\ncompiler_mtime: 2026-09-03T03:03:41+08:00\nflags: -fsanitize=thread -g -O2 -fno-omit-frame-pointer -mllvm -tsan-use-dominance-analysis -mllvm -tsan-use-loop-peeling=true -mllvm -tsan-use-escape-analysis-global -mllvm -tsan-use-lock-ownership -mllvm -tsan-use-single-threaded -mllvm -tsan-use-swmr\ncwd: /home/alexey/tsan-experiments/sql/sqlite\ntsan-logs: -rw-rw-r-- 503 ea_summary.txt;-rw-rw-r-- 117 st_summary.txt;\nconfig: tsan-dom_peeling-ea-lo-st-swmr\n"
+  }
+ }
+}

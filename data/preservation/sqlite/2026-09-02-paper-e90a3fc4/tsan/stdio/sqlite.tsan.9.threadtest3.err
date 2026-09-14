@@ -1,0 +1,1 @@
+/extra/alexey/llvm-project-paper/llvm/build/bin/llvm-symbolizer: error: '/dev/shm/preservation-sqlite-paper-tsan/tsan.9/test.db-shm': The file was not recognized as a valid object file

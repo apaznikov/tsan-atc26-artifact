@@ -1,0 +1,54 @@
+{
+ "app": "sqlite",
+ "created": "2026-09-03T01:36:48",
+ "host": "focs-server",
+ "cpus": 112,
+ "argv": [
+  "run_preservation.py",
+  "--app",
+  "sqlite",
+  "--configs",
+  "tsan-sound",
+  "--runs",
+  "10",
+  "--no-ninja-check",
+  "--llvm-root",
+  "/extra/alexey/builds/tsan-audit-def2cf34faeb",
+  "--out",
+  "results/sqlite/2026-09-03-final-def2cf34faeb/tsan-sound",
+  "--workdir",
+  "/dev/shm/preservation-sqlite-final-def2cf34faeb-tsan-sound"
+ ],
+ "scale": "paper",
+ "out": "/home/alexey/tsan-experiments/tools/preservation/results/sqlite/2026-09-03-final-def2cf34faeb/tsan-sound",
+ "workload": {
+  "tests": "all",
+  "cwd": "fresh dir per run under workdir"
+ },
+ "tsan_options_template": "log_path=/home/alexey/tsan-experiments/tools/preservation/results/sqlite/2026-09-03-final-def2cf34faeb/tsan-sound/logs/sqlite.<cfg>.0 exitcode=0 external_symbolizer_path=/extra/alexey/builds/tsan-audit-def2cf34faeb/bin/llvm-symbolizer",
+ "compiler": {
+  "llvm_root": "/extra/alexey/builds/tsan-audit-def2cf34faeb",
+  "tree": "/extra/alexey",
+  "clang_version": "clang version 19.0.0git (https://github.com/focs-lab/llvm-project def2cf34faebfccba8861fb9827373580bb6c6fc)",
+  "clang_mtime": "2026-09-03T01:34:02.700876",
+  "tsan_rt_mtime": "2026-09-02T18:36:12.337972"
+ },
+ "configs": {
+  "tsan-sound": {
+   "artifacts": [
+    {
+     "path": "/home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-sound/threadtest3",
+     "mtime": "2026-09-03T01:36:13.482884",
+     "size": 8317968,
+     "sha256": "b959e2b79af1f7940690fcdf89b538bb3181b39440bfbde72bd09d591756ef6a",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "Ubuntu clang version 18.1.3 (1ubuntu1)",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project def2cf34faebfccba8861fb9827373580bb6c6fc)"
+     ]
+    }
+   ],
+   "build_info": "date: 2026-09-03T01:36:13+08:00\nhost: focs-server\ncompiler: /extra/alexey/builds/tsan-audit-def2cf34faeb/bin/clang-19\ncompiler_version: clang version 19.0.0git (https://github.com/focs-lab/llvm-project def2cf34faebfccba8861fb9827373580bb6c6fc)\ncompiler_mtime: 2026-09-03T01:34:02+08:00\nflags: -fsanitize=thread -g -O2 -fno-omit-frame-pointer -mllvm -tsan-use-escape-analysis-global -mllvm -tsan-use-lock-ownership -mllvm -tsan-use-single-threaded -mllvm -tsan-use-swmr\ncwd: /home/alexey/tsan-experiments/sql/sqlite\ntsan-logs: -rw-rw-r-- 503 ea_summary.txt;-rw-rw-r-- 117 st_summary.txt;\nconfig: tsan-sound\n"
+  }
+ }
+}

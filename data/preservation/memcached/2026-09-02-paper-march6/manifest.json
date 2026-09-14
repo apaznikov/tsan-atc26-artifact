@@ -1,0 +1,75 @@
+{
+ "app": "memcached",
+ "created": "2026-09-02T20:22:24",
+ "host": "focs-server",
+ "cpus": 112,
+ "argv": [
+  "run_preservation.py",
+  "--app",
+  "memcached",
+  "--configs",
+  "tsan,tsan-all",
+  "--runs",
+  "10",
+  "--build-root",
+  "../../nosql/memcached/paper-builds",
+  "--llvm-root",
+  "/extra/alexey/llvm-project-paper/llvm/build",
+  "--no-ninja-check",
+  "--out",
+  "results/memcached/2026-09-02-paper-march6",
+  "--workdir",
+  "/dev/shm/preservation-memcached-paper"
+ ],
+ "scale": "paper",
+ "out": "/home/alexey/tsan-experiments/tools/preservation/results/memcached/2026-09-02-paper-march6",
+ "workload": {
+  "server_threads": 112,
+  "memtier_threads": 10,
+  "memtier_x": 25,
+  "memtier_extra": [],
+  "pipeline": 16,
+  "server_extra": "-U 0 (UDP off; not in run-memcached.sh, no effect on the memtier TCP workload)"
+ },
+ "tsan_options_template": "log_path=/home/alexey/tsan-experiments/tools/preservation/results/memcached/2026-09-02-paper-march6/logs/memcached.<cfg>.0 exitcode=0 external_symbolizer_path=/extra/alexey/llvm-project-paper/llvm/build/bin/llvm-symbolizer",
+ "compiler": {
+  "llvm_root": "/extra/alexey/llvm-project-paper/llvm/build",
+  "tree": "/extra/alexey/llvm-project-paper",
+  "clang_version": "clang version 19.0.0git (/home/alexey/dev/llvm-project-focs-lab e90a3fc410043575326f83373d018d39f505b8de)",
+  "clang_mtime": "2026-09-02T08:25:25.063395",
+  "tsan_rt_mtime": "2026-09-02T08:21:25.401365",
+  "git_branch": "paper-state",
+  "git_head": "e90a3fc410043575326f83373d018d39f505b8de",
+  "git_dirty_files": 0
+ },
+ "configs": {
+  "tsan": {
+   "artifacts": [
+    {
+     "path": "/home/alexey/tsan-experiments/nosql/memcached/paper-builds/memcached-tsan/memcached",
+     "mtime": "2026-03-06T13:49:50.955338",
+     "size": 10967176,
+     "sha256": "2212c687e63eba386c043d147caa05ac8c51473280468ee6d00b136e5917fe7a",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project c35c3bd998f1c49148ae9b3c252a491cc647f01b)"
+     ]
+    }
+   ]
+  },
+  "tsan-all": {
+   "artifacts": [
+    {
+     "path": "/home/alexey/tsan-experiments/nosql/memcached/paper-builds/memcached-tsan-all/memcached",
+     "mtime": "2026-03-06T18:08:47.323682",
+     "size": 10964264,
+     "sha256": "41d5af0b00692aca09028c0032b5dc04c056d324e9dd583074c2e6755d029583",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project 9f5d402cb36bbe655df0165af1b36bfcf7a29f0e)"
+     ]
+    }
+   ]
+  }
+ }
+}

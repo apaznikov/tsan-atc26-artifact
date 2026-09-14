@@ -1,0 +1,21 @@
+[2026-09-10 13:00:03] redis tsan-sound run1 rc=0 89.7s outside_busy=0.0088 inside_busy=0.2159 foreign_cpu_share=0.0151
+ok
+[2026-09-10 13:01:23] redis tsan-sound-nofe run1 rc=0 79.7s outside_busy=0.0774 inside_busy=0.2446 foreign_cpu_share=0.1569
+ok
+[2026-09-10 13:02:53] redis tsan-sound run2 rc=0 89.3s outside_busy=0.015 inside_busy=0.1961 foreign_cpu_share=0.0274
+ok
+[2026-09-10 13:04:08] redis tsan-sound-nofe run2 rc=0 75.3s outside_busy=0.0083 inside_busy=0.2082 foreign_cpu_share=0.0143
+ok
+[2026-09-10 13:05:39] redis tsan-sound run3 rc=0 90.1s outside_busy=0.0078 inside_busy=0.208 foreign_cpu_share=0.0135
+ok
+[2026-09-10 13:06:54] redis tsan-sound-nofe run3 rc=0 74.8s outside_busy=0.0096 inside_busy=0.2071 foreign_cpu_share=0.0175
+ok
+[2026-09-10 13:08:24] redis tsan-sound run4 rc=0 90.0s outside_busy=0.0178 inside_busy=0.201 foreign_cpu_share=0.0273
+ok
+[2026-09-10 13:10:06] redis tsan-sound-nofe run4 rc=0 76.7s outside_busy=0.0299 inside_busy=0.2095 foreign_cpu_share=0.0478
+ok
+[2026-09-10 13:11:37] redis tsan-sound run5 rc=0 91.6s outside_busy=0.0269 inside_busy=0.2077 foreign_cpu_share=0.0471
+ok
+[2026-09-10 13:12:53] redis tsan-sound-nofe run5 rc=0 74.9s outside_busy=0.0126 inside_busy=0.1957 foreign_cpu_share=0.0267
+ok
+[2026-09-10 13:12:53] done: redis N=5 -> /home/alexey/tsan-experiments/tools/perf/results/nofe-d3bf9f8c39fe/redis

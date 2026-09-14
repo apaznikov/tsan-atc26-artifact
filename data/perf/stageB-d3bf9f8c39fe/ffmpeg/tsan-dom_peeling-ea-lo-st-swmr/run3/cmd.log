@@ -1,0 +1,40 @@
+jq found, will generate JSON output to /home/alexey/tsan-experiments/tools/perf/results/stageB-d3bf9f8c39fe/ffmpeg/tsan-dom_peeling-ea-lo-st-swmr/run3/summary.json.
+--- FFmpeg Benchmark Start (using /usr/bin/time) ---
+Builds to test: ffmpeg-tsan-dom_peeling-ea-lo-st-swmr
+Video file: ./input/WatchingEyeTexture.mkv
+Runs per test: 1
+
+--- Benchmarking: Codec [h264_libx264], Build [ffmpeg-tsan-dom_peeling-ea-lo-st-swmr] ---
+
+[96;1mffmpeg-tsan-dom_peeling-ea-lo-st-swmr/bin/ffmpeg -hide_banner -i "./input/WatchingEyeTexture.mkv" -threads 4 -y -c:v libx264 -preset medium -crf 23  -loglevel error /dev/shm/out.mp4[0m
+
+  Run 1/1... OK (Time: 42.37s, Mem: 584352KB)
+  Results: Time(avg±std): 42.3700s ± 0s | Mem(peak): 584352KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [copy_passthrough], Build [ffmpeg-tsan-dom_peeling-ea-lo-st-swmr] ---
+
+[96;1mffmpeg-tsan-dom_peeling-ea-lo-st-swmr/bin/ffmpeg -hide_banner -i "./input/WatchingEyeTexture.mkv" -threads 4 -y -c:v copy -c:a copy  -loglevel error /dev/shm/out.mkv[0m
+
+  Run 1/1... OK (Time: 0.69s, Mem: 82596KB)
+  Results: Time(avg±std): .6900s ± 0s | Mem(peak): 82596KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [mjpeg], Build [ffmpeg-tsan-dom_peeling-ea-lo-st-swmr] ---
+
+[96;1mffmpeg-tsan-dom_peeling-ea-lo-st-swmr/bin/ffmpeg -hide_banner -i "./input/WatchingEyeTexture.mkv" -threads 4 -y -c:v mjpeg -pix_fmt yuvj420p -q:v 2  -loglevel error /dev/shm/out.avi[0m
+
+  Run 1/1... OK (Time: 23.2s, Mem: 428140KB)
+  Results: Time(avg±std): 23.2000s ± 0s | Mem(peak): 428140KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [h265_libx265], Build [ffmpeg-tsan-dom_peeling-ea-lo-st-swmr] ---
+
+[96;1mffmpeg-tsan-dom_peeling-ea-lo-st-swmr/bin/ffmpeg -hide_banner -i "./input/WatchingEyeTexture.mkv" -threads 4 -y -c:v libx265 -preset medium -crf 28 -tag:v hvc1  -loglevel error /dev/shm/out.mp4[0m
+
+  Run 1/1... OK (Time: 51.8s, Mem: 1653648KB)
+  Results: Time(avg±std): 51.8000s ± 0s | Mem(peak): 1653648KB | Runs: 1/1
+--------------------------------------------------------
+
+JSON results have been finalized in /home/alexey/tsan-experiments/tools/perf/results/stageB-d3bf9f8c39fe/ffmpeg/tsan-dom_peeling-ea-lo-st-swmr/run3/summary.json
+Benchmark finished. CSV results are in /home/alexey/tsan-experiments/tools/perf/results/stageB-d3bf9f8c39fe/ffmpeg/tsan-dom_peeling-ea-lo-st-swmr/run3/summary.csv

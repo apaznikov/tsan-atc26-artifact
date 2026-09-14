@@ -1,0 +1,251 @@
+[2026-09-07 13:54:02] memcached orig run1 rc=0 136.2s outside_busy=0.6934 inside_busy=0.9226 foreign_cpu_share=0.4823
+DISTURBED
+[2026-09-07 13:56:52] memcached tsan run1 rc=0 169.3s outside_busy=0.0099 inside_busy=0.7274 foreign_cpu_share=0.011
+ok
+[2026-09-07 13:59:48] memcached tsan-sound run1 rc=0 176.3s outside_busy=0.0087 inside_busy=0.7112 foreign_cpu_share=0.0215
+ok
+[2026-09-07 14:02:37] memcached tsan-dom-ea-lo-st-swmr run1 rc=0 168.3s outside_busy=0.0096 inside_busy=0.7269 foreign_cpu_share=0.0192
+ok
+[2026-09-07 14:05:30] memcached tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 173.3s outside_busy=0.0139 inside_busy=0.7201 foreign_cpu_share=0.0124
+ok
+[2026-09-07 14:08:31] memcached tsan-dom_peeling-ea-lo-st-swmr-wp run1 rc=0 180.3s outside_busy=0.0179 inside_busy=0.7129 foreign_cpu_share=0.0265
+ok
+[2026-09-07 14:11:20] memcached tsan-st run1 rc=0 168.3s outside_busy=0.0095 inside_busy=0.7256 foreign_cpu_share=0.0109
+ok
+[2026-09-07 14:14:50] ./bench_one.sh: line 113: unexpected EOF while looking for matching `"'
+DISTURBED
+[2026-09-07 14:20:31] memcached tsan-swmr run1 rc=0 168.3s outside_busy=0.0109 inside_busy=0.7311 foreign_cpu_share=0.0112
+ok
+[2026-09-07 14:23:36] memcached tsan-lo run1 rc=0 164.3s outside_busy=0.0101 inside_busy=0.7344 foreign_cpu_share=0.0106
+ok
+[2026-09-07 14:26:37] memcached tsan-ea run1 rc=0 176.3s outside_busy=0.0072 inside_busy=0.7118 foreign_cpu_share=0.0099
+ok
+[2026-09-07 14:29:25] memcached tsan-dom run1 rc=0 168.3s outside_busy=0.0052 inside_busy=0.7235 foreign_cpu_share=0.0089
+ok
+[2026-09-07 14:32:15] memcached tsan-dom_peeling run1 rc=0 169.3s outside_busy=0.0049 inside_busy=0.7167 foreign_cpu_share=0.0086
+ok
+[2026-09-07 14:35:05] memcached tsan-sound-wp run1 rc=0 170.3s outside_busy=0.0066 inside_busy=0.7185 foreign_cpu_share=0.0094
+ok
+[2026-09-07 14:38:00] memcached tsan-sound-tfn run1 rc=0 174.3s outside_busy=0.0064 inside_busy=0.6951 foreign_cpu_share=0.0004
+ok
+[2026-09-07 14:41:18] memcached tsan-sound-tfn-wp run1 rc=0 174.3s outside_busy=0.0053 inside_busy=0.6985 foreign_cpu_share=0.0
+ok
+[2026-09-07 14:42:28] memcached orig run2 rc=0 64.1s outside_busy=0.0104 inside_busy=0.6639 foreign_cpu_share=0.0058
+ok
+[2026-09-07 14:45:30] memcached tsan run2 rc=0 175.3s outside_busy=0.0196 inside_busy=0.7073 foreign_cpu_share=0.0094
+ok
+[2026-09-07 14:48:26] memcached tsan-sound run2 rc=0 176.3s outside_busy=0.0469 inside_busy=0.72 foreign_cpu_share=0.0343
+ok
+[2026-09-07 14:51:15] memcached tsan-dom-ea-lo-st-swmr run2 rc=0 168.3s outside_busy=0.0142 inside_busy=0.7269 foreign_cpu_share=0.0069
+ok
+[2026-09-07 14:54:08] memcached tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 173.3s outside_busy=0.0037 inside_busy=0.7056 foreign_cpu_share=0.0
+ok
+[2026-09-07 14:57:00] memcached tsan-dom_peeling-ea-lo-st-swmr-wp run2 rc=0 171.3s outside_busy=0.005 inside_busy=0.7144 foreign_cpu_share=0.0
+ok
+[2026-09-07 14:59:42] memcached tsan-st run2 rc=0 162.2s outside_busy=0.0051 inside_busy=0.7329 foreign_cpu_share=0.0
+ok
+[2026-09-07 15:02:31] memcached tsan-stmt run2 rc=0 168.3s outside_busy=0.0042 inside_busy=0.7202 foreign_cpu_share=0.0
+ok
+[2026-09-07 15:05:18] memcached tsan-swmr run2 rc=0 167.2s outside_busy=0.0064 inside_busy=0.7217 foreign_cpu_share=0.0004
+ok
+[2026-09-07 15:08:10] memcached tsan-lo run2 rc=0 171.3s outside_busy=0.0146 inside_busy=0.7142 foreign_cpu_share=0.0073
+ok
+[2026-09-07 15:10:55] memcached tsan-ea run2 rc=0 165.3s outside_busy=0.0054 inside_busy=0.72 foreign_cpu_share=0.0
+ok
+[2026-09-07 15:13:41] memcached tsan-dom run2 rc=0 165.3s outside_busy=0.0169 inside_busy=0.7352 foreign_cpu_share=0.0059
+ok
+[2026-09-07 15:16:35] memcached tsan-dom_peeling run2 rc=0 174.3s outside_busy=0.015 inside_busy=0.7031 foreign_cpu_share=0.0054
+ok
+[2026-09-07 15:19:29] memcached tsan-sound-wp run2 rc=0 173.3s outside_busy=0.0058 inside_busy=0.7089 foreign_cpu_share=0.0
+ok
+[2026-09-07 15:22:14] memcached tsan-sound-tfn run2 rc=0 165.2s outside_busy=0.007 inside_busy=0.7317 foreign_cpu_share=0.0003
+ok
+[2026-09-07 15:25:10] memcached tsan-sound-tfn-wp run2 rc=0 175.3s outside_busy=0.0159 inside_busy=0.7012 foreign_cpu_share=0.0055
+ok
+[2026-09-07 15:26:15] memcached orig run3 rc=0 65.1s outside_busy=0.0171 inside_busy=0.6736 foreign_cpu_share=0.0106
+ok
+[2026-09-07 15:29:03] memcached tsan run3 rc=0 167.3s outside_busy=0.0257 inside_busy=0.7254 foreign_cpu_share=0.0118
+ok
+[2026-09-07 15:31:56] memcached tsan-sound run3 rc=0 173.3s outside_busy=0.0293 inside_busy=0.714 foreign_cpu_share=0.0146
+ok
+[2026-09-07 15:34:46] memcached tsan-dom-ea-lo-st-swmr run3 rc=0 169.3s outside_busy=0.0339 inside_busy=0.728 foreign_cpu_share=0.0174
+ok
+[2026-09-07 15:37:35] memcached tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 169.3s outside_busy=0.0411 inside_busy=0.7383 foreign_cpu_share=0.0226
+ok
+[2026-09-07 15:40:26] memcached tsan-dom_peeling-ea-lo-st-swmr-wp run3 rc=0 170.3s outside_busy=0.0415 inside_busy=0.7278 foreign_cpu_share=0.024
+ok
+[2026-09-07 15:43:16] memcached tsan-st run3 rc=0 170.3s outside_busy=0.0369 inside_busy=0.7211 foreign_cpu_share=0.0194
+ok
+[2026-09-07 15:46:04] memcached tsan-stmt run3 rc=0 167.3s outside_busy=0.0203 inside_busy=0.717 foreign_cpu_share=0.0079
+ok
+[2026-09-07 15:48:53] memcached tsan-swmr run3 rc=0 169.3s outside_busy=0.021 inside_busy=0.7256 foreign_cpu_share=0.0086
+ok
+[2026-09-07 15:51:49] memcached tsan-lo run3 rc=0 175.3s outside_busy=0.0237 inside_busy=0.7092 foreign_cpu_share=0.01
+ok
+[2026-09-07 15:54:46] memcached tsan-ea run3 rc=0 177.3s outside_busy=0.0098 inside_busy=0.6898 foreign_cpu_share=0.0025
+ok
+[2026-09-07 15:57:33] memcached tsan-dom run3 rc=0 166.3s outside_busy=0.0092 inside_busy=0.7228 foreign_cpu_share=0.0016
+ok
+[2026-09-07 16:00:25] memcached tsan-dom_peeling run3 rc=0 172.3s outside_busy=0.0134 inside_busy=0.7159 foreign_cpu_share=0.0044
+ok
+[2026-09-07 16:03:21] memcached tsan-sound-wp run3 rc=0 175.3s outside_busy=0.0088 inside_busy=0.7005 foreign_cpu_share=0.0016
+ok
+[2026-09-07 16:06:09] memcached tsan-sound-tfn run3 rc=0 168.3s outside_busy=0.0054 inside_busy=0.7194 foreign_cpu_share=0.0
+ok
+[2026-09-07 16:08:56] memcached tsan-sound-tfn-wp run3 rc=0 166.3s outside_busy=0.0069 inside_busy=0.7181 foreign_cpu_share=0.0
+ok
+[2026-09-07 16:09:58] memcached orig run4 rc=0 62.1s outside_busy=0.0038 inside_busy=0.6558 foreign_cpu_share=0.0012
+ok
+[2026-09-07 16:12:52] memcached tsan run4 rc=0 174.3s outside_busy=0.0053 inside_busy=0.697 foreign_cpu_share=0.0
+ok
+[2026-09-07 16:15:48] memcached tsan-sound run4 rc=0 175.3s outside_busy=0.008 inside_busy=0.6951 foreign_cpu_share=0.0012
+ok
+[2026-09-07 16:18:36] memcached tsan-dom-ea-lo-st-swmr run4 rc=0 168.3s outside_busy=0.0074 inside_busy=0.7233 foreign_cpu_share=0.0011
+ok
+[2026-09-07 16:21:28] memcached tsan-dom_peeling-ea-lo-st-swmr run4 rc=0 171.3s outside_busy=0.0049 inside_busy=0.7132 foreign_cpu_share=0.0
+ok
+[2026-09-07 16:24:12] memcached tsan-dom_peeling-ea-lo-st-swmr-wp run4 rc=0 164.3s outside_busy=0.0042 inside_busy=0.7232 foreign_cpu_share=0.0
+ok
+[2026-09-07 16:27:04] memcached tsan-st run4 rc=0 171.3s outside_busy=0.0043 inside_busy=0.7058 foreign_cpu_share=0.0
+ok
+[2026-09-07 16:29:57] memcached tsan-stmt run4 rc=0 173.3s outside_busy=0.0041 inside_busy=0.7047 foreign_cpu_share=0.0
+ok
+[2026-09-07 16:32:49] memcached tsan-swmr run4 rc=0 171.3s outside_busy=0.0063 inside_busy=0.7096 foreign_cpu_share=0.0001
+ok
+[2026-09-07 16:35:42] memcached tsan-lo run4 rc=0 173.3s outside_busy=0.0047 inside_busy=0.714 foreign_cpu_share=0.0
+ok
+[2026-09-07 16:38:32] memcached tsan-ea run4 rc=0 169.3s outside_busy=0.0086 inside_busy=0.7166 foreign_cpu_share=0.0014
+ok
+[2026-09-07 16:41:34] memcached tsan-dom run4 rc=0 181.3s outside_busy=0.0609 inside_busy=0.7108 foreign_cpu_share=0.036
+ok
+[2026-09-07 16:44:30] memcached tsan-dom_peeling run4 rc=0 176.3s outside_busy=0.0266 inside_busy=0.7187 foreign_cpu_share=0.0147
+ok
+[2026-09-07 16:47:16] memcached tsan-sound-wp run4 rc=0 165.3s outside_busy=0.005 inside_busy=0.7354 foreign_cpu_share=0.0
+ok
+[2026-09-07 16:50:09] memcached tsan-sound-tfn run4 rc=0 173.3s outside_busy=0.0162 inside_busy=0.7091 foreign_cpu_share=0.0055
+ok
+[2026-09-07 16:53:05] memcached tsan-sound-tfn-wp run4 rc=0 175.3s outside_busy=0.0237 inside_busy=0.7092 foreign_cpu_share=0.0105
+ok
+[2026-09-07 16:54:12] memcached orig run5 rc=0 67.1s outside_busy=0.0449 inside_busy=0.6684 foreign_cpu_share=0.0313
+ok
+[2026-09-07 16:57:27] memcached tsan run5 rc=0 195.3s outside_busy=0.1356 inside_busy=0.7107 foreign_cpu_share=0.0823
+ok
+[2026-09-07 17:00:19] memcached tsan-sound run5 rc=0 171.3s outside_busy=0.0519 inside_busy=0.7356 foreign_cpu_share=0.0269
+ok
+[2026-09-07 17:03:19] memcached tsan-dom-ea-lo-st-swmr run5 rc=0 180.3s outside_busy=0.1284 inside_busy=0.7493 foreign_cpu_share=0.0725
+ok
+[2026-09-07 17:06:16] memcached tsan-dom_peeling-ea-lo-st-swmr run5 rc=0 176.3s outside_busy=0.042 inside_busy=0.7175 foreign_cpu_share=0.0211
+ok
+[2026-09-07 17:09:23] memcached tsan-dom_peeling-ea-lo-st-swmr-wp run5 rc=0 186.3s outside_busy=0.1757 inside_busy=0.7502 foreign_cpu_share=0.1429
+ok
+[2026-09-07 17:12:26] memcached tsan-st run5 rc=0 183.3s outside_busy=0.1451 inside_busy=0.7348 foreign_cpu_share=0.1309
+ok
+[2026-09-07 17:15:46] memcached tsan-stmt run5 rc=0 199.3s outside_busy=0.1406 inside_busy=0.7168 foreign_cpu_share=0.1053
+ok
+[2026-09-07 17:19:03] memcached tsan-swmr run5 rc=0 197.3s outside_busy=0.1594 inside_busy=0.7335 foreign_cpu_share=0.0936
+ok
+[2026-09-07 17:22:16] memcached tsan-lo run5 rc=0 192.3s outside_busy=0.1907 inside_busy=0.7401 foreign_cpu_share=0.1074
+ok
+[2026-09-07 17:26:54] memcached tsan-ea run5 rc=0 278.4s outside_busy=0.4012 inside_busy=0.7405 foreign_cpu_share=0.2584
+DISTURBED
+[2026-09-07 17:30:24] memcached tsan-dom run5 rc=0 209.3s outside_busy=0.3114 inside_busy=0.7465 foreign_cpu_share=0.1742
+DISTURBED
+[2026-09-07 17:33:20] memcached tsan-dom_peeling run5 rc=0 176.3s outside_busy=0.0809 inside_busy=0.738 foreign_cpu_share=0.0457
+ok
+[2026-09-07 17:37:16] memcached tsan-sound-wp run5 rc=0 235.3s outside_busy=0.2972 inside_busy=0.7114 foreign_cpu_share=0.1777
+DISTURBED
+[2026-09-07 17:41:42] memcached tsan-sound-tfn run5 rc=0 265.4s outside_busy=0.2858 inside_busy=0.7847 foreign_cpu_share=0.232
+DISTURBED
+[2026-09-07 17:44:37] memcached tsan-sound-tfn-wp run5 rc=0 175.3s outside_busy=0.025 inside_busy=0.7114 foreign_cpu_share=0.0104
+ok
+[2026-09-07 17:44:37] re-running disturbed memcached orig run1
+[2026-09-07 17:45:45] memcached orig run1 rc=0 68.1s outside_busy=0.1232 inside_busy=0.6717 foreign_cpu_share=0.0748
+ok
+[2026-09-07 17:45:46] re-running disturbed memcached tsan-stmt run1
+[2026-09-07 17:50:30] memcached tsan-stmt run1 rc=0 284.4s outside_busy=0.4187 inside_busy=0.7636 foreign_cpu_share=0.274
+DISTURBED
+[2026-09-07 17:50:32] re-running disturbed memcached tsan-ea run5
+[2026-09-07 18:15:57] memcached tsan-ea run5 rc=0 1525.4s outside_busy=0.8942 inside_busy=0.9573 foreign_cpu_share=0.783
+DISTURBED
+[2026-09-07 18:15:58] re-running disturbed memcached tsan-dom run5
+[2026-09-07 19:06:58] memcached orig run1 rc=0 65.1s outside_busy=0.0102 inside_busy=0.6559 foreign_cpu_share=0.0052
+ok
+[2026-09-07 19:06:58] skip memcached tsan-ea run1 (done)
+[2026-09-07 19:09:51] memcached tsan-stmt run1 rc=0 172.3s outside_busy=0.0219 inside_busy=0.7192 foreign_cpu_share=0.0099
+ok
+[2026-09-07 19:09:51] skip memcached tsan-dom run1 (done)
+[2026-09-07 19:09:51] skip memcached orig run2 (done)
+[2026-09-07 19:09:51] skip memcached tsan-ea run2 (done)
+[2026-09-07 19:09:51] skip memcached tsan-stmt run2 (done)
+[2026-09-07 19:09:51] skip memcached tsan-dom run2 (done)
+[2026-09-07 19:09:51] skip memcached orig run3 (done)
+[2026-09-07 19:09:51] skip memcached tsan-ea run3 (done)
+[2026-09-07 19:09:51] skip memcached tsan-stmt run3 (done)
+[2026-09-07 19:09:51] skip memcached tsan-dom run3 (done)
+[2026-09-07 19:09:51] skip memcached orig run4 (done)
+[2026-09-07 19:09:51] skip memcached tsan-ea run4 (done)
+[2026-09-07 19:09:51] skip memcached tsan-stmt run4 (done)
+[2026-09-07 19:09:51] skip memcached tsan-dom run4 (done)
+[2026-09-07 19:09:51] skip memcached orig run5 (done)
+[2026-09-07 19:12:49] memcached tsan-ea run5 rc=0 177.5s outside_busy=0.0634 inside_busy=0.7261 foreign_cpu_share=0.0391
+ok
+[2026-09-07 19:12:49] skip memcached tsan-stmt run5 (done)
+[2026-09-07 19:15:50] memcached tsan-dom run5 rc=0 181.3s outside_busy=0.0544 inside_busy=0.7085 foreign_cpu_share=0.0327
+ok
+[2026-09-07 19:15:51] done: memcached N=5 -> /home/alexey/tsan-experiments/tools/perf/results/stageB-d3bf9f8c39fe/memcached
+[2026-09-08 14:11:22] skip memcached tsan-sound-tfn run1 (done)
+[2026-09-08 14:11:22] skip memcached tsan-sound-wp run1 (done)
+[2026-09-08 14:11:22] skip memcached tsan-sound-tfn run2 (done)
+[2026-09-08 14:11:22] skip memcached tsan-sound-wp run2 (done)
+[2026-09-08 14:11:22] skip memcached tsan-sound-tfn run3 (done)
+[2026-09-08 14:11:22] skip memcached tsan-sound-wp run3 (done)
+[2026-09-08 14:11:22] skip memcached tsan-sound-tfn run4 (done)
+[2026-09-08 14:11:22] skip memcached tsan-sound-wp run4 (done)
+[2026-09-08 14:31:08] memcached tsan-sound-tfn run5 rc=0 176.2s outside_busy=0.0272 inside_busy=0.5729 foreign_cpu_share=0.0334
+ok
+[2026-09-08 14:50:50] memcached tsan-sound-wp run5 rc=0 172.2s outside_busy=0.0278 inside_busy=0.5754 foreign_cpu_share=0.0414
+ok
+[2026-09-08 14:50:50] done: memcached N=5 -> /home/alexey/tsan-experiments/tools/perf/results/stageB-d3bf9f8c39fe/memcached
+[2026-09-09 04:34:23] skip memcached tsan-dom-ea-lo-st-swmr run1 (done)
+[2026-09-09 04:34:23] skip memcached tsan-dom_peeling-ea-lo-st-swmr-wp run1 (done)
+[2026-09-09 04:34:23] skip memcached tsan-lo run1 (done)
+[2026-09-09 04:34:23] skip memcached tsan-st run1 (done)
+[2026-09-09 04:34:23] skip memcached tsan-stmt run1 (done)
+[2026-09-09 04:34:23] skip memcached tsan-swmr run1 (done)
+[2026-09-09 04:34:23] skip memcached tsan run1 (done)
+[2026-09-09 04:34:23] skip memcached tsan-dom-ea-lo-st-swmr run2 (done)
+[2026-09-09 04:34:23] skip memcached tsan-dom_peeling-ea-lo-st-swmr-wp run2 (done)
+[2026-09-09 04:34:23] skip memcached tsan-lo run2 (done)
+[2026-09-09 04:34:23] skip memcached tsan-st run2 (done)
+[2026-09-09 04:34:23] skip memcached tsan-stmt run2 (done)
+[2026-09-09 04:34:23] skip memcached tsan-swmr run2 (done)
+[2026-09-09 04:34:23] skip memcached tsan run2 (done)
+[2026-09-09 04:34:23] skip memcached tsan-dom-ea-lo-st-swmr run3 (done)
+[2026-09-09 04:34:23] skip memcached tsan-dom_peeling-ea-lo-st-swmr-wp run3 (done)
+[2026-09-09 04:34:24] skip memcached tsan-lo run3 (done)
+[2026-09-09 04:34:24] skip memcached tsan-st run3 (done)
+[2026-09-09 04:34:24] skip memcached tsan-stmt run3 (done)
+[2026-09-09 04:34:24] skip memcached tsan-swmr run3 (done)
+[2026-09-09 04:34:24] skip memcached tsan run3 (done)
+[2026-09-09 04:34:24] skip memcached tsan-dom-ea-lo-st-swmr run4 (done)
+[2026-09-09 04:34:24] skip memcached tsan-dom_peeling-ea-lo-st-swmr-wp run4 (done)
+[2026-09-09 04:34:24] skip memcached tsan-lo run4 (done)
+[2026-09-09 04:34:24] skip memcached tsan-st run4 (done)
+[2026-09-09 04:34:24] skip memcached tsan-stmt run4 (done)
+[2026-09-09 04:34:24] skip memcached tsan-swmr run4 (done)
+[2026-09-09 04:34:24] skip memcached tsan run4 (done)
+[2026-09-09 04:37:22] memcached tsan-dom-ea-lo-st-swmr run5 rc=0 178.2s outside_busy=0.0072 inside_busy=0.5663 foreign_cpu_share=0.0056
+ok
+[2026-09-09 04:40:13] memcached tsan-dom_peeling-ea-lo-st-swmr-wp run5 rc=0 170.2s outside_busy=0.008 inside_busy=0.576 foreign_cpu_share=0.0068
+ok
+[2026-09-09 04:43:05] memcached tsan-lo run5 rc=0 172.2s outside_busy=0.0105 inside_busy=0.5735 foreign_cpu_share=0.0108
+ok
+[2026-09-09 04:46:00] memcached tsan-st run5 rc=0 174.2s outside_busy=0.0082 inside_busy=0.5697 foreign_cpu_share=0.0056
+ok
+[2026-09-09 04:48:57] memcached tsan-stmt run5 rc=0 176.2s outside_busy=0.0073 inside_busy=0.5716 foreign_cpu_share=0.0063
+ok
+[2026-09-09 04:51:45] memcached tsan-swmr run5 rc=0 168.2s outside_busy=0.0071 inside_busy=0.575 foreign_cpu_share=0.0052
+ok
+[2026-09-09 04:54:34] memcached tsan run5 rc=0 168.2s outside_busy=0.0084 inside_busy=0.5772 foreign_cpu_share=0.008
+ok
+[2026-09-09 04:54:34] done: memcached N=5 -> /home/alexey/tsan-experiments/tools/perf/results/stageB-d3bf9f8c39fe/memcached

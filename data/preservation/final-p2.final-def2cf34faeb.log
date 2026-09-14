@@ -1,0 +1,21 @@
+[01:35:09] compiler: clang version 19.0.0git (https://github.com/focs-lab/llvm-project def2cf34faebfccba8861fb9827373580bb6c6fc)
+[01:35:09] build memcached tsan
+[01:35:09] archiving ../../sql/sqlite/build/test-tsan (built with f3fcc325e521) -> old-builds/test-tsan.f3fcc325e521
+[01:35:09] build sqlite tsan
+[01:35:18] build memcached tsan-sound
+[01:35:28] archiving ../../nosql/memcached/memcached-tsan-all (built with f3fcc325e521) -> old-builds/memcached-tsan-all.f3fcc325e521
+[01:35:28] build memcached tsan-all
+[01:35:40] archiving ../../sql/sqlite/build/test-tsan-sound (built with f3fcc325e521) -> old-builds/test-tsan-sound.f3fcc325e521
+[01:35:40] build sqlite tsan-sound
+[01:36:13] archiving ../../sql/sqlite/build/test-tsan-dom_peeling-ea-lo-st-swmr (built with f3fcc325e521) -> old-builds/test-tsan-dom_peeling-ea-lo-st-swmr.f3fcc325e521
+[01:36:13] build sqlite tsan-dom_peeling-ea-lo-st-swmr
+[01:36:48] builds: sqlite=0 memcached=0 ffmpeg=99
+2524808 python3 run_preservation.py --app sqlite --configs tsan --runs 10 --no-ninja-check --llvm-root /extra/alexey/bui
+2524810 python3 run_preservation.py --app sqlite --configs tsan-sound --runs 10 --no-ninja-check --llvm-root /extra/alex
+2524811 python3 run_preservation.py --app sqlite --configs tsan-dom_peeling-ea-lo-st-swmr --runs 10 --no-ninja-check --l
+2524822 python3 run_preservation.py --app memcached --configs tsan,tsan-sound,tsan-all --runs 10 --no-ninja-check --llvm
+[01:36:51] runners launched; aggregate with:
+  python3 tsan_reports.py aggregate --results-dir results/sqlite/2026-09-03-final-def2cf34faeb --baseline tsan
+  python3 tsan_reports.py aggregate --results-dir results/ffmpeg/2026-09-03-final-def2cf34faeb --baseline tsan
+  python3 tsan_reports.py aggregate --results-dir results/memcached/2026-09-03-final-def2cf34faeb --baseline tsan
+LAUNCH DONE

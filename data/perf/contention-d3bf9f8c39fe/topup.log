@@ -1,0 +1,31 @@
+TOPUP start 2026-09-14T03:18:47+08:00
+  pass1 sqlite-t2 refilling: orig tsan tsan-dom tsan-dom_peeling-ea-lo-st-swmr 
+[2026-09-14 03:19:08] sqlite orig run1 rc=0 20.1s outside_busy=0.0238 inside_busy=0.041 foreign_cpu_share=0.0321
+ok
+[2026-09-14 03:19:28] sqlite tsan run1 rc=0 20.1s outside_busy=0.0231 inside_busy=0.0438 foreign_cpu_share=0.0312
+ok
+[2026-09-14 03:19:49] sqlite tsan-dom run1 rc=0 20.1s outside_busy=0.023 inside_busy=0.0439 foreign_cpu_share=0.0308
+ok
+[2026-09-14 03:20:09] sqlite tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 20.1s outside_busy=0.0233 inside_busy=0.0436 foreign_cpu_share=0.0314
+ok
+[2026-09-14 03:20:09] skip sqlite orig run2 (done)
+[2026-09-14 03:20:09] skip sqlite tsan run2 (done)
+[2026-09-14 03:20:09] skip sqlite tsan-dom run2 (done)
+[2026-09-14 03:20:09] skip sqlite tsan-dom_peeling-ea-lo-st-swmr run2 (done)
+[2026-09-14 03:20:09] skip sqlite orig run3 (done)
+[2026-09-14 03:20:09] skip sqlite tsan run3 (done)
+[2026-09-14 03:20:09] skip sqlite tsan-dom run3 (done)
+[2026-09-14 03:20:09] skip sqlite tsan-dom_peeling-ea-lo-st-swmr run3 (done)
+[2026-09-14 03:20:09] skip sqlite orig run4 (done)
+[2026-09-14 03:20:09] skip sqlite tsan run4 (done)
+[2026-09-14 03:20:09] skip sqlite tsan-dom run4 (done)
+[2026-09-14 03:20:09] skip sqlite tsan-dom_peeling-ea-lo-st-swmr run4 (done)
+[2026-09-14 03:20:09] skip sqlite orig run5 (done)
+[2026-09-14 03:20:09] skip sqlite tsan run5 (done)
+[2026-09-14 03:20:09] skip sqlite tsan-dom run5 (done)
+[2026-09-14 03:20:09] skip sqlite tsan-dom_peeling-ea-lo-st-swmr run5 (done)
+[2026-09-14 03:20:10] done: sqlite N=5 -> /home/alexey/tsan-experiments/tools/perf/results/contention-d3bf9f8c39fe/sqlite-t2/sqlite
+    ok sqlite-t2
+  nothing incomplete on pass2
+TOPUP DONE 2026-09-14T03:20:11+08:00
+TOPUP REPORT END 2026-09-14T03:20:11+08:00

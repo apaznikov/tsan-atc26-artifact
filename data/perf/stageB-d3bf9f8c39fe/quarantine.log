@@ -1,0 +1,4 @@
+retired /home/alexey/tsan-experiments/tools/perf/results/stageB-d3bf9f8c39fe/mysql/tsan-dom-ea-lo-st-swmr/run2.foreign-0.127 (outside_busy=0.1266)
+retired /home/alexey/tsan-experiments/tools/perf/results/stageB-d3bf9f8c39fe/mysql/tsan-dom_peeling-ea-lo-st-swmr/run3.foreign-0.119 (outside_busy=0.1189)
+retired /home/alexey/tsan-experiments/tools/perf/results/stageB-d3bf9f8c39fe/mysql/tsan-stmt/run5.foreign-0.181 (outside_busy=0.1813)
+retired 3 run(s) above 0.10 in /home/alexey/tsan-experiments/tools/perf/results/stageB-d3bf9f8c39fe

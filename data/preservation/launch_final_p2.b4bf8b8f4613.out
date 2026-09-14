@@ -1,0 +1,28 @@
+[21:13:32] compiler: clang version 19.0.0git (https://github.com/focs-lab/llvm-project b4bf8b8f46132f7844819510ad5055babf57307a)
+[21:13:32] build sqlite tsan
+[21:13:32] build memcached tsan
+[21:13:32] build ffmpeg tsan
+[21:13:41] build memcached tsan-sound
+[21:13:52] build memcached tsan-all
+[21:14:25] build sqlite tsan-sound
+[21:14:35] build ffmpeg tsan-sound
+[21:15:20] build sqlite tsan-dom_peeling-ea-lo-st-swmr
+[21:15:27] build ffmpeg tsan-dom_peeling-ea-lo-st-swmr
+[21:16:28] builds: sqlite=0 memcached=0 ffmpeg=0
+[21:16:28] port 7777 busy (previous memcached run still going); waiting
+[21:16:58] port 7777 busy (previous memcached run still going); waiting
+[21:17:28] port 7777 busy (previous memcached run still going); waiting
+[21:17:58] port 7777 busy (previous memcached run still going); waiting
+[21:18:28] port 7777 busy (previous memcached run still going); waiting
+[21:18:58] port 7777 busy (previous memcached run still going); waiting
+[21:19:28] port 7777 busy (previous memcached run still going); waiting
+[21:19:58] port 7777 busy (previous memcached run still going); waiting
+[21:20:28] port 7777 busy (previous memcached run still going); waiting
+[21:20:58] port 7777 busy (previous memcached run still going); waiting
+[21:21:28] port 7777 busy (previous memcached run still going); waiting
+[21:21:59] port 7777 busy (previous memcached run still going); waiting
+[21:22:29] port 7777 busy (previous memcached run still going); waiting
+[21:22:59] port 7777 busy (previous memcached run still going); waiting
+[21:23:29] port 7777 busy (previous memcached run still going); waiting
+[21:23:59] port 7777 busy (previous memcached run still going); waiting
+./launch_final_p2.sh: line 52: unexpected EOF while looking for matching `"'

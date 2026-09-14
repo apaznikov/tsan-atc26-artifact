@@ -1,0 +1,30 @@
+{
+ "app": "memcached",
+ "hash": "d3bf9f8c39fe",
+ "N": 10,
+ "configs": [
+  "orig",
+  "tsan",
+  "tsan-sound",
+  "tsan-dom-ea-lo-st-swmr",
+  "tsan-dom_peeling-ea-lo-st-swmr",
+  "tsan-dom_peeling-ea-lo-st-swmr-wp",
+  "tsan-st",
+  "tsan-stmt",
+  "tsan-swmr",
+  "tsan-lo",
+  "tsan-ea",
+  "tsan-dom",
+  "tsan-dom_peeling",
+  "tsan-sound-wp",
+  "tsan-sound-tfn",
+  "tsan-sound-tfn-wp"
+ ],
+ "cpuset": "4-27,60-83",
+ "mode": "pinned",
+ "started": "2026-09-07T12:33:27",
+ "host": "focs-server",
+ "nproc_machine": 112,
+ "governor": "powersave",
+ "no_turbo": "0"
+}

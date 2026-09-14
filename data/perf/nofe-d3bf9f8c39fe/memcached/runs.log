@@ -1,0 +1,11 @@
+memcached tsan-sound run1 rc=0 193.3s outside_busy=0.0593 inside_busy=0.5611 foreign_cpu_share=0.0821
+memcached tsan-sound-nofe run1 rc=0 181.2s outside_busy=0.046 inside_busy=0.5758 foreign_cpu_share=0.0656
+memcached tsan-sound run2 rc=0 183.2s outside_busy=0.0335 inside_busy=0.5656 foreign_cpu_share=0.043
+memcached tsan-sound-nofe run2 rc=0 184.2s outside_busy=0.0226 inside_busy=0.5568 foreign_cpu_share=0.0274
+memcached tsan-sound run3 rc=0 170.2s outside_busy=0.0167 inside_busy=0.5784 foreign_cpu_share=0.0199
+memcached tsan-sound-nofe run3 rc=0 170.2s outside_busy=0.0097 inside_busy=0.5704 foreign_cpu_share=0.0097
+memcached tsan-sound run4 rc=0 174.2s outside_busy=0.0234 inside_busy=0.5763 foreign_cpu_share=0.033
+memcached tsan-sound-nofe run4 rc=0 178.2s outside_busy=0.0256 inside_busy=0.5676 foreign_cpu_share=0.0328
+memcached tsan-sound run5 rc=0 185.2s outside_busy=0.0539 inside_busy=0.5697 foreign_cpu_share=0.0753
+memcached tsan-sound-nofe run5 rc=0 182.2s outside_busy=0.0319 inside_busy=0.5682 foreign_cpu_share=0.0419
+DONE memcached

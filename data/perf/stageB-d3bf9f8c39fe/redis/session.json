@@ -1,0 +1,28 @@
+{
+ "app": "redis",
+ "hash": "d3bf9f8c39fe",
+ "N": 5,
+ "configs": [
+  "orig",
+  "tsan",
+  "tsan-sound",
+  "tsan-dom-ea-lo-st-swmr",
+  "tsan-dom_peeling-ea-lo-st-swmr",
+  "tsan-dom_peeling-ea-lo-st-swmr-wp",
+  "tsan-st",
+  "tsan-stmt",
+  "tsan-swmr",
+  "tsan-lo",
+  "tsan-ea",
+  "tsan-dom",
+  "tsan-dom_peeling",
+  "tsan-sound-wp"
+ ],
+ "cpuset": "4-27,60-83",
+ "mode": "pinned",
+ "started": "2026-09-08T07:28:38",
+ "host": "focs-server",
+ "nproc_machine": 112,
+ "governor": "powersave",
+ "no_turbo": "0"
+}

@@ -1,0 +1,50 @@
+{
+ "app": "sqlite",
+ "created": "2026-09-02T09:03:48",
+ "host": "focs-server",
+ "cpus": 112,
+ "argv": [
+  "run_preservation.py",
+  "--app",
+  "sqlite",
+  "--configs",
+  "tsan-sound",
+  "--runs",
+  "10",
+  "--no-ninja-check",
+  "--out",
+  "results/sqlite/2026-09-02-hardened-0de7a735/tsan-sound",
+  "--workdir",
+  "/dev/shm/preservation-sqlite-tsan-sound"
+ ],
+ "scale": "paper",
+ "out": "/home/alexey/tsan-experiments/tools/preservation/results/sqlite/2026-09-02-hardened-0de7a735/tsan-sound",
+ "workload": {
+  "tests": "all",
+  "cwd": "fresh dir per run under workdir"
+ },
+ "tsan_options_template": "log_path=/home/alexey/tsan-experiments/tools/preservation/results/sqlite/2026-09-02-hardened-0de7a735/tsan-sound/logs/sqlite.<cfg>.0 exitcode=0 external_symbolizer_path=/home/alexey/dev/llvm-project-focs-lab/llvm/build/bin/llvm-symbolizer",
+ "compiler": {
+  "llvm_root": "/home/alexey/dev/llvm-project-focs-lab/llvm/build",
+  "tree": "/home/alexey/dev/llvm-project-focs-lab",
+  "clang_version": "clang version 19.0.0git (https://github.com/focs-lab/llvm-project 89e5d0078d2fce140fa3034fed47611bc32cc2e8)",
+  "clang_mtime": "2026-09-02T07:07:27.434610",
+  "tsan_rt_mtime": "2026-09-02T07:16:27.369056",
+  "git_branch": "tsan-dev",
+  "git_head": "0de7a7350375364207072b4ca5343be03b57b4a3",
+  "git_dirty_files": 0
+ },
+ "configs": {
+  "tsan-sound": {
+   "artifacts": [
+    {
+     "path": "/home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-sound/threadtest3",
+     "mtime": "2026-09-02T07:31:24.263534",
+     "size": 8291928,
+     "sha256": "b428149e15ce2b5482ede350bf95903e18467b4568d09d0d0fb19013c3d51a21"
+    }
+   ],
+   "build_info": "date: 2026-09-02T07:31:24+08:00\nhost: focs-server\ncompiler: /home/alexey/dev/llvm-project-focs-lab/llvm/cmake-build-release/bin/clang-19\ncompiler_version: clang version 19.0.0git (https://github.com/focs-lab/llvm-project 89e5d0078d2fce140fa3034fed47611bc32cc2e8)\ncompiler_mtime: 2026-09-02T07:07:27+08:00\nflags: -fsanitize=thread -g -O2 -fno-omit-frame-pointer -mllvm -tsan-use-escape-analysis-global -mllvm -tsan-use-lock-ownership -mllvm -tsan-use-single-threaded -mllvm -tsan-use-swmr\ncwd: /home/alexey/tsan-experiments/sql/sqlite\ntsan-logs: -rw-r--r-- 503 ea_summary.txt;-rw-r--r-- 117 st_summary.txt;\nconfig: tsan-sound\n"
+  }
+ }
+}

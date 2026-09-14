@@ -1,0 +1,11 @@
+ffmpeg tsan-sound run1 rc=0 128.1s outside_busy=0.0425 inside_busy=0.1258 foreign_cpu_share=0.0181
+ffmpeg tsan-sound-nofe run1 rc=0 125.5s outside_busy=0.0406 inside_busy=0.1327 foreign_cpu_share=0.0285
+ffmpeg tsan-sound run2 rc=0 126.8s outside_busy=0.0422 inside_busy=0.1309 foreign_cpu_share=0.0215
+ffmpeg tsan-sound-nofe run2 rc=0 126.3s outside_busy=0.051 inside_busy=0.1316 foreign_cpu_share=0.036
+ffmpeg tsan-sound run3 rc=0 130.3s outside_busy=0.0539 inside_busy=0.1392 foreign_cpu_share=0.0487
+ffmpeg tsan-sound-nofe run3 rc=0 133.8s outside_busy=0.1022 inside_busy=0.1647 foreign_cpu_share=0.1445
+ffmpeg tsan-sound run4 rc=0 133.5s outside_busy=0.097 inside_busy=0.1739 foreign_cpu_share=0.1414
+ffmpeg tsan-sound-nofe run4 rc=0 130.0s outside_busy=0.0755 inside_busy=0.1483 foreign_cpu_share=0.0903
+ffmpeg tsan-sound run5 rc=0 131.0s outside_busy=0.0509 inside_busy=0.1342 foreign_cpu_share=0.0391
+ffmpeg tsan-sound-nofe run5 rc=0 129.9s outside_busy=0.0627 inside_busy=0.14 foreign_cpu_share=0.0636
+DONE ffmpeg

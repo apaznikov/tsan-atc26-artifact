@@ -1,0 +1,2 @@
+WARNING: Setting a high number of workerthreads is not recommended.
+ Set this value to the number of cores in your machine or less.

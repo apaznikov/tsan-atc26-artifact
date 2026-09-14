@@ -1,0 +1,22 @@
+  burst=0 asc/off:20/20 asc/on:20/20 desc/off:20/20 desc/on:20/20 
+  burst=1 asc/off:20/20 asc/on:20/20 desc/off:20/20 desc/on:20/20 
+  burst=2 asc/off:20/20 asc/on:20/20 desc/off:20/20 desc/on:20/20 
+  burst=3 asc/off:20/20 asc/on:20/20 desc/off:20/20 desc/on:20/20 
+  burst=4 asc/off:20/20 asc/on:20/20 desc/off:20/20 desc/on:20/20 
+  burst=5 asc/off:20/20 asc/on:20/20 desc/off:20/20 desc/on:20/20 
+  burst=6 asc/off:20/20 asc/on:20/20 desc/off:20/20 desc/on:20/20 
+  burst=7 asc/off:20/20 asc/on:20/20 desc/off:20/20 desc/on:20/20 
+  burst=8 asc/off:20/20 asc/on:20/20 desc/off:20/20 desc/on:20/20 
+  burst=9 asc/off:20/20 asc/on:20/20 desc/off:20/20 desc/on:20/20 
+  burst=10 asc/off:20/20 asc/on:20/20 desc/off:20/20 desc/on:20/20 
+  burst=11 asc/off:20/20 asc/on:20/20 desc/off:20/20 desc/on:20/20 
+  burst=12 asc/off:20/20 asc/on:20/20 desc/off:20/20 desc/on:20/20 
+  burst=13 asc/off:20/20 asc/on:20/20 desc/off:20/20 desc/on:20/20 
+  burst=14 asc/off:20/20 asc/on:20/20 desc/off:20/20 desc/on:20/20 
+  burst=15 asc/off:20/20 asc/on:20/20 desc/off:20/20 desc/on:20/20 
+SWEEP-FIXED DONE 2026-09-10T18:30:25+08:00
+  random-N asc/off 300/300
+  random-N asc/on 300/300
+  random-N desc/off 300/300
+  random-N desc/on 300/300
+ALL DONE 2026-09-10T18:37:28+08:00

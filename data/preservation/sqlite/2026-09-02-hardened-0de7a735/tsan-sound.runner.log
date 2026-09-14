@@ -1,0 +1,36 @@
+[warn] $LLVM_ROOT_PATH=/home/alexey/dev/llvm-project/llvm/build differs from --llvm-root=/home/alexey/dev/llvm-project-focs-lab/llvm/build; the manifest describes the latter
+output: /home/alexey/tsan-experiments/tools/preservation/results/sqlite/2026-09-02-hardened-0de7a735/tsan-sound
+compiler: clang version 19.0.0git (https://github.com/focs-lab/llvm-project 89e5d0078d2fce140fa3034fed47611bc32cc2e8) branch=tsan-dev head=0de7a7350375 ninja=None
+TSAN_OPTIONS template: log_path=/home/alexey/tsan-experiments/tools/preservation/results/sqlite/2026-09-02-hardened-0de7a735/tsan-sound/logs/sqlite.<cfg>.0 exitcode=0 external_symbolizer_path=/home/alexey/dev/llvm-project-focs-lab/llvm/build/bin/llvm-symbolizer
+=== [1/10] sqlite cfg=tsan-sound run=1  (elapsed 0s)
+[2026-09-02T09:03:48] sqlite/tsan-sound/run1/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-sound/threadtest3  (cwd=/dev/shm/preservation-sqlite-tsan-sound/tsan-sound.1)
+    log files for this run: 1
+=== [2/10] sqlite cfg=tsan-sound run=2  (elapsed 273s)
+[2026-09-02T09:08:22] sqlite/tsan-sound/run2/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-sound/threadtest3  (cwd=/dev/shm/preservation-sqlite-tsan-sound/tsan-sound.2)
+    log files for this run: 0
+=== [3/10] sqlite cfg=tsan-sound run=3  (elapsed 557s)
+[2026-09-02T09:13:06] sqlite/tsan-sound/run3/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-sound/threadtest3  (cwd=/dev/shm/preservation-sqlite-tsan-sound/tsan-sound.3)
+    log files for this run: 1
+=== [4/10] sqlite cfg=tsan-sound run=4  (elapsed 850s)
+[2026-09-02T09:17:59] sqlite/tsan-sound/run4/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-sound/threadtest3  (cwd=/dev/shm/preservation-sqlite-tsan-sound/tsan-sound.4)
+    log files for this run: 1
+=== [5/10] sqlite cfg=tsan-sound run=5  (elapsed 1124s)
+[2026-09-02T09:22:33] sqlite/tsan-sound/run5/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-sound/threadtest3  (cwd=/dev/shm/preservation-sqlite-tsan-sound/tsan-sound.5)
+    log files for this run: 0
+=== [6/10] sqlite cfg=tsan-sound run=6  (elapsed 1397s)
+[2026-09-02T09:27:06] sqlite/tsan-sound/run6/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-sound/threadtest3  (cwd=/dev/shm/preservation-sqlite-tsan-sound/tsan-sound.6)
+    log files for this run: 1
+=== [7/10] sqlite cfg=tsan-sound run=7  (elapsed 1693s)
+[2026-09-02T09:32:02] sqlite/tsan-sound/run7/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-sound/threadtest3  (cwd=/dev/shm/preservation-sqlite-tsan-sound/tsan-sound.7)
+    log files for this run: 1
+=== [8/10] sqlite cfg=tsan-sound run=8  (elapsed 1970s)
+[2026-09-02T09:36:39] sqlite/tsan-sound/run8/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-sound/threadtest3  (cwd=/dev/shm/preservation-sqlite-tsan-sound/tsan-sound.8)
+    log files for this run: 1
+=== [9/10] sqlite cfg=tsan-sound run=9  (elapsed 2264s)
+[2026-09-02T09:41:33] sqlite/tsan-sound/run9/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-sound/threadtest3  (cwd=/dev/shm/preservation-sqlite-tsan-sound/tsan-sound.9)
+    log files for this run: 1
+=== [10/10] sqlite cfg=tsan-sound run=10  (elapsed 2555s)
+[2026-09-02T09:46:24] sqlite/tsan-sound/run10/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan-sound/threadtest3  (cwd=/dev/shm/preservation-sqlite-tsan-sound/tsan-sound.10)
+    log files for this run: 1
+done in 2810s. Aggregate with:
+  /home/alexey/tsan-experiments/tools/preservation/tsan_reports.py aggregate --results-dir /home/alexey/tsan-experiments/tools/preservation/results/sqlite/2026-09-02-hardened-0de7a735/tsan-sound/logs --baseline tsan-sound

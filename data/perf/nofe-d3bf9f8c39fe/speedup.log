@@ -1,0 +1,9 @@
+SPEEDUP start 2026-09-10T12:58:33+08:00
+  ok   redis
+  ok   ffmpeg
+SPEEDUP DONE 2026-09-10T13:37:22+08:00
+NOFE-REST start 2026-09-10T14:09:48+08:00
+  ok   memcached
+  ok   sqlite
+  ok   mysql
+NOFE-REST DONE 2026-09-10T18:17:52+08:00

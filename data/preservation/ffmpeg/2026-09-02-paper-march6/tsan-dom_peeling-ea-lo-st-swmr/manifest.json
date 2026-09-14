@@ -1,0 +1,144 @@
+{
+ "app": "ffmpeg",
+ "created": "2026-09-02T20:22:24",
+ "host": "focs-server",
+ "cpus": 112,
+ "argv": [
+  "run_preservation.py",
+  "--app",
+  "ffmpeg",
+  "--configs",
+  "tsan-dom_peeling-ea-lo-st-swmr",
+  "--runs",
+  "10",
+  "--threads",
+  "4",
+  "--llvm-root",
+  "/extra/alexey/llvm-project-paper/llvm/build",
+  "--no-ninja-check",
+  "--out",
+  "results/ffmpeg/2026-09-02-paper-march6/tsan-dom_peeling-ea-lo-st-swmr",
+  "--workdir",
+  "/dev/shm/preservation-ffmpeg-paper-tsan-dom_peeling-ea-lo-st-swmr"
+ ],
+ "scale": "paper",
+ "out": "/home/alexey/tsan-experiments/tools/preservation/results/ffmpeg/2026-09-02-paper-march6/tsan-dom_peeling-ea-lo-st-swmr",
+ "workload": {
+  "input": "/home/alexey/tsan-experiments/projects/ffmpeg/input/WatchingEyeTexture.mkv",
+  "threads": 4,
+  "codecs": [
+   "h264_libx264",
+   "h265_libx265",
+   "mjpeg",
+   "copy_passthrough"
+  ],
+  "smoke_duration_s": null
+ },
+ "tsan_options_template": "log_path=/home/alexey/tsan-experiments/tools/preservation/results/ffmpeg/2026-09-02-paper-march6/tsan-dom_peeling-ea-lo-st-swmr/logs/ffmpeg.<cfg>.0 exitcode=0 external_symbolizer_path=/extra/alexey/llvm-project-paper/llvm/build/bin/llvm-symbolizer",
+ "compiler": {
+  "llvm_root": "/extra/alexey/llvm-project-paper/llvm/build",
+  "tree": "/extra/alexey/llvm-project-paper",
+  "clang_version": "clang version 19.0.0git (/home/alexey/dev/llvm-project-focs-lab e90a3fc410043575326f83373d018d39f505b8de)",
+  "clang_mtime": "2026-09-02T08:25:25.063395",
+  "tsan_rt_mtime": "2026-09-02T08:21:25.401365",
+  "git_branch": "paper-state",
+  "git_head": "e90a3fc410043575326f83373d018d39f505b8de",
+  "git_dirty_files": 0
+ },
+ "configs": {
+  "tsan-dom_peeling-ea-lo-st-swmr": {
+   "artifacts": [
+    {
+     "path": "/home/alexey/tsan-experiments/projects/ffmpeg/ffmpeg-tsan-dom_peeling-ea-lo-st-swmr/bin/ffmpeg",
+     "mtime": "2026-03-06T06:11:12.128140",
+     "size": 10967368,
+     "sha256": "27555a5b7f8585948f8e10d73a1e48735d285ca1272d9a29e189e3414e4a2948",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project c35c3bd998f1c49148ae9b3c252a491cc647f01b)"
+     ]
+    },
+    {
+     "path": "/home/alexey/tsan-experiments/projects/ffmpeg/ffmpeg-tsan-dom_peeling-ea-lo-st-swmr/lib/libavcodec.so.58.91.100",
+     "mtime": "2026-03-06T06:11:11.961140",
+     "size": 55817320,
+     "sha256": "20632fe49a3aa5fd10be5cae61de905c9e2ec1ddd1d7809d694c49506846546b",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project c35c3bd998f1c49148ae9b3c252a491cc647f01b)"
+     ]
+    },
+    {
+     "path": "/home/alexey/tsan-experiments/projects/ffmpeg/ffmpeg-tsan-dom_peeling-ea-lo-st-swmr/lib/libavdevice.so.58.10.100",
+     "mtime": "2026-03-06T06:11:10.943141",
+     "size": 655472,
+     "sha256": "162283491173658545de1da5ee32fba0acdbdefbd765e06b4649c47c3b87406f",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project c35c3bd998f1c49148ae9b3c252a491cc647f01b)"
+     ]
+    },
+    {
+     "path": "/home/alexey/tsan-experiments/projects/ffmpeg/ffmpeg-tsan-dom_peeling-ea-lo-st-swmr/lib/libavfilter.so.7.85.100",
+     "mtime": "2026-03-06T06:11:11.137141",
+     "size": 14572336,
+     "sha256": "6018b46b914348a7928ffee64fcbf4bd819b2e690f6c8f32a3392fc1669765e5",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project c35c3bd998f1c49148ae9b3c252a491cc647f01b)"
+     ]
+    },
+    {
+     "path": "/home/alexey/tsan-experiments/projects/ffmpeg/ffmpeg-tsan-dom_peeling-ea-lo-st-swmr/lib/libavformat.so.58.45.100",
+     "mtime": "2026-03-06T06:11:11.406141",
+     "size": 17753160,
+     "sha256": "800165ad349815d6f94a1944f266811fca60234d3ce97b39e8c1dbe1ec0904bf",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project c35c3bd998f1c49148ae9b3c252a491cc647f01b)"
+     ]
+    },
+    {
+     "path": "/home/alexey/tsan-experiments/projects/ffmpeg/ffmpeg-tsan-dom_peeling-ea-lo-st-swmr/lib/libavutil.so.56.51.100",
+     "mtime": "2026-03-06T06:11:12.114140",
+     "size": 1697416,
+     "sha256": "3b88a795855483792cc66f8a61f5e9ea6d6a090f3d428762fb4d1ac7bd8c1779",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project c35c3bd998f1c49148ae9b3c252a491cc647f01b)"
+     ]
+    },
+    {
+     "path": "/home/alexey/tsan-experiments/projects/ffmpeg/ffmpeg-tsan-dom_peeling-ea-lo-st-swmr/lib/libpostproc.so.55.7.100",
+     "mtime": "2026-03-06T06:11:11.991140",
+     "size": 368336,
+     "sha256": "6fa8ce0ea2f296eb588f7005756d5a94050300cd88811fdc5bc4dd314ef336af",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project c35c3bd998f1c49148ae9b3c252a491cc647f01b)"
+     ]
+    },
+    {
+     "path": "/home/alexey/tsan-experiments/projects/ffmpeg/ffmpeg-tsan-dom_peeling-ea-lo-st-swmr/lib/libswresample.so.3.7.100",
+     "mtime": "2026-03-06T06:11:12.022140",
+     "size": 413456,
+     "sha256": "c8ac591713b5a21eb29b28f60a77b5cb1b400250659e04e18cd633d4e33d66c5",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project c35c3bd998f1c49148ae9b3c252a491cc647f01b)"
+     ]
+    },
+    {
+     "path": "/home/alexey/tsan-experiments/projects/ffmpeg/ffmpeg-tsan-dom_peeling-ea-lo-st-swmr/lib/libswscale.so.5.7.100",
+     "mtime": "2026-03-06T06:11:12.065140",
+     "size": 2829128,
+     "sha256": "d23eb2da92e3170aa19f29ccf341774d24cb3feaf993eb5e841d3a95e614bfba",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project c35c3bd998f1c49148ae9b3c252a491cc647f01b)"
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,8 @@
+--- Running Benchmark for: tsan-dom ---
+Executable: build/test-tsan-dom/threadtest3
+Full Command: build/test-tsan-dom/threadtest3 --w1-threads 96 walthread1
+Output will be saved to: results/contention/tsan-dom_96threads.log
+Memory usage will be saved to: results/memory.txt
+Running, please wait...
+--- Benchmark for [tsan-dom] completed successfully. ---
+

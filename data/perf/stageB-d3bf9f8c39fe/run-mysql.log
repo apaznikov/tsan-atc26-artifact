@@ -1,0 +1,140 @@
+[2026-09-08 11:13:55] mysql orig run1 rc=0 921.5s outside_busy=0.0033 inside_busy=0.3035 foreign_cpu_share=0.3129
+ok
+[2026-09-08 11:35:45] mysql tsan run1 rc=0 1004.0s outside_busy=0.0031 inside_busy=0.1732 foreign_cpu_share=0.1795
+ok
+[2026-09-08 11:56:53] mysql tsan-sound run1 rc=0 1002.5s outside_busy=0.0028 inside_busy=0.176 foreign_cpu_share=0.182
+ok
+[2026-09-08 12:18:49] mysql tsan-dom-ea-lo-st-swmr run1 rc=0 1002.1s outside_busy=0.0033 inside_busy=0.1755 foreign_cpu_share=0.1821
+ok
+[2026-09-08 12:40:40] mysql tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 1004.8s outside_busy=0.0041 inside_busy=0.1867 foreign_cpu_share=0.1946
+ok
+[2026-09-08 13:02:07] mysql tsan-st run1 rc=0 1006.5s outside_busy=0.0035 inside_busy=0.1692 foreign_cpu_share=0.176
+ok
+[2026-09-08 13:23:50] mysql tsan-stmt run1 rc=0 1004.7s outside_busy=0.0033 inside_busy=0.1846 foreign_cpu_share=0.1913
+ok
+[2026-09-08 13:45:22] mysql tsan-swmr run1 rc=0 1013.1s outside_busy=0.0648 inside_busy=0.2382 foreign_cpu_share=0.3287
+ok
+[2026-09-08 14:06:28] mysql tsan-lo run1 rc=0 1011.6s outside_busy=0.0847 inside_busy=0.2173 foreign_cpu_share=0.3377
+ok
+[2026-09-08 14:28:12] mysql tsan-ea run1 rc=0 1006.8s outside_busy=0.018 inside_busy=0.1871 foreign_cpu_share=0.2153
+ok
+[2026-09-08 14:47:58] mysql tsan-dom run1 rc=0 1005.4s outside_busy=0.0136 inside_busy=0.1958 foreign_cpu_share=0.218
+ok
+[2026-09-08 15:07:42] mysql tsan-dom_peeling run1 rc=0 1008.6s outside_busy=0.026 inside_busy=0.1977 foreign_cpu_share=0.2373
+ok
+[2026-09-08 15:23:08] mysql orig run2 rc=0 922.6s outside_busy=0.0802 inside_busy=0.3423 foreign_cpu_share=0.4576
+ok
+[2026-09-08 15:40:03] mysql tsan run2 rc=0 1011.1s outside_busy=0.0179 inside_busy=0.1887 foreign_cpu_share=0.2171
+ok
+[2026-09-08 15:57:05] mysql tsan-sound run2 rc=0 1019.1s outside_busy=0.0932 inside_busy=0.2138 foreign_cpu_share=0.3351
+ok
+[2026-09-08 16:14:13] mysql tsan-dom-ea-lo-st-swmr run2 rc=0 1023.9s outside_busy=0.1266 inside_busy=0.1998 foreign_cpu_share=0.3632
+ok
+[2026-09-08 16:31:11] mysql tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 1014.6s outside_busy=0.0429 inside_busy=0.1862 foreign_cpu_share=0.249
+ok
+[2026-09-08 16:48:06] mysql tsan-st run2 rc=0 1011.0s outside_busy=0.0685 inside_busy=0.2326 foreign_cpu_share=0.329
+ok
+[2026-09-08 17:05:01] mysql tsan-stmt run2 rc=0 1011.8s outside_busy=0.0142 inside_busy=0.1781 foreign_cpu_share=0.2018
+ok
+[2026-09-08 17:21:59] mysql tsan-swmr run2 rc=0 1013.8s outside_busy=0.0296 inside_busy=0.196 foreign_cpu_share=0.2428
+ok
+[2026-09-08 17:39:01] mysql tsan-lo run2 rc=0 1019.6s outside_busy=0.0949 inside_busy=0.2374 foreign_cpu_share=0.3713
+ok
+[2026-09-08 17:55:51] mysql tsan-ea run2 rc=0 1005.6s outside_busy=0.0191 inside_busy=0.1925 foreign_cpu_share=0.2216
+ok
+[2026-09-08 18:12:47] mysql tsan-dom run2 rc=0 1012.9s outside_busy=0.0542 inside_busy=0.2148 foreign_cpu_share=0.2907
+ok
+[2026-09-08 18:29:51] mysql tsan-dom_peeling run2 rc=0 1020.3s outside_busy=0.066 inside_busy=0.1987 foreign_cpu_share=0.2908
+ok
+[2026-09-08 18:45:16] mysql orig run3 rc=0 920.6s outside_busy=0.0892 inside_busy=0.3407 foreign_cpu_share=0.4674
+ok
+[2026-09-08 19:02:17] mysql tsan run3 rc=0 1017.7s outside_busy=0.0524 inside_busy=0.201 foreign_cpu_share=0.2743
+ok
+[2026-09-08 19:19:21] mysql tsan-sound run3 rc=0 1020.1s outside_busy=0.0499 inside_busy=0.1995 foreign_cpu_share=0.2697
+ok
+[2026-09-08 19:36:28] mysql tsan-dom-ea-lo-st-swmr run3 rc=0 1022.7s outside_busy=0.0802 inside_busy=0.218 foreign_cpu_share=0.3301
+ok
+[2026-09-08 19:53:33] mysql tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 1021.3s outside_busy=0.1189 inside_busy=0.2537 foreign_cpu_share=0.4183
+ok
+[2026-09-08 20:10:42] mysql tsan-st run3 rc=0 1025.9s outside_busy=0.0934 inside_busy=0.2233 foreign_cpu_share=0.3541
+ok
+[2026-09-08 20:27:48] mysql tsan-stmt run3 rc=0 1021.4s outside_busy=0.0615 inside_busy=0.2143 foreign_cpu_share=0.3031
+ok
+[2026-09-08 20:44:52] mysql tsan-swmr run3 rc=0 1020.7s outside_busy=0.0608 inside_busy=0.2146 foreign_cpu_share=0.3003
+ok
+[2026-09-08 21:01:48] mysql tsan-lo run3 rc=0 1012.1s outside_busy=0.0191 inside_busy=0.1955 foreign_cpu_share=0.225
+ok
+[2026-09-08 21:18:43] mysql tsan-ea run3 rc=0 1011.0s outside_busy=0.012 inside_busy=0.172 foreign_cpu_share=0.193
+ok
+[2026-09-08 21:35:33] mysql tsan-dom run3 rc=0 1006.4s outside_busy=0.0101 inside_busy=0.1762 foreign_cpu_share=0.1933
+ok
+[2026-09-08 21:52:23] mysql tsan-dom_peeling run3 rc=0 1006.3s outside_busy=0.0064 inside_busy=0.1762 foreign_cpu_share=0.1872
+ok
+[2026-09-08 22:07:48] mysql orig run4 rc=0 921.5s outside_busy=0.0088 inside_busy=0.305 foreign_cpu_share=0.3219
+ok
+[2026-09-08 22:24:41] mysql tsan run4 rc=0 1009.0s outside_busy=0.0066 inside_busy=0.1861 foreign_cpu_share=0.1973
+ok
+[2026-09-08 22:41:34] mysql tsan-sound run4 rc=0 1009.2s outside_busy=0.0062 inside_busy=0.1902 foreign_cpu_share=0.2011
+ok
+[2026-09-08 22:58:25] mysql tsan-dom-ea-lo-st-swmr run4 rc=0 1007.4s outside_busy=0.0068 inside_busy=0.1801 foreign_cpu_share=0.1917
+ok
+[2026-09-08 23:15:09] mysql tsan-dom_peeling-ea-lo-st-swmr run4 rc=0 1003.3s outside_busy=0.0063 inside_busy=0.1714 foreign_cpu_share=0.1824
+ok
+[2026-09-08 23:31:59] mysql tsan-st run4 rc=0 1009.4s outside_busy=0.0061 inside_busy=0.17 foreign_cpu_share=0.1806
+ok
+[2026-09-08 23:48:50] mysql tsan-stmt run4 rc=0 1010.3s outside_busy=0.0064 inside_busy=0.1746 foreign_cpu_share=0.1858
+ok
+[2026-09-09 00:05:40] mysql tsan-swmr run4 rc=0 1009.2s outside_busy=0.0064 inside_busy=0.1793 foreign_cpu_share=0.1902
+ok
+[2026-09-09 00:22:32] mysql tsan-lo run4 rc=0 1010.3s outside_busy=0.0064 inside_busy=0.1677 foreign_cpu_share=0.1787
+ok
+[2026-09-09 00:39:20] mysql tsan-ea run4 rc=0 1007.2s outside_busy=0.0066 inside_busy=0.1757 foreign_cpu_share=0.1869
+ok
+[2026-09-09 00:56:10] mysql tsan-dom run4 rc=0 1009.7s outside_busy=0.0065 inside_busy=0.1866 foreign_cpu_share=0.1978
+ok
+[2026-09-09 01:13:00] mysql tsan-dom_peeling run4 rc=0 1009.0s outside_busy=0.0063 inside_busy=0.1772 foreign_cpu_share=0.188
+ok
+[2026-09-09 01:28:22] mysql orig run5 rc=0 921.5s outside_busy=0.0068 inside_busy=0.3004 foreign_cpu_share=0.3148
+ok
+[2026-09-09 01:45:13] mysql tsan run5 rc=0 1010.0s outside_busy=0.0062 inside_busy=0.182 foreign_cpu_share=0.1926
+ok
+[2026-09-09 02:02:03] mysql tsan-sound run5 rc=0 1008.3s outside_busy=0.0072 inside_busy=0.1676 foreign_cpu_share=0.1798
+ok
+[2026-09-09 02:18:53] mysql tsan-dom-ea-lo-st-swmr run5 rc=0 1009.0s outside_busy=0.0081 inside_busy=0.1711 foreign_cpu_share=0.1848
+ok
+[2026-09-09 02:35:44] mysql tsan-dom_peeling-ea-lo-st-swmr run5 rc=0 1008.9s outside_busy=0.0067 inside_busy=0.1802 foreign_cpu_share=0.1915
+ok
+[2026-09-09 02:52:39] mysql tsan-st run5 rc=0 1010.8s outside_busy=0.0793 inside_busy=0.2253 foreign_cpu_share=0.3354
+ok
+[2026-09-09 03:09:41] mysql tsan-stmt run5 rc=0 1018.3s outside_busy=0.1813 inside_busy=0.3135 foreign_cpu_share=0.5588
+ok
+[2026-09-09 03:26:34] mysql tsan-swmr run5 rc=0 1009.2s outside_busy=0.0079 inside_busy=0.1891 foreign_cpu_share=0.202
+ok
+[2026-09-09 03:43:26] mysql tsan-lo run5 rc=0 1008.3s outside_busy=0.0068 inside_busy=0.1794 foreign_cpu_share=0.191
+ok
+[2026-09-09 04:00:19] mysql tsan-ea run5 rc=0 1009.5s outside_busy=0.0068 inside_busy=0.1742 foreign_cpu_share=0.1856
+ok
+[2026-09-09 04:17:10] mysql tsan-dom run5 rc=0 1006.6s outside_busy=0.0067 inside_busy=0.1784 foreign_cpu_share=0.1899
+ok
+[2026-09-09 04:34:02] mysql tsan-dom_peeling run5 rc=0 1008.7s outside_busy=0.0066 inside_busy=0.1693 foreign_cpu_share=0.1806
+ok
+[2026-09-09 04:34:03] done: mysql N=5 -> /home/alexey/tsan-experiments/tools/perf/results/stageB-d3bf9f8c39fe/mysql
+[2026-09-09 04:54:40] skip mysql tsan-dom-ea-lo-st-swmr run1 (done)
+[2026-09-09 04:54:40] skip mysql tsan-dom_peeling-ea-lo-st-swmr run1 (done)
+[2026-09-09 04:54:40] skip mysql tsan-stmt run1 (done)
+[2026-09-09 05:11:31] mysql tsan-dom-ea-lo-st-swmr run2 rc=0 1007.0s outside_busy=0.0064 inside_busy=0.1892 foreign_cpu_share=0.2002
+ok
+[2026-09-09 05:11:31] skip mysql tsan-dom_peeling-ea-lo-st-swmr run2 (done)
+[2026-09-09 05:11:31] skip mysql tsan-stmt run2 (done)
+[2026-09-09 05:11:31] skip mysql tsan-dom-ea-lo-st-swmr run3 (done)
+[2026-09-09 05:28:21] mysql tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 1009.7s outside_busy=0.0066 inside_busy=0.1781 foreign_cpu_share=0.1894
+ok
+[2026-09-09 05:28:21] skip mysql tsan-stmt run3 (done)
+[2026-09-09 05:28:21] skip mysql tsan-dom-ea-lo-st-swmr run4 (done)
+[2026-09-09 05:28:21] skip mysql tsan-dom_peeling-ea-lo-st-swmr run4 (done)
+[2026-09-09 05:28:21] skip mysql tsan-stmt run4 (done)
+[2026-09-09 05:28:21] skip mysql tsan-dom-ea-lo-st-swmr run5 (done)
+[2026-09-09 05:28:21] skip mysql tsan-dom_peeling-ea-lo-st-swmr run5 (done)
+[2026-09-09 05:45:15] mysql tsan-stmt run5 rc=0 1012.5s outside_busy=0.0065 inside_busy=0.1699 foreign_cpu_share=0.1809
+ok
+[2026-09-09 05:45:15] done: mysql N=5 -> /home/alexey/tsan-experiments/tools/perf/results/stageB-d3bf9f8c39fe/mysql

@@ -1,0 +1,36 @@
+[warn] $LLVM_ROOT_PATH=/home/alexey/dev/llvm-project/llvm/build differs from --llvm-root=/extra/alexey/builds/tsan-audit-297881ddc1c5; the manifest describes the latter
+output: /home/alexey/tsan-experiments/tools/preservation/results/sqlite/2026-09-03-final-297881ddc1c5/tsan-sound
+compiler: clang version 19.0.0git (https://github.com/focs-lab/llvm-project 297881ddc1c5afe1542b672bc6c3186d11026352) branch=None head= ninja=None
+TSAN_OPTIONS template: log_path=/home/alexey/tsan-experiments/tools/preservation/results/sqlite/2026-09-03-final-297881ddc1c5/tsan-sound/logs/sqlite.<cfg>.0 exitcode=0 external_symbolizer_path=/extra/alexey/builds/tsan-audit-297881ddc1c5/bin/llvm-symbolizer
+=== [1/10] sqlite cfg=tsan-sound run=1  (elapsed 0s)
+[2026-09-03T03:16:32] sqlite/tsan-sound/run1/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/297881ddc1c5/test-tsan-sound/threadtest3  (cwd=/dev/shm/preservation-sqlite-final-297881ddc1c5-tsan-sound/tsan-sound.1)
+    log files for this run: 1
+=== [2/10] sqlite cfg=tsan-sound run=2  (elapsed 276s)
+[2026-09-03T03:21:08] sqlite/tsan-sound/run2/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/297881ddc1c5/test-tsan-sound/threadtest3  (cwd=/dev/shm/preservation-sqlite-final-297881ddc1c5-tsan-sound/tsan-sound.2)
+    log files for this run: 1
+=== [3/10] sqlite cfg=tsan-sound run=3  (elapsed 524s)
+[2026-09-03T03:25:17] sqlite/tsan-sound/run3/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/297881ddc1c5/test-tsan-sound/threadtest3  (cwd=/dev/shm/preservation-sqlite-final-297881ddc1c5-tsan-sound/tsan-sound.3)
+    log files for this run: 1
+=== [4/10] sqlite cfg=tsan-sound run=4  (elapsed 809s)
+[2026-09-03T03:30:02] sqlite/tsan-sound/run4/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/297881ddc1c5/test-tsan-sound/threadtest3  (cwd=/dev/shm/preservation-sqlite-final-297881ddc1c5-tsan-sound/tsan-sound.4)
+    log files for this run: 1
+=== [5/10] sqlite cfg=tsan-sound run=5  (elapsed 1094s)
+[2026-09-03T03:34:47] sqlite/tsan-sound/run5/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/297881ddc1c5/test-tsan-sound/threadtest3  (cwd=/dev/shm/preservation-sqlite-final-297881ddc1c5-tsan-sound/tsan-sound.5)
+    log files for this run: 1
+=== [6/10] sqlite cfg=tsan-sound run=6  (elapsed 1376s)
+[2026-09-03T03:39:29] sqlite/tsan-sound/run6/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/297881ddc1c5/test-tsan-sound/threadtest3  (cwd=/dev/shm/preservation-sqlite-final-297881ddc1c5-tsan-sound/tsan-sound.6)
+    log files for this run: 1
+=== [7/10] sqlite cfg=tsan-sound run=7  (elapsed 1664s)
+[2026-09-03T03:44:17] sqlite/tsan-sound/run7/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/297881ddc1c5/test-tsan-sound/threadtest3  (cwd=/dev/shm/preservation-sqlite-final-297881ddc1c5-tsan-sound/tsan-sound.7)
+    log files for this run: 1
+=== [8/10] sqlite cfg=tsan-sound run=8  (elapsed 1931s)
+[2026-09-03T03:48:44] sqlite/tsan-sound/run8/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/297881ddc1c5/test-tsan-sound/threadtest3  (cwd=/dev/shm/preservation-sqlite-final-297881ddc1c5-tsan-sound/tsan-sound.8)
+    log files for this run: 1
+=== [9/10] sqlite cfg=tsan-sound run=9  (elapsed 2276s)
+[2026-09-03T03:54:28] sqlite/tsan-sound/run9/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/297881ddc1c5/test-tsan-sound/threadtest3  (cwd=/dev/shm/preservation-sqlite-final-297881ddc1c5-tsan-sound/tsan-sound.9)
+    log files for this run: 1
+=== [10/10] sqlite cfg=tsan-sound run=10  (elapsed 2551s)
+[2026-09-03T03:59:04] sqlite/tsan-sound/run10/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/297881ddc1c5/test-tsan-sound/threadtest3  (cwd=/dev/shm/preservation-sqlite-final-297881ddc1c5-tsan-sound/tsan-sound.10)
+    log files for this run: 1
+done in 2833s. Aggregate with:
+  /home/alexey/tsan-experiments/tools/preservation/tsan_reports.py aggregate --results-dir /home/alexey/tsan-experiments/tools/preservation/results/sqlite/2026-09-03-final-297881ddc1c5/tsan-sound/logs --baseline tsan-sound

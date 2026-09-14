@@ -1,0 +1,1205 @@
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 4 at 0x555556a39968 by main thread:
+    #0 clock_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c (memcached+0xf7fae)
+    #1 <null> <null> (libevent-2.1.so.7+0x20a57) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+    #2 __libc_start_call_main csu/../sysdeps/nptl/libc_start_call_main.h:58:16 (libc.so.6+0x2a1c9) (BuildId: 282c2c16e7b6600b0b22ea0c99010d2795752b5f)
+
+  Previous read of size 4 at 0x555556a39968 by thread T116 (mutexes: write M0):
+    #0 lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:1671:59 (memcached+0x1046ad)
+
+  Location is global 'current_time' of size 4 at 0x555556a39968 (memcached+0x14e5968)
+
+  Mutex M0 (0x555556a46cf0) created at:
+    #0 pthread_mutex_lock /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x69b7e)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:1725:5 (memcached+0x103dac)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6170:33 (memcached+0xf5762)
+
+  Thread T116 'mc-lrumaint' (tid=3963482, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:1728:16 (memcached+0x103df6)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6170:33 (memcached+0xf5762)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c in clock_handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 2 at 0x7fffd31fff9e by thread T5 (mutexes: write M0):
+    #0 do_item_unlink /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:516:22 (memcached+0x100a2a)
+    #1 do_item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:589:5 (memcached+0x101555)
+    #2 item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:934:12 (memcached+0x1076cb)
+    #3 do_store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:1715:13 (memcached+0xf0052)
+    #4 store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:974:11 (memcached+0x1079f2)
+    #5 complete_nread_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c:184:13 (memcached+0x112863)
+    #6 complete_nread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:1485:9 (memcached+0xeafec)
+    #7 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3239:17 (memcached+0xeafec)
+    #8 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous read of size 2 at 0x7fffd31fff9e by thread T3:
+    #0 item_remove /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:921:15 (memcached+0x1075d2)
+    #1 complete_nread_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c:241:5 (memcached+0x112a4c)
+    #2 complete_nread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:1485:9 (memcached+0xeafec)
+    #3 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3239:17 (memcached+0xeafec)
+    #4 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #5 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 1048576 at 0x7fffd3100000 allocated by thread T3:
+    #0 malloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:666:5 (memcached+0x663df)
+    #1 memory_allocate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/slabs.c:615:15 (memcached+0xfeb5c)
+    #2 do_slabs_newslab /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/slabs.c:386:17 (memcached+0xfeb5c)
+    #3 do_slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/slabs.c:423:9 (memcached+0xfc512)
+    #4 slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/slabs.c:661:11 (memcached+0xfc512)
+    #5 do_item_alloc_pull /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:181:14 (memcached+0xff11e)
+    #6 do_item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:298:14 (memcached+0x100005)
+    #7 item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:876:10 (memcached+0x1072b2)
+    #8 process_update_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c:2044:10 (memcached+0x117671)
+    #9 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c (memcached+0x113c47)
+    #10 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c:494:5 (memcached+0x113481)
+    #11 try_read_command_negotiate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:2427:12 (memcached+0xedf97)
+    #12 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3193:17 (memcached+0xea509)
+    #13 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #14 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Mutex M0 (0x7ffff4d31f48) created at:
+    #0 pthread_mutex_init /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x69853)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1132:9 (memcached+0x108618)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T5 'mc-worker' (tid=3963371, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:516:22 in do_item_unlink
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Read of size 2 at 0x7fffd31fec66 by thread T116 (mutexes: write M0, write M1):
+    #0 lru_pull_tail /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:1137:28 (memcached+0xff396)
+    #1 lru_maintainer_juggle /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:1448:13 (memcached+0x104337)
+    #2 lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:1645:29 (memcached+0x104337)
+
+  Previous write of size 2 at 0x7fffd31fec66 by thread T111 (mutexes: write M2):
+    #0 do_item_unlink /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:516:22 (memcached+0x100a2a)
+    #1 do_item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:589:5 (memcached+0x101555)
+    #2 item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:934:12 (memcached+0x1076cb)
+    #3 do_store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:1715:13 (memcached+0xf0052)
+    #4 store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:974:11 (memcached+0x1079f2)
+    #5 complete_nread_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c:184:13 (memcached+0x112863)
+    #6 complete_nread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:1485:9 (memcached+0xeafec)
+    #7 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3239:17 (memcached+0xeafec)
+    #8 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 1048576 at 0x7fffd3100000 allocated by thread T3:
+    #0 malloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:666:5 (memcached+0x663df)
+    #1 memory_allocate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/slabs.c:615:15 (memcached+0xfeb5c)
+    #2 do_slabs_newslab /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/slabs.c:386:17 (memcached+0xfeb5c)
+    #3 do_slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/slabs.c:423:9 (memcached+0xfc512)
+    #4 slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/slabs.c:661:11 (memcached+0xfc512)
+    #5 do_item_alloc_pull /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:181:14 (memcached+0xff11e)
+    #6 do_item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:298:14 (memcached+0x100005)
+    #7 item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:876:10 (memcached+0x1072b2)
+    #8 process_update_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c:2044:10 (memcached+0x117671)
+    #9 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c (memcached+0x113c47)
+    #10 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c:494:5 (memcached+0x113481)
+    #11 try_read_command_negotiate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:2427:12 (memcached+0xedf97)
+    #12 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3193:17 (memcached+0xea509)
+    #13 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #14 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Mutex M0 (0x555556a46cf0) created at:
+    #0 pthread_mutex_lock /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x69b7e)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:1725:5 (memcached+0x103dac)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6170:33 (memcached+0xf5762)
+
+  Mutex M1 (0x555556a476f0) created at:
+    #0 pthread_mutex_init /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x69853)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1093:9 (memcached+0x10850a)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Mutex M2 (0x7ffff4ccb018) created at:
+    #0 pthread_mutex_init /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x69853)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1132:9 (memcached+0x108618)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T116 'mc-lrumaint' (tid=3963482, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:1728:16 (memcached+0x103df6)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6170:33 (memcached+0xf5762)
+
+  Thread T111 'mc-worker' (tid=3963477, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:1137:28 in lru_pull_tail
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Read of size 8 at 0x555556a39c10 by main thread:
+    #0 clock_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:4009:36 (memcached+0xf7ea6)
+    #1 <null> <null> (libevent-2.1.so.7+0x20a57) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+    #2 __libc_start_call_main csu/../sysdeps/nptl/libc_start_call_main.h:58:16 (libc.so.6+0x2a1c9) (BuildId: 282c2c16e7b6600b0b22ea0c99010d2795752b5f)
+
+  Previous write of size 8 at 0x555556a39c10 by thread T56 (mutexes: write M0, write M1):
+    #0 do_item_unlink /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:519:32 (memcached+0x100aac)
+    #1 do_item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:589:5 (memcached+0x101555)
+    #2 item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:934:12 (memcached+0x1076cb)
+    #3 do_store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:1715:13 (memcached+0xf0052)
+    #4 store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:974:11 (memcached+0x1079f2)
+    #5 complete_nread_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c:184:13 (memcached+0x112863)
+    #6 complete_nread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:1485:9 (memcached+0xeafec)
+    #7 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3239:17 (memcached+0xeafec)
+    #8 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is global 'stats_state' of size 56 at 0x555556a39c10 (memcached+0x14e5c10)
+
+  Mutex M0 (0x7ffff4dbb220) created at:
+    #0 pthread_mutex_init /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x69853)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1132:9 (memcached+0x108618)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Mutex M1 (0x555556a47678) created at:
+    #0 pthread_mutex_lock /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x69b7e)
+    #1 STATS_LOCK /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:982:5 (memcached+0x107a66)
+    #2 assoc_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/assoc.c:64:5 (memcached+0x10534d)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6082:5 (memcached+0xf55a3)
+
+  Thread T56 'mc-worker' (tid=3963422, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:4009:36 in clock_handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 4 at 0x555556a39968 by main thread:
+    #0 clock_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c (memcached+0xf7fae)
+    #1 <null> <null> (libevent-2.1.so.7+0x20a57) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+    #2 __libc_start_call_main csu/../sysdeps/nptl/libc_start_call_main.h:58:16 (libc.so.6+0x2a1c9) (BuildId: 282c2c16e7b6600b0b22ea0c99010d2795752b5f)
+
+  Previous read of size 4 at 0x555556a39968 by thread T27:
+    #0 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c:493:24 (memcached+0x113459)
+    #1 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3193:17 (memcached+0xea509)
+    #2 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is global 'current_time' of size 4 at 0x555556a39968 (memcached+0x14e5968)
+
+  Thread T27 'mc-worker' (tid=3963393, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c in clock_handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 4 at 0x555556a39968 by main thread:
+    #0 clock_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c (memcached+0xf7fae)
+    #1 <null> <null> (libevent-2.1.so.7+0x20a57) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+    #2 __libc_start_call_main csu/../sysdeps/nptl/libc_start_call_main.h:58:16 (libc.so.6+0x2a1c9) (BuildId: 282c2c16e7b6600b0b22ea0c99010d2795752b5f)
+
+  Previous read of size 4 at 0x555556a39968 by thread T30 (mutexes: write M0):
+    #0 do_item_link /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:495:16 (memcached+0x10068d)
+    #1 do_item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:590:12 (memcached+0x101562)
+    #2 item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:934:12 (memcached+0x1076cb)
+    #3 do_store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:1715:13 (memcached+0xf0052)
+    #4 store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:974:11 (memcached+0x1079f2)
+    #5 complete_nread_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c:184:13 (memcached+0x112863)
+    #6 complete_nread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:1485:9 (memcached+0xeafec)
+    #7 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3239:17 (memcached+0xeafec)
+    #8 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is global 'current_time' of size 4 at 0x555556a39968 (memcached+0x14e5968)
+
+  Mutex M0 (0x7ffff4cd4690) created at:
+    #0 pthread_mutex_init /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x69853)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1132:9 (memcached+0x108618)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T30 'mc-worker' (tid=3963396, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c in clock_handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Read of size 8 at 0x555556a39c10 by main thread:
+    #0 clock_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:4009:36 (memcached+0xf7ea6)
+    #1 <null> <null> (libevent-2.1.so.7+0x20a57) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+    #2 __libc_start_call_main csu/../sysdeps/nptl/libc_start_call_main.h:58:16 (libc.so.6+0x2a1c9) (BuildId: 282c2c16e7b6600b0b22ea0c99010d2795752b5f)
+
+  Previous write of size 8 at 0x555556a39c10 by thread T93 (mutexes: write M0, write M1):
+    #0 do_item_link /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:499:28 (memcached+0x100710)
+    #1 do_item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:590:12 (memcached+0x101562)
+    #2 item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:934:12 (memcached+0x1076cb)
+    #3 do_store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:1715:13 (memcached+0xf0052)
+    #4 store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:974:11 (memcached+0x1079f2)
+    #5 complete_nread_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c:184:13 (memcached+0x112863)
+    #6 complete_nread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:1485:9 (memcached+0xeafec)
+    #7 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3239:17 (memcached+0xeafec)
+    #8 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is global 'stats_state' of size 56 at 0x555556a39c10 (memcached+0x14e5c10)
+
+  Mutex M0 (0x7ffff4cc39f8) created at:
+    #0 pthread_mutex_init /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x69853)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1132:9 (memcached+0x108618)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Mutex M1 (0x555556a47678) created at:
+    #0 pthread_mutex_lock /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x69b7e)
+    #1 STATS_LOCK /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:982:5 (memcached+0x107a66)
+    #2 assoc_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/assoc.c:64:5 (memcached+0x10534d)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6082:5 (memcached+0xf55a3)
+
+  Thread T93 'mc-worker' (tid=3963459, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:4009:36 in clock_handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Read of size 2 at 0x7fffd31f6926 by thread T116 (mutexes: write M0, write M1):
+    #0 lru_pull_tail /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:1137:28 (memcached+0xff396)
+    #1 lru_maintainer_juggle /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:1453:24 (memcached+0x104397)
+    #2 lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:1645:29 (memcached+0x104397)
+
+  Previous write of size 2 at 0x7fffd31f6926 by thread T112 (mutexes: write M2):
+    #0 do_item_unlink /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:516:22 (memcached+0x100a2a)
+    #1 do_item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:589:5 (memcached+0x101555)
+    #2 item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:934:12 (memcached+0x1076cb)
+    #3 do_store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:1715:13 (memcached+0xf0052)
+    #4 store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:974:11 (memcached+0x1079f2)
+    #5 complete_nread_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c:184:13 (memcached+0x112863)
+    #6 complete_nread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:1485:9 (memcached+0xeafec)
+    #7 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3239:17 (memcached+0xeafec)
+    #8 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 1048576 at 0x7fffd3100000 allocated by thread T3:
+    #0 malloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:666:5 (memcached+0x663df)
+    #1 memory_allocate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/slabs.c:615:15 (memcached+0xfeb5c)
+    #2 do_slabs_newslab /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/slabs.c:386:17 (memcached+0xfeb5c)
+    #3 do_slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/slabs.c:423:9 (memcached+0xfc512)
+    #4 slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/slabs.c:661:11 (memcached+0xfc512)
+    #5 do_item_alloc_pull /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:181:14 (memcached+0xff11e)
+    #6 do_item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:298:14 (memcached+0x100005)
+    #7 item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:876:10 (memcached+0x1072b2)
+    #8 process_update_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c:2044:10 (memcached+0x117671)
+    #9 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c (memcached+0x113c47)
+    #10 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c:494:5 (memcached+0x113481)
+    #11 try_read_command_negotiate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:2427:12 (memcached+0xedf97)
+    #12 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3193:17 (memcached+0xea509)
+    #13 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #14 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Mutex M0 (0x555556a46cf0) created at:
+    #0 pthread_mutex_lock /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x69b7e)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:1725:5 (memcached+0x103dac)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6170:33 (memcached+0xf5762)
+
+  Mutex M1 (0x555556a48af0) created at:
+    #0 pthread_mutex_init /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x69853)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1093:9 (memcached+0x10850a)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Mutex M2 (0x7ffff4d4a3b8) created at:
+    #0 pthread_mutex_init /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x69853)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1132:9 (memcached+0x108618)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T116 'mc-lrumaint' (tid=3963482, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 start_lru_maintainer_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:1728:16 (memcached+0x103df6)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6170:33 (memcached+0xf5762)
+
+  Thread T112 'mc-worker' (tid=3963478, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:1137:28 in lru_pull_tail
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 2 at 0x7fffd31e2886 by thread T72 (mutexes: write M0):
+    #0 do_item_unlink /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:516:22 (memcached+0x100a2a)
+    #1 do_item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:589:5 (memcached+0x101555)
+    #2 item_replace /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:934:12 (memcached+0x1076cb)
+    #3 do_store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:1715:13 (memcached+0xf0052)
+    #4 store_item /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:974:11 (memcached+0x1079f2)
+    #5 complete_nread_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c:184:13 (memcached+0x112863)
+    #6 complete_nread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:1485:9 (memcached+0xeafec)
+    #7 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3239:17 (memcached+0xeafec)
+    #8 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous read of size 2 at 0x7fffd31e2886 by thread T115 (mutexes: write M1, write M2):
+    #0 item_crawler_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/crawler.c:570:32 (memcached+0x10f5ec)
+
+  Location is heap block of size 1048576 at 0x7fffd3100000 allocated by thread T3:
+    #0 malloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:666:5 (memcached+0x663df)
+    #1 memory_allocate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/slabs.c:615:15 (memcached+0xfeb5c)
+    #2 do_slabs_newslab /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/slabs.c:386:17 (memcached+0xfeb5c)
+    #3 do_slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/slabs.c:423:9 (memcached+0xfc512)
+    #4 slabs_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/slabs.c:661:11 (memcached+0xfc512)
+    #5 do_item_alloc_pull /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:181:14 (memcached+0xff11e)
+    #6 do_item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:298:14 (memcached+0x100005)
+    #7 item_alloc /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:876:10 (memcached+0x1072b2)
+    #8 process_update_command /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c:2044:10 (memcached+0x117671)
+    #9 process_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c (memcached+0x113c47)
+    #10 try_read_command_ascii /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/proto_text.c:494:5 (memcached+0x113481)
+    #11 try_read_command_negotiate /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:2427:12 (memcached+0xedf97)
+    #12 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3193:17 (memcached+0xea509)
+    #13 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #14 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Mutex M0 (0x7ffff4d9e530) created at:
+    #0 pthread_mutex_init /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x69853)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1132:9 (memcached+0x108618)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Mutex M1 (0x555556a4b3d0) created at:
+    #0 pthread_mutex_lock /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x69b7e)
+    #1 start_item_crawler_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/crawler.c:680:5 (memcached+0x10f1eb)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6156:30 (memcached+0xf5726)
+
+  Mutex M2 (0x555556a476f0) created at:
+    #0 pthread_mutex_init /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x69853)
+    #1 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1093:9 (memcached+0x10850a)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T72 'mc-worker' (tid=3963438, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T115 'mc-itemcrawler' (tid=3963481, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 start_item_crawler_thread /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/crawler.c:682:16 (memcached+0x10f21a)
+    #2 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6156:30 (memcached+0xf5726)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/items.c:516:22 in do_item_unlink
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 4 at 0x725000020140 by thread T61:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:694:18 (memcached+0xed6fa)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous write of size 4 at 0x725000020140 by thread T60:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:694:18 (memcached+0xed6fa)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 496 at 0x725000020000 allocated by thread T3:
+    #0 calloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:686:5 (memcached+0x6665a)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:656:27 (memcached+0xed63b)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Thread T61 'mc-worker' (tid=3963427, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T60 'mc-worker' (tid=3963426, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:694:18 in conn_new
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 4 at 0x72500002013c by thread T61:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:695:17 (memcached+0xed712)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous write of size 4 at 0x72500002013c by thread T60:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:695:17 (memcached+0xed712)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 496 at 0x725000020000 allocated by thread T3:
+    #0 calloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:686:5 (memcached+0x6665a)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:656:27 (memcached+0xed63b)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Thread T61 'mc-worker' (tid=3963427, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T60 'mc-worker' (tid=3963426, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:695:17 in conn_new
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 8 at 0x7250000201a8 by thread T61:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:696:12 (memcached+0xed725)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous write of size 8 at 0x7250000201a8 by thread T60:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:696:12 (memcached+0xed725)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 496 at 0x725000020000 allocated by thread T3:
+    #0 calloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:686:5 (memcached+0x6665a)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:656:27 (memcached+0xed63b)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Thread T61 'mc-worker' (tid=3963427, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T60 'mc-worker' (tid=3963426, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:696:12 in conn_new
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 4 at 0x725000020168 by thread T61:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c (memcached+0xed75b)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous write of size 4 at 0x725000020168 by thread T60:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c (memcached+0xed75b)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 496 at 0x725000020000 allocated by thread T3:
+    #0 calloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:686:5 (memcached+0x6665a)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:656:27 (memcached+0xed63b)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Thread T61 'mc-worker' (tid=3963427, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T60 'mc-worker' (tid=3963426, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c in conn_new
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 4 at 0x72500002014c by thread T61:
+    #0 getpeername /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/../../sanitizer_common/sanitizer_common_interceptors.inc:3313:3 (memcached+0x869a7)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:708:13 (memcached+0xed796)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous write of size 4 at 0x72500002014c by thread T60:
+    #0 getpeername /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/../../sanitizer_common/sanitizer_common_interceptors.inc:3313:3 (memcached+0x869a7)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:708:13 (memcached+0xed796)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 496 at 0x725000020000 allocated by thread T3:
+    #0 calloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:686:5 (memcached+0x6665a)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:656:27 (memcached+0xed63b)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Thread T61 'mc-worker' (tid=3963427, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T60 'mc-worker' (tid=3963426, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:708:13 in conn_new
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 4 at 0x725000020014 by thread T61:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:749:14 (memcached+0xed85f)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous write of size 4 at 0x725000020014 by thread T60:
+    #0 conn_set_state /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:1011:18 (memcached+0xec17a)
+    #1 reset_cmd_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:1470:9 (memcached+0xec17a)
+    #2 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3211:17 (memcached+0xec17a)
+    #3 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #4 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 496 at 0x725000020000 allocated by thread T3:
+    #0 calloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:686:5 (memcached+0x6665a)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:656:27 (memcached+0xed63b)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Thread T61 'mc-worker' (tid=3963427, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T60 'mc-worker' (tid=3963426, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:749:14 in conn_new
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 4 at 0x7250000200d8 by thread T61:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:750:16 (memcached+0xed86f)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous write of size 4 at 0x7250000200d8 by thread T60:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:750:16 (memcached+0xed86f)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 496 at 0x725000020000 allocated by thread T3:
+    #0 calloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:686:5 (memcached+0x6665a)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:656:27 (memcached+0xed63b)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Thread T61 'mc-worker' (tid=3963427, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T60 'mc-worker' (tid=3963426, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:750:16 in conn_new
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 2 at 0x7250000201b0 by thread T61:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:751:12 (memcached+0xed885)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous write of size 2 at 0x7250000201b0 by thread T60:
+    #0 reset_cmd_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:1452:12 (memcached+0xea9c6)
+    #1 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3211:17 (memcached+0xea9c6)
+    #2 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 496 at 0x725000020000 allocated by thread T3:
+    #0 calloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:686:5 (memcached+0x6665a)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:656:27 (memcached+0xed63b)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Thread T61 'mc-worker' (tid=3963427, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T60 'mc-worker' (tid=3963426, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:751:12 in conn_new
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 4 at 0x7250000200bc by thread T61:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:752:15 (memcached+0xed89a)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous write of size 4 at 0x7250000200bc by thread T60:
+    #0 conn_close /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:933:19 (memcached+0xee5d8)
+    #1 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3424:17 (memcached+0xecd2e)
+    #2 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 496 at 0x725000020000 allocated by thread T3:
+    #0 calloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:686:5 (memcached+0x6665a)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:656:27 (memcached+0xed63b)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Thread T61 'mc-worker' (tid=3963427, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T60 'mc-worker' (tid=3963426, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:752:15 in conn_new
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Read of size 8 at 0x7250000200a8 by thread T61:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:753:19 (memcached+0xed8b0)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous write of size 8 at 0x7250000200a8 by thread T60:
+    #0 __tsan_memset /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_memintrinsics.cpp:35:3 (memcached+0x63cb9)
+    #1 rbuf_release /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:417:17 (memcached+0xee65d)
+    #2 conn_close /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:934:9 (memcached+0xee65d)
+    #3 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3424:17 (memcached+0xecd2e)
+    #4 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #5 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 496 at 0x725000020000 allocated by thread T3:
+    #0 calloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:686:5 (memcached+0x6665a)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:656:27 (memcached+0xed63b)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Thread T61 'mc-worker' (tid=3963427, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T60 'mc-worker' (tid=3963426, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:753:19 in conn_new
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 8 at 0x7250000200b0 by thread T61:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:753:14 (memcached+0xed8c3)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous write of size 8 at 0x7250000200b0 by thread T60:
+    #0 __tsan_memset /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_memintrinsics.cpp:35:3 (memcached+0x63cb9)
+    #1 rbuf_release /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:417:17 (memcached+0xee65d)
+    #2 conn_close /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:934:9 (memcached+0xee65d)
+    #3 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3424:17 (memcached+0xecd2e)
+    #4 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #5 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 496 at 0x725000020000 allocated by thread T3:
+    #0 calloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:686:5 (memcached+0x6665a)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:656:27 (memcached+0xed63b)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Thread T61 'mc-worker' (tid=3963427, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T60 'mc-worker' (tid=3963426, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:753:14 in conn_new
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 8 at 0x7250000200d0 by thread T61:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:754:14 (memcached+0xed8d6)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous write of size 8 at 0x7250000200d0 by thread T60:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:754:14 (memcached+0xed8d6)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 496 at 0x725000020000 allocated by thread T3:
+    #0 calloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:686:5 (memcached+0x6665a)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:656:27 (memcached+0xed63b)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Thread T61 'mc-worker' (tid=3963427, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T60 'mc-worker' (tid=3963426, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:754:14 in conn_new
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 1 at 0x72500002000c by thread T61:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:757:21 (memcached+0xed8ea)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous write of size 1 at 0x72500002000c by thread T60:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:757:21 (memcached+0xed8ea)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 496 at 0x725000020000 allocated by thread T3:
+    #0 calloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:686:5 (memcached+0x6665a)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:656:27 (memcached+0xed63b)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Thread T61 'mc-worker' (tid=3963427, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T60 'mc-worker' (tid=3963426, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:757:21 in conn_new
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 8 at 0x7250000200e0 by thread T61:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:766:13 (memcached+0xed92f)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous read of size 8 at 0x7250000200e0 by thread T60:
+    #0 reset_cmd_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:1454:12 (memcached+0xea9f3)
+    #1 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3211:17 (memcached+0xea9f3)
+    #2 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 496 at 0x725000020000 allocated by thread T3:
+    #0 calloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:686:5 (memcached+0x6665a)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:656:27 (memcached+0xed63b)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Thread T61 'mc-worker' (tid=3963427, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T60 'mc-worker' (tid=3963426, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:766:13 in conn_new
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 4 at 0x7250000200ec by thread T61:
+    #0 __tsan_memset /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_memintrinsics.cpp:35:3 (memcached+0x63cb9)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:764:28 (memcached+0xed963)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous write of size 4 at 0x7250000200ec by thread T60:
+    #0 __tsan_memset /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_memintrinsics.cpp:35:3 (memcached+0x63cb9)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:764:28 (memcached+0xed963)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 496 at 0x725000020000 allocated by thread T3:
+    #0 calloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:686:5 (memcached+0x6665a)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:656:27 (memcached+0xed63b)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Thread T61 'mc-worker' (tid=3963427, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T60 'mc-worker' (tid=3963426, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:764:28 in conn_new
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 8 at 0x7250000201d8 by thread T61:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:784:17 (memcached+0xed96b)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous read of size 8 at 0x7250000201d8 by thread T60:
+    #0 try_read_network /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:2530:18 (memcached+0xeaed2)
+    #1 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3169:23 (memcached+0xeaed2)
+    #2 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 496 at 0x725000020000 allocated by thread T3:
+    #0 calloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:686:5 (memcached+0x6665a)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:656:27 (memcached+0xed63b)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Thread T61 'mc-worker' (tid=3963427, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T60 'mc-worker' (tid=3963426, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:784:17 in conn_new
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 8 at 0x7250000201e0 by thread T61:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:785:20 (memcached+0xed985)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous write of size 8 at 0x7250000201e0 by thread T60:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:785:20 (memcached+0xed985)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 496 at 0x725000020000 allocated by thread T3:
+    #0 calloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:686:5 (memcached+0x6665a)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:656:27 (memcached+0xed63b)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Thread T61 'mc-worker' (tid=3963427, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T60 'mc-worker' (tid=3963426, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:785:20 in conn_new
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 8 at 0x7250000201e8 by thread T61:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:786:18 (memcached+0xed99f)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous write of size 8 at 0x7250000201e8 by thread T60:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:786:18 (memcached+0xed99f)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 496 at 0x725000020000 allocated by thread T3:
+    #0 calloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:686:5 (memcached+0x6665a)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:656:27 (memcached+0xed63b)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Thread T61 'mc-worker' (tid=3963427, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T60 'mc-worker' (tid=3963426, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:786:18 in conn_new
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 8 at 0x7250000201d0 by thread T61:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:808:37 (memcached+0xeda70)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous write of size 8 at 0x7250000201d0 by thread T60:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:808:37 (memcached+0xeda70)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 496 at 0x725000020000 allocated by thread T3:
+    #0 calloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:686:5 (memcached+0x6665a)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:656:27 (memcached+0xed63b)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Thread T61 'mc-worker' (tid=3963427, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T60 'mc-worker' (tid=3963426, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:808:37 in conn_new
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3963365)
+  Write of size 2 at 0x7250000200a0 by thread T61:
+    #0 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:820:17 (memcached+0xedab5)
+    #1 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Previous read of size 2 at 0x7250000200a0 by thread T60:
+    #0 update_event /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:2562:12 (memcached+0xec292)
+    #1 drive_machine /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3150:18 (memcached+0xec292)
+    #2 event_handler /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xee04f)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Location is heap block of size 496 at 0x725000020000 allocated by thread T3:
+    #0 calloc /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:686:5 (memcached+0x6665a)
+    #1 conn_new /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:656:27 (memcached+0xed63b)
+    #2 thread_libevent_process /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x10907a)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b3b) (BuildId: 79ee78eebaf1fabcfa2c5160e0b25a68bf3edce9)
+
+  Thread T61 'mc-worker' (tid=3963427, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T60 'mc-worker' (tid=3963426, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+  Thread T3 'mc-worker' (tid=3963369, running) created by main thread at:
+    #0 pthread_create /home/alexey/dev/llvm-project-focs-lab/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x67f1f)
+    #1 create_worker /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x108b0e)
+    #2 memcached_thread_init /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x108b0e)
+    #3 main /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0xf56fd)
+
+SUMMARY: ThreadSanitizer: data race /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached.c:820:17 in conn_new
+==================
+ThreadSanitizer: reported 29 warnings

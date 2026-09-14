@@ -1,0 +1,17 @@
+{
+ "app": "mysql",
+ "hash": "d3bf9f8c39fe",
+ "N": 5,
+ "configs": [
+  "tsan-dom-ea-lo-st-swmr",
+  "tsan-dom_peeling-ea-lo-st-swmr",
+  "tsan-stmt"
+ ],
+ "cpuset": "4-27,60-83",
+ "mode": "pinned",
+ "started": "2026-09-09T04:54:40",
+ "host": "focs-server",
+ "nproc_machine": 112,
+ "governor": "powersave",
+ "no_turbo": "0"
+}

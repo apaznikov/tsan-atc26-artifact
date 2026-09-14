@@ -1,0 +1,20 @@
+[2026-09-07 11:03:21] Stage B sweep on d3bf9f8c39fe: apps='memcached sqlite redis ffmpeg mysql' policy=pinned N=5 (memcached 10)
+[2026-09-07 11:03:21] thread-policy pilot
+[2026-09-07 11:03:27] gap after the pilot: waiting for /home/alexey/tsan-experiments/tools/perf/results/stageB-d3bf9f8c39fe/RESUME
+[2026-09-07 12:33:27] resuming
+[2026-09-07 12:33:27] Stage B: memcached N=10 configs: orig tsan tsan-sound tsan-dom-ea-lo-st-swmr tsan-dom_peeling-ea-lo-st-swmr tsan-dom_peeling-ea-lo-st-swmr-wp tsan-st tsan-stmt tsan-swmr tsan-lo tsan-ea tsan-dom tsan-dom_peeling tsan-sound-wp tsan-sound-tfn tsan-sound-tfn-wp
+[2026-09-07 13:41:55] Stage B: sqlite N=5 configs: orig tsan tsan-sound tsan-dom-ea-lo-st-swmr tsan-dom_peeling-ea-lo-st-swmr tsan-dom_peeling-ea-lo-st-swmr-wp tsan-st tsan-stmt tsan-swmr tsan-lo tsan-ea tsan-dom tsan-dom_peeling tsan-sound-wp
+[2026-09-07 13:51:46] memcached re-run (100k requests/client), N=5
+[2026-09-07 18:52:42] memcached refill after the 17:45-18:35 memory stall
+[2026-09-07 19:15:51] memcached leg complete
+[2026-09-08 02:38:10] machine lock free: starting the remaining Stage B legs
+[2026-09-08 02:38:10] Stage B leg: sqlite N=5 (14 configs)
+[2026-09-08 07:28:38] Stage B leg done: sqlite
+[2026-09-08 07:28:38] Stage B leg: redis N=5 (14 configs)
+[2026-09-08 08:55:43] Stage B leg done: redis
+[2026-09-08 08:55:43] Stage B leg: ffmpeg N=5 (12 configs)
+[2026-09-08 08:56:56] boundary refill: sqlite -wp rows and memcached short-N rows
+[2026-09-08 10:52:26] Stage B leg done: ffmpeg
+[2026-09-08 10:52:26] Stage B leg: mysql N=5 (12 configs)
+[2026-09-08 14:50:51] boundary refill done
+[2026-09-09 04:34:04] Stage B leg done: mysql

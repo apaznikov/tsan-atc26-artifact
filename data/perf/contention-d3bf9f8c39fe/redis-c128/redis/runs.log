@@ -1,0 +1,22 @@
+redis orig run1 rc=0 22.7s outside_busy=0.023 inside_busy=0.0719 foreign_cpu_share=0.0301
+redis tsan run1 rc=0 142.9s outside_busy=0.0242 inside_busy=0.2659 foreign_cpu_share=0.0322
+redis tsan-stmt run1 rc=0 134.5s outside_busy=0.0234 inside_busy=0.2655 foreign_cpu_share=0.0297
+redis tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 140.2s outside_busy=0.0233 inside_busy=0.2623 foreign_cpu_share=0.0304
+redis orig run2 rc=0 18.0s outside_busy=0.0233 inside_busy=0.1032 foreign_cpu_share=0.0297
+redis tsan run2 rc=0 139.8s outside_busy=0.023 inside_busy=0.2664 foreign_cpu_share=0.0296
+redis tsan-stmt run2 rc=0 134.1s outside_busy=0.0242 inside_busy=0.2538 foreign_cpu_share=0.0323
+redis tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 143.0s outside_busy=0.0249 inside_busy=0.2679 foreign_cpu_share=0.0332
+redis orig run3 rc=0 18.0s outside_busy=0.034 inside_busy=0.112 foreign_cpu_share=0.0563
+redis tsan run3 rc=0 142.9s outside_busy=0.0289 inside_busy=0.2763 foreign_cpu_share=0.0492
+redis tsan-stmt run3 rc=0 138.9s outside_busy=0.0376 inside_busy=0.2642 foreign_cpu_share=0.0523
+redis tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 141.6s outside_busy=0.0307 inside_busy=0.2555 foreign_cpu_share=0.0397
+redis orig run4 rc=0 23.2s outside_busy=0.0337 inside_busy=0.0902 foreign_cpu_share=0.0478
+redis tsan run4 rc=0 142.0s outside_busy=0.0237 inside_busy=0.2556 foreign_cpu_share=0.0317
+redis tsan-stmt run4 rc=0 137.2s outside_busy=0.0261 inside_busy=0.262 foreign_cpu_share=0.0384
+redis tsan-dom_peeling-ea-lo-st-swmr run4 rc=0 142.7s outside_busy=0.0257 inside_busy=0.2633 foreign_cpu_share=0.034
+redis orig run5 rc=0 23.0s outside_busy=0.0257 inside_busy=0.0768 foreign_cpu_share=0.0367
+redis tsan run5 rc=0 152.1s outside_busy=0.1258 inside_busy=0.2996 foreign_cpu_share=0.2173
+redis tsan-stmt run5 rc=0 141.9s outside_busy=0.0735 inside_busy=0.294 foreign_cpu_share=0.1412
+redis tsan-dom_peeling-ea-lo-st-swmr run5 rc=0 150.4s outside_busy=0.0967 inside_busy=0.2901 foreign_cpu_share=0.1669
+redis tsan run5 rc=0 142.0s outside_busy=0.0345 inside_busy=0.2587 foreign_cpu_share=0.0487 (rerun)
+DONE redis

@@ -1,0 +1,36 @@
+[warn] $LLVM_ROOT_PATH=/home/alexey/dev/llvm-project/llvm/build differs from --llvm-root=/extra/alexey/builds/tsan-audit-def2cf34faeb; the manifest describes the latter
+output: /home/alexey/tsan-experiments/tools/preservation/results/sqlite/2026-09-03-final-def2cf34faeb/tsan
+compiler: clang version 19.0.0git (https://github.com/focs-lab/llvm-project def2cf34faebfccba8861fb9827373580bb6c6fc) branch=None head= ninja=None
+TSAN_OPTIONS template: log_path=/home/alexey/tsan-experiments/tools/preservation/results/sqlite/2026-09-03-final-def2cf34faeb/tsan/logs/sqlite.<cfg>.0 exitcode=0 external_symbolizer_path=/extra/alexey/builds/tsan-audit-def2cf34faeb/bin/llvm-symbolizer
+=== [1/10] sqlite cfg=tsan run=1  (elapsed 0s)
+[2026-09-03T01:36:48] sqlite/tsan/run1/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan/threadtest3  (cwd=/dev/shm/preservation-sqlite-final-def2cf34faeb-tsan/tsan.1)
+    log files for this run: 1
+=== [2/10] sqlite cfg=tsan run=2  (elapsed 276s)
+[2026-09-03T01:41:25] sqlite/tsan/run2/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan/threadtest3  (cwd=/dev/shm/preservation-sqlite-final-def2cf34faeb-tsan/tsan.2)
+    log files for this run: 1
+=== [3/10] sqlite cfg=tsan run=3  (elapsed 564s)
+[2026-09-03T01:46:12] sqlite/tsan/run3/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan/threadtest3  (cwd=/dev/shm/preservation-sqlite-final-def2cf34faeb-tsan/tsan.3)
+    log files for this run: 1
+=== [4/10] sqlite cfg=tsan run=4  (elapsed 816s)
+[2026-09-03T01:50:25] sqlite/tsan/run4/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan/threadtest3  (cwd=/dev/shm/preservation-sqlite-final-def2cf34faeb-tsan/tsan.4)
+    log files for this run: 1
+=== [5/10] sqlite cfg=tsan run=5  (elapsed 1065s)
+[2026-09-03T01:54:33] sqlite/tsan/run5/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan/threadtest3  (cwd=/dev/shm/preservation-sqlite-final-def2cf34faeb-tsan/tsan.5)
+    log files for this run: 1
+=== [6/10] sqlite cfg=tsan run=6  (elapsed 1318s)
+[2026-09-03T01:58:47] sqlite/tsan/run6/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan/threadtest3  (cwd=/dev/shm/preservation-sqlite-final-def2cf34faeb-tsan/tsan.6)
+    log files for this run: 1
+=== [7/10] sqlite cfg=tsan run=7  (elapsed 1561s)
+[2026-09-03T02:02:50] sqlite/tsan/run7/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan/threadtest3  (cwd=/dev/shm/preservation-sqlite-final-def2cf34faeb-tsan/tsan.7)
+    log files for this run: 1
+=== [8/10] sqlite cfg=tsan run=8  (elapsed 1851s)
+[2026-09-03T02:07:39] sqlite/tsan/run8/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan/threadtest3  (cwd=/dev/shm/preservation-sqlite-final-def2cf34faeb-tsan/tsan.8)
+    log files for this run: 1
+=== [9/10] sqlite cfg=tsan run=9  (elapsed 2116s)
+[2026-09-03T02:12:04] sqlite/tsan/run9/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan/threadtest3  (cwd=/dev/shm/preservation-sqlite-final-def2cf34faeb-tsan/tsan.9)
+    log files for this run: 1
+=== [10/10] sqlite cfg=tsan run=10  (elapsed 2397s)
+[2026-09-03T02:16:45] sqlite/tsan/run10/threadtest3: /home/alexey/tsan-experiments/sql/sqlite/build/test-tsan/threadtest3  (cwd=/dev/shm/preservation-sqlite-final-def2cf34faeb-tsan/tsan.10)
+    log files for this run: 1
+done in 2657s. Aggregate with:
+  /home/alexey/tsan-experiments/tools/preservation/tsan_reports.py aggregate --results-dir /home/alexey/tsan-experiments/tools/preservation/results/sqlite/2026-09-03-final-def2cf34faeb/tsan/logs --baseline tsan

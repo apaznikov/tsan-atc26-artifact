@@ -1,0 +1,43 @@
+RECHECK start 2026-09-14T03:22:01+08:00
+[2026-09-14 03:22:17] redis orig run1 rc=0 15.9s outside_busy=0.022 inside_busy=0.0629 foreign_cpu_share=0.0296
+ok
+[2026-09-14 03:23:45] redis tsan run1 rc=0 87.3s outside_busy=0.0244 inside_busy=0.201 foreign_cpu_share=0.0313
+ok
+[2026-09-14 03:25:10] redis tsan-stmt run1 rc=0 84.8s outside_busy=0.0231 inside_busy=0.2027 foreign_cpu_share=0.0298
+ok
+[2026-09-14 03:26:38] redis tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 87.7s outside_busy=0.0232 inside_busy=0.2192 foreign_cpu_share=0.0294
+ok
+[2026-09-14 03:26:54] redis orig run2 rc=0 15.9s outside_busy=0.0232 inside_busy=0.0623 foreign_cpu_share=0.0299
+ok
+[2026-09-14 03:28:23] redis tsan run2 rc=0 88.8s outside_busy=0.0233 inside_busy=0.1954 foreign_cpu_share=0.0311
+ok
+[2026-09-14 03:29:48] redis tsan-stmt run2 rc=0 84.0s outside_busy=0.023 inside_busy=0.2066 foreign_cpu_share=0.0297
+ok
+[2026-09-14 03:31:16] redis tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 88.1s outside_busy=0.0233 inside_busy=0.2043 foreign_cpu_share=0.0294
+ok
+[2026-09-14 03:31:32] redis orig run3 rc=0 15.8s outside_busy=0.0225 inside_busy=0.059 foreign_cpu_share=0.0293
+ok
+[2026-09-14 03:33:02] redis tsan run3 rc=0 89.5s outside_busy=0.0246 inside_busy=0.2058 foreign_cpu_share=0.0318
+ok
+[2026-09-14 03:34:28] redis tsan-stmt run3 rc=0 85.1s outside_busy=0.0232 inside_busy=0.2019 foreign_cpu_share=0.0297
+ok
+[2026-09-14 03:35:57] redis tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 88.7s outside_busy=0.0231 inside_busy=0.2064 foreign_cpu_share=0.0301
+ok
+[2026-09-14 03:36:18] redis orig run4 rc=0 21.0s outside_busy=0.0226 inside_busy=0.0417 foreign_cpu_share=0.0298
+ok
+[2026-09-14 03:37:47] redis tsan run4 rc=0 88.3s outside_busy=0.023 inside_busy=0.2102 foreign_cpu_share=0.0299
+ok
+[2026-09-14 03:39:13] redis tsan-stmt run4 rc=0 85.7s outside_busy=0.0247 inside_busy=0.2081 foreign_cpu_share=0.0315
+ok
+[2026-09-14 03:40:42] redis tsan-dom_peeling-ea-lo-st-swmr run4 rc=0 88.7s outside_busy=0.023 inside_busy=0.2108 foreign_cpu_share=0.0296
+ok
+[2026-09-14 03:40:58] redis orig run5 rc=0 15.9s outside_busy=0.0231 inside_busy=0.0543 foreign_cpu_share=0.0308
+ok
+[2026-09-14 03:42:27] redis tsan run5 rc=0 88.7s outside_busy=0.0228 inside_busy=0.2079 foreign_cpu_share=0.0292
+ok
+[2026-09-14 03:43:52] redis tsan-stmt run5 rc=0 84.2s outside_busy=0.0238 inside_busy=0.199 foreign_cpu_share=0.0317
+ok
+[2026-09-14 03:45:20] redis tsan-dom_peeling-ea-lo-st-swmr run5 rc=0 88.3s outside_busy=0.0231 inside_busy=0.2016 foreign_cpu_share=0.0295
+ok
+[2026-09-14 03:45:21] done: redis N=5 -> /home/alexey/tsan-experiments/tools/perf/results/redis-recheck-2026-09-14/redis
+RECHECK DONE 2026-09-14T03:45:21+08:00

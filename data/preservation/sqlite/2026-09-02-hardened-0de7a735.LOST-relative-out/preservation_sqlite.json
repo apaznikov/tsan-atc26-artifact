@@ -1,0 +1,217 @@
+{
+ "app": "sqlite",
+ "baseline": "tsan",
+ "configs": {
+  "tsan": {
+   "runs": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "reports_per_run": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "distinct_l1_per_run": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "distinct_l2_per_run": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "union_l1": {},
+   "union_l2": {},
+   "kinds": {},
+   "reported_counter": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "tsan-dom_peeling-ea-lo-st-swmr": {
+   "runs": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "reports_per_run": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "distinct_l1_per_run": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "distinct_l2_per_run": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "union_l1": {},
+   "union_l2": {},
+   "kinds": {},
+   "reported_counter": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "tsan-sound": {
+   "runs": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "reports_per_run": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "distinct_l1_per_run": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "distinct_l2_per_run": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "union_l1": {},
+   "union_l2": {},
+   "kinds": {},
+   "reported_counter": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  }
+ },
+ "compare": {
+  "tsan-dom_peeling-ea-lo-st-swmr": {
+   "lost_l1": [],
+   "new_l1": [],
+   "lost_l2": [],
+   "new_l2": [],
+   "relocated": []
+  },
+  "tsan-sound": {
+   "lost_l1": [],
+   "new_l1": [],
+   "lost_l2": [],
+   "new_l2": [],
+   "relocated": []
+  }
+ }
+}

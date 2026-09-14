@@ -1,0 +1,61 @@
+[03:14:20] compiler: clang version 19.0.0git (https://github.com/focs-lab/llvm-project 297881ddc1c5afe1542b672bc6c3186d11026352)
+[03:14:20] build memcached tsan
+[03:14:20] build sqlite tsan
+[03:14:29] build memcached tsan-sound
+[03:14:38] build memcached tsan-all
+[03:14:57] build sqlite tsan-sound
+[03:15:42] build sqlite tsan-dom_peeling-ea-lo-st-swmr
+[03:16:32] builds done
+[03:16:32] port 7777 busy; waiting
+[03:17:32] port 7777 busy; waiting
+[03:18:32] port 7777 busy; waiting
+[03:19:32] port 7777 busy; waiting
+[03:20:32] port 7777 busy; waiting
+[03:21:32] port 7777 busy; waiting
+[03:22:32] port 7777 busy; waiting
+[03:23:32] port 7777 busy; waiting
+[03:24:32] port 7777 busy; waiting
+[03:25:32] port 7777 busy; waiting
+[03:26:33] port 7777 busy; waiting
+[03:27:33] port 7777 busy; waiting
+[03:28:33] port 7777 busy; waiting
+[03:29:33] port 7777 busy; waiting
+[03:30:33] port 7777 busy; waiting
+[03:31:33] port 7777 busy; waiting
+[03:32:33] port 7777 busy; waiting
+[03:33:33] port 7777 busy; waiting
+[03:34:33] port 7777 busy; waiting
+[03:35:33] port 7777 busy; waiting
+[03:36:33] port 7777 busy; waiting
+[03:37:33] port 7777 busy; waiting
+[03:38:33] port 7777 busy; waiting
+[03:39:33] port 7777 busy; waiting
+[03:40:33] port 7777 busy; waiting
+[03:41:33] port 7777 busy; waiting
+[03:42:33] port 7777 busy; waiting
+[03:43:33] port 7777 busy; waiting
+[03:44:33] port 7777 busy; waiting
+[03:45:33] port 7777 busy; waiting
+[03:46:33] port 7777 busy; waiting
+[03:47:33] port 7777 busy; waiting
+[03:48:33] port 7777 busy; waiting
+[03:49:33] port 7777 busy; waiting
+[03:50:33] port 7777 busy; waiting
+[03:51:33] port 7777 busy; waiting
+[03:52:33] port 7777 busy; waiting
+[03:53:33] port 7777 busy; waiting
+[03:54:33] port 7777 busy; waiting
+[03:55:33] port 7777 busy; waiting
+[03:56:33] port 7777 busy; waiting
+[03:57:34] port 7777 busy; waiting
+[03:58:34] port 7777 busy; waiting
+[03:59:34] port 7777 busy; waiting
+[04:00:34] port 7777 busy; waiting
+[04:01:34] port 7777 busy; waiting
+[04:02:34] port 7777 busy; waiting
+[04:03:34] port 7777 busy; waiting
+[04:04:34] port 7777 busy; waiting
+[04:05:34] port 7777 busy; waiting
+[04:06:34] port 7777 busy; waiting
+[04:07:34] port 7777 busy; waiting
+[04:08:37] runners launched

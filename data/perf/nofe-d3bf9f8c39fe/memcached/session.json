@@ -1,0 +1,16 @@
+{
+ "app": "memcached",
+ "hash": "d3bf9f8c39fe",
+ "N": 5,
+ "configs": [
+  "tsan-sound",
+  "tsan-sound-nofe"
+ ],
+ "cpuset": "4-27,60-83",
+ "mode": "pinned",
+ "started": "2026-09-10T14:09:48",
+ "host": "focs-server",
+ "nproc_machine": 112,
+ "governor": "powersave",
+ "no_turbo": "0"
+}
