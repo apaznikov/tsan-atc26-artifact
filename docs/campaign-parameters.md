@@ -34,7 +34,7 @@ second row by Alexey's decision of 14 Sep.
 | Application | Workload | Primary (rule value) | Why that is the ceiling | Second row (March value) |
 |---|---|---|---|---|
 | FFmpeg | 4 codecs (h264, h265, mjpeg, stream copy), CC-BY input clip, `-c:v` only | `-threads 16` | libx265 refuses more than `X265_MAX_FRAME_THREADS` = 16; above it the h265 codec disappears from the results rather than failing | `-threads 4` |
-| Redis | `redis-benchmark`, 19 tests, `-P 1024 -n <per-test>` | `-c 112` (decided 14 Sep; unswept, one 30-minute leg to measure) | the machine's logical CPU count, the same rule as SQLite and memcached; Redis has no hard limit and no saturation point (absolute throughput declines monotonically from c=50, 11% lower at 512), so the swept grid's edge is not a ceiling | `-c 50` (tool default) |
+| Redis | `redis-benchmark`, 19 tests, `-P 1024 -n <per-test>` | `-c 112` (decided 14 Sep; measured the same day, N = 5) | the machine's logical CPU count, the same rule as SQLite and memcached; Redis has no hard limit and no saturation point (absolute throughput declines monotonically from c=50, 11% lower at 512), so the swept grid's edge is not a ceiling | `-c 50` (tool default) |
 | SQLite | `threadtest3`, all 7 subtests listed explicitly; resolvable set = walthread1, walthread2, checkpoint_starvation_1, checkpoint_starvation_2 | `--w1-threads 112` (walthread1 is the only subtest with a thread argument) | the machine's logical CPU count, the top of the pre-registered grid | no thread argument (threadtest3's default) |
 | memcached | `memtier_benchmark -t 10 -x 5 --pipeline 16 -P memcache_text --random-data --requests 100000`; server `-c 4096` | server `-t 112` | the paper's `$(nproc)`; R2 requires both values, and the rule picks the higher as primary | `-t 48` (R1 pinned-48 value) |
 | MySQL | sysbench, 5 scripts, `--time=180` | `--threads=84` | the paper's `nproc*3/4`; R2 requires both, the rule picks the higher | `--threads=36` (R1 value) |
@@ -43,8 +43,12 @@ Sweep evidence, reported as curves rather than used for selection: SQLite walthr
 112 threads (AllOpt+peel 1.016 at 2 and 1.016 at 112, peak 1.027 at 16); Redis flat and non-monotone
 over 50 to 512 clients; FFmpeg AllOpt+peel rising from 1.007 at 2 threads to 1.055 at 16, DynSTC flat
 at about 1.12. At the rule values the point-plot expectations are therefore: FFmpeg AllOpt+peel 1.055
-and DynSTC 1.115; Redis AllOpt+peel 1.025 and DynSTC 1.086 (both unquotable until the baseline drift
-is resolved); SQLite walthread1 AllOpt+peel 1.016 [1.00, 1.02].
+and DynSTC 1.115; Redis at the primary c=112 (measured 14 Sep, N = 5): DynSTC 1.039 [1.02, 1.07] and AllOpt+peel
+0.992 [0.97, 1.02], the lowest of the five swept points for both configurations — the rule, chosen
+to be indifferent to the outcome, landed on the minimum on its first application and stays as it
+is; the curve (DynSTC 1.068 / 1.039 / 1.050 / 1.034 / 1.086 over 50 / 112 / 128 / 256 / 512 clients,
+no trend) ships beside the point, and no Redis number is quotable until the baseline drift is
+resolved; SQLite walthread1 AllOpt+peel 1.016 [1.00, 1.02].
 
 Harness note (tsan-exp, 14 Sep): `run_sqlite_test.sh` passes `--w1-threads N walthread1`, which
 restricts the run to walthread1; to run all seven subtests with a thread count, every test name must
@@ -83,8 +87,9 @@ summaries variants. Flag sets are in `tsan-experiments/config_definitions.sh`.
 
 Every leg records `session.json` (load, governor, turbo, foreign CPU share). Known changes of
 machine state since Stage B: the JetBrains remote-development stack started 8 Sep 13:52 and has run
-unpinned since; a full `-j28` LLVM build ran on 14 Sep between the Redis repeat and anything
-measured after it. Both are conditions, not explanations.
+unpinned since; full `-j28` LLVM builds ran on 14 Sep 15:37-16:44 and from 17:15 (the Redis c=112 point
+sits between them; every kept run passed the foreign-activity gate). All are conditions, not
+explanations.
 
 **Builds and benchmark legs cannot share the machine.** A 29-way LLVM build correctly pinned away from
 the bench set still puts the bench CPUs four to five times over the 0.10 foreign-activity gate and
