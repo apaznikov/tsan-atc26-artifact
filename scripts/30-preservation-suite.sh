@@ -38,6 +38,25 @@ smoke_banner
 refuse_if_lit_running
 need_lit
 
+# A no-report test passes when no race is reported. On too few processors the schedule
+# may never interleave the threads the test exists to exercise, so it passes without
+# having tested anything -- and a suite of such passes is indistinguishable from a suite
+# that genuinely preserved every race. The discovered and unsupported counts are decided
+# by lit feature gates before anything runs and are unaffected; it is the PASS that
+# becomes vacuous. Hence a hard refusal rather than a warning: a reviewer on a one-CPU
+# virtual machine would otherwise file a clean result that means nothing.
+cpus=$(nproc)          # respects cpuset and affinity, so this sees what we can really use
+if [ "$cpus" -lt 8 ]; then
+  echo "This host offers $cpus usable processors; this suite needs at least 8." >&2
+  echo "Below that, tests that pass by NOT reporting a race can pass because the schedule" >&2
+  echo "never interleaved, not because the race was preserved. The result would look clean" >&2
+  echo "and mean nothing. Give the container more CPUs (docker run --cpus / --cpuset-cpus)." >&2
+  echo "If you understand this and want the discovered/unsupported counts anyway, which ARE" >&2
+  echo "valid at any CPU count, set ART_ALLOW_FEW_CPUS=1 -- but do not quote a pass count." >&2
+  [ "${ART_ALLOW_FEW_CPUS:-0}" = 1 ] || exit 3
+  echo "ART_ALLOW_FEW_CPUS=1: continuing. Counts are valid; PASSES ARE NOT EVIDENCE." >&2
+fi
+
 name="preservation-suite-$(stamp)"
 outdir="$ART_RESULTS/$name"; mkdir -p "$outdir"
 cp "$matrix" "$outdir/configurations.txt"
