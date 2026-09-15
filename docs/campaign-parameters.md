@@ -125,7 +125,11 @@ gate resolved the archive and passed, while Redis, SQLite, MySQL and FFmpeg are 
 canonical directory, so the gate would have certified one binary and the run measured another (only
 memcached is launched from the resolved path). A second gate on the canonical directory's own stamp now
 fires in that case (demonstrated on Redis); the canonical directories were restored to `f3deebfbab60`
-and every campaign binary is verified by sha256 against `static-counts.csv` before a leg starts. For the campaign, either the machine is
+and every campaign binary is verified by sha256 against `static-counts.csv` before a leg starts.
+The Redis rebuild that restored the canonical directories reproduced the table exactly (14/14 identical
+in sites and calls) with 14/14 different sha256: eight bytes in `.rodata`, a build-time epoch second in the
+host stamp, `.text` byte-identical. A recorded sha256 therefore identifies a build, not the code; the
+campaign objects themselves are kept beside the rebuilt ones. Legs started 15 Sep 18:49:02, ETA about 46 h. For the campaign, either the machine is
 exclusive for its duration or builds are announced in advance so a leg can be paused; this is
 Alexey's decision and is recorded here as a condition either way.
 
