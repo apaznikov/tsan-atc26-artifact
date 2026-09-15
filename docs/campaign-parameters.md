@@ -126,7 +126,28 @@ workload's normal spread, and the value-dependent rule would have kept it. Prove
 unremarkable cell and does not claim it was bad; the price is one cell in seventy, refilled inside
 the same leg.
 
-## The pre-registered peeling comparison, and why it was not amended
+## Outcome of the pre-registered peeling comparison: branch C
+
+Determined 16 September, three rows of four, before FFmpeg ran:
+
+| Application | AllOpt with peeling against without, on resolvable tests | Resolution floor |
+|---|---|---|
+| Redis | 1.0105 [0.9905, 1.0326] | 3.3% |
+| memcached | 1.0332 [0.9593, 1.0567] | 5.7% |
+| SQLite | 0.9967 [0.9650, 1.0118] | 3.5% |
+| FFmpeg | measured last; cannot change the outcome | |
+
+No row excludes 1.0, so neither of the other branches can reach three of four whatever FFmpeg does.
+The outcome is therefore "measure executed accesses directly", which is post-submission work and is
+written into the paper as the stated next step rather than attempted before the artifact deadline.
+
+The substantive reading, which is stronger than the branch label: on three applications loop peeling
+neither pays nor costs at a resolution of 3 to 6 per cent, while adding 10.5 to 16.8 per cent static
+instrumentation. The static increase is measured; the runtime consequence is below what these
+workloads can resolve. That is not "peeling is free": it is "peeling's effect is smaller than 3.3%
+on Redis, 3.5% on SQLite, and unresolvable on memcached".
+
+## The rule that produced it, and why it was not amended
 
 Peeling is decided by the executed-access pair, AllOpt with peeling against AllOpt without it, on
 four applications, under a rule registered before any of them were measured: three of the four must
