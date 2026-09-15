@@ -63,6 +63,23 @@ the same leg.
 - **Redis**: throughput declines monotonically with client count from the tool's default of 50;
   there is no saturation knee.
 
+## Pinning is a pin for the workload, not an exclusion for everything else
+
+The benchmark is confined to its processor set; nothing stops other processes being scheduled there.
+The per-process sampler records what actually ran on those CPUs. Over 641 samples of one MySQL cell:
+our own interactive sessions and their children at a peak of 5.4% of a single CPU, the JetBrains
+remote-development backend at 5.4%, `sshd` at 0.8%. Against 48 processors that peak is about 0.11%
+of the measurement's capacity, and it is present in every cell of every configuration alike, so it
+cannot bias a comparison between configurations, which is what every ratio here is. It would matter
+for an absolute figure, and the absolute figures are the native baselines, whose own run-to-run
+spread is far wider.
+
+The honest form of the setup sentence is therefore: the workload was pinned to 48 processors, other
+system and session activity was not excluded from them, and it was sampled at under 6% of a single
+CPU. This was found during the campaign and deliberately not acted on: moving those sessions to
+another processor set would have made cells before and after the change incomparable, introducing a
+real discontinuity to remove a negligible one.
+
 ## Builds and benchmarks on one machine
 
 A full LLVM build correctly pinned away from the benchmark CPUs still puts them four to five times
