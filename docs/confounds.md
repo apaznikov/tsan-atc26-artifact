@@ -47,9 +47,16 @@ thread counts; the curves are shipped so no point is hidden.
   inside that interval are nulls, not zeros.
 - **MySQL**: interval about 14 points wide; same reading. Its EA-bearing configurations take about
   2.2 hours each to build with this compiler.
-- **SQLite**: seven subtests of unequal stability; `stress1` and `dynamic_triggers` carry 16-20%
-  run-to-run variation, so every SQLite row is reported twice, over all seven and over the four
-  resolvable subtests (walthread1, walthread2, checkpoint_starvation_1, checkpoint_starvation_2).
+The provenance rule
+cannot be used that way, and it buys a statement a reviewer can check instead of an argument: no
+cell in the dataset overlapped a known foreign-work window.
+
+What the provenance rule is not: an outlier filter. The retired cell turned out to be an ordinary
+measurement. SQLite's run-to-run spread within one configuration is 17.2% of the median (maximum
+37.9%, on the uninstrumented build), so the 14% gap that drew attention to that cell is below the
+workload's normal spread, and the value-dependent rule would have kept it. Provenance removed an
+unremarkable cell and does not claim it was bad; the price is one cell in seventy, refilled inside
+the same leg.
 - **FFmpeg**: `-threads` is an input to the encoder, not a count of contending threads; libx265
   sizes its own worker pool and refuses more than 16 frame threads, above which the h265 codec
   silently disappears from the results. Check that all four codecs produced output.

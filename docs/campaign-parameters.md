@@ -119,6 +119,13 @@ tidy name, and as a written practice it is what a reviewer should object to. The
 cannot be used that way, and it buys a statement a reviewer can check instead of an argument: no
 cell in the dataset overlapped a known foreign-work window.
 
+What the provenance rule is not: an outlier filter. The retired cell turned out to be an ordinary
+measurement. SQLite's run-to-run spread within one configuration is 17.2% of the median (maximum
+37.9%, on the uninstrumented build), so the 14% gap that drew attention to that cell is below the
+workload's normal spread, and the value-dependent rule would have kept it. Provenance removed an
+unremarkable cell and does not claim it was bad; the price is one cell in seventy, refilled inside
+the same leg.
+
 ## The pre-registered peeling comparison, and why it was not amended
 
 Peeling is decided by the executed-access pair, AllOpt with peeling against AllOpt without it, on
