@@ -128,7 +128,7 @@ the same leg.
 
 ## Outcome of the pre-registered peeling comparison: branch C
 
-Determined 16 September, three rows of four, before FFmpeg ran:
+Determined 16 September on three rows of four, when both AllOpt rows of the SQLite leg reached five clean runs. That is when the comparison became computable; the SQLite leg itself was still running, and the two are different facts:
 
 | Application | AllOpt with peeling against without, on resolvable tests | Resolution floor |
 |---|---|---|
@@ -141,11 +141,21 @@ No row excludes 1.0, so neither of the other branches can reach three of four wh
 The outcome is therefore "measure executed accesses directly", which is post-submission work and is
 written into the paper as the stated next step rather than attempted before the artifact deadline.
 
-The substantive reading, which is stronger than the branch label: on three applications loop peeling
-neither pays nor costs at a resolution of 3 to 6 per cent, while adding 10.5 to 16.8 per cent static
-instrumentation. The static increase is measured; the runtime consequence is below what these
-workloads can resolve. That is not "peeling is free": it is "peeling's effect is smaller than 3.3%
-on Redis, 3.5% on SQLite, and unresolvable on memcached".
+**This outcome does not decide whether peeling ships.** One branch would have licensed turning it
+off and another keeping it; this one says the measurement cannot tell. The runtime question is open,
+not answered in the negative, and a crossing interval is not a null result: that is what the
+resolution floor beside each ratio is for, and prose implying otherwise contradicts it.
+
+What is resolved about peeling, and all that is, in this order:
+
+- **Its static cost is large and measured**, on four applications: +11.7% memcached, +16.8% Redis,
+  +10.5% SQLite, +14.3% FFmpeg, with AllOpt plus peeling carrying more static instrumentation than
+  stock ThreadSanitizer on every one of them.
+- **Its runtime effect is below what these workloads resolve**: smaller than 3.3% on Redis, 3.5% on
+  SQLite, and unresolvable on memcached.
+
+Whoever sets the shipping default is deciding on the static cost plus judgement, not on evidence
+that peeling fails to pay, because this campaign produced no such evidence.
 
 ## The rule that produced it, and why it was not amended
 
