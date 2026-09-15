@@ -17,7 +17,8 @@ RAM, Ubuntu 24.04, kernel 6.8.
 
 | Claim | Script | Match criterion |
 |---|---|---|
-| In each of 12 configurations, all 293 tests of ThreadSanitizer's regression suite pass | `scripts/30-preservation-suite.sh` | exact: 293/0 in every configuration |
+| No configuration loses a race that stock ThreadSanitizer reports, over ThreadSanitizer's own regression suite | `scripts/30-preservation-suite.sh` | exact: no candidate lost race. The vendored suite discovers 383 tests, of which 85 are unsupported on Linux before anything is compiled (47 Darwin, 37 libdispatch, 1 libcxx); the rest run in each of 12 configurations, K repeats each, and a test counts as a candidate lost race only when it fails every repeat under a configuration and never fails under stock |
+| The harness can detect a loss at all | `scripts/30-preservation-suite.sh --self-test` | required first: it runs a detector with load and store instrumentation switched off and requires the harness to report the losses. A suite reporting nothing looks the same whether races are preserved or the harness is blind |
 | Every race test's report is identical to stock ThreadSanitizer's: same kind, both stacks with file and line | `scripts/30-preservation-suite.sh --diff` | exact, except the three tests listed in `docs/nondeterministic-tests.md`, which are non-deterministic under stock as well (verified at K = 20) |
 | No test that expects no report produces one | `scripts/30-preservation-suite.sh` | exact |
 | On SQLite, the union of races over 10 runs is the set stock reports (5 sites) | `scripts/31-preservation-apps.sh sqlite` | same set; per-site frequencies vary with the schedule |
@@ -39,8 +40,8 @@ DynSTC.
 | Claim | Script | Match criterion |
 |---|---|---|
 | Static instrumentation sites per application and configuration | `scripts/20-static-counts.sh` | exact; the counts are a property of the compiler, not of the machine |
-| The compiler built from the shipped patch series emits the same instrumentation as the frozen compiler the performance numbers were measured on | `scripts/12-compiler-equivalence.sh` | exact: 112 rows, 28 IR-corpus modules in four configurations, byte-identical `__tsan_*` histograms, with a control showing the reference table separates the configurations at all (24 of 28 modules) |
-| The three compile-time commits added to that compiler changed no instrumentation decision | the rows above, plus `data/equivalence/` | recorded, not re-run by the evaluator: the same 112 rows against the previous compiler, the 17 application configurations built on both (MySQL 640 355 sites and 1 263 905 calls, all 14 Redis rows), and Redis's whole-program analysis summaries byte-identical between the two |
+| The compiler built from the shipped patch series behaves like the frozen compiler the performance numbers were measured on | `scripts/12-compiler-equivalence.sh` | exact: it recompiles 28 vendored LLVM IR modules under 4 configurations and requires all 112 `__tsan_*` symbol histograms to equal a reference table produced by the campaign compiler, checking the `TSAN_AUDIT_HASH` stamp separately. It says "behaves like", not "is": an identical corpus does not identify the commit, since the three compile-time commits change none of the 112 rows. A control asserts the reference table separates the configurations at all (24 of 28 modules do), so agreement is not free |
+| The three compile-time commits added to that compiler changed no instrumentation decision on any application | recorded in `data/equivalence/` and `docs/campaign-parameters.md`; not re-run by the evaluator | the same 112 corpus rows against the previous compiler, plus the 17 application configurations built on both compilers (MySQL 640 355 sites and 1 263 905 calls; all 14 Redis rows) and Redis's whole-program analysis summaries byte-identical between them |
 | Executed instrumentation per unit of work | `scripts/90-tables.sh --reach` | exact from the shipped data; within run-to-run noise when re-measured |
 
 ## 4. Compile-time overhead
