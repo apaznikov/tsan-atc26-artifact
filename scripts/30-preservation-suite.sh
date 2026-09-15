@@ -51,8 +51,13 @@ if [ "$cpus" -lt 8 ]; then
   echo "Below that, tests that pass by NOT reporting a race can pass because the schedule" >&2
   echo "never interleaved, not because the race was preserved. The result would look clean" >&2
   echo "and mean nothing. Give the container more CPUs (docker run --cpus / --cpuset-cpus)." >&2
-  echo "If you understand this and want the discovered/unsupported counts anyway, which ARE" >&2
-  echo "valid at any CPU count, set ART_ALLOW_FEW_CPUS=1 -- but do not quote a pass count." >&2
+  echo "Worse than vacuous, measured 2026-09-16: pinned to a single core this suite does not" >&2
+  echo "finish. compare_exchange.cpp livelocks at test 99 of 383 -- two runnable threads (R S R)" >&2
+  echo "contending for one core, one spinning at 100% while the other is never scheduled. The" >&2
+  echo "run hangs rather than failing, so a watchdog may kill it and blame something else." >&2
+  echo "If you want the discovered/unsupported counts anyway, which ARE valid at any CPU count" >&2
+  echo "because lit decides them before running a thing, set ART_ALLOW_FEW_CPUS=1 -- but do not" >&2
+  echo "quote a pass count, and expect the run to hang partway." >&2
   [ "${ART_ALLOW_FEW_CPUS:-0}" = 1 ] || exit 3
   echo "ART_ALLOW_FEW_CPUS=1: continuing. Counts are valid; PASSES ARE NOT EVIDENCE." >&2
 fi
