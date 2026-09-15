@@ -14,3 +14,36 @@ refuse_if_building() { # a compiler build on the host invalidates timing runs
   if pgrep -x ninja >/dev/null 2>&1 || pgrep -f 'clang.*-cc1' >/dev/null 2>&1; then
     echo "a compiler build is running on this host; timing runs would be invalid. Wait for it to finish."; exit 3; fi
 }
+
+# --- lit: exclusivity and private output roots -------------------------------
+# Two lit runs over the SAME test directory share its Output/ subdirectory and
+# overwrite each other's temporaries. Four concurrent runs once produced 45 failures
+# out of 462 here that had nothing to do with the compiler. Both halves below exist
+# because of that: a private exec root per run, and a lock so our own scripts serialise.
+#
+# The running-lit detector matches on comm, never on the full command line. A
+# `pgrep -f lit` would match the pgrep process itself -- its own argv contains the
+# pattern -- so the guard would always fire. comm for llvm-lit is "llvm-lit" (Linux
+# sets comm from the script basename for a shebang script), and comm for the pgrep
+# we run is "pgrep", so there is nothing to self-match.
+refuse_if_lit_running() {
+  local pids; pids=$(pgrep -x llvm-lit 2>/dev/null || true)
+  [ -z "$pids" ] && return 0
+  echo "another llvm-lit is running (pids: $(echo $pids | tr '\n' ' '))." >&2
+  echo "Concurrent lit runs share Output/ and produce failures that are not the compiler's." >&2
+  echo "Wait for it to finish, or set ART_LIT_FORCE=1 if you are certain it uses a different tree." >&2
+  [ "${ART_LIT_FORCE:-0}" = 1 ] || exit 3
+}
+# lit_exec_root <name>: a private, empty exec root under results/, echoed on stdout.
+lit_exec_root() { local d="$ART_RESULTS/$1/lit-exec"; rm -rf "$d"; mkdir -p "$d"; echo "$d"; }
+# with_lit_lock <cmd...>: serialise against our other lit-running scripts.
+with_lit_lock() {
+  local lock="${TMPDIR:-/tmp}/tsan-artifact-lit.lock"
+  if command -v flock >/dev/null 2>&1; then flock "$lock" -c "$(printf '%q ' "$@")"; else "$@"; fi
+}
+# The lit driver: llvm-lit plus the vendored lit python package it imports.
+lit_run() {
+  need_compiler
+  [ -x "$TSAN_LLVM_ROOT/bin/llvm-lit" ] || { echo "no llvm-lit at $TSAN_LLVM_ROOT/bin/llvm-lit"; exit 2; }
+  "$TSAN_LLVM_ROOT/bin/llvm-lit" "$@"
+}

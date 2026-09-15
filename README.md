@@ -70,6 +70,26 @@ regenerated from whichever runs you point them at.
 in the paper from the runs we recorded. That is the fastest way to check that our tables follow
 from our data.
 
+### The three checks that make a clean result mean something
+
+Every claim in this artifact is a negative -- instrumentation removed, races still found --
+and a broken check produces negatives for free. Each of these scripts therefore carries a
+control that must fire, and each refuses to run beside another `llvm-lit` (concurrent lit
+runs share `Output/` and fail for reasons that are not the compiler's):
+
+| Script | What it answers | The control that makes it evidence |
+|---|---|---|
+| `scripts/11-soundness-shapes.sh` | Does the compiler still instrument every access the audit says it must? | Re-runs each test with its `-tsan-*` flags stripped. A test claiming a removal must then fail; one asserting instrumentation stays is expected to pass either way. Currently 50 removal tests, 11 controls, 0 vacuous. |
+| `scripts/12-compiler-equivalence.sh` | Does this compiler instrument the IR corpus exactly as the campaign compiler did? | Checks the reference table can separate the configurations at all (24 of 28 modules do), and reports the provenance stamp separately -- the corpus alone cannot identify the commit. |
+| `scripts/30-preservation-suite.sh` | Does any configuration lose a race stock reports? | `--self-test` runs a detector with load/store instrumentation switched off and requires the harness to report the losses. A suite that reports nothing looks identical whether races are preserved or the harness is blind. |
+
+```
+./docker/run.sh scripts/11-soundness-shapes.sh
+./docker/run.sh scripts/12-compiler-equivalence.sh
+./docker/run.sh scripts/30-preservation-suite.sh --self-test    # first, always
+./docker/run.sh scripts/30-preservation-suite.sh 5              # then the real matrix
+```
+
 ## What this artifact does not contain
 
 Chromium and MySQL performance. Both are documented in `docs/`, with our recorded data, the exact

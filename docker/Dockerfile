@@ -39,6 +39,11 @@ RUN cd llvm-project && for p in $(ls /src/patches/*.patch | sort); do \
 # Configure and build INSIDE the container at the final path, with a relocatable install:
 # LLVM_LINK_LLVM_DYLIB puts the LLVM libraries in one shared object under the prefix, and
 # cmake --install writes lit configuration files with the prefix's own paths.
+# The branch commit this image reconstructs. It is NOT the upstream base (LLVM_BASE): the
+# harness derives a build stamp from the first 40-hex string in `clang --version`, so a
+# version line naming only the base would hand every downstream build a wrong-but-well-formed
+# stamp. Both the version string and the TSAN_AUDIT_HASH file below carry the branch commit.
+ARG AUDIT_HASH=f3deebfbab602f4e05289e0acbde0efd06b8058c
 RUN cmake -G Ninja -S llvm-project/llvm -B build \
       -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=ON \
       -DLLVM_ENABLE_PROJECTS="clang;lld;compiler-rt" \
@@ -46,13 +51,29 @@ RUN cmake -G Ninja -S llvm-project/llvm -B build \
       -DLLVM_BUILD_LLVM_DYLIB=ON -DLLVM_LINK_LLVM_DYLIB=ON -DBUILD_SHARED_LIBS=OFF \
       -DCMAKE_INSTALL_PREFIX=/opt/tsan-llvm \
       -DLLVM_INSTALL_UTILS=ON \
+      -DLLVM_APPEND_VC_REV=ON \
+      -DLLVM_FORCE_VC_REPOSITORY=https://github.com/focs-lab/llvm-project \
+      -DLLVM_FORCE_VC_REVISION=${AUDIT_HASH} \
     && ninja -C build -j ${JOBS} clang lld compiler-rt FileCheck not count opt llvm-objdump \
     && ninja -C build install \
-    && install -m755 build/bin/llvm-lit /opt/tsan-llvm/bin/llvm-lit
+    && install -m755 build/bin/llvm-lit /opt/tsan-llvm/bin/llvm-lit \
+    && printf '%s\n%s\n' "${AUDIT_HASH}" "tree ${EXPECTED_TREE}" > /opt/tsan-llvm/TSAN_AUDIT_HASH \
+    && mkdir -p /opt/tsan-llvm/lib/python-lit \
+    && cp -r llvm-project/llvm/utils/lit/lit /opt/tsan-llvm/lib/python-lit/lit
 
 # The RUNPATH check: every LLVM library the installed clang loads must live under the prefix.
 RUN ldd /opt/tsan-llvm/bin/clang | grep -i llvm | grep -qv /opt/tsan-llvm && { echo "clang resolves an LLVM library outside the prefix"; exit 1; } || true \
     && /opt/tsan-llvm/bin/clang --version
+RUN v=$(/opt/tsan-llvm/bin/clang --version | head -1) \
+    && echo "version line: $v" \
+    && case "$v" in *"${AUDIT_HASH}"*) : ;; \
+         *) echo "version string does not name the branch commit ${AUDIT_HASH}"; exit 1 ;; esac \
+    && case "$v" in *"${LLVM_BASE}"*) echo "version string still names the upstream base ${LLVM_BASE}; the stamp would be wrong"; exit 1 ;; \
+         *) : ;; esac \
+    && grep -q "${AUDIT_HASH}" /opt/tsan-llvm/TSAN_AUDIT_HASH \
+    && echo "stamp ok: $(head -1 /opt/tsan-llvm/TSAN_AUDIT_HASH)"
+ENV PYTHONPATH=/opt/tsan-llvm/lib/python-lit
+RUN /opt/tsan-llvm/bin/llvm-lit --version
 
 FROM ubuntu:24.04
 ARG DEBIAN_FRONTEND=noninteractive
@@ -62,7 +83,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libevent-dev libssl-dev libx264-dev libx265-dev libgnutls28-dev nasm yasm \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=build /opt/tsan-llvm /opt/tsan-llvm
-ENV TSAN_LLVM_ROOT=/opt/tsan-llvm PATH=/opt/tsan-llvm/bin:$PATH
+ENV TSAN_LLVM_ROOT=/opt/tsan-llvm PATH=/opt/tsan-llvm/bin:$PATH \
+    PYTHONPATH=/opt/tsan-llvm/lib/python-lit
 WORKDIR /artifact
 COPY . /artifact
 RUN chmod +x /artifact/scripts/*.sh /artifact/docker/*.sh

@@ -1,0 +1,4 @@
+stock|
+EA|-tsan-use-escape-analysis-global
+sound|-tsan-use-escape-analysis-global -tsan-use-lock-ownership -tsan-use-single-threaded -tsan-use-swmr
+AllOpt+peel|-tsan-use-dominance-analysis -tsan-use-loop-peeling=true -tsan-use-escape-analysis-global -tsan-use-lock-ownership -tsan-use-single-threaded -tsan-use-swmr

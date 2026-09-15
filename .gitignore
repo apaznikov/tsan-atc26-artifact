@@ -2,6 +2,8 @@ results/
 build/
 *.o
 *.ll
+# ...but the vendored TSan IR tests ARE the artifact, not build output.
+!tests/ir/*.ll
 *.bc
 __pycache__/
 *.pyc
