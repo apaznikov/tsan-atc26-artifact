@@ -104,7 +104,7 @@ measurement).
 ### memcached 1.6.29 (`memtier_benchmark` 2.1.1, 10 threads x 5 clients, pipeline 16, 100 000 requests each, server at 48 threads; session of 15 Sep, pinned)
 
 Stock ThreadSanitizer against native: 3.20x [2.97, 3.40] (the paper: 2.83x). **No configuration is
-resolved on memcached**: every interval is 12 to 16 points wide and contains 1.0. The cause is the
+resolved on memcached**: every speedup interval is between 11.9 and 15.7 points wide and contains 1.0. The cause is the
 workload, not the analyses: memcached reports one metric, operations per second, so the geometric
 mean is over a single number and the whole interval is its run-to-run variance at N = 5. Only more
 repetitions would narrow it; no subtest filter can, because there are no subtests. The paper's
@@ -126,7 +126,7 @@ contradicts them.
 | four sound analyses, whole-program summaries | not in the paper | 1.005 [0.947, 1.089] | 14 points | no measurable change |
 | AllOpt with peeling, whole-program summaries | not in the paper | 1.023 [0.961, 1.112] | 15 points | no measurable change |
 
-Redis's DynSTC cost does not appear here (0.986, interval 12 points wide); whether that is a real
+Redis's DynSTC cost does not appear here (0.986, interval 11.9 points wide, the narrowest on this application); whether that is a real
 difference between the two applications or memcached's noise cannot be told from this measurement.
 The peeling pair on memcached, AllOpt with against without peeling: 1.0332 [0.9593, 1.0567].
 
