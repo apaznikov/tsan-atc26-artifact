@@ -104,7 +104,7 @@ measurement).
 ### memcached 1.6.29 (`memtier_benchmark` 2.1.1, 10 threads x 5 clients, pipeline 16, 100 000 requests each, server at 48 threads; session of 15 Sep, pinned)
 
 Stock ThreadSanitizer against native: 3.20x [2.97, 3.40] (the paper: 2.83x). **No configuration is
-resolved on memcached**: every speedup interval is between 11.9 and 15.7 points wide and contains 1.0. The cause is the
+resolved on memcached**: across the twelve instrumented configurations every speedup interval is between 11.9 and 15.7 points wide and contains 1.0 (the thirteenth row of that column, `orig`, is native against stock, a baseline ratio rather than a speedup, and is 42.8 points wide). The cause is the
 workload, not the analyses: memcached reports one metric, operations per second, so the geometric
 mean is over a single number and the whole interval is its run-to-run variance at N = 5. Only more
 repetitions would narrow it; no subtest filter can, because there are no subtests. The paper's
