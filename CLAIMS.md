@@ -4,8 +4,8 @@ Every claim the paper makes, the script that produces it, and what counts as a m
 the contract between the paper and this artifact: if a number is not here, the artifact does not
 claim it.
 
-Measurement provenance for every performance row: compiler `<SHIPPED_HASH>`, five applications,
-N = 5 runs per configuration, pinned to 48 processors (CPUs 4-27 and 60-83 on our machine), one
+Measurement provenance for every performance row: compiler `f3deebfbab60` (branch `artifact/paper-sound`,
+the one the image reproduces), five applications, one discarded warm-up then N = 5 runs per configuration, pinned to 48 processors (CPUs 4-27 and 60-83 on our machine), one
 measurement at a time in run-major order. The statistic is the geometric mean over an
 application's tests of per-test medians, with a 95% confidence interval from 2000 bootstrap
 resamples over runs (seed 1). Our machine: Intel Xeon w9-3495X, 56 cores / 112 threads, 250 GB
@@ -31,7 +31,7 @@ DynSTC.
 
 | Claim | Script | Match criterion |
 |---|---|---|
-| 22 code shapes in which an optimized build could fail to report a race are fixed; each has a test that fails on its parent commit and a positive control | `scripts/11-soundness-shapes.sh` | exact: 22 of 22 pass, printed shape by shape against the ledger |
+| 23 code shapes in which an optimized build could fail to report a race are fixed; each has a test that fails on its parent commit and a positive control | `scripts/11-soundness-shapes.sh` | exact: the suite passes and every removal it claims is one it can detect (50 removal tests fail with the analysis flags stripped, 11 controls, 0 vacuous) |
 | The ledger records, per function, the contract, the paper proposition it implements, a verdict and a covering test | `compiler/TSanAnalysesAudit.md` | document, no script |
 
 ## 3. Instrumentation removed (deterministic)
@@ -50,25 +50,49 @@ DynSTC.
 
 ## 5. Performance (machine-dependent)
 
-Speedups over stock ThreadSanitizer, best configuration per application. **Only the first two
-intervals exclude 1.0.** For memcached and MySQL the intervals are 12.2 and 14.1 points wide, so
-those rows report an effect below the resolution of the measurement, not the absence of one.
+Filled per application as the campaign of 15-17 September completes on compiler `f3deebfbab60`;
+an application not yet listed is not yet claimed. Every configuration of the paper's figure is
+listed with the paper's bar beside it, plus the three configurations the paper does not show.
+Two intervals per row: over all five measured runs and over runs 2-5; a row is claimed to differ
+from stock only when both exclude 1.0, and "no measurable change" means the interval contains 1.0,
+not that the effect is zero. "Stable subtests" repeats the speedup over the subtests whose pooled
+run-to-run variation is at most 5%; the set is a property of the workload and applies to every row.
 
-| Application | Configuration | Speedup [95%] | Script |
-|---|---|---|---|
-| FFmpeg | DynSTC | 1.113 [1.097, 1.124] | `scripts/40-perf.sh ffmpeg` |
-| Redis | AllOpt with peeling and whole-program summaries | 1.027 [1.008, 1.051] | `scripts/40-perf.sh redis` |
-| SQLite | AllOpt without peeling | 1.036 [0.924, 1.110] | `scripts/40-perf.sh sqlite` |
-| MySQL | escape analysis | 1.034 [0.959, 1.080] | not reproducible here, see `docs/mysql.md` |
-| memcached | dominance elimination | 1.000 [0.919, 1.056] | `scripts/40-perf.sh memcached` |
+### Redis 7.0.15 (`redis-benchmark`, 19 commands, 50 clients, pipeline 1024; session of 15 Sep 18:49, pinned, governor powersave)
 
-Two further rows separate from stock in the other direction, and the artifact claims them too:
-Redis under DynSTC 0.969 [0.950, 0.990] and SQLite under DynSTC 0.983 [0.978, 0.995] on its
-resolvable subtests. DynSTC is signed: it helps FFmpeg and costs Redis and SQLite, so it is only
-ever quoted per application.
+Stock ThreadSanitizer against native: 8.01x [7.83, 8.21] (the paper: 9.2x). Stable subtests: 16 of 19
+(`PING_MBULK`, `ZPOPMIN`, `MSET` excluded).
 
-Stock ThreadSanitizer against an uninstrumented build: memcached 2.83x, FFmpeg 2.81x, SQLite
-3.18x, Redis 7.93x, MySQL 10.84x.
+| Configuration | Paper | All five runs [95%] | Runs 2-5 [95%] | Stable subtests, all five [95%] | Verdict |
+|---|---|---|---|---|---|
+| EA | 1.00 | 0.994 [0.974, 1.019] | 0.989 [0.967, 1.008] | 0.991 [0.972, 1.019] | no measurable change |
+| LO | 1.00 | 0.981 [0.967, 1.010] | 0.980 [0.965, 1.002] | 0.981 [0.969, 1.009] | no measurable change |
+| STC | 1.12 | 0.980 [0.962, 1.003] | 0.979 [0.961, 0.997] | 0.978 [0.959, 1.002] | no measurable change (on the boundary: runs 2-5 exclude 1.0, all five do not) |
+| SWMR | 1.00 | 0.988 [0.971, 1.015] | 0.987 [0.963, 1.007] | 0.982 [0.970, 1.014] | no measurable change |
+| DE | 1.35 | 0.992 [0.970, 1.015] | 0.992 [0.967, 1.010] | 0.992 [0.972, 1.017] | no measurable change |
+| DE + peeling | 1.25 | 0.996 [0.977, 1.024] | 0.997 [0.972, 1.018] | 0.990 [0.971, 1.021] | no measurable change |
+| DynSTC | 1.12 | 0.944 [0.927, 0.970] | 0.944 [0.922, 0.962] | 0.939 [0.922, 0.963] | **below stock** |
+| AllOpt without peeling | 1.45 (the paper's AllOpt bar; the paper does not say whether peeling was on) | 0.989 [0.975, 1.015] | 0.984 [0.965, 1.000] | 0.984 [0.968, 1.011] | no measurable change |
+| AllOpt with peeling | not in the paper | 1.000 [0.983, 1.026] | 0.994 [0.974, 1.016] | 0.994 [0.978, 1.024] | no measurable change |
+| AllOpt with peeling and DynSTC | not in the paper | 0.958 [0.944, 0.985] | 0.963 [0.944, 0.981] | 0.951 [0.940, 0.981] | **below stock** |
+| four sound analyses, whole-program summaries | not in the paper | 0.996 [0.971, 1.017] | 0.993 [0.971, 1.013] | 0.994 [0.968, 1.015] | no measurable change |
+| AllOpt with peeling, whole-program summaries | not in the paper | 0.998 [0.980, 1.027] | 0.996 [0.979, 1.019] | 0.997 [0.976, 1.023] | no measurable change |
+
+Condition that travels with every Redis row: byte-identical Redis binaries measured six days apart
+on this host differed by 14% (stock) and 5% (native) in throughput for reasons we could not
+identify (`docs/confounds.md`). Ratios within one session are what is claimed; a disagreement of a
+few points with an evaluator's run is inside that effect. The second concurrency point, 112
+clients, is measured at the end of the campaign and added here when it lands. The peeling pair on
+Redis, AllOpt with against without peeling on the stable subtests: 1.0105 [0.9905, 1.0326].
+
+Script: `scripts/40-perf.sh redis` (about 2 hours at N = 5 on 48 CPUs; `--smoke` in minutes, not a
+measurement).
+
+### FFmpeg, memcached, SQLite, MySQL
+
+Filled when their legs complete (16-17 September). Until then the artifact claims no performance
+number for them; the recorded Stage B runs under `data/perf/stageB-d3bf9f8c39fe` are from an
+earlier compiler and are shipped as data, not as claims.
 
 **Match criterion for every row**: the evaluator's confidence interval overlaps ours. A row whose
 interval contains 1.0 here must contain 1.0 there; a row that excludes it should exclude it on
