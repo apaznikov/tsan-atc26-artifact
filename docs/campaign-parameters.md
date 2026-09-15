@@ -105,6 +105,20 @@ static count by construction (it guards accesses, it does not remove them). The 
 reduction figure (60.8 / 34.7 / 64.9 / 55.6 / 14.5) was produced by the submitted compiler and is
 not reproduced by this one; the camera-ready decision is Alexey's and Michael's.
 
+## When a measured cell is retired
+
+One rule, and it never consults the number: a cell is retired if it overlapped a logged
+foreign-work window, whatever it measured. Retired cells are renamed, not deleted, so the decision
+is auditable, and the driver refills them on its next pass. In this campaign that is one cell,
+`primary/sqlite/tsan-lo/run2`, which overlapped a 48-second window on 16 September at 03:08:44 and
+became `run2.foreign-window-030844`.
+
+The rule this replaced was proposed by the paper lane and was wrong: "drop the cell if it stands
+out at N = 5" removes a measurement only when its value looks wrong, which is censoring under a
+tidy name, and as a written practice it is what a reviewer should object to. The provenance rule
+cannot be used that way, and it buys a statement a reviewer can check instead of an argument: no
+cell in the dataset overlapped a known foreign-work window.
+
 ## The pre-registered peeling comparison, and why it was not amended
 
 Peeling is decided by the executed-access pair, AllOpt with peeling against AllOpt without it, on

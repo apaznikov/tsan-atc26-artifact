@@ -17,10 +17,15 @@ run therefore moves every ratio of that application in the same direction, and a
 confidence interval cannot show it because the error is correlated across rows. Two consequences
 we measured:
 
-- **First execution.** Without a warm-up run, the first run of a binary deviates; on our campaign
-  the median shift of a speedup from dropping run 1 was 0.70 points, the maximum 3.77, in a
-  direction set by the baseline's own first run (memcached up, Redis down). The artifact's scripts
-  run one discarded warm-up per configuration and report steady state.
+- **First execution.** Without a warm-up run, the first run of a binary deviates: measured on an
+  earlier campaign that had none, the median shift of a speedup from dropping run 1 was 0.70
+  points and the maximum 3.77, in a direction set by the baseline's own first run (memcached up,
+  Redis down). The artifact's scripts run one discarded warm-up per configuration and report
+  steady state, and the campaign shows that this works rather than assuming it: with the warm-up
+  in place, run 1 is above the median of runs 2 to 5 in 9 of 14 Redis configurations (median
+  difference +0.63%) and 6 of 14 memcached configurations (median difference -1.47%), which is a
+  coin toss around zero. The tables computed over all five runs and over runs 2 to 5 agree
+  everywhere within intervals, for the same reason.
 - **Between sessions.** Byte-identical Redis binaries measured six days apart on the same host
   gave stock ThreadSanitizer 14% less throughput on the later date and an uninstrumented build 5%
   less, so eight of thirteen Redis rows changed verdict between the two sessions. The cause was not
