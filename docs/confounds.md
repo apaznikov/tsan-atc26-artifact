@@ -43,9 +43,10 @@ thread counts; the curves are shipped so no point is hidden.
 ## Application-specific noise
 
 - **memcached**: wall time is bimodal (two modes about 20% apart, sticky for tens of minutes), so
-  its coefficient of variation is 10-12% at N = 5 and its interval is about 12 points wide. Rows
+  its coefficient of variation is 10-12% at N = 5 and the speedup intervals of its twelve
+  instrumented configurations are 11.9 to 15.7 points wide, measured on the campaign. Rows
   inside that interval are nulls, not zeros.
-- **MySQL**: interval about 14 points wide; same reading. Its EA-bearing configurations take about
+- **MySQL**: intervals of the same order, about 14 points wide on the earlier campaign; the current figures replace this line when its leg completes. Same reading. Its EA-bearing configurations take about
   2.2 hours each to build with this compiler.
 The provenance rule
 cannot be used that way, and it buys a statement a reviewer can check instead of an argument: no

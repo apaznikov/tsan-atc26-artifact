@@ -126,7 +126,7 @@ contradicts them.
 | four sound analyses, whole-program summaries | not in the paper | 1.005 [0.947, 1.089] | 14 points | no measurable change |
 | AllOpt with peeling, whole-program summaries | not in the paper | 1.023 [0.961, 1.112] | 15 points | no measurable change |
 
-Redis's DynSTC cost does not appear here (0.986, interval 11.9 points wide, the narrowest on this application); whether that is a real
+Redis's DynSTC cost does not appear here (0.986, interval 11.9 points wide, the narrowest of the twelve); whether that is a real
 difference between the two applications or memcached's noise cannot be told from this measurement.
 The peeling pair on memcached, AllOpt with against without peeling: 1.0332 [0.9593, 1.0567].
 
