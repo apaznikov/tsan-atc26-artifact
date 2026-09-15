@@ -98,8 +98,8 @@ On memcached the estimator is dominated by accounting error: its estimates are n
 configuration, because the server runs outside the timed region and its ticks are added back by
 hand. The comparable spreads there are more likely that error tracking configuration than foreign
 load doing so, and the question cannot be answered on that application. It also does not arise
-there: no memcached interval is narrower than 12 points, and the quantity bounded above is under
-one.
+there: the quantity bounded above is under one point, while memcached's narrowest speedup interval
+is 11.9 points, more than ten times wider.
 
 Where the question can be answered, foreign activity adds to run-to-run variation rather than
 shifting configurations relative to one another, and that variation is already contained in the
