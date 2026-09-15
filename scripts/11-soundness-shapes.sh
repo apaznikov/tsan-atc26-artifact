@@ -16,6 +16,7 @@ esac
 
 budget "the IR soundness suite" "2 min" "1 min" "none"
 refuse_if_lit_running
+need_lit
 
 name="soundness-shapes-$(stamp)"
 outdir="$ART_RESULTS/$name"; mkdir -p "$outdir"

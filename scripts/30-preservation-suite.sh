@@ -36,6 +36,7 @@ ncfg=$(grep -vc '^#' "$matrix")
 budget "the TSan suite, $ncfg configurations x K=$k repeats" "3 h" "45 min" "2 GB"
 smoke_banner
 refuse_if_lit_running
+need_lit
 
 name="preservation-suite-$(stamp)"
 outdir="$ART_RESULTS/$name"; mkdir -p "$outdir"

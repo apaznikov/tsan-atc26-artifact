@@ -47,3 +47,31 @@ lit_run() {
   [ -x "$TSAN_LLVM_ROOT/bin/llvm-lit" ] || { echo "no llvm-lit at $TSAN_LLVM_ROOT/bin/llvm-lit"; exit 2; }
   "$TSAN_LLVM_ROOT/bin/llvm-lit" "$@"
 }
+
+# need_lit: llvm-lit is a Python script that imports the `lit` package. Installing the
+# driver without the package ships something that cannot start -- both the artifact image
+# and the frozen copies under /extra/alexey/builds did exactly that. Testing the
+# executable bit does not catch it; only starting it does. If the package is findable
+# nearby, point PYTHONPATH at it rather than failing.
+need_lit() {
+  local lit="$TSAN_LLVM_ROOT/bin/llvm-lit"
+  [ -x "$lit" ] || { echo "no llvm-lit at $lit"; exit 2; }
+  "$lit" --version >/dev/null 2>&1 && return 0
+  local cand
+  for cand in "$TSAN_LLVM_ROOT/lib/python-lit" \
+              "$TSAN_LLVM_ROOT/../llvm-project/llvm/utils/lit" \
+              "${ART_LIT_PACKAGE:-}"; do
+    [ -n "$cand" ] && [ -d "$cand/lit" ] || continue
+    if PYTHONPATH="$cand${PYTHONPATH:+:$PYTHONPATH}" "$lit" --version >/dev/null 2>&1; then
+      export PYTHONPATH="$cand${PYTHONPATH:+:$PYTHONPATH}"
+      echo "note: llvm-lit could not import lit; using the package at $cand"
+      return 0
+    fi
+  done
+  echo "llvm-lit is present but cannot start:" >&2
+  "$lit" --version 2>&1 | tail -3 | sed 's/^/  /' >&2
+  echo "The lit Python package is missing from this compiler. Set ART_LIT_PACKAGE to a" >&2
+  echo "directory containing lit/ (for a source checkout: llvm/utils/lit), or use a" >&2
+  echo "compiler prefix that ships it -- the artifact image has it at lib/python-lit." >&2
+  exit 2
+}
