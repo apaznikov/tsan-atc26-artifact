@@ -5,6 +5,8 @@ here="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=../env.sh
 . "$here/env.sh"
 
+[ $# -eq 0 ] || { echo "$(basename "$0") takes no arguments (got: $*)"; exit 2; }
+
 ok=0; miss=0
 need() { # need <what> <command> [tier]
   if command -v "$2" >/dev/null 2>&1; then printf '  ok       %-22s %s\n' "$1" "$(command -v "$2")"; ok=$((ok+1))

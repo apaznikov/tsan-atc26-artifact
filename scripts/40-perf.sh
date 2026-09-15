@@ -9,8 +9,11 @@
 #   ART_CPUSET   -> taskset pinning (we used 4-27,60-83); leave empty to use every CPU the container has
 set -euo pipefail
 . "$(dirname "$0")/_lib.sh"
-need_harness tools/perf; need_compiler
 
+# ARGUMENTS FIRST, ENVIRONMENT SECOND. A reviewer who mistypes a flag on a checkout with no vendored
+# harness should be told about the flag, not about the harness: diagnosing the setup first sends them off
+# to fix something unrelated, after which they hit the typo again. Usage errors are cheaper to report and
+# are the reader's own doing; environment errors are ours.
 app="${1:?usage: 40-perf.sh <app> [--build-only] [--configs \"c1 c2\"]}"; shift
 build_only=0; configs=""
 while [ $# -gt 0 ]; do
@@ -21,6 +24,8 @@ while [ $# -gt 0 ]; do
   esac
 done
 case "$app" in sqlite|memcached|redis|ffmpeg|mysql) ;; *) echo "unknown app $app" >&2; exit 2;; esac
+
+need_harness tools/perf; need_compiler
 
 # THE COMPILER'S OWN STAMP, NOT THE DIRECTORY NAME. The harness identifies a compiler by the 40-hex commit
 # it reports, and `basename /opt/tsan-llvm` is "tsan-llvm", which stamps nothing. Every binary the harness

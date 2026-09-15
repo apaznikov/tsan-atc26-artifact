@@ -8,6 +8,7 @@ here="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=../env.sh
 . "$here/env.sh"
 CC="$TSAN_LLVM_ROOT/bin/clang"; OBJDUMP="$TSAN_LLVM_ROOT/bin/llvm-objdump"
+[ $# -eq 0 ] || { echo "$(basename "$0") takes no arguments (got: $*)"; exit 2; }
 [ -x "$CC" ] || { echo "no TSan clang at $CC (set TSAN_LLVM_ROOT or run inside the container)"; exit 2; }
 out="$ART_RESULTS/minimal-example-$(date +%Y%m%d-%H%M%S)"; mkdir -p "$out"
 src="$here/scripts/minimal"

@@ -12,6 +12,12 @@ set -euo pipefail
 here="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=../env.sh
 . "$here/env.sh"
+for a in "$@"; do
+  case "$a" in
+    -*) echo "$(basename "$0") takes results trees, not flags (got: $a). With no argument it regenerates from the shipped data."; exit 2 ;;
+    *) [ -d "$a" ] || { echo "not a results tree: $a"; exit 2; } ;;
+  esac
+done
 tools="$ART_DATA/tools/perf"
 out="$ART_RESULTS/tables"; mkdir -p "$out"
 

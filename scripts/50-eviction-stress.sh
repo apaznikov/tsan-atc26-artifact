@@ -8,6 +8,8 @@
 # nothing is a broken harness and not a result -- this script says so rather than printing a table of zeros.
 set -euo pipefail
 . "$(dirname "$0")/_lib.sh"
+# arguments before environment, for the reason given in 40-perf.sh
+[ $# -gt 0 ] && { echo "50-eviction-stress.sh takes no arguments (got: $*); set ART_SMOKE=1 for a 20-run smoke pass" >&2; exit 2; }
 need_harness tools/eviction-stress; need_compiler
 runs=1000; [ "$ART_SMOKE" = 1 ] && runs=20
 budget "eviction stress, $runs runs per cell" "1 h" "15 min" "100 MB"

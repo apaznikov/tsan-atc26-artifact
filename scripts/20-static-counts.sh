@@ -5,6 +5,8 @@
 # and writes results/static-counts-<stamp>.csv in the same layout as data/perf/*/static-counts.csv.
 set -euo pipefail
 . "$(dirname "$0")/_lib.sh"
+case "${1:-}" in -*) echo "$(basename "$0") takes an optional build root, not a flag (got: $1)"; exit 2 ;; esac
+[ $# -le 1 ] || { echo "$(basename "$0") takes at most one argument, a build root (got $#)"; exit 2; }
 root="${1:-$ART_BUILD}"
 [ -d "$root" ] || { echo "no build root at $root; run scripts/40-perf.sh --build-only first"; exit 2; }
 out="$ART_RESULTS/static-counts-$(stamp).csv"; mkdir -p "$ART_RESULTS"

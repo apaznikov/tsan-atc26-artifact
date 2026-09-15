@@ -11,6 +11,7 @@
 # guard, at build time, in build_info.txt), and it says nothing about whether a number is right. A
 # tree can pass this and still be wrong; it cannot pass this and be unattributable.
 set -euo pipefail
+for a in "$@"; do case "$a" in -*) echo "$(basename "$0") takes results roots, not flags (got: $a)"; exit 2 ;; esac; done
 . "$(dirname "$0")/_lib.sh"
 need_harness tools/perf
 
