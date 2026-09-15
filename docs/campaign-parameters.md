@@ -1,4 +1,4 @@
-# Campaign parameters, fixed 14 September 2026
+# Campaign parameters, fixed 14 September 2026, primaries revised to R3 on 15 September
 
 Every parameter of the point-plot campaign (fixed thread count, all configurations), written down
 before the campaign runs so that any run can be repeated exactly. The pre-registration note with
@@ -13,31 +13,43 @@ evidence behind each thread count.
 | Host | Intel Xeon w9-3495X, 56 cores / 112 threads, 250 GB, Ubuntu 24.04, kernel 6.8.0-40 |
 | Benchmark CPU set | 4-27,60-83 (48 logical CPUs), one measurement at a time, `taskset`-pinned |
 | Compiler for the sweeps and Stage B | frozen copy `tsan-perf-d3bf9f8c39fe` (stamp in `clang --version`) |
-| Compiler for the campaign | the `artifact/paper-sound` branch tip once its gate is green; until then `d3bf9f8c39fe` |
+| Compiler for the campaign | `tsan-line-aa8a6dd8a2e8` (branch `artifact/paper-sound` at `aa8a6dd8a2e8`, all 23 shapes, check-tsan green in five configurations) |
 | Machine state | must be recorded per leg (`session.json`: load, governor, turbo, foreign CPU share) and the remote-development stack question settled first (see "Open" below) |
 
 ## Per-application parameters
 
-**Selection rule, stated once and applied to every application:** the primary thread or client
-count is *the highest concurrency at which the workload remains valid on the benchmark CPU set*,
-where "valid" means every test of the workload still produces a result. The rule is independent of
-any measured speedup; the sweep curves are reported in full alongside the point plots, and the
-March value (the paper's) is always the second row. This replaces an earlier version of this file
-that had chosen each primary at the maximum of its sweep curve, which would have been selection on
-the outcome; that version is superseded and should not be used. **This rule was written on 14 Sep,
-after the sweep, and lands on the top point of the FFmpeg and Redis curves; it must not be described
-as pre-registered.** What makes the point plots defensible is that the full curves are published
-beside them (`data/contention-*`), so no point is hidden. The pre-registered rule R3 (March values
-unchanged for FFmpeg, SQLite and Redis) is honoured by the second row; the March values are the
-second row by Alexey's decision of 14 Sep.
+**Decision of 15 Sep (Alexey, by default of the operating plan): the pre-registered rule R3 is
+primary.** R3 was written on 13 Sep before the concurrency sweep ran: "FFmpeg, SQLite and Redis run
+at their March parameters unchanged", because those three have no concurrency gap with the paper.
+The post-hoc rule of 14 Sep ("highest valid concurrency on the bench set", which had landed on the
+maximum of the FFmpeg and Redis curves) is retained only as the second row, and the full sweep curves
+ship beside every point plot (`data/perf/contention-d3bf9f8c39fe`). memcached and MySQL, which do
+have a gap, follow R1 (pinned-48 values primary, since the SQLite curve did not rise through 48) and
+R2 (the whole-machine values as a second row).
 
-| Application | Workload | Primary (rule value) | Why that is the ceiling | Second row (March value) |
+| Application | Workload | Primary (R3 / R1) | Second row | Notes |
 |---|---|---|---|---|
-| FFmpeg | 4 codecs (h264, h265, mjpeg, stream copy), CC-BY input clip, `-c:v` only | `-threads 16` | libx265 refuses more than `X265_MAX_FRAME_THREADS` = 16; above it the h265 codec disappears from the results rather than failing | `-threads 4` |
-| Redis | `redis-benchmark`, 19 tests, `-P 1024 -n <per-test>` | `-c 112` (decided 14 Sep; measured the same day, N = 5) | the machine's logical CPU count, the same rule as SQLite and memcached; Redis has no hard limit and no saturation point (absolute throughput declines monotonically from c=50, 11% lower at 512), so the swept grid's edge is not a ceiling | `-c 50` (tool default) |
-| SQLite | `threadtest3`, all 7 subtests listed explicitly; resolvable set = walthread1, walthread2, checkpoint_starvation_1, checkpoint_starvation_2 | `--w1-threads 112` (walthread1 is the only subtest with a thread argument) | the machine's logical CPU count, the top of the pre-registered grid | no thread argument (threadtest3's default) |
-| memcached | `memtier_benchmark -t 10 -x 5 --pipeline 16 -P memcache_text --random-data --requests 100000`; server `-c 4096` | server `-t 112` | the paper's `$(nproc)`; R2 requires both values, and the rule picks the higher as primary | `-t 48` (R1 pinned-48 value) |
-| MySQL | sysbench, 5 scripts, `--time=180` | `--threads=84` | the paper's `nproc*3/4`; R2 requires both, the rule picks the higher | `--threads=36` (R1 value) |
+| FFmpeg | 4 codecs (h264, h265, mjpeg, stream copy), CC-BY input, `-c:v` only | `-threads 4` (March) | `-threads 16` (libx265's ceiling) | sweep: AllOpt+peel 1.008 at 4, 1.055 at 16; DynSTC ~1.12 throughout |
+| Redis | `redis-benchmark`, 19 tests, `-P 1024 -n <per-test>` | `-c 50` (tool default, March) | `-c 112` (logical CPU count) | sweep: DynSTC 1.068 at 50, 1.039 at 112, no trend; AllOpt+peel 1.021 at 50, 0.992 at 112 |
+| SQLite | `threadtest3`, all 7 subtests (`SQLITE_TESTS='*'`); resolvable set = walthread1, walthread2, checkpoint_starvation_1, checkpoint_starvation_2 | no thread argument (March) | `--w1-threads 112` for walthread1 | sweep: flat 2-112 |
+| memcached | `memtier_benchmark -t 10 -x 5 --pipeline 16 -P memcache_text --random-data --requests 100000`; server `-c 4096` | server `-t 48` (R1) | server `-t 112` (March `nproc`, R2) | no sweep |
+| MySQL | sysbench, 5 scripts, `--time=180`; four configurations only | `--threads=36` (R1) | `--threads=84` (March `nproc*3/4`, R2) | EA build 2.22 h on the campaign copy; fits |
+
+Harness note (tsan-exp, 14 Sep): `run_sqlite_test.sh` passes `--w1-threads N walthread1` unless
+`SQLITE_TESTS='*'` is set, in which case threadtest3's own default selection runs (all subtests);
+a bare `--w1-threads N` with no test name prints usage.
+
+MySQL fallback ladder if the campaign runs over: `--time=120` at N = 5, then N = 3 reported without
+intervals, then fewer configurations.
+
+Workload definitions that stay fixed at every thread count: `--requests 100000` for memtier (the
+paper-era default of 10 000 produced ~1 s iterations and meaningless throughput); equal N per arm;
+`report_bugs=0` on both arms; provenance gate on every binary (`build_info.txt` compiler stamp must
+equal the campaign hash).
+
+FFmpeg input (decision 4, default applied): Tears of Steel (Blender Foundation, CC-BY), a 100-second
+cut at 1366x768, 30 fps, yuv420p, about 6.4 Mbit/s H.264 in Matroska, produced by the ffmpeg command
+recorded in `docs/ffmpeg-input.md` together with the source URL; the file itself is not shipped.
 
 Sweep evidence, reported as curves rather than used for selection: SQLite walthread1 flat from 2 to
 112 threads (AllOpt+peel 1.016 at 2 and 1.016 at 112, peak 1.027 at 16); Redis flat and non-monotone
