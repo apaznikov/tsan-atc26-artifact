@@ -44,6 +44,17 @@ DynSTC.
 | The three compile-time commits added to that compiler changed no instrumentation decision on any application | recorded in `data/equivalence/` and `docs/campaign-parameters.md`; not re-run by the evaluator | the same 112 corpus rows against the previous compiler, plus the 17 application configurations built on both compilers (MySQL 640 355 sites and 1 263 905 calls; all 14 Redis rows) and Redis's whole-program analysis summaries byte-identical between them |
 | Executed instrumentation per unit of work | `scripts/90-tables.sh --reach` | exact from the shipped data; within run-to-run noise when re-measured |
 
+## 3b. Every shipped run is attributable (deterministic)
+
+| Claim | Script | Match criterion |
+|---|---|---|
+| Every run in `data/perf/` records the compiler that built it, the hash of the binary it ran, the hash of its input, its processor set and mode, the foreign-activity share the gate saw, and its place in a full set of N | `scripts/91-verify-provenance.sh` | exact: six assertions, each of which fails on a fault we have actually produced (a pre-audit binary measured as current; a configuration whose binary changed mid-leg; an input path that satisfied the runner and recorded an empty hash; pinned and unpinned runs pooled; a run above the gate that was kept; a thin row that looked complete) |
+
+This is the property the paper's setup section rests on. It does not check that a configuration's
+flags were the intended ones, which is the build guard's job at build time, and it says nothing
+about whether a number is right: a tree can pass this and still be wrong, but it cannot pass this
+and be unattributable.
+
 ## 4. Compile-time overhead
 
 | Claim | Script | Match criterion |
