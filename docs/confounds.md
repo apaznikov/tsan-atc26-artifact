@@ -65,20 +65,37 @@ the same leg.
 
 ## Pinning is a pin for the workload, not an exclusion for everything else
 
-The benchmark is confined to its processor set; nothing stops other processes being scheduled there.
-The per-process sampler records what actually ran on those CPUs. Over 641 samples of one MySQL cell:
-our own interactive sessions and their children at a peak of 5.4% of a single CPU, the JetBrains
-remote-development backend at 5.4%, `sshd` at 0.8%. Against 48 processors that peak is about 0.11%
-of the measurement's capacity, and it is present in every cell of every configuration alike, so it
-cannot bias a comparison between configurations, which is what every ratio here is. It would matter
-for an absolute figure, and the absolute figures are the native baselines, whose own run-to-run
-spread is far wider.
+The benchmark is confined to its processor set; nothing stops other processes being scheduled there,
+and in our campaign our own interactive sessions, a remote-development backend and `sshd` all were.
 
-The honest form of the setup sentence is therefore: the workload was pinned to 48 processors, other
-system and session activity was not excluded from them, and it was sampled at under 6% of a single
-CPU. This was found during the campaign and deliberately not acted on: moving those sessions to
-another processor set would have made cells before and after the change incomparable, introducing a
-real discontinuity to remove a negligible one.
+How much they consumed, computed per run from each run's own accounting as measured busy time on the
+pinned processors minus the workload's own CPU time, over the 211 measured runs of the completed
+legs:
+
+| | share of the 48 pinned processors |
+|---|---|
+| median | 0.28% |
+| 90th percentile | 0.47% |
+| maximum | 1.13% |
+| runs whose estimate is negative | a third of them |
+
+A third of the estimates come out below zero, which is the honest measure of this method's
+precision: the foreign share sits at the limit of what the accounting resolves, about one per cent.
+So the defensible statement is a bound and not a value: **foreign consumption on the pinned
+processors is under roughly one per cent of their capacity, and this accounting cannot resolve it
+more finely.**
+
+It is not correlated with configuration, so it does not bias a comparison between configurations,
+which is what every ratio here is; it contributes instead to the run-to-run variation the confidence
+intervals already carry.
+
+**The per-process file records presence, not consumption.** Each run ships
+`cpuset-intruders.txt` and the `cpuset_intruders` fields of `meta.json`, listing the processes seen
+on the pinned CPUs. They come from `ps -eo psr,pcpu,comm`, where `pcpu` is a process's average CPU
+over its whole lifetime and `psr` is merely the processor it was last seen on. A row reading 1002%
+therefore means "a process whose lifetime average is ten cores was, at one sampling instant, last
+seen on one of our processors" -- it says nothing about what that process took during the run. Use
+the file to answer "was anything else on these cores", and the table above to answer "how much".
 
 ## Builds and benchmarks on one machine
 
