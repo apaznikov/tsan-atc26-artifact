@@ -129,7 +129,17 @@ and every campaign binary is verified by sha256 against `static-counts.csv` befo
 The Redis rebuild that restored the canonical directories reproduced the table exactly (14/14 identical
 in sites and calls) with 14/14 different sha256: eight bytes in `.rodata`, a build-time epoch second in the
 host stamp, `.text` byte-identical. A recorded sha256 therefore identifies a build, not the code; the
-campaign objects themselves are kept beside the rebuilt ones. Legs started 15 Sep 18:49:02, ETA about 46 h. For the campaign, either the machine is
+campaign objects themselves are kept beside the rebuilt ones. Legs started 15 Sep 18:49:02, ETA about 46 h.
+
+**Whole-program rows are certified by consumption, not by presence.** A `-wp` build whose summary
+id mismatched would fall back inaudibly to the per-unit path (a warning on the stream every compile
+writes to) and measure the non-wp configuration under a whole-program label; a summary file that is
+present, tagged and empty made LO a no-op in the paper-era builds. The check is therefore the site
+count of each `-wp` row against its non-wp counterpart, which must differ: AllOpt+peel memcached
+7 130 -> 6 699, Redis 43 291 -> 40 691, SQLite 61 931 -> 61 827 (threadtest3 links the driver with
+the amalgamation, so the differential is small but not zero and is never excused). The three
+`tsan-sound-wp` rows have no counterpart in the fourteen-configuration set; their plain `tsan-sound`
+rows are built after the legs release to close the check, and until then those three rows are held. For the campaign, either the machine is
 exclusive for its duration or builds are announced in advance so a leg can be paused; this is
 Alexey's decision and is recorded here as a condition either way.
 
