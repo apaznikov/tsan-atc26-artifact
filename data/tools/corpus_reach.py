@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """Reach of each analysis on the IR corpus: how many instrumentation sites it removes.
 
+This metric counts @__tsan_read/write/unaligned call sites, so it measures REMOVAL and
+nothing else. Two consequences worth stating before the numbers are read: loop peeling
+ADDS sites (it duplicates a first iteration to expose a loop-invariant address), so a
+negative "removed" is the transform working as designed and not an error; and an analysis
+that guards accesses instead of deleting them is invisible here by construction.
+
 Static sites, not executed accesses. Counts @__tsan_read/write/unaligned call sites per
 module under each configuration and reports the reduction against stock. A configuration
 that removes nothing anywhere is reported as such rather than averaged into silence.
@@ -65,6 +71,13 @@ def main():
     zero = [c for c, (b, n, t) in by_cfg.items() if b == n]
     if zero:
         print(f"\n  configurations removing NOTHING anywhere in this corpus: {zero}")
+        print("  A zero here has three possible causes and they look identical:")
+        print("    (a) the analysis found nothing to remove in THESE programs;")
+        print("    (b) the flag was rejected or is inert -- check it changes a test built for it;")
+        print("    (c) the analysis does not remove sites at all, so this metric cannot see it.")
+        print("  DynSTC (-tsan-use-active-thread-count) is case (c): it GUARDS accesses with")
+        print("  @__tsan_active_thread_count rather than deleting them, so its site count equals")
+        print("  the configuration underneath it by construction. That is not a null result.")
 
     if a.csv:
         with open(a.csv, "w") as fh:
