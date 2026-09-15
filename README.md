@@ -1,5 +1,7 @@
 # Artifact: Instrumentation Optimization for Practical Dynamic Race Detection
 
+*Русская версия: [README.ru.md](README.ru.md).*
+
 This artifact accompanies the USENIX ATC '26 paper *Instrumentation Optimization for Practical
 Dynamic Race Detection*. It contains the modified LLVM/ThreadSanitizer compiler the paper
 describes, the analyses' test suites and audit ledger, the benchmark harness, the data we
@@ -7,6 +9,10 @@ recorded, and one script per experiment.
 
 Start with `CLAIMS.md`. It lists every claim the paper makes, the script that produces it, and
 what counts as a match. Nothing outside that file is claimed here.
+
+> Status: this artifact is being prepared for submission on 22 September 2026. The performance rows
+> of `CLAIMS.md` are filled per application as the measurement campaign completes; an application
+> not listed there is not yet claimed. The deterministic part is complete.
 
 ## What is in here
 
