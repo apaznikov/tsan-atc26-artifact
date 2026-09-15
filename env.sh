@@ -12,6 +12,10 @@ export ART_DATA="${ART_DATA:-$ART_ROOT/data}"
 
 # Processor set for performance runs. Our machine used 4-27,60-83 (48 logical CPUs).
 # Leave empty to use every CPU the container was given.
+# Empty means "every CPU" and also means "not gate-checked": the disturbance gate measures busy time on
+# the CPUs OUTSIDE the set, and with no set there is nothing to measure. Unpinned runs record
+# outside_busy_share = null and print "not gate-checked"; do not compare them with the pinned numbers in
+# CLAIMS.md as if the conditions matched.
 export ART_CPUSET="${ART_CPUSET:-}"
 
 # Number of measured runs per configuration and whether a discarded warm-up run precedes them.

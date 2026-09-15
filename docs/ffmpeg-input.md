@@ -53,5 +53,9 @@ Why a real clip and not a synthetic pattern: the one substantial FFmpeg result i
 (DynSTC, about 1.12x) depends on the workload having genuinely single-threaded phases; a synthetic
 test source compresses trivially and does not exercise them.
 
-`40-perf.sh ffmpeg` runs the producing command if the clip is absent and the source file is present
-(set `ART_FFMPEG_SOURCE` to the unpacked `.mov`); with `--smoke` it uses a 10-second cut.
+The clip is not in git or in the image. The primary path is the copy in the artifact's Zenodo record,
+fetched by `40-perf.sh ffmpeg` with the sha256 above pinned; every run records the input's sha256 in
+its `meta.json`, so a reviewer can check they measured the same file. The fallback is to regenerate it
+from the Blender source with the command above (set `ART_FFMPEG_SOURCE` to the unpacked `.mov`): a
+re-encode's sha256 may differ from ours while the shape matches, and a run on a regenerated clip is
+labelled as such in `meta.json`. With `--smoke` a 10-second cut is used.
