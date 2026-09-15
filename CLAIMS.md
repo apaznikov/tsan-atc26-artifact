@@ -39,7 +39,8 @@ DynSTC.
 | Claim | Script | Match criterion |
 |---|---|---|
 | Static instrumentation sites per application and configuration | `scripts/20-static-counts.sh` | exact; the counts are a property of the compiler, not of the machine |
-| The shipped compiler emits the same instrumentation as the compiler the performance numbers were measured on | `scripts/12-compiler-equivalence.sh` | exact on all five applications, 112 modules |
+| The compiler built from the shipped patch series emits the same instrumentation as the frozen compiler the performance numbers were measured on | `scripts/12-compiler-equivalence.sh` | exact: 112 rows, 28 IR-corpus modules in four configurations, byte-identical `__tsan_*` histograms, with a control showing the reference table separates the configurations at all (24 of 28 modules) |
+| The three compile-time commits added to that compiler changed no instrumentation decision | the rows above, plus `data/equivalence/` | recorded, not re-run by the evaluator: the same 112 rows against the previous compiler, the 17 application configurations built on both (MySQL 640 355 sites and 1 263 905 calls, all 14 Redis rows), and Redis's whole-program analysis summaries byte-identical between the two |
 | Executed instrumentation per unit of work | `scripts/90-tables.sh --reach` | exact from the shipped data; within run-to-run noise when re-measured |
 
 ## 4. Compile-time overhead
