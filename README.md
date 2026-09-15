@@ -37,6 +37,11 @@ any x86-64 Linux host. The performance experiments need at least 32 cores to be 
 ./docker/run.sh scripts/10-minimal-example.sh
 ```
 
+Start the container through `docker/run.sh`, or pass `--security-opt seccomp=unconfined` to your
+own `docker run`: the ThreadSanitizer runtime re-executes programs with address-space randomization
+off, and Docker's default seccomp profile refuses that call, so without the flag every instrumented
+program dies with a segmentation fault (`docs/troubleshooting.md`).
+
 The minimal example compiles one small program per analysis, shows which instrumentation each
 analysis removes and why, then compiles and runs a program with a real race to show the race is
 still reported. It needs no special hardware and finishes in about ten minutes, most of which is

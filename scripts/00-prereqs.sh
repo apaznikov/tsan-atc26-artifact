@@ -23,6 +23,13 @@ if [ -x "$TSAN_LLVM_ROOT/bin/clang" ]; then
 else
   echo "  MISSING  TSan clang            expected at $TSAN_LLVM_ROOT/bin/clang (set TSAN_LLVM_ROOT or run inside the container)"; miss=$((miss+1))
 fi
+# ThreadSanitizer re-executes every program with ASLR off through personality(ADDR_NO_RANDOMIZE).
+# Docker's default seccomp profile refuses it and the program dies with SIGSEGV; docker/run.sh passes
+# --security-opt seccomp=unconfined. setarch makes the same call, so it is the probe.
+if command -v setarch >/dev/null 2>&1; then
+  if setarch "$(uname -m)" -R true 2>/dev/null; then echo "  ok       ASLR-off re-exec       personality(ADDR_NO_RANDOMIZE) allowed"
+  else echo "  MISSING  ASLR-off re-exec       refused: TSan programs will crash; start the container with --security-opt seccomp=unconfined (docker/run.sh does)"; miss=$((miss+1)); fi
+fi
 echo
 echo "Deterministic core (Tier 1):"
 for c in cmake ninja python3 git objdump; do need "$c" "$c"; done

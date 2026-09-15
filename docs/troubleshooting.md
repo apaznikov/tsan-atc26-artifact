@@ -12,6 +12,15 @@ configuration. The shipped example makes the worker sleep 100 ms before its writ
 reported in 20 of 20 runs under stock, under AllOpt and under upstream. If you edit the example and
 remove the sleep, expect intermittent reports; that is the runtime's detection, not an elision.
 
+## "Segmentation fault" for every instrumented program inside Docker
+
+The log ends with `ThreadSanitizer: CHECK failed: tsan_platform_linux.cpp ... personality(old_personality
+| ADDR_NO_RANDOMIZE)`. The runtime re-executes the program with address-space randomization off, and
+Docker's default seccomp profile refuses `personality(ADDR_NO_RANDOMIZE)`. Start the container with
+`--security-opt seccomp=unconfined`; `docker/run.sh` does, and `00-prereqs.sh` reports "ASLR-off
+re-exec refused" when it is missing. The compiler and the analyses are unaffected: the instrumentation
+counts are identical either way, only running the binaries needs the flag.
+
 ## "Instrumentation counts differ from CLAIMS.md by a few calls"
 
 The counts are of `__tsan_read*`/`__tsan_write*` calls in the whole binary and include libc glue
