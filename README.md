@@ -56,7 +56,7 @@ regenerated from whichever runs you point them at.
 | Script | What it checks | Time | Hardware |
 |---|---|---|---|
 | `10-minimal-example.sh` | the analyses do what Sections 4 to 6 say | 10 min | any |
-| `11-soundness-shapes.sh` | 22 fixed lost-race shapes, each against its negative test | 20 min | any |
+| `11-soundness-shapes.sh` | 23 fixed lost-race shapes, each against its negative test | 20 min | any |
 | `12-compiler-equivalence.sh` | the shipped compiler emits the instrumentation our measurements were taken on | 30 min | any |
 | `20-static-counts.sh` | static instrumentation per application and configuration | 2 h | 8 cores |
 | `21-compile-time.sh` | compile-time overhead | 1 h | 8 cores |
