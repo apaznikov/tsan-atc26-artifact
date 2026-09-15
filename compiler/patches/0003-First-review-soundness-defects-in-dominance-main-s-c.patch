@@ -1,0 +1,2382 @@
+From 178206e5cee627d53d81ddab9b0462b255b7c2f4 Mon Sep 17 00:00:00 2001
+From: Alexey Paznikov <apaznikov@gmail.com>
+Date: Mon, 14 Sep 2026 19:59:29 +0800
+Subject: First review: soundness defects in dominance, main's classification,
+ SWMR, lock ownership and the runtime
+
+---
+ .../lib/sanitizer_common/sanitizer_common.cpp |   7 +-
+ .../sanitizer_common_interceptors.inc         |   2 +-
+ ...izer_common_interceptors_memintrinsics.inc |   2 +-
+ compiler-rt/lib/tsan/rtl/tsan_rtl_thread.cpp  |  15 +-
+ .../test/tsan/preservation_dominance.cpp      |  45 +
+ .../test/tsan/preservation_stc_main.cpp       |  30 +
+ llvm/include/llvm/Analysis/EscapeAnalysis.h   |  11 +-
+ llvm/include/llvm/Analysis/LockOwnership.h    |  15 +
+ llvm/include/llvm/Analysis/SingleThreaded.h   |  80 +-
+ .../Instrumentation/ThreadSanitizer.h         |  14 +-
+ llvm/lib/Analysis/EscapeAnalysis.cpp          |  47 +-
+ llvm/lib/Analysis/LockOwnership.cpp           |  58 +-
+ llvm/lib/Analysis/SingleThreaded.cpp          | 203 ++++-
+ .../Instrumentation/ThreadSanitizer.cpp       | 836 ++++++++++--------
+ .../elim-by-dominance-locations.ll            | 122 +++
+ .../elim-by-dominance-paths.ll                | 224 +++++
+ .../ThreadSanitizerNew/single-threaded.ll     |  76 ++
+ 17 files changed, 1371 insertions(+), 416 deletions(-)
+ create mode 100644 compiler-rt/test/tsan/preservation_dominance.cpp
+ create mode 100644 compiler-rt/test/tsan/preservation_stc_main.cpp
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-locations.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-paths.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/single-threaded.ll
+
+diff --git a/compiler-rt/lib/sanitizer_common/sanitizer_common.cpp b/compiler-rt/lib/sanitizer_common/sanitizer_common.cpp
+index c10b2ba374bc..0a5824fd7fe4 100644
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_common.cpp
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_common.cpp
+@@ -20,7 +20,12 @@
+ #include "sanitizer_libc.h"
+ #include "sanitizer_placement_new.h"
+ 
+-extern "C" __attribute__((visibility("default")))
++// Instrumented code clears this around a call whose pointer arguments were
++// proven not to escape, so the interceptor can be skipped. It must be
++// per-thread: as a process-wide flag, one thread's window suppressed the
++// interceptor for every other thread running at the same time, losing races
++// on memory that had escaped as far as those threads were concerned.
++extern "C" __attribute__((visibility("default"))) THREADLOCAL
+ bool InterceptorEnabled = true;
+ 
+ namespace __sanitizer {
+diff --git a/compiler-rt/lib/sanitizer_common/sanitizer_common_interceptors.inc b/compiler-rt/lib/sanitizer_common/sanitizer_common_interceptors.inc
+index c95f1380f81a..45dcd78f2aab 100644
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_common_interceptors.inc
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_common_interceptors.inc
+@@ -44,7 +44,7 @@
+ #include "sanitizer_symbolizer.h"
+ #include "sanitizer_tls_get_addr.h"
+ 
+-extern "C" bool InterceptorEnabled;
++extern "C" THREADLOCAL bool InterceptorEnabled;
+ 
+ #if SANITIZER_INTERCEPTOR_HOOKS
+ #define CALL_WEAK_INTERCEPTOR_HOOK(f, ...) f(__VA_ARGS__);
+diff --git a/compiler-rt/lib/sanitizer_common/sanitizer_common_interceptors_memintrinsics.inc b/compiler-rt/lib/sanitizer_common/sanitizer_common_interceptors_memintrinsics.inc
+index c0312b83a8e5..b29beb29c88f 100644
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_common_interceptors_memintrinsics.inc
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_common_interceptors_memintrinsics.inc
+@@ -31,7 +31,7 @@
+ #include "interception/interception.h"
+ #include "sanitizer_platform_interceptors.h"
+ 
+-extern "C" __attribute__((visibility("default")))
++extern "C" __attribute__((visibility("default"))) THREADLOCAL
+ bool InterceptorEnabled;
+ 
+ // Platform-specific options.
+diff --git a/compiler-rt/lib/tsan/rtl/tsan_rtl_thread.cpp b/compiler-rt/lib/tsan/rtl/tsan_rtl_thread.cpp
+index 1a4f3560c4f8..24bab5a66534 100644
+--- a/compiler-rt/lib/tsan/rtl/tsan_rtl_thread.cpp
++++ b/compiler-rt/lib/tsan/rtl/tsan_rtl_thread.cpp
+@@ -252,8 +252,6 @@ void ThreadFinish(ThreadState *thr) {
+   SlotDetach(thr);
+   ctx->thread_registry.FinishThread(thr->tid);
+   thr->~ThreadState();
+-
+-  atomic_fetch_sub(&__tsan_active_thread_count, 1, memory_order_seq_cst);
+ }
+ 
+ void ThreadContext::OnFinished() {
+@@ -299,6 +297,7 @@ struct JoinArg {
+ void ThreadJoin(ThreadState *thr, uptr pc, Tid tid) {
+   CHECK_GT(tid, 0);
+   DPrintf("#%d: ThreadJoin tid=%d\n", thr->tid, tid);
++
+   JoinArg arg = {};
+   ctx->thread_registry.JoinThread(tid, &arg);
+   if (!thr->ignore_sync) {
+@@ -307,6 +306,18 @@ void ThreadJoin(ThreadState *thr, uptr pc, Tid tid) {
+       thr->clock.Acquire(arg.sync);
+   }
+   Free(arg.sync);
++
++  // The counter guards instrumentation that is skipped while the program is
++  // single-threaded, so it must not drop until the joined thread's accesses
++  // can no longer race with ours -- that is, after the acquire above has
++  // ordered them. A thread that has merely finished still has its accesses in
++  // shadow memory, unordered with respect to this one, so decrementing in
++  // ThreadFinish let the count fall back to 1 while a genuine race with the
++  // finished thread was still reportable.
++  //
++  // A detached thread is never joined and so never decrements. That only
++  // leaves the count too high, which costs elimination rather than reports.
++  atomic_fetch_sub(&__tsan_active_thread_count, 1, memory_order_seq_cst);
+ }
+ 
+ void ThreadContext::OnJoined(void *ptr) {
+diff --git a/compiler-rt/test/tsan/preservation_dominance.cpp b/compiler-rt/test/tsan/preservation_dominance.cpp
+new file mode 100644
+index 000000000000..10930b95b8b3
+--- /dev/null
++++ b/compiler-rt/test/tsan/preservation_dominance.cpp
+@@ -0,0 +1,45 @@
++// Races must survive dominance-based redundancy elimination.
++//
++// Both cases here are ones an earlier version of the analysis lost: it treated
++// two accesses as interchangeable whenever they shared an underlying object,
++// without checking that they were the same address and that the covering
++// access was at least as wide.
++//
++// The barrier is TSan-invisible, so it orders the two threads in real time
++// without establishing happens-before. It sits after the racing access in main
++// rather than between the two accesses there, because a call the analysis
++// cannot see into would block the very elimination this test is about.
++//
++// Cases that cannot be sequenced this way -- the loop back-edge, and
++// synchronization behind a call -- are covered at IR level in
++// llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-paths.ll.
++
++// RUN: %clangxx_tsan -O1 %s -o %t -mllvm -tsan-use-dominance-analysis && %deflake %run %t 2>&1 | FileCheck %s
++// RUN: %clangxx_tsan -O1 %s -o %t && %deflake %run %t 2>&1 | FileCheck %s
++#include "test.h"
++
++int Arr[8];
++long long Wide;
++
++// Races with main's write to Arr[3]. Arr[0] dominates that write and shares
++// its underlying object, but is a different location and cannot cover it.
++void *DistinctElement(void *x) {
++  barrier_wait(&barrier);
++  Arr[3] = 42;
++  return NULL;
++}
++
++int main() {
++  barrier_init(&barrier, 2);
++  pthread_t t;
++  pthread_create(&t, NULL, DistinctElement, NULL);
++
++  Arr[0] = 1; // dominator: same object as Arr[3], different location
++  Arr[3] = 2; // the racing access
++
++  barrier_wait(&barrier);
++  pthread_join(t, NULL);
++  return Arr[3] == 12345;
++}
++
++// CHECK: WARNING: ThreadSanitizer: data race
+diff --git a/compiler-rt/test/tsan/preservation_stc_main.cpp b/compiler-rt/test/tsan/preservation_stc_main.cpp
+new file mode 100644
+index 000000000000..2560e1adb8f4
+--- /dev/null
++++ b/compiler-rt/test/tsan/preservation_stc_main.cpp
+@@ -0,0 +1,30 @@
++// Races involving main must survive the single-threaded-context analysis.
++//
++// main starts single-threaded and stops being so at pthread_create. Treating
++// it as single-threaded wholesale left every access in it uninstrumented, and
++// this race -- between main and the thread it had just started -- went
++// unreported.
++
++// RUN: %clangxx_tsan -O1 %s -o %t -mllvm -tsan-use-single-threaded && %deflake %run %t 2>&1 | FileCheck %s
++// RUN: %clangxx_tsan -O1 %s -o %t && %deflake %run %t 2>&1 | FileCheck %s
++#include "test.h"
++
++int Global;
++
++void *Thread(void *x) {
++  barrier_wait(&barrier);
++  Global = 1;
++  return NULL;
++}
++
++int main() {
++  barrier_init(&barrier, 2);
++  pthread_t t;
++  pthread_create(&t, NULL, Thread, NULL);
++  Global = 2;
++  barrier_wait(&barrier);
++  pthread_join(t, NULL);
++  return Global == 42;
++}
++
++// CHECK: WARNING: ThreadSanitizer: data race
+diff --git a/llvm/include/llvm/Analysis/EscapeAnalysis.h b/llvm/include/llvm/Analysis/EscapeAnalysis.h
+index e79d251f2f8d..a28e3b58247e 100644
+--- a/llvm/include/llvm/Analysis/EscapeAnalysis.h
++++ b/llvm/include/llvm/Analysis/EscapeAnalysis.h
+@@ -113,11 +113,18 @@ public:
+   void print(raw_ostream &OS) const;
+ 
+   /// Recursively search in the instruction for the underlying objects which
+-  /// may escape
++  /// may escape.
++  ///
++  /// \p IsComplete, when given, reports whether the returned list actually
++  /// accounts for everything \p V may point to. It does not when an
++  /// unidentifiable object is reached, and an empty list then means "we do not
++  /// know", not "nothing escapes" -- a distinction every caller has to make,
++  /// because getting it wrong drops instrumentation.
+   static SmallVector<UnderlObjTy> getUnderlyingMayEscObjs(
+       const Value *V, const TargetLibraryInfo &TLI,
+       unsigned MaxLookup = MaxUnderlObjLookup,
+-      std::shared_ptr<IPABottomTopMap> IPAFuncEscInfo = nullptr);
++      std::shared_ptr<IPABottomTopMap> IPAFuncEscInfo = nullptr,
++      bool *IsComplete = nullptr);
+ 
+   /// Is Value V is escaping somewhere in the function
+   bool isEscapedForFunc(const ObjAndPath &OAP,
+diff --git a/llvm/include/llvm/Analysis/LockOwnership.h b/llvm/include/llvm/Analysis/LockOwnership.h
+index 75fb562abbfa..2961f21922b4 100644
+--- a/llvm/include/llvm/Analysis/LockOwnership.h
++++ b/llvm/include/llvm/Analysis/LockOwnership.h
+@@ -77,6 +77,21 @@ private:
+ 
+   bool isLockFunc(const Function *F) const { return LockFuncs.contains(F); }
+ 
++  /// True for an acquisition in shared mode. A reader lock serialises against
++  /// writers but not against other readers, so it does not make an access to
++  /// the object it guards safe: two threads can hold it at once and one of
++  /// them can still write. Counting it as protection lost exactly those races
++  /// -- see compiler-rt/test/tsan/write_in_reader_lock.cpp, whose whole
++  /// subject is a write performed under a reader lock.
++  static bool isSharedLockFunc(const Function *F);
++
++  /// True for a conditional acquisition. A try-lock returns whether it
++  /// succeeded, so on the failure path the lock is *not* held -- which is
++  /// exactly the path compiler-rt/test/tsan/custom_mutex1.cpp exercises.
++  /// Recording it as an acquisition made every access after a failed try-lock
++  /// look protected.
++  static bool isTryLockFunc(const Function *F);
++
+   bool isUnLockFunc(const Function *F) const { return UnlockFuncs.contains(F); }
+ 
+   enum class LockCallType { NONE, LOCK, UNLOCK };
+diff --git a/llvm/include/llvm/Analysis/SingleThreaded.h b/llvm/include/llvm/Analysis/SingleThreaded.h
+index 83cd816eb664..d19d802ed2d8 100644
+--- a/llvm/include/llvm/Analysis/SingleThreaded.h
++++ b/llvm/include/llvm/Analysis/SingleThreaded.h
+@@ -16,16 +16,60 @@
+ 
+ #include "llvm/Analysis/CallGraph.h"
+ #include "llvm/IR/PassManager.h"
++#include "llvm/Support/CommandLine.h"
+ 
+ namespace llvm {
+ 
++/// Whether an analysis may seed itself from a summary written while compiling
++/// an earlier translation unit.
++///
++/// Off by default, and deliberately. Reuse is only sound in a build that
++/// analyses every module before instrumenting any of them: a global that is
++/// consistently lock-protected in the module analysed first may be touched
++/// without that lock in the next one, and a summary consulted midway through
++/// an ordinary build reports the first answer for the second module. Reading
++/// the file also made results depend on the compiler's working directory,
++/// which is how one project's summary came to be applied to another's build.
++extern cl::opt<bool> TsanUseAnalysisSummaries;
++
++/// Directory summaries are written to and read from, relative to the
++/// compiler's working directory.
++const std::string SummaryDirName = "tsan-logs";
++
+ const std::string SingleThreadedSummaryFileName = "st_summary.txt";
+ const std::string SummaryHeaderST = "--- Single-Threaded Functions ---";
+ const std::string SummaryHeaderSWMR =
+     "--- Read-Only Global Variables (in Multi-Threaded Context) ---";
+ 
+ // Add names of known thread creation functions here
+-const SmallDenseSet<StringRef, 4> KnownThreadCreators = {"pthread_create"};
++const SmallDenseSet<StringRef, 8> KnownThreadCreators = {
++    "pthread_create", "__pthread_create_2_1", "thrd_create", "__kmpc_fork_call",
++    "__kmpc_fork_teams"};
++
++/// Mangled-name prefixes of functions that start a thread. C++, C11 and OpenMP
++/// thread creation only reaches pthread_create inside the runtime library, so
++/// what is visible in this translation unit is the wrapper, not the creator.
++/// Missing these made every function in a std::thread program look
++/// single-threaded.
++constexpr StringRef ThreadCreatorPrefixes[] = {
++    "_ZNSt6thread15_M_start_thread", // libstdc++ std::thread
++    "_ZNSt3__16thread6__start",      // libc++ std::thread
++};
++
++/// Whether \p F starts a thread, by exact name or mangled prefix.
++bool isKnownThreadCreator(const Function &F);
++
++/// Collect the instructions that access \p V, looking through constant
++/// expressions.
++///
++/// A getelementptr on a field or element of a global is a ConstantExpr user,
++/// not an Instruction. Enumerating only Instruction users therefore misses
++/// every access to an aggregate global -- while the instrumentation pass still
++/// resolves those accesses back to the global and acts on whatever was
++/// concluded about it.
++void collectAccessingInstrs(const Value *V,
++                            SmallVectorImpl<const Instruction *> &Out,
++                            SmallPtrSetImpl<const Value *> &Visited);
+ 
+ /// Interface to access safety global (interprocedural) analysis results.
+ class SingleThreadedInfo {
+@@ -54,9 +98,18 @@ public:
+   }
+ 
+   /// Returns true if the given function is executed in a single-threaded
+-  /// context and doesn't create threads
++  /// context and doesn't create threads.
++  ///
++  /// Always false for main: main necessarily starts out single-threaded and
++  /// then, in most programs, stops being so, and answering at function
++  /// granularity would have to pick one of those. Its accesses are classified
++  /// individually by the overload below.
+   bool isSingleThreaded(const Function *F) const;
+ 
++  /// Returns true if the given instruction is executed before the program has
++  /// created any thread, and so cannot participate in a race.
++  bool isSingleThreaded(const Instruction *I) const;
++
+   /// Returns true if the given function is executed in a multithreaded context
+   /// or creates threads
+   bool isMultithreaded(const Function *F) const { return !isSingleThreaded(F); }
+@@ -88,6 +141,29 @@ private:
+ 
+   SmallPtrSet<const GlobalVariable *, 4> SWMRGlobals;
+ 
++  // Blocks of main that are already multi-threaded on entry. Blocks outside
++  // this set may still turn multi-threaded part-way through, at a thread
++  // creating call; isSingleThreaded(const Instruction *) accounts for that.
++  SmallPtrSet<const BasicBlock *, 8> MTBlocksInMain;
++
++  /// True if \p BB contains a call that may start a thread.
++  bool blockCreatesThreads(const BasicBlock &BB) const;
++
++  /// True if \p I may start a thread.
++  bool mayCreateThread(const Instruction &I) const;
++
++  /// Propagate multi-threadedness forward through main's CFG, so that the
++  /// prefix of main that runs before any thread exists can still be left
++  /// uninstrumented while the rest is not.
++  void computeMainMTBlocks();
++
++  /// Mark everything main calls once it is multi-threaded, and everything
++  /// those functions call, as multi-threaded too. Without this, a helper
++  /// invoked directly from main after a thread has started -- rather than as
++  /// the thread body, so its address is never taken -- was classified
++  /// single-threaded and left uninstrumented.
++  void propagateMTFromMain();
++
+   /// Consider only defined functions
+   bool needToSkipFunc(const Function *F) {
+     return !F || F->isDeclaration() || F == MainFunc;
+diff --git a/llvm/include/llvm/Transforms/Instrumentation/ThreadSanitizer.h b/llvm/include/llvm/Transforms/Instrumentation/ThreadSanitizer.h
+index c40456ce4ed8..944f67d8a0d1 100644
+--- a/llvm/include/llvm/Transforms/Instrumentation/ThreadSanitizer.h
++++ b/llvm/include/llvm/Transforms/Instrumentation/ThreadSanitizer.h
+@@ -57,11 +57,23 @@ public:
+                         AnalysisManager<Function> &AM_);
+   bool invalidate(Module &, const PreservedAnalyses &,
+                   ModuleAnalysisManager::Invalidator &) { return false; }
++  /// True only if \p F is *known* not to synchronize. A function we have no
++  /// body for is not known to be anything, so it answers false.
+   bool isSyncFree(const Function *F) const {
+     const auto It = IsFuncDangerousGlobal.find(F);
+     return It != IsFuncDangerousGlobal.end() && !It->second;
+   }
+-  bool isContainsLoops(const Function *F) const {
++
++  /// True only if \p F is *known* to terminate, in the sense of containing no
++  /// loops and calling nothing that does. Post-dominance elimination relies on
++  /// the covering access actually being reached, so an unknown answer must
++  /// read as "may not terminate".
++  ///
++  /// Note the name: the map records whether a function *contains* loops, and
++  /// this asks the opposite question. It was previously called
++  /// isContainsLoops(), which read as the negation of what it returns and was
++  /// used accordingly at its only call site.
++  bool isLoopFree(const Function *F) const {
+     const auto It = IsFuncContainsLoops.find(F);
+     return It != IsFuncContainsLoops.end() && !It->second;
+   }
+diff --git a/llvm/lib/Analysis/EscapeAnalysis.cpp b/llvm/lib/Analysis/EscapeAnalysis.cpp
+index 07e62669a080..1cdb951cd815 100644
+--- a/llvm/lib/Analysis/EscapeAnalysis.cpp
++++ b/llvm/lib/Analysis/EscapeAnalysis.cpp
+@@ -11,6 +11,7 @@
+ //===----------------------------------------------------------------------===//
+ 
+ #include "llvm/Analysis/EscapeAnalysis.h"
++#include "llvm/Analysis/SingleThreaded.h"
+ 
+ #include "llvm/ADT/PostOrderIterator.h"
+ #include "llvm/ADT/SCCIterator.h"
+@@ -1481,10 +1482,16 @@ void EscapeAnalysisGlobalInfo::traverseCGTopDown(
+ }
+ 
+ void EscapeAnalysisGlobalInfo::readNonEscapingFuncs() {
+-  std::ifstream WhiteListFile(FuncWhiteListFileName);
++  // See TsanUseAnalysisSummaries: reuse across modules is opt-in, and the file
++  // is read from the same directory it is written to. Previously the write
++  // went to tsan-logs/ and the read looked in the working directory, so this
++  // path only ever fired on a file someone had put there by hand.
++  if (!TsanUseAnalysisSummaries)
++    return;
++
++  std::ifstream WhiteListFile(SummaryDirName + "/" + FuncWhiteListFileName);
+   if (!WhiteListFile.is_open()) {
+-    dbgs() << "Warning: cannot opening file with non-escaping arguments: "
+-           << FuncWhiteListFileName << "\n";
++    LLVM_DEBUG(dbgs() << "No non-escaping-argument summary found\n");
+     return;
+   }
+ 
+@@ -1605,8 +1612,24 @@ EscapeAnalysisGlobalInfo::EscapeAnalysisGlobalInfo(CallGraph &CG, Module &M_,
+ bool EscapeAnalysisGlobalInfo::isEscapedUndrlObjOrPointee(
+     const Value *Addr, const TargetLibraryInfo &TLI, const BasicBlock *BB,
+     EscapeAnalysisInfo::EscReasonTy &EscReason) {
+-  for (const UnderlObjTy &UnderlObj :
+-       EscapeAnalysisInfo::getUnderlyingMayEscObjs(Addr, TLI)) {
++  bool IsComplete = true;
++  const SmallVector<UnderlObjTy> UnderlObjs =
++      EscapeAnalysisInfo::getUnderlyingMayEscObjs(Addr, TLI,
++                                                  EscapeAnalysisInfo::MaxUnderlObjLookup,
++                                                  nullptr,
++                                                  &IsComplete);
++  // The object walk gave up: we do not know what this address refers to, so we
++  // cannot claim it does not escape. Returning false here -- which an empty
++  // list used to do silently -- dropped instrumentation for every access whose
++  // base pointer the walk could not identify.
++  if (!IsComplete) {
++    LLVM_DEBUG(dbgs() << "isEscapedUndrlObjOrPointee: incomplete object list, "
++                         "assuming escaped\n");
++    EscReason = EscapeAnalysisInfo::OTHER;
++    return true;
++  }
++
++  for (const UnderlObjTy &UnderlObj : UnderlObjs) {
+     LLVM_DEBUG(dbgs() << "isEscapedUndrlObjOrPointee UnderlObj: "
+                       << *UnderlObj.Obj << "\n");
+     if (isEscapedForBBTSan(BB->getParent(), BB, UnderlObj, EscReason))
+@@ -1619,8 +1642,10 @@ bool EscapeAnalysisGlobalInfo::isEscapedForBBTSan(
+     const Function *F, const BasicBlock *BB, const UnderlObjTy &UnderlObj,
+     EscapeAnalysisInfo::EscReasonTy &EscReason) {
+   const auto FEIIt = FuncEscapeInfo.find(F);
++  // No summary for this function means no evidence that anything stays local,
++  // which is the opposite of what returning false would say.
+   if (FEIIt == FuncEscapeInfo.end())
+-    return false;
++    return true;
+   if (EscapeAnalysisInfo::isNonConstGV(UnderlObj.Obj))
+     return true;
+ 
+@@ -1670,7 +1695,7 @@ void EscapeAnalysisGlobalInfo::writeIPASummary() {
+   //     LogDir + "/func_nonescape_IPA_" +
+   //     getFileNameFromPath(getFileNameFromPath(M.getName().str())) + ".txt";
+   createLogDir();
+-  const auto SummaryFileName = LogDir + "/" + FuncWhiteListFileName;
++  const auto SummaryFileName = SummaryDirName + "/" + FuncWhiteListFileName;
+   std::ofstream SummaryFile(SummaryFileName, std::ios::out);
+   if (!SummaryFile.is_open()) {
+     errs() << "Error opening summary file: " << SummaryFileName << "\n";
+@@ -1972,10 +1997,12 @@ static bool getUnderlObjsForCodeGenWithoutPHIInvCheck(
+ /// may escape
+ SmallVector<UnderlObjTy> EscapeAnalysisInfo::getUnderlyingMayEscObjs(
+     const Value *V, const TargetLibraryInfo &TLI, const unsigned MaxLookup,
+-    std::shared_ptr<IPABottomTopMap> IPAFuncEscInfo) {
++    std::shared_ptr<IPABottomTopMap> IPAFuncEscInfo, bool *IsComplete) {
+   SmallVector<UnderlObjTy> UnderlObjs;
+-  getUnderlObjsForCodeGenWithoutPHIInvCheck(V, TLI, UnderlObjs, MaxLookup,
+-                                            IPAFuncEscInfo);
++  const bool Complete = getUnderlObjsForCodeGenWithoutPHIInvCheck(
++      V, TLI, UnderlObjs, MaxLookup, IPAFuncEscInfo);
++  if (IsComplete)
++    *IsComplete = Complete;
+   LLVM_DEBUG(dbgs() << "\tgetUnderlyingMayEscObjects for " << *V << "\n");
+   LLVM_DEBUG(if (!UnderlObjs.empty()) {
+     dbgs() << "\tgetUnderlyingMayEscObjects:";
+diff --git a/llvm/lib/Analysis/LockOwnership.cpp b/llvm/lib/Analysis/LockOwnership.cpp
+index 711b3b11bdf4..d4d639f01b77 100644
+--- a/llvm/lib/Analysis/LockOwnership.cpp
++++ b/llvm/lib/Analysis/LockOwnership.cpp
+@@ -114,7 +114,11 @@ LockOwnershipInfo::getLockCallInfo(const Instruction *I) const {
+         (CalledFunc->arg_size() == 0))
+       return {LockCallType::NONE, nullptr};
+ 
+-    if (isLockFunc(CalledFunc))
++    // A shared acquisition provides no exclusion, so it is not recorded as
++    // holding anything. A global reached only under reader locks therefore
++    // ends up with an empty lockset and stays instrumented.
++    if (isLockFunc(CalledFunc) && !isSharedLockFunc(CalledFunc) &&
++        !isTryLockFunc(CalledFunc))
+       return {LockCallType::LOCK, getUnderlyingObject(CB->getArgOperand(0))};
+     if (isUnLockFunc(CalledFunc))
+       return {LockCallType::UNLOCK, getUnderlyingObject(CB->getArgOperand(0))};
+@@ -333,7 +337,7 @@ void LockOwnershipInfo::readSummary() {
+   // Clear existing analysis results
+   ProtectedGVs.clear();
+ 
+-  std::ifstream Summary(LockOwnershipSummaryFileName);
++  std::ifstream Summary(SummaryDirName + "/" + LockOwnershipSummaryFileName);
+   if (!Summary.is_open()) {
+     errs() << "Error: Could not open file " << LockOwnershipSummaryFileName
+            << " for reading\n";
+@@ -353,7 +357,7 @@ void LockOwnershipInfo::readSummary() {
+ }
+ 
+ void LockOwnershipInfo::writeSummary() const {
+-  std::ofstream Summary(LockOwnershipSummaryFileName);
++  std::ofstream Summary(SummaryDirName + "/" + LockOwnershipSummaryFileName);
+   if (!Summary.is_open()) {
+     errs() << "Error: Could not open file " << LockOwnershipSummaryFileName
+            << " for writing\n";
+@@ -384,6 +388,27 @@ LockOwnershipInfo::LockOwnershipInfo(CallGraph &CG_, Module &MM_,
+   writeSummary();
+ }
+ 
++bool LockOwnershipInfo::isTryLockFunc(const Function *F) {
++  if (!F)
++    return false;
++  const StringRef Name = F->getName();
++  return Name.contains("trylock") || Name.contains("try_lock") ||
++         Name.contains("tryrdlock") || Name.contains("trywrlock") ||
++         Name.contains("TryLock");
++}
++
++bool LockOwnershipInfo::isSharedLockFunc(const Function *F) {
++  if (!F)
++    return false;
++  const StringRef Name = F->getName();
++  static constexpr StringRef SharedPatterns[] = {
++      "rdlock", "lock_shared", "shared_lock", "read_lock", "rlock"};
++  for (const StringRef Pattern : SharedPatterns)
++    if (Name.contains(Pattern))
++      return true;
++  return false;
++}
++
+ bool LockOwnershipInfo::findLockUnlockFunctions() {
+   // Common lock function names and patterns
+   const SmallVector<StringRef> LockNames = {"pthread_mutex_lock",
+@@ -463,11 +488,11 @@ void LockOwnershipInfo::findProtectedGlobalVariables(SingleThreadedInfo &STI) {
+     bool IsFirstAccess = true;
+     bool AllAccessesProtected = true;
+ 
+-    for (const User *U : GV.users()) {
+-      const Instruction *I = dyn_cast<Instruction>(U);
+-      if (!I)
+-        continue;
++    SmallVector<const Instruction *, 8> Accesses;
++    SmallPtrSet<const Value *, 8> VisitedUsers;
++    collectAccessingInstrs(&GV, Accesses, VisitedUsers);
+ 
++    for (const Instruction *I : Accesses) {
+       // Don't consider accesses in single-threaded functions
+       if (STI.isSingleThreaded(I->getFunction())) {
+         LLVM_DEBUG(dbgs() << "  Function: " << I->getFunction()->getName()
+@@ -508,10 +533,12 @@ void LockOwnershipInfo::findProtectedGlobalVariables(SingleThreadedInfo &STI) {
+       }
+     }
+ 
+-    if (AllAccessesProtected && (IsFirstAccess || !CommonLocksForGV.empty())) {
+-      // All accesses are protected, and there is at least one common lock.
+-      // GV.user_empty() was already checked at the beginning.
+-      // isFirstAccess must be false if there were users.
++    // Requiring IsFirstAccess to be false is the point: without it, a global
++    // whose accesses were all skipped above -- every one in a single-threaded
++    // function, or previously every one behind a ConstantExpr -- was declared
++    // protected on the strength of having been looked at, not of any lock
++    // having been found.
++    if (AllAccessesProtected && !IsFirstAccess && !CommonLocksForGV.empty()) {
+       LLVM_DEBUG(
+           dbgs()
+           << "\t\tAll accesses are protected, adding GV to protected list\n");
+@@ -626,10 +653,11 @@ void LockOwnershipInfo::print(raw_ostream &OS) const {
+ AnalysisKey LockOwnership::Key;
+ 
+ LockOwnership::Result LockOwnership::run(Module &M, ModuleAnalysisManager &AM) {
+-  if (std::ifstream SummaryFile(LockOwnershipSummaryFileName);
+-      SummaryFile.good()) {
+-    dbgs() << "Found existing summary file for LockOwnership Analysis. Loading "
+-              "results.\n";
++  if (std::ifstream SummaryFile(SummaryDirName + "/" +
++                                LockOwnershipSummaryFileName);
++      TsanUseAnalysisSummaries && SummaryFile.good()) {
++    LLVM_DEBUG(dbgs() << "Found existing summary file for LockOwnership "
++                         "Analysis. Loading results.\n");
+     SummaryFile.close();
+     return LockOwnershipInfo(M);
+   }
+diff --git a/llvm/lib/Analysis/SingleThreaded.cpp b/llvm/lib/Analysis/SingleThreaded.cpp
+index 790f59a78145..eed8876090de 100644
+--- a/llvm/lib/Analysis/SingleThreaded.cpp
++++ b/llvm/lib/Analysis/SingleThreaded.cpp
+@@ -12,6 +12,8 @@
+ 
+ #include "llvm/Analysis/SingleThreaded.h"
+ 
++#include "llvm/Analysis/ValueTracking.h"
++#include "llvm/IR/CFG.h"
+ #include "llvm/IR/Instructions.h"
+ #include "llvm/IR/PassManager.h"
+ 
+@@ -22,6 +24,12 @@ using namespace llvm;
+ 
+ #define DEBUG_TYPE "single-threaded"
+ 
++cl::opt<bool> llvm::TsanUseAnalysisSummaries(
++    "tsan-use-analysis-summaries", cl::init(false), cl::Hidden,
++    cl::desc("Seed the TSan analyses from summaries written while compiling "
++             "earlier modules. Only sound in a build that analyses every "
++             "module before instrumenting any of them."));
++
+ const char *SingleThreadedInfo::toString(FuncContext FC) {
+   switch (FC) {
+   case FuncContext::ThreadCreator:
+@@ -34,17 +42,132 @@ const char *SingleThreadedInfo::toString(FuncContext FC) {
+   return "Unknown";
+ }
+ 
++void llvm::collectAccessingInstrs(const Value *V,
++                                  SmallVectorImpl<const Instruction *> &Out,
++                                  SmallPtrSetImpl<const Value *> &Visited) {
++  if (!Visited.insert(V).second)
++    return;
++  for (const User *U : V->users()) {
++    if (const auto *I = dyn_cast<Instruction>(U))
++      Out.push_back(I);
++    else if (isa<ConstantExpr>(U) || isa<GlobalAlias>(U))
++      collectAccessingInstrs(U, Out, Visited);
++  }
++}
++
++bool llvm::isKnownThreadCreator(const Function &F) {
++  const StringRef Name = F.getName();
++  if (KnownThreadCreators.contains(Name))
++    return true;
++  return llvm::any_of(ThreadCreatorPrefixes, [&Name](StringRef Prefix) {
++    return Name.starts_with(Prefix);
++  });
++}
++
+ bool SingleThreadedInfo::isSingleThreaded(const Function *F) const {
++  // main is answered per instruction, not per function -- see the header.
++  if (F && F == MainFunc)
++    return false;
+   const auto It = FuncType.find(F);
+   return It != FuncType.end() && It->second == FuncContext::SingleThreaded;
+ }
+ 
++bool SingleThreadedInfo::mayCreateThread(const Instruction &I) const {
++  const auto *CB = dyn_cast<CallBase>(&I);
++  if (!CB)
++    return false;
++
++  const Function *Callee = CB->getCalledFunction();
++  // An indirect call could reach anything, thread creation included.
++  if (!Callee)
++    return true;
++  if (isKnownThreadCreator(*Callee))
++    return true;
++
++  // Only ThreadCreator means "may start a thread": runSTMTAnalysis propagates
++  // that property up the call graph from the known creators. MultiThreaded is
++  // a different statement -- that the function *runs* while other threads
++  // exist -- and treating it as creation would both over-approximate and, since
++  // propagateMTFromMain adds MultiThreaded marks, make this answer depend on
++  // how far that propagation had got.
++  const auto It = FuncType.find(Callee);
++  return It != FuncType.end() && It->second == FuncContext::ThreadCreator;
++}
++
++bool SingleThreadedInfo::blockCreatesThreads(const BasicBlock &BB) const {
++  return llvm::any_of(
++      BB, [this](const Instruction &I) { return mayCreateThread(I); });
++}
++
++void SingleThreadedInfo::computeMainMTBlocks() {
++  MTBlocksInMain.clear();
++  if (!MainFunc || MainFunc->isDeclaration())
++    return;
++
++  // Everything reachable from a block that starts a thread is multi-threaded,
++  // including that block itself when it sits on a cycle.
++  SmallVector<const BasicBlock *, 16> Worklist;
++  for (const BasicBlock &BB : *MainFunc)
++    if (blockCreatesThreads(BB))
++      for (const BasicBlock *Succ : successors(&BB))
++        if (MTBlocksInMain.insert(Succ).second)
++          Worklist.push_back(Succ);
++
++  while (!Worklist.empty())
++    for (const BasicBlock *Succ : successors(Worklist.pop_back_val()))
++      if (MTBlocksInMain.insert(Succ).second)
++        Worklist.push_back(Succ);
++}
++
++void SingleThreadedInfo::propagateMTFromMain() {
++  if (!MainFunc || !CG || MainFunc->isDeclaration())
++    return;
++
++  for (const BasicBlock &BB : *MainFunc) {
++    for (const Instruction &I : BB) {
++      // Only calls made once main is multi-threaded matter.
++      if (isSingleThreaded(&I))
++        continue;
++      const auto *CB = dyn_cast<CallBase>(&I);
++      if (!CB)
++        continue;
++      const Function *Callee = CB->getCalledFunction();
++      if (needToSkipFunc(Callee))
++        continue;
++      if (const CallGraphNode *CGN = (*CG)[Callee])
++        markFuncAndAllCalleesAsMultithreaded(Callee, *CGN, FuncType);
++    }
++  }
++}
++
++bool SingleThreadedInfo::isSingleThreaded(const Instruction *I) const {
++  if (!I)
++    return false;
++  const Function *F = I->getFunction();
++  if (F != MainFunc)
++    return isSingleThreaded(F);
++
++  const BasicBlock *BB = I->getParent();
++  if (MTBlocksInMain.contains(BB))
++    return false;
++
++  // The block is single-threaded on entry, but a thread creating call earlier
++  // in it ends that.
++  for (const Instruction &Prev : *BB) {
++    if (&Prev == I)
++      break;
++    if (mayCreateThread(Prev))
++      return false;
++  }
++  return true;
++}
++
+ void SingleThreadedInfo::identifyBaseThreadCreators() {
+-  for (const auto CreatorName : KnownThreadCreators) {
+-    Function *CreatorFunc = M.getFunction(CreatorName);
+-    if (CreatorFunc) {
+-      FuncType[CreatorFunc] = FuncContext::ThreadCreator;
+-      errs() << "Found potential thread creator: " << CreatorName << "\n";
++  for (Function &F : M) {
++    if (isKnownThreadCreator(F)) {
++      FuncType[&F] = FuncContext::ThreadCreator;
++      LLVM_DEBUG(dbgs() << "Found potential thread creator: " << F.getName()
++                        << "\n");
+     }
+   }
+ }
+@@ -77,8 +200,8 @@ bool SingleThreadedInfo::runSTMTAnalysis() {
+   // Locate main() function as entry point for analysis
+   MainFunc = M.getFunction("main");
+   if (!MainFunc) {
+-    errs() << "WARNING: 'main' function not found in module " << M.getName()
+-           << ". Cannot perform single-threaded analysis.\n";
++    LLVM_DEBUG(dbgs() << "'main' not found in module " << M.getName()
++                      << "; single-threaded analysis cannot run.\n");
+     return true;
+   }
+ 
+@@ -170,6 +293,11 @@ SingleThreadedInfo::SingleThreadedInfo(CallGraph &CG_, Module &MM_)
+   // Run STMT analysis to identify single-threaded functions
+   runSTMTAnalysis();
+ 
++  // Refine main down to basic-block granularity, then push that result out
++  // into the functions main calls once it is multi-threaded.
++  computeMainMTBlocks();
++  propagateMTFromMain();
++
+   // Run SWMR analysis
+   findSWMRGlobals();
+ 
+@@ -192,21 +320,42 @@ void SingleThreadedInfo::findSWMRGlobals() {
+     LLVM_DEBUG(dbgs() << "Checking global: " << GV.getName() << "\n");
+     bool IsWrittenInMT = false;
+ 
+-    // Check all uses of this global
+-    for (const User *U : GV.users()) {
+-      if (const auto *I = dyn_cast<Instruction>(U)) {
+-        // Skip if the function is single-threaded
+-        if (isSingleThreaded(I->getFunction()))
++    SmallVector<const Instruction *, 8> Accesses;
++    SmallPtrSet<const Value *, 8> VisitedUsers;
++    collectAccessingInstrs(&GV, Accesses, VisitedUsers);
++
++    for (const Instruction *I : Accesses) {
++      // A plain load never writes.
++      //
++      // Comparing a store's pointer operand against the global itself, as this
++      // used to, recognised only `g = x` for a scalar g. It missed `g[2] = x`,
++      // whose pointer operand is a constant getelementptr, and anything
++      // written through a derived pointer -- so an array written by every
++      // thread was still reported as read-only.
++      if (const auto *LI = dyn_cast<LoadInst>(I))
++        if (getUnderlyingObject(LI->getPointerOperand()) == &GV)
+           continue;
+ 
+-        // For multithreaded functions, check if this is a write operation
+-        if (const StoreInst *SI = dyn_cast<StoreInst>(I)) {
+-          if (SI->getPointerOperand() == &GV) {
+-            IsWrittenInMT = true;
+-            break;
+-          }
++      if (const auto *SI = dyn_cast<StoreInst>(I)) {
++        if (getUnderlyingObject(SI->getPointerOperand()) == &GV) {
++          // A write that runs before any thread exists cannot make the global
++          // unsafe to read concurrently.
++          if (isSingleThreaded(I))
++            continue;
++          IsWrittenInMT = true;
++          LLVM_DEBUG(dbgs() << "  written in MT context: " << *I << "\n");
++          break;
+         }
+       }
++
++      // Anything else hands the address somewhere we cannot follow: a call, or
++      // a store of the pointer itself. The thread-context test does not apply
++      // here -- passing &g to pthread_create happens while the program is
++      // still single-threaded, and that is precisely the case where the write
++      // arrives later, on another thread.
++      IsWrittenInMT = true;
++      LLVM_DEBUG(dbgs() << "  address escapes at: " << *I << "\n");
++      break;
+     }
+ 
+     if (!IsWrittenInMT)
+@@ -269,7 +418,8 @@ static void createLogDir() {
+ void SingleThreadedInfo::writeSummary() const {
+   createLogDir();
+ 
+-  const auto STSummaryPath = LogDir + "/" + SingleThreadedSummaryFileName;
++  const auto STSummaryPath =
++      SummaryDirName + "/" + SingleThreadedSummaryFileName;
+   std::ofstream Summary(STSummaryPath);
+   if (!Summary.is_open()) {
+     errs() << "Error: Could not open " << STSummaryPath << " for writing\n";
+@@ -280,7 +430,7 @@ void SingleThreadedInfo::writeSummary() const {
+ 
+   Summary << SummaryHeaderST << "\n";
+   for (const auto &[Func, Context] : FuncType)
+-    if (!Func->isDeclaration() && Func->hasName() &&
++    if (!Func->isDeclaration() && Func->hasName() && Func != MainFunc &&
+         Context == FuncContext::SingleThreaded)
+       Summary << Func->getName().str() << "\n";
+   Summary << "\n";
+@@ -297,7 +447,7 @@ void SingleThreadedInfo::readSummary() {
+   FuncType.clear();
+   SWMRGlobals.clear();
+ 
+-  std::ifstream Summary(SingleThreadedSummaryFileName);
++  std::ifstream Summary(SummaryDirName + "/" + SingleThreadedSummaryFileName);
+   if (!Summary.is_open()) {
+     errs() << "Error: Could not open file " << SingleThreadedSummaryFileName
+            << " for reading\n";
+@@ -328,6 +478,8 @@ void SingleThreadedInfo::readSummary() {
+     }
+ 
+     if (ReadingST) {
++      if (Line == "main")
++        continue; // classified per instruction, never wholesale
+       if (const Function *F = M.getFunction(Line))
+         FuncType[F] = FuncContext::SingleThreaded;
+     } else if (ReadingSWMR) {
+@@ -343,10 +495,11 @@ AnalysisKey SingleThreaded::Key;
+ 
+ SingleThreaded::Result SingleThreaded::run(Module &M,
+                                            ModuleAnalysisManager &AM) {
+-  if (std::ifstream SummaryFile(SingleThreadedSummaryFileName);
+-      SummaryFile.good()) {
+-    dbgs() << "Found existing summary file for SingleThreaded Analysis. "
+-              "Loading results.\n";
++  if (std::ifstream SummaryFile(SummaryDirName + "/" +
++                                SingleThreadedSummaryFileName);
++      TsanUseAnalysisSummaries && SummaryFile.good()) {
++    LLVM_DEBUG(dbgs() << "Found existing summary file for SingleThreaded "
++                         "Analysis. Loading results.\n");
+     SummaryFile.close();
+     return SingleThreadedInfo(M);
+   }
+diff --git a/llvm/lib/Transforms/Instrumentation/ThreadSanitizer.cpp b/llvm/lib/Transforms/Instrumentation/ThreadSanitizer.cpp
+index 4c3255dad486..fa4c73ac79db 100644
+--- a/llvm/lib/Transforms/Instrumentation/ThreadSanitizer.cpp
++++ b/llvm/lib/Transforms/Instrumentation/ThreadSanitizer.cpp
+@@ -29,7 +29,9 @@
+ #include "llvm/Analysis/EscapeAnalysis.h"
+ #include "llvm/Analysis/LockOwnership.h"
+ #include "llvm/Analysis/LoopInfo.h"
++#include "llvm/Analysis/MemoryLocation.h"
+ #include "llvm/Analysis/PostDominators.h"
++#include "llvm/IR/CFG.h"
+ #include "llvm/Analysis/ScalarEvolution.h"
+ #include "llvm/Analysis/SingleThreaded.h"
+ #include "llvm/Analysis/TargetLibraryInfo.h"
+@@ -325,7 +327,7 @@ public:
+       std::optional<SingleThreadedInfo *> STI = std::nullopt,
+       DominatorTree *DT = nullptr, PostDominatorTree *PDT = nullptr,
+       AAResults *AA = nullptr, LoopInfo *LI = nullptr,
+-      AssumptionCache *AC = nullptr);
++      AssumptionCache *AC = nullptr, ScalarEvolution *SE = nullptr);
+ 
+   /// Checks if an instruction could potentially change ThreadSanitizer's
+   /// synchronization state. This includes atomic operations, memory barriers,
+@@ -334,17 +336,40 @@ public:
+   /// @param TLI Target library info to identify standard library functions
+   /// @return true if instruction could affect synchronization state, false if
+   /// proven safe
+-  enum LockOperation : unsigned {
+-    NONE = 0,
+-    ACQUIRE = 1,
+-    RELEASE = 2,
+-    BOTH = ACQUIRE | RELEASE,
++  /// Synchronization effects an instruction may have, as a bitmask. The two
++  /// lock bits are directional, and that direction is what lets us cross a
++  /// lock at all:
++  ///
++  ///   - Dominance removes the *later* access and relies on the earlier one.
++  ///     An acquire between them can only order some remote event *before* the
++  ///     later access, which cannot create a race the earlier one misses; a
++  ///     release can, so it blocks.
++  ///   - Post-dominance removes the *earlier* access and relies on the later
++  ///     one, so the two roles are exactly reversed.
++  ///
++  /// Termination is a separate axis: post-dominance additionally needs the
++  /// covering access to actually be reached.
++  enum SyncEffect : unsigned {
++    SYNC_NONE = 0,
++    SYNC_ACQUIRE = 1u << 0,
++    SYNC_RELEASE = 1u << 1,
++    SYNC_UNKNOWN = 1u << 2,
++    SYNC_MAY_NOT_RETURN = 1u << 3,
++
++    /// Bits that make a path unusable for dominance elimination ...
++    SYNC_BLOCKS_DOM = SYNC_RELEASE | SYNC_UNKNOWN,
++    /// ... and for post-dominance elimination.
++    SYNC_BLOCKS_POSTDOM = SYNC_ACQUIRE | SYNC_UNKNOWN | SYNC_MAY_NOT_RETURN,
+   };
+ 
++  /// Classify what \p Inst may do to ThreadSanitizer's happens-before state.
++  static unsigned classifySyncEffect(const Instruction *Inst,
++                                     const TargetLibraryInfo &TLI);
++
++  /// True if \p Inst may affect synchronization state at all. Used by the
++  /// interprocedural sync-free analysis, which has no notion of direction.
+   static bool isInstrDangerous(const Instruction *Inst,
+-                               const TargetLibraryInfo &TLI,
+-                               bool IsPostDom = false,
+-                               LockOperation *LockOp = nullptr);
++                               const TargetLibraryInfo &TLI);
+ 
+ private:
+   // Internal Instruction wrapper that contains more information about the
+@@ -356,6 +381,12 @@ private:
+ 
+     explicit InstructionInfo(Instruction *Inst) : Inst(Inst) {}
+ 
++    /// A compound read-modify-write is instrumented as a write, and a write
++    /// races with both remote reads and remote writes.
++    bool isWriteOperation() const {
++      return isa<StoreInst>(Inst) || (Flags & kCompoundRW);
++    }
++
+     Instruction *Inst;
+     unsigned Flags = 0;
+   };
+@@ -385,13 +416,27 @@ private:
+   void eliminateInstrByPrePostDominance(
+       SmallVectorImpl<InstructionInfo> &AllInstr,
+       const DominatorTreeBase<BasicBlock, IsPostDom> *DTBase, AAResults *AA,
+-      const TargetLibraryInfo &TLI, const LoopInfo *LI);
++      const TargetLibraryInfo &TLI, const LoopInfo *LI, ScalarEvolution *SE);
+ 
+-  template <bool IsPostDom>
+-  bool isPathClear(Instruction *StartInst, Instruction *EndInst,
+-                   const DominatorTreeBase<BasicBlock, IsPostDom> *DTBase,
+-                   const TargetLibraryInfo &TLI,
+-                   LockOperation *LockOp, const LoopInfo *LI);
++  /// True if DomInst's instrumentation call covers everything CurrInst's
++  /// would: the same address, and at least as many bytes.
++  static bool locationCovers(Instruction *DomInst, Instruction *CurrInst,
++                             AAResults *AA);
++
++  /// Union of the synchronization effects over every path from \p FirstInst to
++  /// \p SecondInst in program order, plus the cycle through \p RemovedInst
++  /// when it lies on one.
++  unsigned scanPaths(Instruction *FirstInst, Instruction *SecondInst,
++                     Instruction *RemovedInst, const TargetLibraryInfo &TLI,
++                     const LoopInfo *LI, ScalarEvolution *SE,
++                     bool NeedTermination);
++
++  /// Blocks from which \p BB is reachable, memoized for the current function.
++  const SmallPtrSetImpl<const BasicBlock *> *
++  getReverseReachable(const BasicBlock *BB);
++
++  DenseMap<const BasicBlock *, SmallPtrSet<const BasicBlock *, 32>>
++      RevReachCache;
+ 
+   bool addrPointsToConstantData(Value *Addr);
+   int getMemoryAccessFuncIndex(Type *OrigTy, Value *Addr, const DataLayout &DL);
+@@ -517,6 +562,7 @@ PreservedAnalyses ThreadSanitizerPass::run(Function &F,
+   AAResults *AA = nullptr;
+   LoopInfo *LI = nullptr;
+   AssumptionCache *AC = nullptr;
++  ScalarEvolution *SE = nullptr;
+   if (ClUseDominanceAnalysis || ClUseDominanceAnalysisDom ||
+       ClUseDominanceAnalysisPostDom) {
+     DT = &FAM.getResult<DominatorTreeAnalysis>(F);
+@@ -524,11 +570,15 @@ PreservedAnalyses ThreadSanitizerPass::run(Function &F,
+     AA = &FAM.getResult<AAManager>(F);
+     LI = &FAM.getResult<LoopAnalysis>(F);
+     AC = &FAM.getResult<AssumptionAnalysis>(F);
++    // Post-dominance needs to know whether a loop between two accesses can
++    // spin forever; a computable backedge-taken count settles it.
++    SE = &FAM.getResult<ScalarEvolutionAnalysis>(F);
+   }
+ 
+   const bool Instrumented =
+       TSan.sanitizeFunction(F, FAM.getResult<TargetLibraryAnalysis>(F),
+-                            std::nullopt, EAGI, LOI, STI, DT, PDT, AA, LI, AC);
++                            std::nullopt, EAGI, LOI, STI, DT, PDT, AA, LI, AC,
++                            SE);
+   if (Instrumented)
+     return PreservedAnalyses::none();
+ 
+@@ -570,37 +620,36 @@ PreservedAnalyses ModuleThreadSanitizerPass::run(Module &M,
+   }
+   ////
+ 
+-  if (ClUseEscapeAnalysis)
+-    dbgs() << "-- Using Escape Analysis for Module " << M.getName() << " --\n";
+-  else if (ClUseEscapeAnalysisGlobal)
+-    dbgs() << "-- Using Global Escape Analysis for Module " << M.getName()
+-           << " --\n";
+-  else
+-    dbgs() << "-- Using Capture Tracker for Module " << M.getName() << " --\n";
+-
+-  if (ClUseLockOwnershipAnalysis)
+-    dbgs() << "-- Using Lock Ownership Analysis for Module " << M.getName()
+-           << " --\n";
+-
+-  if (ClUseSingleThreadedAnalysis)
+-    dbgs() << "-- Using Single / Multiple Threaded Analysis for Module "
+-           << M.getName() << " --\n";
+-
+-  if (ClUseSWMRAnalysis)
+-    dbgs() << "-- Using SWMR Analysis for Module " << M.getName() << " --\n";
++  LLVM_DEBUG({
++    dbgs() << "-- Module " << M.getName() << ": ";
++    if (ClUseEscapeAnalysis)
++      dbgs() << "escape analysis; ";
++    else if (ClUseEscapeAnalysisGlobal)
++      dbgs() << "global escape analysis; ";
++    else
++      dbgs() << "capture tracker; ";
++    if (ClUseLockOwnershipAnalysis)
++      dbgs() << "lock ownership; ";
++    if (ClUseSingleThreadedAnalysis)
++      dbgs() << "single/multi-threaded; ";
++    if (ClUseSWMRAnalysis)
++      dbgs() << "SWMR; ";
++    if (ClUseDominanceAnalysis || ClUseDominanceAnalysisDom ||
++        ClUseDominanceAnalysisPostDom)
++      dbgs() << "dominance; ";
++    dbgs() << "--\n";
++  });
+ 
+   if (ClUseDominanceAnalysis || ClUseDominanceAnalysisDom ||
+       ClUseDominanceAnalysisPostDom) {
+-    dbgs() << "-- Using Dominance Analysis for Module " << M.getName()
+-           << " --\n";
+     SFI = std::make_unique<SyncFreeInfo>(
+         M, MAM.getResult<CallGraphAnalysis>(M),
+         MAM.getResult<FunctionAnalysisManagerModuleProxy>(M).getManager());
+   }
+ 
+   if (ClUseLockOwnershipAnalysis && ClUseLockOwnershipAnalysisUpperbound)
+-    dbgs() << "Only one from tsan-use-lock-ownership or "
+-              "tsan-use-lock-ownership-upperbound in one time";
++    errs() << "warning: -tsan-use-lock-ownership and "
++              "-tsan-use-lock-ownership-upperbound are mutually exclusive\n";
+ 
+   if (ClUseEscapeAnalysisGlobal)
+     MAM.getResult<EscapeAnalysisGlobal>(M);
+@@ -614,9 +663,12 @@ PreservedAnalyses ModuleThreadSanitizerPass::run(Module &M,
+   insertModuleCtor(M);
+ 
+   // Declare an external global variable InterceptorEnabled in the module
++  // Thread-local: the runtime defines it as THREADLOCAL, and a process-wide
++  // flag would let one thread's window suppress interceptors in all others.
+   InterceptorEnabled = new GlobalVariable(
+       M, Type::getInt1Ty(M.getContext()), /*isConstant=*/false,
+-      GlobalValue::ExternalLinkage, nullptr, "InterceptorEnabled");
++      GlobalValue::ExternalLinkage, nullptr, "InterceptorEnabled", nullptr,
++      GlobalValue::GeneralDynamicTLSModel);
+ 
+   return PreservedAnalyses::none();
+ }
+@@ -968,6 +1020,16 @@ void ThreadSanitizer::chooseInstructionsToInstrument(
+       }
+     }
+ 
++    // 3b. Skip accesses that run before the program has created any thread.
++    // Whole functions are skipped earlier, in sanitizeFunction; this catches
++    // main, whose prefix is single-threaded and whose remainder usually is
++    // not, so it can only be classified one access at a time.
++    if (ClUseSingleThreadedAnalysis && STI.has_value() &&
++        STI.value()->isSingleThreaded(I)) {
++      LLVM_DEBUG(dbgs() << "Instruction omitted: single-threaded context\n");
++      continue;
++    }
++
+     // 4. Skip instrumentation if SWMR (Single-Writer/Multiple-Reader) analysis is
+     // enabled and indicates this global variable is read-only. This
+     if (ClUseSWMRAnalysis) {
+@@ -1004,50 +1066,317 @@ DenseMap<Instruction *, size_t> ThreadSanitizer::createInstrIndexMap(
+   return InstToIndexInAll;
+ }
+ 
+-template<bool IsPostDom>
++const SmallPtrSetImpl<const BasicBlock *> *
++ThreadSanitizer::getReverseReachable(const BasicBlock *BB) {
++  const auto It = RevReachCache.find(BB);
++  if (It != RevReachCache.end())
++    return &It->second;
++
++  SmallPtrSet<const BasicBlock *, 32> Reach;
++  SmallVector<const BasicBlock *, 32> Worklist;
++  Reach.insert(BB);
++  Worklist.push_back(BB);
++  while (!Worklist.empty())
++    for (const BasicBlock *Pred : predecessors(Worklist.pop_back_val()))
++      if (Reach.insert(Pred).second)
++        Worklist.push_back(Pred);
++
++  return &RevReachCache.try_emplace(BB, std::move(Reach)).first->second;
++}
++
++/// Condition (2) of redundancy: DomInst's instrumentation call must cover
++/// everything CurrInst's would.
++///
++/// Both halves are needed. isMustAlias establishes that the two accesses start
++/// at the same address but says nothing about their extent -- two
++/// MemoryLocations with the same pointer and different sizes are still
++/// MustAlias -- so a dominating one-byte write would otherwise be taken to
++/// cover an eight-byte one, and races on the remaining seven bytes would go
++/// unreported.
++bool ThreadSanitizer::locationCovers(Instruction *DomInst,
++                                     Instruction *CurrInst, AAResults *AA) {
++  const MemoryLocation DomLoc = MemoryLocation::get(DomInst);
++  const MemoryLocation CurrLoc = MemoryLocation::get(CurrInst);
++
++  if (!DomLoc.Size.hasValue() || !CurrLoc.Size.hasValue() ||
++      DomLoc.Size.isScalable() || CurrLoc.Size.isScalable())
++    return false;
++  if (DomLoc.Size.getValue().getFixedValue() <
++      CurrLoc.Size.getValue().getFixedValue())
++    return false;
++
++  if (AA && AA->isMustAlias(DomLoc, CurrLoc))
++    return true;
++
++  // Alias analysis is conservative about some address computations that
++  // nonetheless denote the same address by construction. If both pointers
++  // reduce to the same SSA base with the same constant displacement, they are
++  // the same address whatever AA managed to prove -- and since the base is one
++  // SSA value, the two accesses see the same instance of it.
++  const DataLayout &DL = DomInst->getModule()->getDataLayout();
++  const unsigned Bits = DL.getIndexTypeSizeInBits(DomLoc.Ptr->getType());
++  if (Bits != DL.getIndexTypeSizeInBits(CurrLoc.Ptr->getType()))
++    return false;
++
++  APInt DomOff(Bits, 0), CurrOff(Bits, 0);
++  const Value *DomBase = DomLoc.Ptr->stripAndAccumulateConstantOffsets(
++      DL, DomOff, /*AllowNonInbounds=*/true);
++  const Value *CurrBase = CurrLoc.Ptr->stripAndAccumulateConstantOffsets(
++      DL, CurrOff, /*AllowNonInbounds=*/true);
++  return DomBase == CurrBase && DomOff == CurrOff;
++}
++
++static bool isTsanAtomic(const Instruction *I) {
++  // TODO: Ask TTI whether synchronization scope is between threads.
++  auto SSID = getAtomicSyncScopeID(I);
++  if (!SSID)
++    return false;
++  if (isa<LoadInst>(I) || isa<StoreInst>(I))
++    return *SSID != SyncScope::SingleThread;
++  return true;
++}
++
++unsigned ThreadSanitizer::classifySyncEffect(const Instruction *Inst,
++                                             const TargetLibraryInfo &TLI) {
++  if (!Inst)
++    return SYNC_NONE;
++
++  // An inter-thread atomic or fence can establish happens-before in either
++  // direction, so it blocks elimination both ways.
++  if (isTsanAtomic(Inst))
++    return SYNC_UNKNOWN;
++
++  const auto *CB = dyn_cast<CallBase>(Inst);
++  if (!CB)
++    return SYNC_NONE;
++
++  const Function *Callee = CB->getCalledFunction();
++
++  // An indirect call could do anything, including not returning.
++  if (!Callee)
++    return SYNC_UNKNOWN | SYNC_MAY_NOT_RETURN;
++
++  // Locks are the common case on a path between two accesses, and they are
++  // directional -- see SyncEffect. Recognising them, rather than treating any
++  // lock as opaque, is what lets dominance cross an acquire and post-dominance
++  // cross a release. They are also modelled as returning: a lock that blocks
++  // forever is a deadlock, not something the instrumentation reasons about.
++  if (TargetLibraryInfo::isLockAcquireFunction(*Callee))
++    return SYNC_ACQUIRE;
++  if (TargetLibraryInfo::isLockReleaseFunction(*Callee))
++    return SYNC_RELEASE;
++
++  // Library and intrinsic calls we recognise: their synchronization behaviour
++  // is tabulated and they return.
++  LibFunc Func;
++  if (TLI.getLibFunc(*Callee, Func))
++    return TLI.isSyncFree(Func) ? SYNC_NONE : SYNC_UNKNOWN;
++
++  if (Callee->isIntrinsic())
++    return Intrinsic::isIntrinsicSyncFree(Callee->getIntrinsicID())
++               ? SYNC_NONE
++               : SYNC_UNKNOWN;
++
++  // What is left is a call into code of this program. Whether it synchronizes
++  // and whether it terminates are separate questions, and only the second one
++  // needs the termination bit -- a callee that may synchronize is already
++  // blocking both directions.
++  const bool MayNotReturn =
++      !CB->hasFnAttr(Attribute::WillReturn) &&
++      !Callee->hasFnAttribute(Attribute::WillReturn) &&
++      !(ModuleThreadSanitizerPass::SFI &&
++        ModuleThreadSanitizerPass::SFI->isLoopFree(Callee));
++  const unsigned Termination = MayNotReturn ? SYNC_MAY_NOT_RETURN : SYNC_NONE;
++
++  if (Callee->hasFnAttribute(Attribute::NoSync) ||
++      Callee->hasFnAttribute(Attribute::ReadNone))
++    return Termination;
++
++  // Interprocedural sync-freedom. This is where we go beyond what the NoSync
++  // attribute alone can prove, and it accounts for a large share of the
++  // elimination on real code. SFI answers false for anything it has no body
++  // for, so an opaque external call still lands on SYNC_UNKNOWN below.
++  if (ModuleThreadSanitizerPass::SFI &&
++      ModuleThreadSanitizerPass::SFI->isSyncFree(Callee))
++    return Termination;
++
++  return Termination | SYNC_UNKNOWN;
++}
++
++bool ThreadSanitizer::isInstrDangerous(const Instruction *Inst,
++                                       const TargetLibraryInfo &TLI) {
++  return (classifySyncEffect(Inst, TLI) &
++          (SYNC_ACQUIRE | SYNC_RELEASE | SYNC_UNKNOWN)) != SYNC_NONE;
++}
++
++/// Union of the synchronization effects over every execution path that can
++/// carry the program from FirstInst to SecondInst, plus -- when the access we
++/// intend to remove sits on a cycle -- the path from that access back to
++/// itself.
++///
++/// Accumulating rather than stopping at the first synchronizing instruction is
++/// what makes the lock refinement usable: a path holding only acquires is
++/// still eliminable under dominance, and previously the scan gave up before it
++/// could establish that.
++unsigned ThreadSanitizer::scanPaths(Instruction *FirstInst,
++                                    Instruction *SecondInst,
++                                    Instruction *RemovedInst,
++                                    const TargetLibraryInfo &TLI,
++                                    const LoopInfo *LI, ScalarEvolution *SE,
++                                    bool NeedTermination) {
++  unsigned Effect = SYNC_NONE;
++  DenseMap<const Loop *, bool> LoopTerminates;
++
++  // A loop on the path only matters when the covering access comes later: if
++  // the loop may spin forever, that access is never reached. Rather than
++  // vetoing every loop, ask scalar evolution for a trip count -- a loop with a
++  // computable backedge-taken count terminates.
++  auto noteTermination = [&](const BasicBlock *BB) {
++    if (!NeedTermination || ClPostDomAggressive || !LI)
++      return;
++    const Loop *L = LI->getLoopFor(BB);
++    if (!L)
++      return;
++    const auto [It, Inserted] = LoopTerminates.try_emplace(L, false);
++    if (Inserted)
++      It->second =
++          SE && !isa<SCEVCouldNotCompute>(SE->getBackedgeTakenCount(L));
++    if (!It->second)
++      Effect |= SYNC_MAY_NOT_RETURN;
++  };
++
++  auto scanRange = [&](BasicBlock::iterator B, BasicBlock::iterator E) {
++    for (auto It = B; It != E; ++It)
++      Effect |= classifySyncEffect(&*It, TLI);
++  };
++
++  auto scanWholeBlock = [&](const BasicBlock *BB) {
++    noteTermination(BB);
++    for (const Instruction &I : *BB)
++      Effect |= classifySyncEffect(&I, TLI);
++  };
++
++  // Walk forward from Seeds, staying inside Bound and never re-entering Stop,
++  // scanning each block in full.
++  auto scanCone = [&](const BasicBlock *From, const BasicBlock *Stop,
++                      const SmallPtrSetImpl<const BasicBlock *> *Bound) {
++    SmallPtrSet<const BasicBlock *, 32> Visited;
++    SmallVector<const BasicBlock *, 16> Worklist;
++    auto enqueue = [&](const BasicBlock *BB) {
++      if (BB != Stop && (!Bound || Bound->count(BB)) && Visited.insert(BB).second)
++        Worklist.push_back(BB);
++    };
++    for (const BasicBlock *Succ : successors(From))
++      enqueue(Succ);
++    while (!Worklist.empty()) {
++      const BasicBlock *BB = Worklist.pop_back_val();
++      scanWholeBlock(BB);
++      for (const BasicBlock *Succ : successors(BB))
++        enqueue(Succ);
++    }
++  };
++
++  BasicBlock *FirstBB = FirstInst->getParent();
++  BasicBlock *SecondBB = SecondInst->getParent();
++
++  if (FirstBB == SecondBB) {
++    noteTermination(FirstBB);
++    scanRange(std::next(FirstInst->getIterator()), SecondInst->getIterator());
++  } else {
++    noteTermination(FirstBB);
++    noteTermination(SecondBB);
++    // The suffix of the first block and the prefix of the second execute on
++    // every path between the two accesses.
++    scanRange(std::next(FirstInst->getIterator()), FirstBB->end());
++    scanRange(SecondBB->begin(), SecondInst->getIterator());
++
++    // Everything in between. Bounding the walk by the blocks that can actually
++    // reach SecondBB keeps a diverging branch -- one that never reaches the
++    // second access at all -- from vetoing the elimination.
++    scanCone(FirstBB, SecondBB, getReverseReachable(SecondBB));
++  }
++
++  // Consecutive dynamic executions of the access we are about to remove. When
++  // that access is on a cycle and its cover sits outside, the cover may run
++  // once while the removed access runs many times; iterations after the first
++  // are only covered if the path from the access back to itself is clear too.
++  // Without this, a mutex released in a loop latch went unnoticed.
++  BasicBlock *RemovedBB = RemovedInst->getParent();
++  const SmallPtrSetImpl<const BasicBlock *> *ReachesRemoved =
++      getReverseReachable(RemovedBB);
++  const bool OnCycle = llvm::any_of(successors(RemovedBB),
++                                    [&](const BasicBlock *Succ) {
++                                      return ReachesRemoved->count(Succ);
++                                    });
++  if (OnCycle) {
++    noteTermination(RemovedBB);
++    for (const Instruction &I : *RemovedBB)
++      if (&I != RemovedInst)
++        Effect |= classifySyncEffect(&I, TLI);
++    scanCone(RemovedBB, RemovedBB, ReachesRemoved);
++  }
++
++  return Effect;
++}
++
++template <bool IsPostDom>
+ void ThreadSanitizer::eliminateInstrByPrePostDominance(
+     SmallVectorImpl<InstructionInfo> &AllInstr,
+     const DominatorTreeBase<BasicBlock, IsPostDom> *DTBase, AAResults *AA,
+-    const TargetLibraryInfo &TLI, const LoopInfo *LI) {
+-  LLVM_DEBUG(
+-      dbgs() << "===========================================\n" <<
+-      "\n=== Starting "
+-      << (IsPostDom ? "post-" : "") << "dominance-based analysis ===\n");
++    const TargetLibraryInfo &TLI, const LoopInfo *LI, ScalarEvolution *SE) {
++  LLVM_DEBUG(dbgs() << "\n=== Starting " << (IsPostDom ? "post-" : "")
++                    << "dominance-based analysis ===\n");
+   assert(DTBase && "(Post)DominationTree must be provided");
+   if (AllInstr.empty())
+     return;
+ 
+-  DenseMap<Instruction *, size_t> InstToIndexInAll =
++  const DenseMap<Instruction *, size_t> InstToIndexInAll =
+       createInstrIndexMap(AllInstr);
+ 
+   SmallVector<bool, 16> ToRemove(AllInstr.size(), false);
+-  unsigned RemovedCount = 0;
+ 
+-  for (size_t i = 0; i < AllInstr.size(); ++i) {
+-    if (ToRemove[i])
+-      continue;
++  // Coverage composes: if A covers B and B covers C, then A covers C, because
++  // every path from A to C runs through B and both halves are clear. So an
++  // access that has itself been eliminated may still stand in for a later one,
++  // and we no longer lose eliminations to the order in which candidates happen
++  // to be visited. Tracking the surviving root of each chain is what keeps two
++  // accesses from covering each other into oblivion.
++  SmallVector<size_t, 16> CoverRoot(AllInstr.size());
++  for (size_t i = 0; i < AllInstr.size(); ++i)
++    CoverRoot[i] = i;
++  auto findRoot = [&CoverRoot](size_t I) {
++    while (CoverRoot[I] != I) {
++      CoverRoot[I] = CoverRoot[CoverRoot[I]];
++      I = CoverRoot[I];
++    }
++    return I;
++  };
++
++  auto isVolatileAccess = [](const Instruction *I) {
++    if (const auto *L = dyn_cast<LoadInst>(I))
++      return L->isVolatile();
++    if (const auto *S = dyn_cast<StoreInst>(I))
++      return S->isVolatile();
++    return false;
++  };
+ 
+-    const InstructionInfo &CurrII = AllInstr[i];
++  // Look for an instrumented access that (post-)dominates AllInstr[I] and
++  // covers it. Returns the index of that access, if there is one.
++  auto findCover = [&](size_t I) -> std::optional<size_t> {
++    const InstructionInfo &CurrII = AllInstr[I];
+     Instruction *CurrInst = CurrII.Inst;
+     const BasicBlock *CurrBB = CurrInst->getParent();
+-    Value *CurrAddr = getLoadStorePointerOperand(CurrInst);
+-    assert(CurrAddr && "Should not happen for load/store");
+-    const Value *CurrUnderlyingObj = getUnderlyingObject(CurrAddr);
+-
+-    LLVM_DEBUG(dbgs() << "\nAnalyzing instruction: " << *CurrInst
+-                  << "  (Underlying object: " << CurrUnderlyingObj->getName()
+-                  << ")\n");
+ 
+-    DomTreeNode *CurrDTNode = DTBase->getNode(CurrBB);
++    DomTreeNode *CurrDTNode = DTBase->getNode(const_cast<BasicBlock *>(CurrBB));
+     if (!CurrDTNode)
+-      continue;
++      return std::nullopt;
+ 
+-    // Traverse up the dominator tree
+-    DomTreeNode *IDomNode = CurrDTNode;
+-    while (IDomNode && IDomNode->getBlock()) {
+-      BasicBlock *DomBB = IDomNode->getBlock();
++    for (DomTreeNode *Node = CurrDTNode; Node && Node->getBlock();
++         Node = Node->getIDom()) {
++      BasicBlock *DomBB = Node->getBlock();
+ 
+-      // Look for a suitable dominating instrumented instruction in DomBB
++      // Within the access's own block, only instructions on the correct side
++      // of it are candidates.
+       auto StartIt = DomBB->begin();
+       auto EndIt = DomBB->end();
+       if (CurrBB == DomBB) {
+@@ -1058,303 +1387,80 @@ void ThreadSanitizer::eliminateInstrByPrePostDominance(
+       }
+ 
+       for (auto InstIt = StartIt; InstIt != EndIt; ++InstIt) {
+-        Instruction &PotentialDomInst = *InstIt;
+-        LLVM_DEBUG(dbgs() << "PotentialDomInst: " << PotentialDomInst << "\n");
+-        if (&PotentialDomInst == CurrInst)
+-          continue;
+-
+-        // Check if PotentialDomInst is dominating and instrumented
+-        const auto It = InstToIndexInAll.find(&PotentialDomInst);
+-        if ((It == InstToIndexInAll.end()) || ToRemove[It->second])
+-          // Not found in AllInstr or already marked for removal
++        Instruction *DomInst = &*InstIt;
++        if (DomInst == CurrInst)
+           continue;
+ 
++        const auto It = InstToIndexInAll.find(DomInst);
++        if (It == InstToIndexInAll.end())
++          continue; // not an instrumented access
+         const size_t DomIndex = It->second;
+-        InstructionInfo &DomII = AllInstr[DomIndex];
+-        Instruction *DomInst = DomII.Inst;
+-
+-        const Value *DomAddr = getLoadStorePointerOperand(DomInst);
+-        const Value *DomUnderlyingObj = getUnderlyingObject(DomAddr);
+-        if (CurrUnderlyingObj == DomUnderlyingObj ||
+-            (CurrUnderlyingObj && DomUnderlyingObj &&
+-             AA->isMustAlias(CurrAddr, DomAddr))) {
+-          auto isWriteOperation = [](const InstructionInfo &II) {
+-            return isa<StoreInst>(II.Inst) ||
+-                   (II.Flags & InstructionInfo::kCompoundRW);
+-          };
+-          const bool CurrIsWrite = isWriteOperation(CurrII);
+-          const bool DomIsWrite = isWriteOperation(DomII);
+-
+-          // Check compatibility logic (DomInst covers CurrInst):
+-          // 1. If DomInst is a write, it covers both read and write of
+-          // CurrInst.
+-          // 2. If DomInst is a read, it only covers a read of CurrInst.
+-          if (DomIsWrite || !CurrIsWrite) {
+-            // Check the path to/from CurrInst from/to DomInst
+-            bool IsPathClear = false;
+-            LockOperation LockOp = LockOperation::NONE;
+-            if (IsPostDom)
+-              IsPathClear =
+-                  isPathClear(CurrInst, DomInst, DTBase, TLI, &LockOp, LI);
+-            else
+-              IsPathClear =
+-                  isPathClear(DomInst, CurrInst, DTBase, TLI, &LockOp, LI);
+-
+-            LLVM_DEBUG(dbgs()
+-                       << "Path is " << (IsPathClear ? "clear" : "not clear")
+-                       << ", LockOp: "
+-                       << (LockOp == LockOperation::NONE      ? "NONE"
+-                           : LockOp == LockOperation::ACQUIRE ? "ACQUIRE"
+-                           : LockOp == LockOperation::RELEASE ? "RELEASE"
+-                                                              : "BOTH")
+-                       << "\n");
+-
+-            bool IsRedundant = false;
+-            if (IsPathClear ||
+-                (IsPostDom && (LockOp == LockOperation::RELEASE)) ||
+-                (!IsPostDom && (LockOp == LockOperation::ACQUIRE)))
+-              IsRedundant = true;
+-
+-            if (IsRedundant) {
+-              LLVM_DEBUG(dbgs()
+-                         << "TSAN: Omitting instrumentation for: " << *CurrInst
+-                         << " ((post-)dominated and covered by: " << *DomInst
+-                         << ")\n");
+-              ToRemove[i] = true;
+-              RemovedCount++;
+-              goto next_instruction_to_prune; // Found a post-dominator, move to
+-                                              // next CurrInst
+-            }
+-          }
+-        }
+-      }
+-      IDomNode = IDomNode->getIDom();
+-    }
+-    next_instruction_to_prune:;
+-  }
++        if (findRoot(DomIndex) == I)
++          continue; // would make the access cover itself
+ 
+-  LLVM_DEBUG(
+-      dbgs() << "\n=== Final list of instructions and their status ===\n";
+-      for (size_t i = 0; i < AllInstr.size(); ++i)
+-      dbgs() << "[" << (ToRemove[i] ? "REMOVED" : "KEPT") << "]\t" <<
+-        *AllInstr[i].Inst << "\n"
+-    );
+-
+-  if (RemovedCount > 0) {
+-    LLVM_DEBUG(dbgs() << "\n=== Updating final instruction list ===\n"
+-                      << "Original size: " << AllInstr.size() << "\n"
+-                      << "Instructions to remove: " << RemovedCount << "\n"
+-                      << "Remaining instructions: "
+-                      << (AllInstr.size() - RemovedCount) << "\n");
+-    SmallVector<InstructionInfo, 8> NewAllInstr;
+-    NewAllInstr.reserve(AllInstr.size() - RemovedCount);
+-    for (size_t k = 0; k < AllInstr.size(); ++k)
+-      if (!ToRemove[k])
+-        NewAllInstr.push_back(AllInstr[k]);
+-    AllInstr.swap(NewAllInstr);
+-    if (IsPostDom)
+-      NumOmittedByPostDominance += RemovedCount; // Statistics
+-    else
+-      NumOmittedByDominance += RemovedCount; // Statistics
+-  }
+-  LLVM_DEBUG(dbgs() << "=== Dominance analysis complete ===\n"
+-                    << "===========================================\n");
+-}
++        const InstructionInfo &DomII = AllInstr[DomIndex];
+ 
+-/// Checks if there are any synchronization-affecting instructions on execution paths
+-/// between two instructions. Used to determine if we can skip instrumenting CurrInst
+-/// when it is dominated by DomInst.
+-///
+-/// Walks all paths between DomInst and CurrInst in the dominator tree checking for:
+-/// 1. Instructions after DomInst in its basic block
+-/// 2. All instructions in intermediate basic blocks
+-/// 3. Instructions before CurrInst in its basic block
+-///
+-/// @param StartInst The dominating instruction that handles synchronization
+-/// @param EndInst The current instruction we may be able to skip
+-/// @param DTBase Dominator tree for path traversal
+-/// @param TLI Target library info for checking standard functions
+-/// @param LI LoopInfo (needed to check soundness of postdom)
+-/// @return true if no dangerous instructions exist between DomInst and CurrInst
+-template <bool IsPostDom>
+-bool ThreadSanitizer::isPathClear(
+-    Instruction *StartInst, Instruction *EndInst,
+-    const DominatorTreeBase<BasicBlock, IsPostDom> *DTBase,
+-    const TargetLibraryInfo &TLI, LockOperation *LockOp, const LoopInfo *LI) {
+-  LLVM_DEBUG(dbgs() << "Checking path from " << *StartInst << " to " << *EndInst
+-                    << "\n");
+-  const BasicBlock *StartBB = StartInst->getParent();
+-  const BasicBlock *EndBB = EndInst->getParent();
+-
+-  // Check for sound postdom
+-  if (IsPostDom && !ClPostDomAggressive && LI->getLoopFor(EndBB))
+-    return false;
+-
+-  LLVM_DEBUG(dbgs() << "StartBB: " << StartBB->getName() << "\t"
+-                    << "EndBB: " << EndBB->getName() << "\n");
+-
+-  // 1. Check instructions in DomBB after DomInst
+-  for (const Instruction *I = StartInst->getNextNode();
+-       I && I->getParent() == StartBB; I = I->getNextNode()) {
+-    LLVM_DEBUG(dbgs() << "\tisPathClear -- Checking 1: " << *I << "\n");
+-    if (I == EndInst && StartBB == EndBB)
+-      return true; // Reached target instruction in the same block
+-    if (isInstrDangerous(I, TLI, IsPostDom, LockOp))
+-      return false;
+-  }
++        // With -tsan-distinguish-volatile the two emit different runtime
++        // calls, so one cannot stand in for the other.
++        if (ClDistinguishVolatile &&
++            (isVolatileAccess(DomInst) || isVolatileAccess(CurrInst)))
++          continue;
+ 
+-  // The path is clear within the same block
+-  if (StartBB == EndBB)
+-    return true;
++        // Condition (2): same location, and the cover is at least as wide.
++        if (!locationCovers(DomInst, CurrInst, AA))
++          continue;
+ 
+-  // BFS/DFS over CFG successors (dom case) or predecessors
+-  // (postdom case) starting from StartBB, stopping at EndBB.  Since EndBB
+-  // (post-)dominates all paths, every execution path from StartBB reaches
+-  // EndBB without escaping it, so the BFS is guaranteed to terminate.
+-  //   StartBB
+-  //    /    \
+-  //  BB_A  BB_B  ← mutex_lock()
+-  //    \    /
+-  //    EndBB
+-  //
+-  // idom(EndBB) == StartBB, so the while-loop exited immediately without
+-  // checking BB_A or BB_B at all.
+-  //
+-
+-  // FwdSrc --CFG--> ... --CFG--> FwdDst
+-  const BasicBlock *FwdSrc = !IsPostDom ? StartBB : EndBB;
+-  const BasicBlock *FwdDst = !IsPostDom ? EndBB   : StartBB;
+-
+-  // Sanity-check: FwdSrc must (post-)dominate FwdDst in the tree.
+-  if (!DTBase->dominates(DTBase->getNode(FwdSrc), DTBase->getNode(FwdDst))) {
+-    LLVM_DEBUG(dbgs() << "TSAN: FwdSrc does not dominate FwdDst — bailing.\n");
+-    return false;
+-  }
++        // Condition (3): a write covers a later read or write; a read covers
++        // only a read, since a write may race with a remote read that the
++        // covering read would not flag.
++        if (!DomII.isWriteOperation() && CurrII.isWriteOperation())
++          continue;
+ 
+-  SmallVector<const BasicBlock *, 16> Worklist;
+-  SmallPtrSet<const BasicBlock *, 16> Visited;
++        // Condition (4): no synchronization on any path between them.
++        Instruction *FirstInst = IsPostDom ? CurrInst : DomInst;
++        Instruction *SecondInst = IsPostDom ? DomInst : CurrInst;
++        const unsigned Effect =
++            scanPaths(FirstInst, SecondInst, CurrInst, TLI, LI, SE,
++                      /*NeedTermination=*/IsPostDom);
++        if (Effect & (IsPostDom ? SYNC_BLOCKS_POSTDOM : SYNC_BLOCKS_DOM))
++          continue;
+ 
+-  // Enqueue the CFG neighbors of BB (successors for dom, predecessors for
+-  // postdom), skipping FwdDst (its instructions are handled in step 3).
+-  auto enqueueNeighbors = [&](const BasicBlock *BB) {
+-    if (!IsPostDom) {
+-      for (const BasicBlock *Succ : successors(BB))
+-        if (Succ != FwdDst && Visited.insert(Succ).second)
+-          Worklist.push_back(Succ);
+-    } else {
+-      for (const BasicBlock *Pred : predecessors(BB))
+-        if (Pred != FwdDst && Visited.insert(Pred).second)
+-          Worklist.push_back(Pred);
++        LLVM_DEBUG(dbgs() << "TSAN: Omitting instrumentation for " << *CurrInst
++                          << " (covered by " << *DomInst << ")\n");
++        return DomIndex;
++      }
+     }
++    return std::nullopt;
+   };
+ 
+-  enqueueNeighbors(FwdSrc);
+-
+-  while (!Worklist.empty()) {
+-    const BasicBlock *BB = Worklist.pop_back_val();
+-
+-    // Check for sound postdom: a loop block makes postdom unsound.
+-    if (IsPostDom && !ClPostDomAggressive && LI->getLoopFor(BB))
+-      return false;
+-
+-    LLVM_DEBUG(dbgs() << "Inter CFG BB " << BB->getName() << "\n");
+-    for (const Instruction &InterI : *BB) {
+-      LLVM_DEBUG(dbgs() << "\tisPathClear -- Checking 2: " << InterI << "\n");
+-      if (isInstrDangerous(&InterI, TLI, IsPostDom, LockOp))
+-        return false;
++  unsigned RemovedCount = 0;
++  for (size_t i = 0; i < AllInstr.size(); ++i) {
++    if (ToRemove[i])
++      continue;
++    if (const std::optional<size_t> Cover = findCover(i)) {
++      ToRemove[i] = true;
++      CoverRoot[i] = findRoot(*Cover);
++      ++RemovedCount;
+     }
+-
+-    enqueueNeighbors(BB);
+   }
+ 
+-  // 3. Check instructions in CurrBB before CurrInst
+-  for (const Instruction &I : *EndBB) {
+-    LLVM_DEBUG(dbgs() << "\tisPathClear -- Checking 3: " << I << "\n");
+-    if (&I == EndInst)
+-      break;
+-    if (isInstrDangerous(&I, TLI, IsPostDom, LockOp))
+-      return false;
+-  }
+-
+-  return true;
+-}
+-
+-static bool isTsanAtomic(const Instruction *I) {
+-  // TODO: Ask TTI whether synchronization scope is between threads.
+-  auto SSID = getAtomicSyncScopeID(I);
+-  if (!SSID)
+-    return false;
+-  if (isa<LoadInst>(I) || isa<StoreInst>(I))
+-    return *SSID != SyncScope::SingleThread;
+-  return true;
+-}
+-
+-/// Helper function to check for "dangerous" instructions
+-/// Returns true if the instruction might change TSan's synchronization state.
+-bool ThreadSanitizer::isInstrDangerous(const Instruction *Inst,
+-                                       const TargetLibraryInfo &TLI,
+-                                       bool IsPostDom, LockOperation *LockOp) {
+-  if (LockOp)
+-    *LockOp = LockOperation::NONE;
+-
+-  if (!Inst)
+-    return false;
+-
+-  // Check for atomic instructions, memory barriers or memory intrinsics
+-  if (isTsanAtomic(Inst))
+-    return true;
+-
+-  if (const CallInst *CI = dyn_cast<CallInst>(Inst)) {
+-    if (const Function *Callee = CI->getCalledFunction()) {
+-      // Check for known "safe" functions (without synchronization).
+-      // This is a complex part, requiring analysis of function attributes or
+-      // interprocedural analysis. To start, one can consider all unknown calls
+-      // dangerous. TLI can help for standard library functions.
+-
+-      if (LockOp && (*LockOp != LockOperation::BOTH)) {
+-        if (TargetLibraryInfo::isLockAcquireFunction(*Callee)) {
+-          *LockOp = static_cast<LockOperation>(*LockOp | LockOperation::ACQUIRE);
+-          return true;
+-        }
+-        if (TargetLibraryInfo::isLockReleaseFunction(*Callee)) {
+-          *LockOp = static_cast<LockOperation>(*LockOp | LockOperation::RELEASE);
+-          return true;
+-        }
+-      }
+-
+-      LibFunc Func;
+-      if (TLI.getLibFunc(*Callee, Func))
+-        return !TLI.isSyncFree(Func);
+-
+-      // If a function is known to be sync-free (e.g., @llvm.sqrt), then false.
+-      // Otherwise - true.
+-      if (Callee->isIntrinsic())
+-        return !Intrinsic::isIntrinsicSyncFree(Callee->getIntrinsicID());
+-
+-      if (Callee->hasFnAttribute(Attribute::NoSync) ||
+-          Callee->hasFnAttribute(Attribute::ReadNone))
+-          // || Callee->hasFnAttribute(Attribute::ReadOnly))
+-        return false;
+-
+-      // Postdom check for soundness
+-      if (IsPostDom && !ClPostDomAggressive && ModuleThreadSanitizerPass::SFI &&
+-        ModuleThreadSanitizerPass::SFI->isContainsLoops(Callee))
+-        return false;
++  if (RemovedCount == 0)
++    return;
+ 
+-      // Check in sync-free analysis previously done
+-      if (ModuleThreadSanitizerPass::SFI)
+-        return !ModuleThreadSanitizerPass::SFI->isSyncFree(Callee);
++  SmallVector<InstructionInfo, 8> NewAllInstr;
++  NewAllInstr.reserve(AllInstr.size() - RemovedCount);
++  for (size_t k = 0; k < AllInstr.size(); ++k)
++    if (!ToRemove[k])
++      NewAllInstr.push_back(AllInstr[k]);
++  AllInstr.swap(NewAllInstr);
+ 
+-      // Conservatively: any non-intrinsic and not explicitly safe call is
+-      // dangerous
+-      return true;
+-    }
+-    // Indirect call - always dangerous for simplicity
+-    return true;
+-  }
++  if (IsPostDom)
++    NumOmittedByPostDominance += RemovedCount;
++  else
++    NumOmittedByDominance += RemovedCount;
+ 
+-  // ... Other potentially dangerous instructions (architecture-specific, etc.)
+-  return false;
++  LLVM_DEBUG(dbgs() << "=== " << (IsPostDom ? "Post-dominance" : "Dominance")
++                    << " removed " << RemovedCount << " accesses ===\n");
+ }
+ 
+ void ThreadSanitizer::InsertRuntimeIgnores(Function &F) {
+@@ -1373,13 +1479,15 @@ bool ThreadSanitizer::sanitizeFunction(
+     std::optional<EscapeAnalysisGlobalInfo *> EAIGlobal,
+     std::optional<LockOwnershipInfo *> LOI,
+     std::optional<SingleThreadedInfo *> STI, DominatorTree *DT,
+-    PostDominatorTree *PDT, AAResults *AA, LoopInfo *LI, AssumptionCache *AC) {
++    PostDominatorTree *PDT, AAResults *AA, LoopInfo *LI, AssumptionCache *AC,
++    ScalarEvolution *SE) {
+   LLVM_DEBUG(dbgs() << "\n%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+                        "%%%%%%%%%%%%%%%%%\n"
+     "%%%%%%%%%%%%%%%%%%%% Func " << F.getName() << "\t%%%%%%%%%%%%%%%%%%%%%%\n"
+     "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n");
+   M = F.getParent();
+   Func = &F;
++  RevReachCache.clear();
+ 
+   // This is required to prevent instrumenting call to __tsan_init from within
+   // the module constructor.
+@@ -1496,13 +1604,13 @@ bool ThreadSanitizer::sanitizeFunction(
+   }
+ 
+   if (ClUseDominanceAnalysis) {
+-    eliminateInstrByPrePostDominance(AllLoadsAndStores, DT, AA, TLI, LI);
+-    eliminateInstrByPrePostDominance(AllLoadsAndStores, PDT, AA, TLI, LI);
++    eliminateInstrByPrePostDominance(AllLoadsAndStores, DT, AA, TLI, LI, SE);
++    eliminateInstrByPrePostDominance(AllLoadsAndStores, PDT, AA, TLI, LI, SE);
+   } else {
+     if (ClUseDominanceAnalysisDom)
+-      eliminateInstrByPrePostDominance(AllLoadsAndStores, DT, AA, TLI, LI);
++      eliminateInstrByPrePostDominance(AllLoadsAndStores, DT, AA, TLI, LI, SE);
+     if (ClUseDominanceAnalysisPostDom)
+-      eliminateInstrByPrePostDominance(AllLoadsAndStores, PDT, AA, TLI, LI);
++      eliminateInstrByPrePostDominance(AllLoadsAndStores, PDT, AA, TLI, LI, SE);
+   }
+ 
+   //////////////////////////////////////////////////////////////////////////////
+@@ -1694,11 +1802,14 @@ static ConstantInt *createOrdering(IRBuilder<> *IRB, AtomicOrdering ord) {
+ 
+ void ThreadSanitizer::disableInterceptorForInstr(
+     Instruction *I, InstrumentationIRBuilder &IRB) {
+-  // Disable interceptors for this call
++  // Save and restore rather than forcing the flag back on afterwards: the
++  // guarded call may sit inside a region where interceptors were already
++  // disabled, and storing true would re-arm them early.
++  Value *Saved = IRB.CreateLoad(IRB.getInt1Ty(), InterceptorEnabled,
++                                "tsan.interceptors.saved");
+   IRB.CreateStore(IRB.getInt1(false), InterceptorEnabled);
+-  // After MemsetFn, set the InterceptorEnabled back to true
+   IRB.SetInsertPoint(++BasicBlock::iterator(I));
+-  IRB.CreateStore(IRB.getInt1(true), InterceptorEnabled);
++  IRB.CreateStore(Saved, InterceptorEnabled);
+ }
+ 
+ static bool
+@@ -1774,6 +1885,12 @@ bool ThreadSanitizer::instrumentMemIntrinsic(
+          Cast1,
+          Cast2});
+     I->eraseFromParent();
++    // The intrinsic was replaced by an intercepted call, so the function does
++    // now carry instrumentation. Reporting false here left functions whose
++    // only instrumentation was a memory intrinsic without
++    // __tsan_func_entry/__tsan_func_exit, dropping their frame from every race
++    // report raised inside the interceptor.
++    return true;
+   } else if (MemTransferInst *M = dyn_cast<MemTransferInst>(I)) {
+     // Not clear why, but the test signal_thread_sigctx_race.cpp fails if
+     // we don't instrument memcpy. So this version works:
+@@ -1817,6 +1934,7 @@ bool ThreadSanitizer::instrumentMemIntrinsic(
+          M->getArgOperand(1),
+          IRB.CreateIntCast(M->getArgOperand(2), IntptrTy, false)});
+     I->eraseFromParent();
++    return true;
+   }
+   return false;
+ }
+@@ -1960,9 +2078,14 @@ SyncFreeInfo::SyncFreeInfo(Module &M_, CallGraph &CG_,
+                     << "=== Starting sync-free analysis ===\n"
+                     << "Module: " << M.getName() << "\n";);
+ 
+-  // Initialize all functions as not dangerous
++  // A function we have a body for starts out assumed sync-free and is proven
++  // dangerous below. A declaration has no body to prove anything from: it is
++  // defined in another translation unit and may lock, unlock or spawn threads,
++  // so it stays dangerous. Initializing declarations to false made every call
++  // to an invisible external function look synchronization-free, which let
++  // dominance elimination remove instrumentation across it.
+   for (const Function &F : M)
+-    IsFuncDangerousGlobal[&F] = false;
++    IsFuncDangerousGlobal[&F] = F.isDeclaration();
+ 
+   // Analyze strongly connected components (SCCs) of the call graph in reverse
+   // topological order. This ensures we process callees before their callers:
+@@ -2051,9 +2174,10 @@ SyncFreeInfo::SyncFreeInfo(Module &M_, CallGraph &CG_,
+ }
+ 
+ void SyncFreeInfo::findFunsContainsLoops() {
+-  // Initialize all functions as not dangerous
++  // As above: without a body we cannot claim the function terminates, so treat
++  // a declaration as if it looped.
+   for (const Function &F : M)
+-    IsFuncContainsLoops[&F] = false;
++    IsFuncContainsLoops[&F] = F.isDeclaration();
+ 
+   // Analyze strongly connected components (SCCs) of the call graph in reverse
+   // topological order. This ensures we process callees before their callers:
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-locations.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-locations.ll
+new file mode 100644
+index 000000000000..cf60c846eb7a
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-locations.ll
+@@ -0,0 +1,122 @@
++; Dominance elimination may only drop an access that another access provably
++; covers: the same address, and at least as many bytes. These are the cases
++; where "same underlying object" is not the same thing as "same location".
++;
++; Every elimination below is paired with a NODOM run over the same function, so
++; a CHECK-NOT that stops matching because instrumentation moved -- rather than
++; because it was correctly removed -- still fails the test.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-dominance-analysis-dom -S | FileCheck %s
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -S | FileCheck %s --check-prefix=NODOM
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@arr = global [8 x i32] zeroinitializer, align 16
++@rec = global { i32, i32 } zeroinitializer, align 8
++@gv = global i64 0, align 8
++
++;--- Distinct array elements are distinct locations.
++; A write to arr[0] says nothing about a race on arr[3]; collapsing the two
++; because they share the underlying object @arr loses that race entirely.
++define void @distinct_array_elements() nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @distinct_array_elements
++; CHECK:       call void @__tsan_write4(ptr @arr)
++; CHECK:       call void @__tsan_write4(ptr getelementptr
++; CHECK:       ret void
++; NODOM-LABEL: @distinct_array_elements
++; NODOM:       call void @__tsan_write4(ptr @arr)
++; NODOM:       call void @__tsan_write4(ptr getelementptr
++; NODOM:       ret void
++entry:
++  store i32 1, ptr @arr, align 16
++  store i32 2, ptr getelementptr inbounds ([8 x i32], ptr @arr, i64 0, i64 3), align 4
++  ret void
++}
++
++;--- Distinct fields of one global are distinct locations.
++define void @distinct_struct_fields() nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @distinct_struct_fields
++; CHECK:       call void @__tsan_write4(ptr @rec)
++; CHECK:       call void @__tsan_write4(ptr getelementptr
++; CHECK:       ret void
++; NODOM-LABEL: @distinct_struct_fields
++; NODOM:       call void @__tsan_write4(ptr @rec)
++; NODOM:       call void @__tsan_write4(ptr getelementptr
++; NODOM:       ret void
++entry:
++  store i32 1, ptr @rec, align 8
++  store i32 2, ptr getelementptr inbounds ({ i32, i32 }, ptr @rec, i64 0, i32 1), align 4
++  ret void
++}
++
++;--- The same element twice is one location: elimination is expected here, and
++;--- this is what keeps the two tests above honest.
++define void @same_array_element() nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @same_array_element
++; CHECK:       call void @__tsan_write4(ptr getelementptr
++; CHECK-NOT:   call void @__tsan_write4
++; CHECK:       ret void
++; NODOM-LABEL: @same_array_element
++; NODOM:       call void @__tsan_write4(ptr getelementptr
++; NODOM:       call void @__tsan_write4(ptr getelementptr
++; NODOM:       ret void
++entry:
++  store i32 1, ptr getelementptr inbounds ([8 x i32], ptr @arr, i64 0, i64 3), align 4
++  store i32 2, ptr getelementptr inbounds ([8 x i32], ptr @arr, i64 0, i64 3), align 4
++  ret void
++}
++
++;--- A narrow access does not cover a wider one at the same address. The four
++;--- bytes above the first word are unprotected if the 8-byte store is dropped.
++define void @narrow_does_not_cover_wide() nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @narrow_does_not_cover_wide
++; CHECK:       call void @__tsan_write4(ptr @gv)
++; CHECK:       call void @__tsan_write8(ptr @gv)
++; CHECK:       ret void
++; NODOM-LABEL: @narrow_does_not_cover_wide
++; NODOM:       call void @__tsan_write4(ptr @gv)
++; NODOM:       call void @__tsan_write8(ptr @gv)
++; NODOM:       ret void
++entry:
++  store i32 1, ptr @gv, align 8
++  store i64 2, ptr @gv, align 8
++  ret void
++}
++
++;--- A wide access does cover a narrower one at the same address.
++define void @wide_covers_narrow() nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @wide_covers_narrow
++; CHECK:       call void @__tsan_write8(ptr @gv)
++; CHECK-NOT:   call void @__tsan_write4
++; CHECK:       ret void
++; NODOM-LABEL: @wide_covers_narrow
++; NODOM:       call void @__tsan_write8(ptr @gv)
++; NODOM:       call void @__tsan_write4(ptr @gv)
++; NODOM:       ret void
++entry:
++  store i64 1, ptr @gv, align 8
++  store i32 2, ptr @gv, align 8
++  ret void
++}
++
++;--- A dominating read cannot stand in for a later write: the write may race
++;--- with a remote read, which the read would not have flagged. The two are in
++;--- separate blocks because within one block stock TSan drops the read anyway,
++;--- which would hide whatever dominance elimination did.
++define void @read_does_not_cover_write(i1 %c) nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @read_does_not_cover_write
++; CHECK:       call void @__tsan_read4(ptr @arr)
++; CHECK:       call void @__tsan_write4(ptr @arr)
++; CHECK:       ret void
++; NODOM-LABEL: @read_does_not_cover_write
++; NODOM:       call void @__tsan_read4(ptr @arr)
++; NODOM:       call void @__tsan_write4(ptr @arr)
++; NODOM:       ret void
++entry:
++  %v = load i32, ptr @arr, align 16
++  br label %next
++
++next:
++  store i32 %v, ptr @arr, align 16
++  ret void
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-paths.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-paths.ll
+new file mode 100644
+index 000000000000..12f376dbfc2e
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-paths.ll
+@@ -0,0 +1,224 @@
++; Dominance elimination may only drop an access when no synchronization can
++; occur on any path from its cover to it -- including the path from the access
++; back to itself, when it sits in a loop, and including synchronization hidden
++; behind a call.
++;
++; These run through the module pass so that SyncFreeInfo exists. Running the
++; function pass alone takes a different branch in the sync classification and
++; would pass without exercising any of this.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-dominance-analysis-dom -S | FileCheck %s
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -S | FileCheck %s --check-prefix=NODOM
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@g = global i32 0, align 4
++@m = global i64 0, align 8
++
++declare i32 @pthread_mutex_lock(ptr)
++declare i32 @pthread_mutex_unlock(ptr)
++
++; A body-less external function: it may lock, unlock, or start a thread, and
++; nothing in this module can prove otherwise.
++declare void @opaque_external()
++
++; A local function with no synchronization in it at all.
++define internal void @quiet_local() nounwind {
++  ret void
++}
++
++; Loop-free, but it releases a lock. Being loop-free says nothing about
++; whether it synchronizes.
++define internal void @loop_free_unlock() nounwind {
++  %r = call i32 @pthread_mutex_unlock(ptr @m)
++  ret void
++}
++
++;--- A call we cannot see into blocks elimination.
++define void @path_opaque_external() nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @path_opaque_external
++; CHECK:       call void @__tsan_write4(ptr @g)
++; CHECK:       call void @opaque_external()
++; CHECK:       call void @__tsan_write4(ptr @g)
++; CHECK:       ret void
++; NODOM-LABEL: @path_opaque_external
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       ret void
++entry:
++  store i32 1, ptr @g, align 4
++  call void @opaque_external()
++  store i32 2, ptr @g, align 4
++  ret void
++}
++
++;--- A local callee we can prove quiet does not block it. This is the positive
++;--- control for the case above: without it, the test would pass just as well
++;--- if every call blocked elimination.
++define void @path_quiet_local_call() nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @path_quiet_local_call
++; CHECK:       call void @__tsan_write4(ptr @g)
++; CHECK:       call void @quiet_local()
++; CHECK-NOT:   call void @__tsan_write4(ptr @g)
++; CHECK:       ret void
++; NODOM-LABEL: @path_quiet_local_call
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       ret void
++entry:
++  store i32 1, ptr @g, align 4
++  call void @quiet_local()
++  store i32 2, ptr @g, align 4
++  ret void
++}
++
++;--- A release behind a loop-free wrapper blocks elimination just as an inline
++;--- release does. Termination and synchronization are different questions.
++define void @path_release_behind_wrapper() nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @path_release_behind_wrapper
++; CHECK:       call void @__tsan_write4(ptr @g)
++; CHECK:       call void @loop_free_unlock()
++; CHECK:       call void @__tsan_write4(ptr @g)
++; CHECK:       ret void
++; NODOM-LABEL: @path_release_behind_wrapper
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       ret void
++entry:
++  store i32 1, ptr @g, align 4
++  call void @loop_free_unlock()
++  store i32 2, ptr @g, align 4
++  ret void
++}
++
++;--- An inline release blocks elimination ...
++define void @path_release_inline() nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @path_release_inline
++; CHECK:       call void @__tsan_write4(ptr @g)
++; CHECK:       call i32 @pthread_mutex_unlock
++; CHECK:       call void @__tsan_write4(ptr @g)
++; CHECK:       ret void
++; NODOM-LABEL: @path_release_inline
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       ret void
++entry:
++  store i32 1, ptr @g, align 4
++  %r = call i32 @pthread_mutex_lock(ptr @m)
++  %u = call i32 @pthread_mutex_unlock(ptr @m)
++  store i32 2, ptr @g, align 4
++  ret void
++}
++
++;--- ... while an acquire on its own does not. An acquire can only order a
++;--- remote event before the later access, which cannot create a race the
++;--- earlier access would have missed.
++define void @path_acquire_only() nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @path_acquire_only
++; CHECK:       call void @__tsan_write4(ptr @g)
++; CHECK:       call i32 @pthread_mutex_lock
++; CHECK-NOT:   call void @__tsan_write4(ptr @g)
++; CHECK:       ret void
++; NODOM-LABEL: @path_acquire_only
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       ret void
++entry:
++  store i32 1, ptr @g, align 4
++  %r = call i32 @pthread_mutex_lock(ptr @m)
++  store i32 2, ptr @g, align 4
++  ret void
++}
++
++;--- The loop back-edge. The cover sits outside the loop and runs once; the
++;--- access inside runs every iteration, and consecutive iterations are
++;--- separated by the unlock in the latch. Only the first iteration is covered,
++;--- so nothing may be removed.
++define void @loop_backedge_releases(i32 %n) nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @loop_backedge_releases
++; CHECK:       call void @__tsan_write4(ptr @g)
++; CHECK:       call void @__tsan_write4(ptr @g)
++; NODOM-LABEL: @loop_backedge_releases
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       call void @__tsan_write4(ptr @g)
++entry:
++  store i32 1, ptr @g, align 4
++  br label %header
++
++header:
++  %i = phi i32 [ 0, %entry ], [ %i.next, %latch ]
++  %cmp = icmp slt i32 %i, %n
++  br i1 %cmp, label %body, label %exit
++
++body:
++  store i32 2, ptr @g, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @m)
++  br label %latch
++
++latch:
++  %i.next = add i32 %i, 1
++  br label %header
++
++exit:
++  ret void
++}
++
++;--- The same loop shape with a quiet latch: here the in-loop access really is
++;--- covered on every iteration, and is removed. Without this case the test
++;--- above would also pass if loops simply disabled the optimization.
++define void @loop_backedge_quiet(i32 %n) nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @loop_backedge_quiet
++; CHECK:       call void @__tsan_write4(ptr @g)
++; CHECK-NOT:   call void @__tsan_write4(ptr @g)
++; CHECK:       ret void
++; NODOM-LABEL: @loop_backedge_quiet
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       ret void
++entry:
++  store i32 1, ptr @g, align 4
++  br label %header
++
++header:
++  %i = phi i32 [ 0, %entry ], [ %i.next, %latch ]
++  %cmp = icmp slt i32 %i, %n
++  br i1 %cmp, label %body, label %exit
++
++body:
++  store i32 2, ptr @g, align 4
++  br label %latch
++
++latch:
++  %i.next = add i32 %i, 1
++  br label %header
++
++exit:
++  ret void
++}
++
++;--- A branch that diverges and never reaches the covered access must not veto
++;--- the elimination: nothing on it can run between the two accesses.
++define void @diverging_branch_does_not_veto(i1 %c) nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @diverging_branch_does_not_veto
++; CHECK:       call void @__tsan_write4(ptr @g)
++; CHECK:       br i1
++; CHECK-NOT:   call void @__tsan_write4(ptr @g)
++; CHECK:       ret void
++; NODOM-LABEL: @diverging_branch_does_not_veto
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       ret void
++entry:
++  store i32 1, ptr @g, align 4
++  br i1 %c, label %join, label %other
++
++other:
++  ; This block synchronizes, but it leaves the function; control never gets
++  ; from here to the second access.
++  %u = call i32 @pthread_mutex_unlock(ptr @m)
++  ret void
++
++join:
++  store i32 2, ptr @g, align 4
++  ret void
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/single-threaded.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/single-threaded.ll
+new file mode 100644
+index 000000000000..6e0ce1cf67df
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/single-threaded.ll
+@@ -0,0 +1,76 @@
++; The single-threaded-context analysis skips accesses that cannot yet race
++; because no other thread exists. main is the interesting case: it begins
++; single-threaded and usually stops being so part-way through, so it has to be
++; classified one access at a time rather than as a whole.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-single-threaded -S | FileCheck %s
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -S | FileCheck %s --check-prefix=NOSTC
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@g = global i32 0, align 4
++@h = global i32 0, align 4
++
++declare i32 @pthread_create(ptr, ptr, ptr, ptr)
++declare i32 @pthread_join(i64, ptr)
++declare void @_ZNSt6thread15_M_start_threadESt10unique_ptrINS_6_StateESt14default_deleteIS1_EEPFvvE(ptr, ptr, ptr)
++
++; A thread body. Its address is taken, so it runs multi-threaded.
++define internal ptr @worker(ptr %arg) nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @worker
++; CHECK:       call void @__tsan_write4(ptr @g)
++; CHECK:       ret ptr
++  store i32 1, ptr @g, align 4
++  ret ptr null
++}
++
++; The write before pthread_create runs while the program is still
++; single-threaded and is skipped; the one after it is not, and dropping it
++; loses every race between main and the thread it just started.
++define i32 @main() nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @main
++; CHECK-NOT:   call void @__tsan_write4(ptr @h)
++; CHECK:       call i32 @pthread_create
++; CHECK:       call void @__tsan_write4(ptr @g)
++; CHECK:       ret i32 0
++; NOSTC-LABEL: @main
++; NOSTC:       call void @__tsan_write4(ptr @h)
++; NOSTC:       call i32 @pthread_create
++; NOSTC:       call void @__tsan_write4(ptr @g)
++; NOSTC:       ret i32 0
++entry:
++  %t = alloca i64, align 8
++  store i32 7, ptr @h, align 4
++  %c = call i32 @pthread_create(ptr %t, ptr null, ptr @worker, ptr null)
++  store i32 2, ptr @g, align 4
++  %tid = load i64, ptr %t, align 8
++  %j = call i32 @pthread_join(i64 %tid, ptr null)
++  ret i32 0
++}
++
++; std::thread reaches pthread_create inside libstdc++, so the only call this
++; module can see is the wrapper. If that is not recognised as starting a
++; thread, everything after it looks single-threaded.
++define i32 @cxx_thread_main() nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @cxx_thread_main
++; CHECK:       call void @_ZNSt6thread15_M_start_thread
++; CHECK:       call void @__tsan_write4(ptr @g)
++; CHECK:       ret i32 0
++entry:
++  call void @_ZNSt6thread15_M_start_threadESt10unique_ptrINS_6_StateESt14default_deleteIS1_EEPFvvE(ptr null, ptr null, ptr @worker)
++  store i32 3, ptr @g, align 4
++  ret i32 0
++}
++
++; A function only ever reached from the single-threaded prefix keeps being
++; skipped wholesale -- the point of the analysis is preserved.
++define internal void @only_called_before_threads() nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @only_called_before_threads
++; CHECK-NOT:   call void @__tsan_write4
++; CHECK:       ret void
++; NOSTC-LABEL: @only_called_before_threads
++; NOSTC:       call void @__tsan_write4(ptr @h)
++; NOSTC:       ret void
++  store i32 5, ptr @h, align 4
++  ret void
++}

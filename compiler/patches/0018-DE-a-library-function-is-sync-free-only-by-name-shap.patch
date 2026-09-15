@@ -1,0 +1,694 @@
+From 46b7fd85624b2eeffa197219ba9251056943b231 Mon Sep 17 00:00:00 2001
+From: Alexey Paznikov <apaznikov@gmail.com>
+Date: Mon, 14 Sep 2026 19:59:34 +0800
+Subject: DE: a library function is sync-free only by name (shape 16)
+
+---
+ llvm/docs/TSanAnalysesAudit.md                |  33 +-
+ .../include/llvm/Analysis/TargetLibraryInfo.h |   4 +
+ llvm/lib/Analysis/TargetLibraryInfo.cpp       | 304 +++++++++++++++++-
+ .../elim-by-dominance-tli-sync-free-table.ll  | 257 +++++++++++++++
+ 4 files changed, 582 insertions(+), 16 deletions(-)
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-tli-sync-free-table.ll
+
+diff --git a/llvm/docs/TSanAnalysesAudit.md b/llvm/docs/TSanAnalysesAudit.md
+index c5af5679689a..8281bc8ce175 100644
+--- a/llvm/docs/TSanAnalysesAudit.md
++++ b/llvm/docs/TSanAnalysesAudit.md
+@@ -36,7 +36,8 @@ commit and a positive control that still elides. Reach is measured per commit
+ | 12 | post-dominance across `read(2)` | same | DE-5 — fixed 450fc39a8545 |
+ | 13 | a store reached from a lock-free path counted as protected (held-lock record from an intermediate visit; found during the audit, reproduced on 297881ddc1c5) | worklist seeded with the entry only; empty held set never recorded | LO-3/5 — fixed c8debe12f363 |
+ | 14 | an access after `pthread_mutex_timedlock` (or a timed/clock rwlock, `mtx_timedlock`) counted as protected on the timeout path, which the runtime treats as no lock (found in the second read of the consolidated tree, reproduced on 7d856d641027) | timed acquisitions were unconditional in the lock table; only try-locks were conditional | LO-6 — fixed 3d70ff61f640 (static counts unchanged: no timed locks in memcached, sqlite3.c, shell.c) |
+-| 15 | `main(){ start_worker(); g = 1; }` with the thread that writes `g` started inside a call this unit has no body for — a helper in another unit, a library's initialisation; an indirect call in a helper likewise (the STC-3 decision, closed 2026-09-04; reproduced on 3d70ff61f640 by `preservation_stc_unknown_external.c`: the race unreported in 8/8 runs, reported 8/8 after) | a bodiless callee was MultiThreaded (per-unit) or SingleThreaded (whole-program), never a creator; an indirect call outside `main` was skipped by the fixpoint | STC-3 — fixed in the last commit on tsan-dev (with STC-3b: a static constructor that starts a thread makes `main` multi-threaded from its entry) |
++| 15 | `main(){ start_worker(); g = 1; }` with the thread that writes `g` started inside a call this unit has no body for — a helper in another unit, a library's initialisation; an indirect call in a helper likewise (the STC-3 decision, closed 2026-09-04; reproduced on 3d70ff61f640 by `preservation_stc_unknown_external.c`: the race unreported in 8/8 runs, reported 8/8 after) | a bodiless callee was MultiThreaded (per-unit) or SingleThreaded (whole-program), never a creator; an indirect call outside `main` was skipped by the fixpoint | STC-3 — fixed 198e1b5c1332 (with STC-3b: a static constructor that starts a thread makes `main` multi-threaded from its entry) |
++| 16 | dominance across `qsort` whose comparator releases a lock that another thread acquires before writing the location (the sync-free-default decision, closed 2026-09-04; reproduced on 3d70ff61f640 by `elim-by-dominance-tli-sync-free-table.ll`) | `TLI::isSyncFree` answered true for every library function its blocklist did not name — every file, directory and time system call, `qsort`, `strtok`, the `_unlocked` stream family | DE-6 — fixed in the last commit on tsan-dev |
+ 
+ ## Design versus paper
+ 
+@@ -54,7 +55,7 @@ functions" is not applied to a *creator's* callees — `pending:STC-1`; (b) a
+ function this unit never calls and never takes the address of defaults to ST,
+ which is only valid with whole-program visibility — `pending:STC-2` (per-TU:
+ external linkage ⇒ MT); (c) a call to a bodiless function is not a possible
+-thread creation — `fixed:STC-3` (this commit; see below); (d) the paper's
++thread creation — `fixed:STC-3` (198e1b5c1332; see below); (d) the paper's
+ "program starts at `main`, never called" is assumed and unchecked; a static
+ constructor of this unit that starts a thread now makes `main`
+ multi-threaded from its entry — `fixed:STC-3b` (same commit) — while
+@@ -174,8 +175,15 @@ including libfuncs and intrinsics — `fixed:DE-3` (3b23aa757035; yield
+ unchanged at -O2 where the attributes are inferred); fd I/O (`read/write/pread/pwrite/open`)
+ fell to the sync-free default although TSan's interceptors make them
+ release/acquire edges — `fixed:DE-5` (450fc39a8545, listed as not
+-sync-free; inverting the default is `decision:Alexey`, with a dominance
+-yield cost). Lock names were never a DE problem: `classifySyncEffect`
++sync-free); the default itself inverted — `fixed:DE-6` (this commit: the
++table now names the sync-free functions — mathematics, integer and bit
++operations, memory and string operations on the caller's buffers,
++conversions, formatting into buffers, byte order — and every other library
++function is treated as possibly synchronising: every file, directory and
++time system call, the `_unlocked` stream family, `strtok`, `qsort`; the
++inversion also propagates through the sync-free summary, since a function
++calling an unlisted library function is no longer sync-free; measured cost
++in the verification section at the end). Lock names were never a DE problem: `classifySyncEffect`
+ always used TargetLibraryInfo's exact table; `invoke` callees not scanned — `fixed:DE-1`; the sync-free summary
+ consulted its own not-yet-built static pointer — `fixed:DE-2`
+ (2aa46b60cb86: a module analysis, explicit pointer; measured reach at -O2
+@@ -393,7 +401,7 @@ Lines as of b4bf8b8f4613.
+ |---|---|---|---|
+ | `doesArgEscape` (1417) | does libc retain the argument | fixed:EA-8 (bfaa2b859100: `setbuf/setvbuf` retain arg 1, realloc arg 0 aliases the result); default true sound | tli-retention |
+ | `isReturnValueEscaping` (1723) | does libc return non-fresh memory | fixed:EA-8 (bfaa2b859100: `realloc` family escaping; section III left as is, unreachable for pointer returns) | tli-retention |
+-| `isSyncFree` (1836) | libc function synchronises? | fixed:DE-5 (450fc39a8545: fd I/O not sync-free; default still true — decision:Alexey) | elim-by-dominance-across-fd-io |
++| `isSyncFree` (1836) | libc function synchronises? | fixed:DE-5 (450fc39a8545: fd I/O not sync-free); fixed:DE-6 (this commit: an explicit sync-free list, unlisted ⇒ not sync-free; the blocklist kept and tested first) | elim-by-dominance-across-fd-io, elim-by-dominance-tli-sync-free-table |
+ | `isLockAcquireFunction` / `isLockReleaseFunction` (2123/2148) | exact-name lock tables | sound; LO now has the same exact-name discipline (LO-1) | elim-by-dominance-across-acq-rel-* |
+ 
+ ### SingleThreaded.cpp / .h
+@@ -402,15 +410,15 @@ Lines as of b4bf8b8f4613.
+ |---|---|---|---|---|
+ | `collectAccessingInstrs` (45) | users of a global through ConstantExpr/alias | over-approximation of accesses | sound | aggregate-and-st-only.ll · lines 90.00%, branches 60.00% |
+ | `isKnownThreadCreator` (58) | creator by exact name / mangled prefix (`__kmpc_fork_call_if` added) | rule 2 | sound; single list after NAMES-1 | thread-creators.ll · lines 100.00%, branches 100.00% |
+-| `isKnownThreadFree`, `callbackParams`, `isStdNamespaceName`, `intrinsicWrapsCall` (new) | is a bodiless function known not to start a thread: intrinsic, TLI-recognised library function, carrier, exact allowlist, closed prefix families, namespace std minus thread starters | rule 2 | fixed:STC-3 (this commit): tables, unlisted ⇒ creator; recorded assumption: a libc/libstdc++ name binds to that library | unknown-external.ll, thread-free-names.ll · lines 96.30%, branches 86.36% |
++| `isKnownThreadFree`, `callbackParams`, `isStdNamespaceName`, `intrinsicWrapsCall` (new) | is a bodiless function known not to start a thread: intrinsic, TLI-recognised library function, carrier, exact allowlist, closed prefix families, namespace std minus thread starters | rule 2 | fixed:STC-3 (198e1b5c1332): tables, unlisted ⇒ creator; recorded assumption: a libc/libstdc++ name binds to that library | unknown-external.ll, thread-free-names.ll · lines 96.30%, branches 86.36% |
+ | `isSingleThreaded(Function*)` (67) | wholesale ST; `main` never | — | sound at the query | single-threaded.ll · lines 100.00%, branches 87.50% |
+-| `mayCreateThread` (75) | call may start a thread: unknown callee, known or mapped creator, carrier handed a non-constant or creating callback; one predicate for `main`'s blocks and the fixpoint | rule 2 | **fixed:STC-3** (this commit; before, a bodiless callee answered false and the fixpoint skipped indirect calls) | unknown-external.ll, single-threaded-unknown-external.ll, swmr-unknown-external.ll, preservation_stc_unknown_external.c · lines 92.59%, branches 85.71% |
+-| `blockCreatesThreads` (97), `computeMainMTBlocks` (102), `ctorMayCreateThread` (new) | MT blocks of `main` = successors of creating blocks, closed; the entry block when a static constructor of this unit is a creator | rule 1/5 | fixed:STC-3b (this commit) | single-threaded.ll, global-ctor-creates-threads.ll · lines 90.00%, branches 75.00% |
++| `mayCreateThread` (75) | call may start a thread: unknown callee, known or mapped creator, carrier handed a non-constant or creating callback; one predicate for `main`'s blocks and the fixpoint | rule 2 | **fixed:STC-3** (198e1b5c1332; before, a bodiless callee answered false and the fixpoint skipped indirect calls) | unknown-external.ll, single-threaded-unknown-external.ll, swmr-unknown-external.ll, preservation_stc_unknown_external.c · lines 92.59%, branches 85.71% |
++| `blockCreatesThreads` (97), `computeMainMTBlocks` (102), `ctorMayCreateThread` (new) | MT blocks of `main` = successors of creating blocks, closed; the entry block when a static constructor of this unit is a creator | rule 1/5 | fixed:STC-3b (198e1b5c1332) | single-threaded.ll, global-ctor-creates-threads.ll · lines 90.00%, branches 75.00% |
+ | `propagateMTFromMain` (122) | callees of MT instructions of `main` | rule 5 | sound | single-threaded.ll · lines 100.00%, branches 83.33% |
+ | `isSingleThreaded(Instruction*)` (143) | per-instruction in `main` | rule 1 | sound | preservation_stc_main.cpp · lines 100.00%, branches 87.50% |
+-| `identifyBaseThreadCreators` (165) | seed creators, and every declaration not known thread-free (after `loadSummary`, whose declarations are exempt) | rule 2 | fixed:STC-3 (this commit) | thread-creators.ll, unknown-external.ll, unknown-external-summary.ll · lines 100.00%, branches 61.11% |
++| `identifyBaseThreadCreators` (165) | seed creators, and every declaration not known thread-free (after `loadSummary`, whose declarations are exempt) | rule 2 | fixed:STC-3 (198e1b5c1332) | thread-creators.ll, unknown-external.ll, unknown-external-summary.ll · lines 100.00%, branches 61.11% |
+ | `markFuncAndAllCalleesAsMultithreaded` (175) | mark F and callees MT | rule 4 | **fixed:STC-1** (no-op at its call site) | single-threaded-creator-callee · lines 100.00%, branches 75.00% |
+-| `runSTMTAnalysis` (199) | fixpoint over the call graph; `mayCreateThread` at every call-site edge | rules 1-5 | fixed:STC-2 (default ST for unseen functions); fixed:STC-3 (this commit: indirect calls and callbacks judged in every function, not only `main`) | single-threaded-linkage, unknown-external.ll · lines 98.65%, branches 50.00% |
++| `runSTMTAnalysis` (199) | fixpoint over the call graph; `mayCreateThread` at every call-site edge | rules 1-5 | fixed:STC-2 (default ST for unseen functions); fixed:STC-3 (198e1b5c1332: indirect calls and callbacks judged in every function, not only `main`) | single-threaded-linkage, unknown-external.ll · lines 98.65%, branches 50.00% |
+ | ctor (286) | driver; ignores `runSTMTAnalysis`'s return | — | hygiene | — |
+ | `findSWMRGlobals` (314) | globals never written in MT | Prop. swmr | **fixed:SWMR-1** | swmr.ll, swmr-linkage · lines 100.00%, branches 62.50% |
+ | `print` (369), `createLogDir` (416), `writeSummary` (424), `readSummary` (451) | printer, summaries | whole-program mode | pending:S | (planned) · lines 100.00%, branches 100.00% |
+@@ -459,7 +467,7 @@ Lines as of b4bf8b8f4613.
+ | `createInstrIndexMap` (1458), `getReverseReachable` (1467) | indices; predecessor closure (memoised) | — | sound | elim-by-dominance-paths |
+ | `locationCovers` (1494) | must-alias and size coverage | condition 2 | sound (stronger than the paper) | elim-by-dominance-locations |
+ | `isTsanAtomic` (1527) | atomic access | — | sound | — · lines 100.00%, branches 100.00% |
+-| `classifySyncEffect` (1537) | acquire/release/unknown/may-not-return per instruction | conditions 4/5 | fixed:DE-5 (450fc39a8545); fixed:DE-3 (3b23aa757035, termination bit for every call); fixed:DE-2 (2aa46b60cb86, explicit SFI pointer) | elim-by-dominance-across-fd-io, across-acq-rel-*, across-intrinsics |
++| `classifySyncEffect` (1537) | acquire/release/unknown/may-not-return per instruction | conditions 4/5 | fixed:DE-5 (450fc39a8545); fixed:DE-6 (this commit, through `isSyncFree`'s inverted default); fixed:DE-3 (3b23aa757035, termination bit for every call); fixed:DE-2 (2aa46b60cb86, explicit SFI pointer) | elim-by-dominance-across-fd-io, elim-by-dominance-tli-sync-free-table, across-acq-rel-*, across-intrinsics |
+ | `isInstrDangerous` (1604) | any sync effect | — | sound | — |
+ | `scanPaths` (1619) | union of effects on all paths, incl. the removed access's cycle | conditions 4/5 | sound; DE-4 root re-check added (dc7d9e0a8a20) | elim-by-dominance-paths, elim-by-dominance-chain-across-latch |
+ | `eliminateInstrByPrePostDominance` (1720) | find covers, chain them | Props. really-red / post | sound (chains argued and, since dc7d9e0a8a20, re-scanned against the root); dead `ToRemove` test hygiene | elim-by-*-simple/diamond/coverage |
+@@ -569,4 +577,5 @@ eight audit steps and the LO-6 fix with this ledger.
+ | fafbebedb41e S, 9ef1fce44e2d PASS-1 | `48aebcf67c5d` |
+ | 44da093b1b45, babd3b0a01df, d6ea6277e35c tests; every ledger commit | `0f9437de0f82` |
+ | 4b39e6bde9db LO-6 | `3d70ff61f640` |
+-| STC-3, STC-3b | the last commit on tsan-dev (this one) |
++| STC-3, STC-3b | 198e1b5c1332 |
++| DE-6 | the last commit on tsan-dev (this one) |
+diff --git a/llvm/include/llvm/Analysis/TargetLibraryInfo.h b/llvm/include/llvm/Analysis/TargetLibraryInfo.h
+index 1107bdb6a054..024a04f45e22 100644
+--- a/llvm/include/llvm/Analysis/TargetLibraryInfo.h
++++ b/llvm/include/llvm/Analysis/TargetLibraryInfo.h
+@@ -448,6 +448,10 @@ public:
+   static bool isLockAcquireFunction(const Function &F);
+   static bool isLockReleaseFunction(const Function &F);
+ 
++  /// Whether the library function \p F is known not to synchronise with other
++  /// threads: no lock, no descriptor or stream, no callback into the program.
++  /// Answered from an explicit list; a function the list does not name is
++  /// reported as if it synchronises.
+   bool isSyncFree(LibFunc F) const;
+ 
+   StringRef getName(LibFunc F) const {
+diff --git a/llvm/lib/Analysis/TargetLibraryInfo.cpp b/llvm/lib/Analysis/TargetLibraryInfo.cpp
+index a9b5a37de736..cf61461b9a1f 100644
+--- a/llvm/lib/Analysis/TargetLibraryInfo.cpp
++++ b/llvm/lib/Analysis/TargetLibraryInfo.cpp
+@@ -2044,11 +2044,307 @@ bool TargetLibraryInfo::isSyncFree(LibFunc F) const {
+ 
+     return false; // These functions are NOT sync-free.
+ 
+-  default:
+-    // All other functions (mathematical, string operations without memory
+-    // allocation, I/O with _unlocked suffix, buffer operations like
+-    // sprintf/sscanf, etc.) are considered sync-free.
++  // Functions that ARE sync-free: they take no lock, touch no descriptor or
++  // stream, and call nothing of the caller's.
++
++  // Mathematics: no shared state beyond errno, which is thread-local and no
++  // happens-before edge.
++  case LibFunc_acos:
++  case LibFunc_acos_finite:
++  case LibFunc_acosf:
++  case LibFunc_acosf_finite:
++  case LibFunc_acosh:
++  case LibFunc_acosh_finite:
++  case LibFunc_acoshf:
++  case LibFunc_acoshf_finite:
++  case LibFunc_acoshl:
++  case LibFunc_acoshl_finite:
++  case LibFunc_acosl:
++  case LibFunc_acosl_finite:
++  case LibFunc_asin:
++  case LibFunc_asin_finite:
++  case LibFunc_asinf:
++  case LibFunc_asinf_finite:
++  case LibFunc_asinh:
++  case LibFunc_asinhf:
++  case LibFunc_asinhl:
++  case LibFunc_asinl:
++  case LibFunc_asinl_finite:
++  case LibFunc_atan:
++  case LibFunc_atan2:
++  case LibFunc_atan2_finite:
++  case LibFunc_atan2f:
++  case LibFunc_atan2f_finite:
++  case LibFunc_atan2l:
++  case LibFunc_atan2l_finite:
++  case LibFunc_atanf:
++  case LibFunc_atanh:
++  case LibFunc_atanh_finite:
++  case LibFunc_atanhf:
++  case LibFunc_atanhf_finite:
++  case LibFunc_atanhl:
++  case LibFunc_atanhl_finite:
++  case LibFunc_atanl:
++  case LibFunc_cabs:
++  case LibFunc_cabsf:
++  case LibFunc_cabsl:
++  case LibFunc_cbrt:
++  case LibFunc_cbrtf:
++  case LibFunc_cbrtl:
++  case LibFunc_ceil:
++  case LibFunc_ceilf:
++  case LibFunc_ceill:
++  case LibFunc_copysign:
++  case LibFunc_copysignf:
++  case LibFunc_copysignl:
++  case LibFunc_cos:
++  case LibFunc_cosf:
++  case LibFunc_cosh:
++  case LibFunc_cosh_finite:
++  case LibFunc_coshf:
++  case LibFunc_coshf_finite:
++  case LibFunc_coshl:
++  case LibFunc_coshl_finite:
++  case LibFunc_cosl:
++  case LibFunc_cospi:
++  case LibFunc_cospif:
++  case LibFunc_erf:
++  case LibFunc_erff:
++  case LibFunc_erfl:
++  case LibFunc_exp:
++  case LibFunc_exp10:
++  case LibFunc_exp10_finite:
++  case LibFunc_exp10f:
++  case LibFunc_exp10f_finite:
++  case LibFunc_exp10l:
++  case LibFunc_exp10l_finite:
++  case LibFunc_exp2:
++  case LibFunc_exp2_finite:
++  case LibFunc_exp2f:
++  case LibFunc_exp2f_finite:
++  case LibFunc_exp2l:
++  case LibFunc_exp2l_finite:
++  case LibFunc_exp_finite:
++  case LibFunc_expf:
++  case LibFunc_expf_finite:
++  case LibFunc_expl:
++  case LibFunc_expl_finite:
++  case LibFunc_expm1:
++  case LibFunc_expm1f:
++  case LibFunc_expm1l:
++  case LibFunc_fabs:
++  case LibFunc_fabsf:
++  case LibFunc_fabsl:
++  case LibFunc_floor:
++  case LibFunc_floorf:
++  case LibFunc_floorl:
++  case LibFunc_fmax:
++  case LibFunc_fmaxf:
++  case LibFunc_fmaxl:
++  case LibFunc_fmin:
++  case LibFunc_fminf:
++  case LibFunc_fminl:
++  case LibFunc_fmod:
++  case LibFunc_fmodf:
++  case LibFunc_fmodl:
++  case LibFunc_frexp:
++  case LibFunc_frexpf:
++  case LibFunc_frexpl:
++  case LibFunc_ldexp:
++  case LibFunc_ldexpf:
++  case LibFunc_ldexpl:
++  case LibFunc_log:
++  case LibFunc_log10:
++  case LibFunc_log10_finite:
++  case LibFunc_log10f:
++  case LibFunc_log10f_finite:
++  case LibFunc_log10l:
++  case LibFunc_log10l_finite:
++  case LibFunc_log1p:
++  case LibFunc_log1pf:
++  case LibFunc_log1pl:
++  case LibFunc_log2:
++  case LibFunc_log2_finite:
++  case LibFunc_log2f:
++  case LibFunc_log2f_finite:
++  case LibFunc_log2l:
++  case LibFunc_log2l_finite:
++  case LibFunc_log_finite:
++  case LibFunc_logb:
++  case LibFunc_logbf:
++  case LibFunc_logbl:
++  case LibFunc_logf:
++  case LibFunc_logf_finite:
++  case LibFunc_logl:
++  case LibFunc_logl_finite:
++  case LibFunc_modf:
++  case LibFunc_modff:
++  case LibFunc_modfl:
++  case LibFunc_nearbyint:
++  case LibFunc_nearbyintf:
++  case LibFunc_nearbyintl:
++  case LibFunc_pow:
++  case LibFunc_pow_finite:
++  case LibFunc_powf:
++  case LibFunc_powf_finite:
++  case LibFunc_powl:
++  case LibFunc_powl_finite:
++  case LibFunc_remainder:
++  case LibFunc_remainderf:
++  case LibFunc_remainderl:
++  case LibFunc_rint:
++  case LibFunc_rintf:
++  case LibFunc_rintl:
++  case LibFunc_round:
++  case LibFunc_roundeven:
++  case LibFunc_roundevenf:
++  case LibFunc_roundevenl:
++  case LibFunc_roundf:
++  case LibFunc_roundl:
++  case LibFunc_sin:
++  case LibFunc_sincospi_stret:
++  case LibFunc_sincospif_stret:
++  case LibFunc_sinf:
++  case LibFunc_sinh:
++  case LibFunc_sinh_finite:
++  case LibFunc_sinhf:
++  case LibFunc_sinhf_finite:
++  case LibFunc_sinhl:
++  case LibFunc_sinhl_finite:
++  case LibFunc_sinl:
++  case LibFunc_sinpi:
++  case LibFunc_sinpif:
++  case LibFunc_sqrt:
++  case LibFunc_sqrt_finite:
++  case LibFunc_sqrtf:
++  case LibFunc_sqrtf_finite:
++  case LibFunc_sqrtl:
++  case LibFunc_sqrtl_finite:
++  case LibFunc_tan:
++  case LibFunc_tanf:
++  case LibFunc_tanh:
++  case LibFunc_tanhf:
++  case LibFunc_tanhl:
++  case LibFunc_tanl:
++  case LibFunc_trunc:
++  case LibFunc_truncf:
++  case LibFunc_truncl:
++  // Integer and bit operations.
++  case LibFunc_abs:
++  case LibFunc_labs:
++  case LibFunc_llabs:
++  case LibFunc_ffs:
++  case LibFunc_ffsl:
++  case LibFunc_ffsll:
++  case LibFunc_fls:
++  case LibFunc_flsl:
++  case LibFunc_flsll:
++  // Memory operations on caller-provided buffers. TSan intercepts them as
++  // range accesses, not as synchronisation.
++  case LibFunc_memcpy:
++  case LibFunc_memmove:
++  case LibFunc_memset:
++  case LibFunc_memcmp:
++  case LibFunc_memchr:
++  case LibFunc_memrchr:
++  case LibFunc_mempcpy:
++  case LibFunc_memccpy:
++  case LibFunc_bcmp:
++  case LibFunc_bcopy:
++  case LibFunc_bzero:
++  case LibFunc_memset_pattern4:
++  case LibFunc_memset_pattern8:
++  case LibFunc_memset_pattern16:
++  case LibFunc_memcpy_chk:
++  case LibFunc_memmove_chk:
++  case LibFunc_memset_chk:
++  case LibFunc_mempcpy_chk:
++  case LibFunc_memccpy_chk:
++  // String operations on caller-provided buffers. strtok keeps static state
++  // between calls and is not listed; strtok_r is.
++  case LibFunc_strlen:
++  case LibFunc_strnlen:
++  case LibFunc_strcmp:
++  case LibFunc_strncmp:
++  case LibFunc_strcasecmp:
++  case LibFunc_strncasecmp:
++  case LibFunc_strcoll:
++  case LibFunc_strxfrm:
++  case LibFunc_strcpy:
++  case LibFunc_strncpy:
++  case LibFunc_strcat:
++  case LibFunc_strncat:
++  case LibFunc_strlcpy:
++  case LibFunc_strlcat:
++  case LibFunc_stpcpy:
++  case LibFunc_stpncpy:
++  case LibFunc_strchr:
++  case LibFunc_strrchr:
++  case LibFunc_strstr:
++  case LibFunc_strpbrk:
++  case LibFunc_strspn:
++  case LibFunc_strcspn:
++  case LibFunc_strtok_r:
++  case LibFunc_dunder_strtok_r:
++  case LibFunc_wcslen:
++  case LibFunc_strcpy_chk:
++  case LibFunc_strncpy_chk:
++  case LibFunc_strcat_chk:
++  case LibFunc_strncat_chk:
++  case LibFunc_strlcpy_chk:
++  case LibFunc_strlcat_chk:
++  case LibFunc_strlen_chk:
++  case LibFunc_stpcpy_chk:
++  case LibFunc_stpncpy_chk:
++  // Numeric conversions: read the locale, take no lock.
++  case LibFunc_atof:
++  case LibFunc_atoi:
++  case LibFunc_atol:
++  case LibFunc_atoll:
++  case LibFunc_strtod:
++  case LibFunc_strtof:
++  case LibFunc_strtol:
++  case LibFunc_strtold:
++  case LibFunc_strtoll:
++  case LibFunc_strtoul:
++  case LibFunc_strtoull:
++  // Character classification.
++  case LibFunc_isascii:
++  case LibFunc_isdigit:
++  case LibFunc_toascii:
++  // Formatting into and scanning from caller-provided buffers: no FILE, no
++  // stream lock. The stream versions are on the list above.
++  case LibFunc_sprintf:
++  case LibFunc_snprintf:
++  case LibFunc_vsprintf:
++  case LibFunc_vsnprintf:
++  case LibFunc_sscanf:
++  case LibFunc_vsscanf:
++  case LibFunc_siprintf:
++  case LibFunc_small_sprintf:
++  case LibFunc_dunder_isoc99_sscanf:
++  case LibFunc_sprintf_chk:
++  case LibFunc_snprintf_chk:
++  case LibFunc_vsprintf_chk:
++  case LibFunc_vsnprintf_chk:
++  // Byte order.
++  case LibFunc_htonl:
++  case LibFunc_htons:
++  case LibFunc_ntohl:
++  case LibFunc_ntohs:
++
+     return true;
++
++  default:
++    // A library function this table does not name is not known to be
++    // sync-free. The previous default assumed the opposite, which made
++    // every LibFunc absent from the list above silently sync-free -- among
++    // them every file, directory and time system call, qsort with its
++    // callback into the program, and whatever LLVM adds to the table later.
++    // The intrinsic side (Intrinsic::isIntrinsicSyncFree) fell the same way
++    // and was inverted for the same reason. An unlisted function costs a
++    // dominance elision at most; a misnamed one costs a race.
++    return false;
+   }
+ }
+ 
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-tli-sync-free-table.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-tli-sync-free-table.ll
+new file mode 100644
+index 000000000000..e131f7ca75b8
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-tli-sync-free-table.ll
+@@ -0,0 +1,257 @@
++; The library table answers "sync-free" only for functions it names: pure
++; computation, memory and string operations on the caller's buffers,
++; conversions, formatting into buffers, byte order. A redundant store across
++; one of those is elided. Everything else -- a file, directory or time system
++; call, a stream operation without the lock, strtok with its static state,
++; qsort with its callback into the program -- is treated as possibly
++; synchronising and both stores stay. Before this the table's default was
++; "sync-free", so the second store was elided across every function it did
++; not name: across qsort, whose comparator may release a lock another thread
++; then acquires before writing @x, the race on the second store was lost.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-dominance-analysis -S | FileCheck %s
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-dominance-analysis-postdom -S | FileCheck %s --check-prefix=POSTDOM
++
++; (Calls to functions that may unwind become invokes, so the call lines
++; match either form.)
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++target triple = "x86_64-unknown-linux-gnu"
++
++@x = global i32 0, align 4
++@buf = global [64 x i8] zeroinitializer, align 16
++@fmt = private constant [3 x i8] c"%d\00"
++@arr = global [4 x i32] zeroinitializer, align 4
++@st = global [144 x i8] zeroinitializer, align 8
++@tv = global [16 x i8] zeroinitializer, align 8
++@save = global ptr null, align 8
++
++declare ptr @memcpy(ptr, ptr, i64)
++declare double @sqrt(double)
++declare i32 @abs(i32)
++declare i32 @snprintf(ptr, i64, ptr, ...)
++declare i32 @htonl(i32)
++declare i32 @atoi(ptr)
++declare i32 @isdigit(i32)
++declare ptr @strtok_r(ptr, ptr, ptr)
++declare void @qsort(ptr, i64, i64, ptr)
++declare i32 @stat(ptr, ptr)
++declare i32 @gettimeofday(ptr, ptr)
++declare i64 @fread_unlocked(ptr, i64, i64, ptr)
++declare ptr @strtok(ptr, ptr)
++declare i32 @access(ptr, i32)
++declare i32 @unlink(ptr)
++declare i32 @pthread_mutex_unlock(ptr)
++
++define internal i32 @cmp(ptr %a, ptr %b) {
++  ret i32 0
++}
++
++; --- sync-free: the dominated store is elided ---
++
++; CHECK-LABEL: @across_memcpy
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK-NOT: call void @__tsan_write4(ptr @x)
++; CHECK: {{call|invoke}} ptr @memcpy
++; CHECK: ret void
++define void @across_memcpy(ptr %src) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %r = call ptr @memcpy(ptr @buf, ptr %src, i64 8)
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; CHECK-LABEL: @across_sqrt
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK-NOT: call void @__tsan_write4(ptr @x)
++; CHECK: {{call|invoke}} double @sqrt
++; CHECK: ret void
++define void @across_sqrt(double %d) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %r = call double @sqrt(double %d)
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; CHECK-LABEL: @across_abs
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK-NOT: call void @__tsan_write4(ptr @x)
++; CHECK: {{call|invoke}} i32 @abs
++; CHECK: ret void
++define void @across_abs(i32 %i) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %r = call i32 @abs(i32 %i)
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; CHECK-LABEL: @across_snprintf
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK-NOT: call void @__tsan_write4(ptr @x)
++; CHECK: {{call|invoke}} i32 (ptr, i64, ptr, ...) @snprintf
++; CHECK: ret void
++define void @across_snprintf(i32 %i) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %r = call i32 (ptr, i64, ptr, ...) @snprintf(ptr @buf, i64 64, ptr @fmt, i32 %i)
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; CHECK-LABEL: @across_htonl
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK-NOT: call void @__tsan_write4(ptr @x)
++; CHECK: {{call|invoke}} i32 @htonl
++; CHECK: ret void
++define void @across_htonl(i32 %i) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %r = call i32 @htonl(i32 %i)
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; CHECK-LABEL: @across_atoi
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK-NOT: call void @__tsan_write4(ptr @x)
++; CHECK: {{call|invoke}} i32 @atoi
++; CHECK: ret void
++define void @across_atoi(ptr %s) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %r = call i32 @atoi(ptr %s)
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; CHECK-LABEL: @across_isdigit
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK-NOT: call void @__tsan_write4(ptr @x)
++; CHECK: {{call|invoke}} i32 @isdigit
++; CHECK: ret void
++define void @across_isdigit(i32 %c) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %r = call i32 @isdigit(i32 %c)
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; CHECK-LABEL: @across_strtok_r
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK-NOT: call void @__tsan_write4(ptr @x)
++; CHECK: {{call|invoke}} ptr @strtok_r
++; CHECK: ret void
++define void @across_strtok_r(ptr %s, ptr %d) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %r = call ptr @strtok_r(ptr %s, ptr %d, ptr @save)
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; --- not sync-free: both stores stay ---
++
++; CHECK-LABEL: @across_qsort
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK: {{call|invoke}} void @qsort
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @across_qsort() sanitize_thread {
++  store i32 1, ptr @x, align 4
++  call void @qsort(ptr @arr, i64 4, i64 4, ptr @cmp)
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; CHECK-LABEL: @across_stat
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK: {{call|invoke}} i32 @stat
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @across_stat(ptr %p) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %r = call i32 @stat(ptr %p, ptr @st)
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; CHECK-LABEL: @across_gettimeofday
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK: {{call|invoke}} i32 @gettimeofday
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @across_gettimeofday() sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %r = call i32 @gettimeofday(ptr @tv, ptr null)
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; CHECK-LABEL: @across_fread_unlocked
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK: {{call|invoke}} i64 @fread_unlocked
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @across_fread_unlocked(ptr %f) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %r = call i64 @fread_unlocked(ptr @buf, i64 1, i64 8, ptr %f)
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; CHECK-LABEL: @across_strtok
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK: {{call|invoke}} ptr @strtok
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @across_strtok(ptr %s, ptr %d) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %r = call ptr @strtok(ptr %s, ptr %d)
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; CHECK-LABEL: @across_access
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK: {{call|invoke}} i32 @access
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @across_access(ptr %p) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %r = call i32 @access(ptr %p, i32 0)
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; CHECK-LABEL: @across_unlink
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK: {{call|invoke}} i32 @unlink
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @across_unlink(ptr %p) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %r = call i32 @unlink(ptr %p)
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; --- post-dominance: the same table, the same two verdicts ---
++
++; POSTDOM-LABEL: @postdom_strlen_free
++; POSTDOM: call void @__tsan_write4(ptr @x)
++; POSTDOM-NOT: call void @__tsan_write4(ptr @x)
++; POSTDOM: ret void
++define void @postdom_strlen_free(i32 %i) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %r = call i32 @abs(i32 %i) willreturn
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; POSTDOM-LABEL: @postdom_qsort
++; POSTDOM: call void @__tsan_write4(ptr @x)
++; POSTDOM: {{call|invoke}} void @qsort
++; POSTDOM: call void @__tsan_write4(ptr @x)
++; POSTDOM: ret void
++define void @postdom_qsort() sanitize_thread {
++  store i32 1, ptr @x, align 4
++  call void @qsort(ptr @arr, i64 4, i64 4, ptr @cmp) willreturn
++  store i32 2, ptr @x, align 4
++  ret void
++}

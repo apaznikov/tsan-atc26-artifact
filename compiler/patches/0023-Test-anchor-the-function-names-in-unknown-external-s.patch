@@ -1,0 +1,39 @@
+From 5d4d1ec45ed681472d386747d42e3aae758b3926 Mon Sep 17 00:00:00 2001
+From: Alexey Paznikov <apaznikov@gmail.com>
+Date: Mon, 14 Sep 2026 19:59:35 +0800
+Subject: Test: anchor the function names in unknown-external-summary.ll
+
+---
+ .../SingleThreaded/unknown-external-summary.ll       | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/llvm/test/Analysis/SingleThreaded/unknown-external-summary.ll b/llvm/test/Analysis/SingleThreaded/unknown-external-summary.ll
+index a0030bd2a3bd..01cf5e812df9 100644
+--- a/llvm/test/Analysis/SingleThreaded/unknown-external-summary.ll
++++ b/llvm/test/Analysis/SingleThreaded/unknown-external-summary.ll
+@@ -14,19 +14,19 @@
+ ; RUN: opt < %t/a.ll -passes='print<single-threaded>' -disable-output -tsan-use-analysis-summaries -tsan-summary-dir=%t/sum -tsan-summary-id=t1 2>&1 | FileCheck %s --check-prefix=SEEDED
+ 
+ ; LINKED-LABEL: Single-Threaded Functions
+-; LINKED-DAG: helper
+-; LINKED-DAG: after_helper
++; LINKED-DAG: {{^}}  helper{{$}}
++; LINKED-DAG: {{^}}  after_helper{{$}}
+ ; FILE: --- Single-Threaded Functions ---
+ ; FILE-NEXT: helper
+ ; ALONE-LABEL: Multi-Threaded Functions
+-; ALONE: after_helper
++; ALONE: {{^}}  after_helper{{$}}
+ ; ALONE-LABEL: Single-Threaded Functions
+-; ALONE-NOT: after_helper
++; ALONE-NOT: {{^}}  after_helper{{$}}
+ ; ALONE-LABEL: Unclassified Functions
+ ; SEEDED-LABEL: Multi-Threaded Functions
+-; SEEDED-NOT: after_helper
++; SEEDED-NOT: {{^}}  after_helper{{$}}
+ ; SEEDED-LABEL: Single-Threaded Functions
+-; SEEDED: after_helper
++; SEEDED: {{^}}  after_helper{{$}}
+ ; SEEDED-LABEL: Unclassified Functions
+ 
+ ;--- a.ll

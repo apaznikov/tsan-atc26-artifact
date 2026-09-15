@@ -1,0 +1,1171 @@
+From 1d8d7474dd1c851edb9ea3c5bfcfe08c8a8acc23 Mon Sep 17 00:00:00 2001
+From: Alexey Paznikov <apaznikov@gmail.com>
+Date: Mon, 14 Sep 2026 19:59:30 +0800
+Subject: Second review: lock ownership, thread creation, the dynamic guard,
+ post-dominance, intrinsics
+
+---
+ compiler-rt/lib/tsan/rtl/tsan.syms.extra      |   1 +
+ compiler-rt/test/tsan/stc_preserve_uaf.c      |  38 ++++
+ llvm/include/llvm/Analysis/EscapeAnalysis.h   |  10 +-
+ llvm/include/llvm/Analysis/LockOwnership.h    |   4 +
+ llvm/include/llvm/Analysis/SingleThreaded.h   |  10 +-
+ llvm/include/llvm/IR/Intrinsics.h             |  13 +-
+ llvm/lib/Analysis/LockOwnership.cpp           |  66 ++++++-
+ llvm/lib/Analysis/SingleThreaded.cpp          |   5 +-
+ llvm/lib/IR/Function.cpp                      |  38 +++-
+ .../Instrumentation/ThreadSanitizer.cpp       | 170 +++++++++++++++---
+ .../LockOwnership/aggregate-and-st-only.ll    |  55 ++++++
+ .../Analysis/LockOwnership/annotations.ll     |  52 ++++++
+ .../Analysis/LockOwnership/ignore-sync.ll     |  41 +++++
+ llvm/test/Analysis/LockOwnership/locks.ll     |  75 ++++++++
+ llvm/test/Analysis/SingleThreaded/swmr.ll     |  40 +++++
+ .../SingleThreaded/thread-creators.ll         |  61 +++++++
+ .../elim-across-intrinsics.ll                 |  74 ++++++++
+ .../elim-by-post-dominance-coverage.ll        |  88 +++++++++
+ .../ThreadSanitizerNew/escape-unidentified.ll |  36 ++++
+ 19 files changed, 834 insertions(+), 43 deletions(-)
+ create mode 100644 compiler-rt/test/tsan/stc_preserve_uaf.c
+ create mode 100644 llvm/test/Analysis/LockOwnership/aggregate-and-st-only.ll
+ create mode 100644 llvm/test/Analysis/LockOwnership/annotations.ll
+ create mode 100644 llvm/test/Analysis/LockOwnership/ignore-sync.ll
+ create mode 100644 llvm/test/Analysis/LockOwnership/locks.ll
+ create mode 100644 llvm/test/Analysis/SingleThreaded/swmr.ll
+ create mode 100644 llvm/test/Analysis/SingleThreaded/thread-creators.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/elim-across-intrinsics.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-post-dominance-coverage.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/escape-unidentified.ll
+
+diff --git a/compiler-rt/lib/tsan/rtl/tsan.syms.extra b/compiler-rt/lib/tsan/rtl/tsan.syms.extra
+index 6416e5d47fc4..9f9aea0cd739 100644
+--- a/compiler-rt/lib/tsan/rtl/tsan.syms.extra
++++ b/compiler-rt/lib/tsan/rtl/tsan.syms.extra
+@@ -1,4 +1,5 @@
+ __tsan_init
++__tsan_active_thread_count
+ __tsan_flush_memory
+ __tsan_read*
+ __tsan_write*
+diff --git a/compiler-rt/test/tsan/stc_preserve_uaf.c b/compiler-rt/test/tsan/stc_preserve_uaf.c
+new file mode 100644
+index 000000000000..2cb4a5023a4b
+--- /dev/null
++++ b/compiler-rt/test/tsan/stc_preserve_uaf.c
+@@ -0,0 +1,38 @@
++// The single-threaded analysis drops instrumentation for accesses that cannot
++// race. That is correct about races, but TSan's use-after-free reporting rides
++// on the same instrumentation and needs no second thread, so in a program that
++// never creates one -- or in the single-threaded phase of one that does -- the
++// report goes with it. -tsan-stc-preserve-uaf buys it back by keeping the
++// instrumentation on accesses that may be to the heap.
++//
++// This is the positive control for the flag: the report must survive the
++// analysis. Its negative counterpart is free_race2.c, which is the same shape
++// without the flag and is expected to lose the report under STC.
++//
++// Only one RUN line, and it names every option it depends on, including the
++// one it must switch off. A line compiled with a bare %clang_tsan would not be
++// the "stock TSan" control it looks like -- the harness may already have put
++// analysis flags in there, and TSAN_MLLVM_FLAGS exists precisely so it can.
++//
++// -tsan-use-active-thread-count is disabled explicitly because it elides the
++// same instrumentation at run time, where no compile-time flag can bring it
++// back: with one thread live the guard is false and the call never happens.
++
++// RUN: %clang_tsan -O1 %s -o %t -mllvm -tsan-use-single-threaded -mllvm -tsan-stc-preserve-uaf -mllvm -tsan-use-active-thread-count=false && %deflake %run %t | FileCheck %s
++
++#include <stdlib.h>
++
++__attribute__((noinline)) void release(void *mem) { free(mem); }
++
++__attribute__((noinline)) void touch(void *mem) { *(long *)mem = 42; }
++
++int main() {
++  void *mem = malloc(100);
++  release(mem);
++  touch(mem); // use after free, on the only thread there is
++  return 0;
++}
++
++// CHECK: WARNING: ThreadSanitizer: heap-use-after-free
++// CHECK:   Write of size 8 at {{.*}} by main thread:
++// CHECK:     #0 touch
+diff --git a/llvm/include/llvm/Analysis/EscapeAnalysis.h b/llvm/include/llvm/Analysis/EscapeAnalysis.h
+index a28e3b58247e..29f8fcc41c54 100644
+--- a/llvm/include/llvm/Analysis/EscapeAnalysis.h
++++ b/llvm/include/llvm/Analysis/EscapeAnalysis.h
+@@ -30,7 +30,15 @@ namespace llvm {
+ /// This is the implementation of simple escape analysis
+ 
+ using FieldPathTy = SmallVector<unsigned>;
+-FieldPathTy EmptyFieldPath;
++
++/// The empty field path, used as the default and as a map key.
++///
++/// Must be inline: as a plain namespace-scope definition in a header, every
++/// translation unit including this file emitted its own, and linking any two
++/// of them together failed with a duplicate symbol. Incremental builds never
++/// showed it because the archive members that collide were not all being
++/// re-linked; a build from a clean tree did.
++inline const FieldPathTy EmptyFieldPath;
+ 
+ // Because that's field-sensitive analysis, we distinguish accesses to different
+ // field of structures. That's why it's not enough to store a pointer to the
+diff --git a/llvm/include/llvm/Analysis/LockOwnership.h b/llvm/include/llvm/Analysis/LockOwnership.h
+index 2961f21922b4..0c535b179221 100644
+--- a/llvm/include/llvm/Analysis/LockOwnership.h
++++ b/llvm/include/llvm/Analysis/LockOwnership.h
+@@ -92,6 +92,10 @@ private:
+   /// look protected.
+   static bool isTryLockFunc(const Function *F);
+ 
++  /// True for the __tsan_mutex_* annotation family, whose effect depends on
++  /// flag arguments rather than on which function was called.
++  static bool isAnnotationFunc(const Function *F);
++
+   bool isUnLockFunc(const Function *F) const { return UnlockFuncs.contains(F); }
+ 
+   enum class LockCallType { NONE, LOCK, UNLOCK };
+diff --git a/llvm/include/llvm/Analysis/SingleThreaded.h b/llvm/include/llvm/Analysis/SingleThreaded.h
+index d19d802ed2d8..8f71d52843ce 100644
+--- a/llvm/include/llvm/Analysis/SingleThreaded.h
++++ b/llvm/include/llvm/Analysis/SingleThreaded.h
+@@ -43,8 +43,14 @@ const std::string SummaryHeaderSWMR =
+ 
+ // Add names of known thread creation functions here
+ const SmallDenseSet<StringRef, 8> KnownThreadCreators = {
+-    "pthread_create", "__pthread_create_2_1", "thrd_create", "__kmpc_fork_call",
+-    "__kmpc_fork_teams"};
++    "pthread_create",      "__pthread_create_2_1",
++    "thrd_create",         "__kmpc_fork_call",
++    "__kmpc_fork_teams",
++    // A fiber is a second logical thread of control in the same OS thread.
++    // TSan models one as a thread, and so must we: without this, a program
++    // whose concurrency is entirely fiber-based looked single-threaded
++    // throughout (compiler-rt/test/tsan/fiber_race.cpp).
++    "__tsan_create_fiber"};
+ 
+ /// Mangled-name prefixes of functions that start a thread. C++, C11 and OpenMP
+ /// thread creation only reaches pthread_create inside the runtime library, so
+diff --git a/llvm/include/llvm/IR/Intrinsics.h b/llvm/include/llvm/IR/Intrinsics.h
+index aef33b817d8c..f69ee85cfab0 100644
+--- a/llvm/include/llvm/IR/Intrinsics.h
++++ b/llvm/include/llvm/IR/Intrinsics.h
+@@ -249,11 +249,14 @@ namespace Intrinsic {
+   // or of the wrong kind will be renamed by adding ".renamed" to the name.
+   std::optional<Function *> remangleIntrinsicFunction(Function *F);
+ 
+-  /// Returns true if the given intrinsic is sync-free, meaning it does not
+-  /// involve synchronization primitives or operations that require thread
+-  /// coordination. Sync-free intrinsics are generally safe to execute
+-  /// concurrently without additional synchronization.
+-  bool isIntrinsicSyncFree(Intrinsic::ID);
++  /// Returns true if \p F, which must be an intrinsic, is known not to
++  /// synchronize with other threads.
++  ///
++  /// Takes the function rather than the ID because the answer is derived from
++  /// the intrinsic's declared attributes -- its memory effects and nosync --
++  /// with a blocklist for the cases those do not capture. Anything that cannot
++  /// be shown sync-free is reported as if it synchronizes.
++  bool isIntrinsicSyncFree(const Function &F);
+ 
+ } // End Intrinsic namespace
+ 
+diff --git a/llvm/lib/Analysis/LockOwnership.cpp b/llvm/lib/Analysis/LockOwnership.cpp
+index 7029b93acd51..c1904629b2d4 100644
+--- a/llvm/lib/Analysis/LockOwnership.cpp
++++ b/llvm/lib/Analysis/LockOwnership.cpp
+@@ -372,9 +372,36 @@ void LockOwnershipInfo::writeSummary() const {
+   Summary.close();
+ }
+ 
++/// True if the module asks TSan to stop tracking synchronization anywhere.
++///
++/// Inside such a region a mutex still excludes, but it no longer establishes
++/// happens-before, so two threads holding the same lock genuinely race and
++/// TSan is expected to say so (compiler-rt/test/tsan/ignore_sync.cpp). No
++/// amount of static lockset reasoning can see that, and concluding a global is
++/// protected would suppress exactly the report the annotation exists to
++/// produce. So in a module that uses it, we conclude nothing.
++static bool moduleIgnoresSync(const Module &M) {
++  // Every match, not just the first: returning on the first candidate answered
++  // "no" whenever that one happened to be unused and a later one was not.
++  for (const Function &F : M.functions()) {
++    const StringRef Name = F.getName();
++    if ((Name.contains("AnnotateIgnoreSyncBegin") ||
++         Name.contains("__tsan_ignore_thread_sync_begin")) &&
++        !F.use_empty())
++      return true;
++  }
++  return false;
++}
++
+ LockOwnershipInfo::LockOwnershipInfo(CallGraph &CG_, Module &MM_,
+                                      SingleThreadedInfo &STI)
+     : M(MM_), CG(&CG_) {
++  if (moduleIgnoresSync(M)) {
++    LLVM_DEBUG(dbgs() << "Module ignores synchronization; lock ownership "
++                         "concludes nothing\n");
++    return;
++  }
++
+   if (!findLockUnlockFunctions())
+     return;
+ 
+@@ -389,6 +416,17 @@ LockOwnershipInfo::LockOwnershipInfo(CallGraph &CG_, Module &MM_,
+     writeSummary();
+ }
+ 
++bool LockOwnershipInfo::isAnnotationFunc(const Function *F) {
++  // The __tsan_mutex_* family are annotations, not operations: whether
++  // __tsan_mutex_pre_lock acquires anything depends on flags passed alongside
++  // it (__tsan_mutex_try_lock, __tsan_mutex_read_lock, and
++  // __tsan_mutex_try_lock_failed on the post_lock call). Their names contain
++  // "lock", so pattern matching took every one of them for an acquisition --
++  // including the pre_unlock ones, and including a try-lock that failed.
++  // Modelling the flags properly is possible; until then they hold nothing.
++  return F && F->getName().starts_with("__tsan_mutex_");
++}
++
+ bool LockOwnershipInfo::isTryLockFunc(const Function *F) {
+   if (!F)
+     return false;
+@@ -402,8 +440,11 @@ bool LockOwnershipInfo::isSharedLockFunc(const Function *F) {
+   if (!F)
+     return false;
+   const StringRef Name = F->getName();
+-  static constexpr StringRef SharedPatterns[] = {
+-      "rdlock", "lock_shared", "shared_lock", "read_lock", "rlock"};
++  // No bare "rlock": pthread_rwlock_w[rlock] contains it, so every rwlock
++  // *writer* acquisition matched and was recorded as holding nothing, which
++  // switched this analysis off for rwlock-based code entirely.
++  static constexpr StringRef SharedPatterns[] = {"rdlock", "lock_shared",
++                                                 "shared_lock", "read_lock"};
+   for (const StringRef Pattern : SharedPatterns)
+     if (Name.contains(Pattern))
+       return true;
+@@ -449,16 +490,27 @@ bool LockOwnershipInfo::findLockUnlockFunctions() {
+     }
+   };
+ 
+-  // Find all functions that match lock/unlock patterns
++  // Find all functions that match lock/unlock patterns.
++  //
++  // Unlocks are classified first, and a function recognised as one is never
++  // also treated as an acquisition. The lock patterns include the bare
++  // substring "lock", and every unlock name contains it -- "pthread_mutex_
++  // unlock" quite literally has "lock" in it -- so with both sets filled
++  // independently and getLockCallInfo testing the lock set first, releases
++  // were read as acquisitions and the lock was never let go.
+   for (const Function &F : M.functions()) {
+-    // Fill lock and unlock functions
+-    matchPatterns(F, F.getName(), LockNames, LockFuncs);
++    if (isAnnotationFunc(&F))
++      continue;
+     matchPatterns(F, F.getName(), UnlockNames, UnlockFuncs);
++    if (!UnlockFuncs.contains(&F))
++      matchPatterns(F, F.getName(), LockNames, LockFuncs);
+   }
+ 
+   if (LockFuncs.empty() || UnlockFuncs.empty()) {
+-    errs() << "Warning: No lock/unlock functions found in module "
+-           << M.getName() << "\n";
++    // Not a warning: most translation units simply do not lock anything, and
++    // this printed to stderr on every one of them.
++    LLVM_DEBUG(dbgs() << "No lock/unlock functions in module " << M.getName()
++                      << "; lock ownership concludes nothing\n");
+     return false;
+   }
+   return true;
+diff --git a/llvm/lib/Analysis/SingleThreaded.cpp b/llvm/lib/Analysis/SingleThreaded.cpp
+index 2f6a8c156b69..f4b85e5ede38 100644
+--- a/llvm/lib/Analysis/SingleThreaded.cpp
++++ b/llvm/lib/Analysis/SingleThreaded.cpp
+@@ -388,8 +388,11 @@ void SingleThreadedInfo::print(raw_ostream &OS) const {
+   OS << "\n============================================\n"
+      << "           Single-Threaded Functions          \n"
+      << "============================================\n\n";
++  // main is deliberately absent: it is classified per basic block, and
++  // isSingleThreaded() answers false for it, so listing it here as
++  // single-threaded described something the analysis does not believe.
+   for (const auto &[Func, Context] : FuncType)
+-    if (!Func->isDeclaration() && Func->hasName() &&
++    if (!Func->isDeclaration() && Func->hasName() && Func != MainFunc &&
+         Context == FuncContext::SingleThreaded)
+       OS << "  " << Func->getName() << "\n";
+ 
+diff --git a/llvm/lib/IR/Function.cpp b/llvm/lib/IR/Function.cpp
+index 703417d730b4..417b109c2eb4 100644
+--- a/llvm/lib/IR/Function.cpp
++++ b/llvm/lib/IR/Function.cpp
+@@ -2055,8 +2055,8 @@ bool llvm::NullPointerIsDefined(const Function *F, unsigned AS) {
+   return false;
+ }
+ 
+-bool Intrinsic::isIntrinsicSyncFree(Intrinsic::ID ID) {
+-  switch (ID) {
++bool Intrinsic::isIntrinsicSyncFree(const Function &F) {
++  switch (F.getIntrinsicID()) {
+     // --- Intrinsics that are NOT sync-free ---
+ 
+     // Atomics & Element-wise Atomics
+@@ -2249,10 +2249,34 @@ bool Intrinsic::isIntrinsicSyncFree(Intrinsic::ID ID) {
+     */
+ 
+     default:
+-      // If an intrinsic is not in the list above, we assume it is sync-free.
+-      // This is a common strategy: define the exceptions.
+-      // For perfect accuracy, especially with new or target-specific intrinsics,
+-      // this list would need continuous maintenance or intrinsic metadata.
+-      return true;
++      break;
+   }
++
++  // Not named above. Rather than assume the list is complete -- it is not, and
++  // could not be kept so across every target's intrinsics -- ask what the
++  // intrinsic declares about itself, and treat silence as "may synchronize".
++  //
++  // Assuming sync-free here was wrong in ways nothing tested:
++  // llvm.x86.sse2.mfence and llvm.nvvm.barrier0 are both declared with an empty
++  // property list and appear on no blocklist, so a memory fence and a thread
++  // barrier were both reported sync-free, and dominance elimination would
++  // remove an access across either.
++  //
++  // nosync alone is far too narrow to use on its own -- only a score of
++  // intrinsics carry it, memcpy and memset among those that do not -- so the
++  // memory effects carry most of the weight:
++  //   - touching no memory at all leaves nothing to synchronize through, which
++  //     covers the arithmetic and bit intrinsics;
++  //   - touching only the memory passed in as arguments cannot establish
++  //     happens-before either, which covers memcpy, memmove and memset. The
++  //     element-wise atomic forms are arg-memory-only too, and are blocklisted
++  //     above for exactly that reason.
++  if (F.hasFnAttribute(Attribute::NoSync))
++    return true;
++  if (F.doesNotAccessMemory())
++    return true;
++  if (F.onlyAccessesArgMemory())
++    return true;
++
++  return false;
+ }
+diff --git a/llvm/lib/Transforms/Instrumentation/ThreadSanitizer.cpp b/llvm/lib/Transforms/Instrumentation/ThreadSanitizer.cpp
+index fa4c73ac79db..ea2b4bd2aaf0 100644
+--- a/llvm/lib/Transforms/Instrumentation/ThreadSanitizer.cpp
++++ b/llvm/lib/Transforms/Instrumentation/ThreadSanitizer.cpp
+@@ -119,10 +119,41 @@ static cl::opt<bool> ClUseLockOwnershipAnalysisUpperbound(
+              "-- upper bound estimation (not code inside critical sections "
+              "instrumented)"),
+     cl::Hidden);
++// Note what this trades away. The analysis reasons about data races, and an
++// access that runs before any thread exists cannot be in one -- but TSan's
++// use-after-free detection rides on the same instrumentation, and it does not
++// need a second thread. In a program that never creates one, every access is
++// elided and heap-use-after-free is no longer reported at all
++// (compiler-rt/test/tsan/free_race2.c). Races are preserved; that capability
++// is not.
+ static cl::opt<bool> ClUseSingleThreadedAnalysis(
+     "tsan-use-single-threaded", cl::init(false),
+     cl::desc("Use single-threaded/multiple-threaded analysis to eliminate "
+-             "extra instrumentation"),
++             "extra instrumentation. Note: also disables use-after-free "
++             "detection for accesses proven single-threaded; see "
++             "-tsan-stc-preserve-uaf"),
++    cl::Hidden);
++
++// Buys back the use-after-free detection the note above gives up, by keeping
++// the instrumentation on any single-threaded access that might be to the heap.
++// An alloca or a global is never freed, so those can still be dropped; a
++// pointer we cannot resolve might be a malloc'd block, and dropping its check
++// is what makes the free invisible.
++//
++// Off by default: the analysis is there to remove instrumentation, and this
++// keeps a good deal of it. Turn it on when use-after-free reporting in the
++// single-threaded phase matters more than the accesses saved.
++// Note it cannot help against -tsan-use-active-thread-count, which elides the
++// same calls at run time: while one thread is live the guard is false and the
++// call does not happen, whatever was emitted. The dynamic variant forfeits
++// use-after-free reporting for as long as the program is single-threaded, and
++// that is not confined to startup.
++static cl::opt<bool> ClStcPreserveUaf(
++    "tsan-stc-preserve-uaf", cl::init(false),
++    cl::desc("With -tsan-use-single-threaded, keep instrumenting accesses that "
++             "may be to heap memory so use-after-free is still reported. Has "
++             "no effect against -tsan-use-active-thread-count, which elides "
++             "them at run time"),
+     cl::Hidden);
+ static cl::opt<bool> ClUseSWMRAnalysis(
+     "tsan-use-swmr", cl::init(false),
+@@ -438,6 +469,12 @@ private:
+   DenseMap<const BasicBlock *, SmallPtrSet<const BasicBlock *, 32>>
+       RevReachCache;
+ 
++  /// For the dynamic single-threaded check: the access that computes the
++  /// "more than one thread" condition on behalf of each instrumented access,
++  /// and the condition once computed.
++  DenseMap<const Instruction *, Instruction *> MTCondLeader;
++  DenseMap<const Instruction *, Value *> MTCondValue;
++
+   bool addrPointsToConstantData(Value *Addr);
+   int getMemoryAccessFuncIndex(Type *OrigTy, Value *Addr, const DataLayout &DL);
+   void InsertRuntimeIgnores(Function &F);
+@@ -493,10 +530,37 @@ static bool tryPeelLoops(Function &F, LoopInfo *LI, ScalarEvolution *SE,
+                     << "\n");
+   bool Changed = false;
+ 
+-  // Collect all innermost loops
++  // Peeling exists here for one reason: to expose an access in the first
++  // iteration that dominates the same access in the rest of the loop. That can
++  // only happen when some access in the loop is to a fixed address, so peeling
++  // a loop without one duplicates code for nothing -- paying compile time and
++  // size, and splitting what used to be a single stack into two, which changes
++  // how TSan groups the reports raised from it (thread_leak5.c and
++  // suppress_same_stacks.cpp both count reports and noticed).
++  //
++  // Volatile accesses do not count: they are instrumented whatever dominates
++  // them.
++  auto mayGainFromPeeling = [](const Loop *L) {
++    for (const BasicBlock *BB : L->blocks()) {
++      for (const Instruction &I : *BB) {
++        const Value *Ptr = getLoadStorePointerOperand(&I);
++        if (!Ptr)
++          continue;
++        if (const auto *LI = dyn_cast<LoadInst>(&I); LI && LI->isVolatile())
++          continue;
++        if (const auto *SI = dyn_cast<StoreInst>(&I); SI && SI->isVolatile())
++          continue;
++        if (L->isLoopInvariant(Ptr))
++          return true;
++      }
++    }
++    return false;
++  };
++
++  // Collect the innermost loops worth peeling
+   SmallVector<Loop *, 8> Worklist;
+   for (Loop *L : LI->getLoopsInPreorder()) {
+-    if (L->isInnermost())
++    if (L->isInnermost() && mayGainFromPeeling(L))
+       Worklist.push_back(L);
+   }
+ 
+@@ -1026,8 +1090,19 @@ void ThreadSanitizer::chooseInstructionsToInstrument(
+     // not, so it can only be classified one access at a time.
+     if (ClUseSingleThreadedAnalysis && STI.has_value() &&
+         STI.value()->isSingleThreaded(I)) {
+-      LLVM_DEBUG(dbgs() << "Instruction omitted: single-threaded context\n");
+-      continue;
++      // An access can be dropped here on the strength of no thread existing.
++      // That is a statement about races; TSan's use-after-free reporting also
++      // rides on this instrumentation and does not need a second thread, so
++      // under -tsan-stc-preserve-uaf only accesses to memory that cannot be
++      // freed are dropped.
++      const Value *Obj = ClStcPreserveUaf ? getUnderlyingObject(Addr) : nullptr;
++      if (!ClStcPreserveUaf || isa<AllocaInst>(Obj) ||
++          isa<GlobalVariable>(Obj) || isa<Constant>(Obj)) {
++        LLVM_DEBUG(dbgs() << "Instruction omitted: single-threaded context\n");
++        continue;
++      }
++      LLVM_DEBUG(dbgs() << "Single-threaded, but may be heap: kept for "
++                           "use-after-free reporting\n");
+     }
+ 
+     // 4. Skip instrumentation if SWMR (Single-Writer/Multiple-Reader) analysis is
+@@ -1173,7 +1248,7 @@ unsigned ThreadSanitizer::classifySyncEffect(const Instruction *Inst,
+     return TLI.isSyncFree(Func) ? SYNC_NONE : SYNC_UNKNOWN;
+ 
+   if (Callee->isIntrinsic())
+-    return Intrinsic::isIntrinsicSyncFree(Callee->getIntrinsicID())
++    return Intrinsic::isIntrinsicSyncFree(*Callee)
+                ? SYNC_NONE
+                : SYNC_UNKNOWN;
+ 
+@@ -1488,6 +1563,8 @@ bool ThreadSanitizer::sanitizeFunction(
+   M = F.getParent();
+   Func = &F;
+   RevReachCache.clear();
++  MTCondLeader.clear();
++  MTCondValue.clear();
+ 
+   // This is required to prevent instrumenting call to __tsan_init from within
+   // the module constructor.
+@@ -1504,16 +1581,17 @@ bool ThreadSanitizer::sanitizeFunction(
+   if (F.hasFnAttribute(Attribute::DisableSanitizerInstrumentation))
+     return false;
+ 
+-  // 0. Skip instrumentation for functions that are proven to be single-threaded
+-  if (ClUseSingleThreadedAnalysis) {
+-    assert(STI.has_value());
+-    if (STI.value()->isSingleThreaded(&F)) {
+-      LLVM_DEBUG(
+-          dbgs() << "Function is single-threaded, skipping instrumentation: "
+-                 << F.getName() << "\n");
+-      return false;
+-    }
+-  }
++  // Single-threaded functions are handled per access in
++  // chooseInstructionsToInstrument, which suppresses exactly the memory-access
++  // instrumentation and nothing else.
++  //
++  // Returning here instead, as this used to, also suppressed
++  // __tsan_func_entry/__tsan_func_exit, the atomics and the intercepted calls.
++  // Losing the shadow-stack calls truncates the stack of every report that
++  // passes through such a function -- including reports raised by the
++  // interceptors, which have nothing to do with what the analysis proved.
++  // longjmp3, longjmp4 and suppressions_mutex all still produced their
++  // "destroy of a locked mutex" warning and failed on the frames underneath it.
+ 
+   initialize(*F.getParent(), TLI);
+   SmallVector<InstructionInfo, 8> AllLoadsAndStores;
+@@ -1639,6 +1717,40 @@ bool ThreadSanitizer::sanitizeFunction(
+   for (CallInst *CI: InterceptedCalls)
+     Res |= instrumentInterceptedCalls(CI, TLI, EAIGlobal);
+ 
++  if (ClInstrumentMemoryAccesses && SanitizeFunction &&
++      ClTsanUseActiveThreadCountFastPath) {
++    // Program order, so each run's leader is instrumented first, and the
++    // grouping itself: a run ends at a call and at a block boundary.
++    DenseMap<const Instruction *, unsigned> ProgIdx;
++    unsigned Idx = 0;
++    for (const BasicBlock &BB : F)
++      for (const Instruction &I : BB)
++        ProgIdx[&I] = Idx++;
++    llvm::stable_sort(AllLoadsAndStores,
++                      [&ProgIdx](const InstructionInfo &A,
++                                 const InstructionInfo &B) {
++                        return ProgIdx.lookup(A.Inst) < ProgIdx.lookup(B.Inst);
++                      });
++
++    SmallPtrSet<const Instruction *, 16> Instrumented;
++    for (const auto &II : AllLoadsAndStores)
++      Instrumented.insert(II.Inst);
++    for (BasicBlock &BB : F) {
++      Instruction *Leader = nullptr;
++      for (Instruction &I : BB) {
++        if (isa<CallBase>(&I)) {
++          Leader = nullptr; // a call may create or join a thread
++          continue;
++        }
++        if (!Instrumented.contains(&I))
++          continue;
++        if (!Leader)
++          Leader = &I;
++        MTCondLeader[&I] = Leader;
++      }
++    }
++  }
++
+   // Instrument memory accesses only if we want to report bugs in the function.
+   if (ClInstrumentMemoryAccesses && SanitizeFunction)
+     for (const auto &II : AllLoadsAndStores) {
+@@ -1766,12 +1878,30 @@ bool ThreadSanitizer::instrumentLoadOrStore(const InstructionInfo &II,
+   }
+ 
+   if (ClTsanUseActiveThreadCountFastPath) {
+-    // Fast-path: if there's only one active thread, skip calling into TSan.
+-    Value *DoCheck = checkActiveThreadCount(IRB, *II.Inst->getModule());
+-    Instruction *InsertPt = II.Inst;
++    // Fast path: skip the call into TSan while the program has one thread.
++    //
++    // The counter is one global word shared by every thread, so loading it
++    // before every access puts every thread on the same cache line for the
++    // whole run. The load is therefore shared across a run of accesses that
++    // cannot observe the count change: only a call can create or join a
++    // thread, so within a call-free run the value is fixed. Runs are computed
++    // before any splitting, and the leader's condition dominates the rest of
++    // its run because a split leaves the tail dominated by the block the
++    // condition was computed in.
++    const auto LeaderIt = MTCondLeader.find(II.Inst);
++    Instruction *Leader = LeaderIt != MTCondLeader.end() ? LeaderIt->second
++                                                         : II.Inst;
++    Value *DoCheck = nullptr;
++    if (const auto It = MTCondValue.find(Leader); It != MTCondValue.end())
++      DoCheck = It->second;
++    else {
++      DoCheck = checkActiveThreadCount(IRB, *II.Inst->getModule());
++      MTCondValue[Leader] = DoCheck;
++    }
++
+     Instruction *ThenTerm = nullptr;
+     Instruction *ElseTerm = nullptr;
+-    SplitBlockAndInsertIfThenElse(DoCheck, InsertPt, &ThenTerm, &ElseTerm);
++    SplitBlockAndInsertIfThenElse(DoCheck, II.Inst, &ThenTerm, &ElseTerm);
+     IRB.SetInsertPoint(ThenTerm);
+   }
+   IRB.CreateCall(OnAccessFunc, Addr);
+diff --git a/llvm/test/Analysis/LockOwnership/aggregate-and-st-only.ll b/llvm/test/Analysis/LockOwnership/aggregate-and-st-only.ll
+new file mode 100644
+index 000000000000..4cd4f98a1a09
+--- /dev/null
++++ b/llvm/test/Analysis/LockOwnership/aggregate-and-st-only.ll
+@@ -0,0 +1,55 @@
++; Two ways a global was called protected without evidence.
++;
++; Only Instruction users of a global were examined, so an access through a
++; constant getelementptr -- which is how every access to a field of an aggregate
++; global is written -- was invisible here, while the instrumentation pass still
++; resolved it back to the global and acted on the verdict.
++;
++; And the acceptance test admitted a global whose accesses had all been skipped:
++; "all accesses protected" is vacuously true when none was looked at.
++
++; RUN: opt < %s -passes='print<lock-ownership>' -disable-output 2>&1 | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@mtx = global i64 0, align 8
++@control = global i32 0, align 4
++@rec = global { i32, i32 } zeroinitializer, align 8
++@st_only = global i32 0, align 4
++
++declare i32 @pthread_mutex_lock(ptr)
++declare i32 @pthread_mutex_unlock(ptr)
++declare i32 @pthread_create(ptr, ptr, ptr, ptr)
++
++define internal ptr @worker(ptr %arg) nounwind {
++entry:
++  %l = call i32 @pthread_mutex_lock(ptr @mtx)
++  store i32 1, ptr @control, align 4
++  ; field 0, under the lock
++  store i32 1, ptr @rec, align 8
++  %u = call i32 @pthread_mutex_unlock(ptr @mtx)
++  ; field 1 through a constant getelementptr, with nothing held
++  store i32 2, ptr getelementptr inbounds ({ i32, i32 }, ptr @rec, i64 0, i32 1), align 4
++  ret ptr null
++}
++
++; Reached only from the single-threaded prefix of main, so its accesses are
++; skipped -- which must leave @st_only unproven, not proven.
++define internal void @before_threads() nounwind {
++entry:
++  store i32 7, ptr @st_only, align 4
++  ret void
++}
++
++define i32 @main() nounwind {
++entry:
++  %t = alloca i64, align 8
++  call void @before_threads()
++  %c = call i32 @pthread_create(ptr %t, ptr null, ptr @worker, ptr null)
++  ret i32 0
++}
++
++; CHECK: Protected Global Variables
++; CHECK: * control
++; CHECK-NOT: * rec
++; CHECK-NOT: * st_only
+diff --git a/llvm/test/Analysis/LockOwnership/annotations.ll b/llvm/test/Analysis/LockOwnership/annotations.ll
+new file mode 100644
+index 000000000000..7d417a0cc1d7
+--- /dev/null
++++ b/llvm/test/Analysis/LockOwnership/annotations.ll
+@@ -0,0 +1,52 @@
++; The __tsan_mutex_* family are annotations whose effect depends on flags passed
++; beside them -- __tsan_mutex_try_lock, __tsan_mutex_read_lock, and
++; __tsan_mutex_try_lock_failed on the matching post_lock. Their names all
++; contain "lock", so pattern matching took every one for an acquisition,
++; pre_unlock included, and a try-lock that *failed* left the mutex held for the
++; rest of the function.
++;
++; @control is here so the test can tell "annotations hold nothing" apart from
++; "the analysis gave up on this module".
++
++; RUN: opt < %s -passes='print<lock-ownership>' -disable-output 2>&1 | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@mtx = global i64 0, align 8
++@custom = global i64 0, align 8
++@control = global i32 0, align 4
++@via_annotation = global i32 0, align 4
++
++declare i32 @pthread_mutex_lock(ptr)
++declare i32 @pthread_mutex_unlock(ptr)
++declare i32 @pthread_create(ptr, ptr, ptr, ptr)
++declare void @__tsan_mutex_pre_lock(ptr, i32)
++declare void @__tsan_mutex_post_lock(ptr, i32, i32)
++declare void @__tsan_mutex_pre_unlock(ptr, i32)
++declare void @__tsan_mutex_post_unlock(ptr, i32)
++
++define internal ptr @worker(ptr %arg) nounwind {
++entry:
++  %l = call i32 @pthread_mutex_lock(ptr @mtx)
++  store i32 1, ptr @control, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @mtx)
++
++  ; A failing try-lock, annotated. Nothing is held afterwards.
++  call void @__tsan_mutex_pre_lock(ptr @custom, i32 1)
++  call void @__tsan_mutex_post_lock(ptr @custom, i32 3, i32 0)
++  store i32 1, ptr @via_annotation, align 4
++  call void @__tsan_mutex_pre_unlock(ptr @custom, i32 0)
++  call void @__tsan_mutex_post_unlock(ptr @custom, i32 0)
++  ret ptr null
++}
++
++define i32 @main() nounwind {
++entry:
++  %t = alloca i64, align 8
++  %c = call i32 @pthread_create(ptr %t, ptr null, ptr @worker, ptr null)
++  ret i32 0
++}
++
++; CHECK: Protected Global Variables
++; CHECK: * control
++; CHECK-NOT: * via_annotation
+diff --git a/llvm/test/Analysis/LockOwnership/ignore-sync.ll b/llvm/test/Analysis/LockOwnership/ignore-sync.ll
+new file mode 100644
+index 000000000000..0db1afab3c98
+--- /dev/null
++++ b/llvm/test/Analysis/LockOwnership/ignore-sync.ll
+@@ -0,0 +1,41 @@
++; Inside an AnnotateIgnoreSyncBegin region a mutex still excludes but no longer
++; establishes happens-before, so two threads holding it genuinely race and TSan
++; is expected to say so. No static lockset can see that, and concluding a global
++; is protected would suppress exactly the report the annotation exists to
++; produce -- so in a module that uses it, nothing is concluded.
++;
++; The shape below is the one locks.ll proves *is* reported as protected when the
++; annotation is absent; that file is this test's control.
++
++; RUN: opt < %s -passes='print<lock-ownership>' -disable-output 2>&1 | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@mtx = global i64 0, align 8
++@under_mutex = global i32 0, align 4
++
++declare i32 @pthread_mutex_lock(ptr)
++declare i32 @pthread_mutex_unlock(ptr)
++declare i32 @pthread_create(ptr, ptr, ptr, ptr)
++declare void @AnnotateIgnoreSyncBegin(ptr, i32)
++declare void @AnnotateIgnoreSyncEnd(ptr, i32)
++
++define internal ptr @worker(ptr %arg) nounwind {
++entry:
++  call void @AnnotateIgnoreSyncBegin(ptr null, i32 0)
++  %l = call i32 @pthread_mutex_lock(ptr @mtx)
++  store i32 1, ptr @under_mutex, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @mtx)
++  call void @AnnotateIgnoreSyncEnd(ptr null, i32 0)
++  ret ptr null
++}
++
++define i32 @main() nounwind {
++entry:
++  %t = alloca i64, align 8
++  %c = call i32 @pthread_create(ptr %t, ptr null, ptr @worker, ptr null)
++  ret i32 0
++}
++
++; CHECK: Protected Global Variables
++; CHECK: (empty)
+diff --git a/llvm/test/Analysis/LockOwnership/locks.ll b/llvm/test/Analysis/LockOwnership/locks.ll
+new file mode 100644
+index 000000000000..aa067132dc05
+--- /dev/null
++++ b/llvm/test/Analysis/LockOwnership/locks.ll
+@@ -0,0 +1,75 @@
++; Which acquisitions actually hold something, and which globals that makes
++; consistently protected. Every case here answered wrongly at some point, and
++; each wrong answer let the instrumentation pass drop a real access.
++;
++; The two globals expected in the list are the controls: without them a fix
++; that simply stopped concluding anything would satisfy the CHECK-NOTs.
++
++; RUN: opt < %s -passes='print<lock-ownership>' -disable-output 2>&1 | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@mtx = global i64 0, align 8
++@rw = global i64 0, align 8
++
++@under_mutex = global i32 0, align 4   ; held by a plain mutex
++@under_wrlock = global i32 0, align 4  ; held by an rwlock writer
++@after_unlock = global i32 0, align 4  ; touched once the lock is released
++@under_rdlock = global i32 0, align 4  ; only ever under a reader lock
++@after_trylock = global i32 0, align 4 ; touched after a try-lock, which may fail
++
++declare i32 @pthread_mutex_lock(ptr)
++declare i32 @pthread_mutex_unlock(ptr)
++declare i32 @pthread_mutex_trylock(ptr)
++declare i32 @pthread_rwlock_wrlock(ptr)
++declare i32 @pthread_rwlock_rdlock(ptr)
++declare i32 @pthread_rwlock_unlock(ptr)
++declare i32 @pthread_create(ptr, ptr, ptr, ptr)
++
++define internal ptr @worker(ptr %arg) nounwind {
++entry:
++  ; Held for the whole access: protected.
++  %l1 = call i32 @pthread_mutex_lock(ptr @mtx)
++  store i32 1, ptr @under_mutex, align 4
++  %u1 = call i32 @pthread_mutex_unlock(ptr @mtx)
++
++  ; A writer lock excludes everyone, so this one is protected too. It was not
++  ; recognised while the shared-lock patterns included a bare "rlock", which
++  ; pthread_rwlock_w[rlock] contains.
++  %l2 = call i32 @pthread_rwlock_wrlock(ptr @rw)
++  store i32 1, ptr @under_wrlock, align 4
++  %u2 = call i32 @pthread_rwlock_unlock(ptr @rw)
++
++  ; Released before the access. Reading an unlock as an acquisition -- every
++  ; unlock name contains "lock" -- left the mutex held for the rest of the
++  ; function and made this look protected.
++  %l3 = call i32 @pthread_mutex_lock(ptr @mtx)
++  %u3 = call i32 @pthread_mutex_unlock(ptr @mtx)
++  store i32 1, ptr @after_unlock, align 4
++
++  ; A reader lock does not exclude other readers, so a write under one is not
++  ; protected by it.
++  %l4 = call i32 @pthread_rwlock_rdlock(ptr @rw)
++  store i32 1, ptr @under_rdlock, align 4
++  %u4 = call i32 @pthread_rwlock_unlock(ptr @rw)
++
++  ; A try-lock reports whether it succeeded; on the failing path nothing is
++  ; held.
++  %t = call i32 @pthread_mutex_trylock(ptr @mtx)
++  store i32 1, ptr @after_trylock, align 4
++  ret ptr null
++}
++
++define i32 @main() nounwind {
++entry:
++  %t = alloca i64, align 8
++  %c = call i32 @pthread_create(ptr %t, ptr null, ptr @worker, ptr null)
++  ret i32 0
++}
++
++; CHECK: Protected Global Variables
++; CHECK-DAG: * under_mutex
++; CHECK-DAG: * under_wrlock
++; CHECK-NOT: * after_unlock
++; CHECK-NOT: * under_rdlock
++; CHECK-NOT: * after_trylock
+diff --git a/llvm/test/Analysis/SingleThreaded/swmr.ll b/llvm/test/Analysis/SingleThreaded/swmr.ll
+new file mode 100644
+index 000000000000..ad60c4a2e771
+--- /dev/null
++++ b/llvm/test/Analysis/SingleThreaded/swmr.ll
+@@ -0,0 +1,40 @@
++; A global is only safe to treat as read-only in multi-threaded code if nothing
++; writes it there. Deciding that by comparing a store's pointer operand against
++; the global itself recognised `g = x` for a scalar g and nothing else: `g[2] =
++; x` goes through a constant getelementptr, and a write through any derived
++; pointer was invisible, so an array written by every thread was still reported
++; read-only -- and the consumer elides *all* accesses to such a global, not just
++; the reads.
++
++; RUN: opt < %s -passes='print<single-threaded>' -disable-output 2>&1 | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@ro = global i32 0, align 4                       ; written before threads, read after
++@arr = global [4 x i32] zeroinitializer, align 16 ; written by a thread via a constant GEP
++@escaped = global i32 0, align 4                  ; address handed to a thread
++
++declare i32 @pthread_create(ptr, ptr, ptr, ptr)
++
++define internal ptr @worker(ptr %arg) nounwind {
++entry:
++  %v = load i32, ptr @ro, align 4
++  ; constant getelementptr: not an Instruction user of @arr at all
++  store i32 %v, ptr getelementptr inbounds ([4 x i32], ptr @arr, i64 0, i64 2), align 4
++  ; and through the pointer it was handed
++  store i32 1, ptr %arg, align 4
++  ret ptr null
++}
++
++define i32 @main() nounwind {
++entry:
++  %t = alloca i64, align 8
++  store i32 5, ptr @ro, align 4
++  %c = call i32 @pthread_create(ptr %t, ptr null, ptr @worker, ptr @escaped)
++  ret i32 0
++}
++
++; CHECK: Read-Only Globals
++; CHECK: ro
++; CHECK-NOT: arr
++; CHECK-NOT: escaped
+diff --git a/llvm/test/Analysis/SingleThreaded/thread-creators.ll b/llvm/test/Analysis/SingleThreaded/thread-creators.ll
+new file mode 100644
+index 000000000000..1c3dafffff0e
+--- /dev/null
++++ b/llvm/test/Analysis/SingleThreaded/thread-creators.ll
+@@ -0,0 +1,61 @@
++; What counts as starting a thread. Each of these reaches pthread_create inside
++; a runtime library, so what a translation unit sees is the wrapper; recognising
++; only the literal pthread_create left whole programs looking single-threaded.
++
++; RUN: opt < %s -passes='print<single-threaded>' -disable-output 2>&1 | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++declare i32 @pthread_create(ptr, ptr, ptr, ptr)
++declare i32 @thrd_create(ptr, ptr, ptr)
++declare void @__kmpc_fork_call(ptr, i32, ptr, ...)
++declare ptr @__tsan_create_fiber(i32)
++declare void @_ZNSt6thread15_M_start_threadESt10unique_ptrINS_6_StateESt14default_deleteIS1_EEPFvvE(ptr, ptr, ptr)
++
++define internal void @spawn_pthread() nounwind {
++  %t = alloca i64, align 8
++  %c = call i32 @pthread_create(ptr %t, ptr null, ptr null, ptr null)
++  ret void
++}
++define internal void @spawn_c11() nounwind {
++  %t = alloca i64, align 8
++  %c = call i32 @thrd_create(ptr %t, ptr null, ptr null)
++  ret void
++}
++define internal void @spawn_openmp() nounwind {
++  call void (ptr, i32, ptr, ...) @__kmpc_fork_call(ptr null, i32 0, ptr null)
++  ret void
++}
++define internal void @spawn_fiber() nounwind {
++  %f = call ptr @__tsan_create_fiber(i32 0)
++  ret void
++}
++define internal void @spawn_cxx() nounwind {
++  call void @_ZNSt6thread15_M_start_threadESt10unique_ptrINS_6_StateESt14default_deleteIS1_EEPFvvE(ptr null, ptr null, ptr null)
++  ret void
++}
++
++; Called before anything is started, and starts nothing itself.
++define internal void @before_any_thread() nounwind {
++  ret void
++}
++
++define i32 @main() nounwind {
++entry:
++  call void @before_any_thread()
++  call void @spawn_pthread()
++  call void @spawn_c11()
++  call void @spawn_openmp()
++  call void @spawn_fiber()
++  call void @spawn_cxx()
++  ret i32 0
++}
++
++; CHECK: Thread Creator Functions
++; CHECK-DAG: spawn_pthread
++; CHECK-DAG: spawn_c11
++; CHECK-DAG: spawn_openmp
++; CHECK-DAG: spawn_fiber
++; CHECK-DAG: spawn_cxx
++; CHECK: Single-Threaded Functions
++; CHECK: before_any_thread
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/elim-across-intrinsics.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-across-intrinsics.ll
+new file mode 100644
+index 000000000000..f3755fdb4202
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-across-intrinsics.ll
+@@ -0,0 +1,74 @@
++; Which intrinsics an access may be eliminated across.
++;
++; This used to be a hand-written blocklist ending in "everything else is
++; synchronization-free". That list names no target intrinsics, so a memory
++; fence and a thread barrier both counted as sync-free and elimination went
++; straight through them. The answer now comes from what the intrinsic declares:
++; touching no memory, or only the memory passed in as arguments, means there is
++; nothing to synchronize through; anything else is assumed to synchronize.
++;
++; The last two functions are the controls. Without them a change that simply
++; stopped eliminating across every intrinsic would satisfy the first CHECK.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-dominance-analysis-dom -S | FileCheck %s
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -S | FileCheck %s --check-prefix=NODOM
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@g = global i32 0, align 4
++
++declare void @llvm.x86.sse2.mfence()
++declare float @llvm.fabs.f32(float)
++declare void @llvm.memset.p0.i64(ptr nocapture writeonly, i8, i64, i1 immarg)
++
++;--- A memory fence orders this thread against others. Nothing crosses it.
++define void @across_mfence() nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @across_mfence
++; CHECK:       call void @__tsan_write4(ptr @g)
++; CHECK:       call void @llvm.x86.sse2.mfence()
++; CHECK:       call void @__tsan_write4(ptr @g)
++; CHECK:       ret void
++; NODOM-LABEL: @across_mfence
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       ret void
++  store i32 1, ptr @g, align 4
++  call void @llvm.x86.sse2.mfence()
++  store i32 2, ptr @g, align 4
++  ret void
++}
++
++;--- An intrinsic that touches no memory has nothing to synchronize through.
++define void @across_fabs(float %x) nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @across_fabs
++; CHECK:       call void @__tsan_write4(ptr @g)
++; CHECK-NOT:   call void @__tsan_write4(ptr @g)
++; CHECK:       ret void
++; NODOM-LABEL: @across_fabs
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       ret void
++  store i32 1, ptr @g, align 4
++  %r = call float @llvm.fabs.f32(float %x)
++  store i32 2, ptr @g, align 4
++  ret void
++}
++
++;--- Nor does one that touches only what it was handed. This is the case that
++;--- rules out answering the question with the nosync attribute alone: memset
++;--- does not carry it, and treating it as synchronizing would cost most of
++;--- what the analysis achieves.
++define void @across_memset(ptr %p) nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @across_memset
++; CHECK:       call void @__tsan_write4(ptr @g)
++; CHECK-NOT:   call void @__tsan_write4(ptr @g)
++; CHECK:       ret void
++; NODOM-LABEL: @across_memset
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       call void @__tsan_write4(ptr @g)
++; NODOM:       ret void
++  store i32 1, ptr @g, align 4
++  call void @llvm.memset.p0.i64(ptr %p, i8 0, i64 16, i1 false)
++  store i32 2, ptr @g, align 4
++  ret void
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-post-dominance-coverage.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-post-dominance-coverage.ll
+new file mode 100644
+index 000000000000..771f5f15edf8
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-post-dominance-coverage.ll
+@@ -0,0 +1,88 @@
++; Which access can stand in for which, when the covering one comes later.
++;
++; TSan already drops a read that is followed by a write to the same address in
++; the same basic block. Post-dominance is the general form of that rule: the
++; covering write need only post-dominate the read, and the path between them is
++; checked rather than assumed. These cases pin down the coverage rule in both
++; directions.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-dominance-analysis-postdom -S | FileCheck %s
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -S | FileCheck %s --check-prefix=NOPOSTDOM
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@g = global i32 0, align 4
++@s = global i32 0, align 4
++
++;--- A later write covers an earlier read, across blocks. This is
++;--- read-before-write generalised past the end of a basic block.
++define void @write_covers_earlier_read(i1 %c) nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @write_covers_earlier_read
++; CHECK-NOT:   call void @__tsan_read4(ptr @g)
++; CHECK:       call void @__tsan_write4(ptr @g)
++; CHECK:       ret void
++; NOPOSTDOM-LABEL: @write_covers_earlier_read
++; NOPOSTDOM:       call void @__tsan_read4(ptr @g)
++; NOPOSTDOM:       call void @__tsan_write4(ptr @g)
++; NOPOSTDOM:       ret void
++entry:
++  %v = load i32, ptr @g, align 4
++  br i1 %c, label %a, label %b
++a:
++  store i32 %v, ptr @s, align 4
++  br label %join
++b:
++  br label %join
++join:
++  store i32 42, ptr @g, align 4
++  ret void
++}
++
++;--- A later read covers an earlier read: a read races only with a remote
++;--- write, and the later read still finds it.
++define void @read_covers_earlier_read(i1 %c) nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @read_covers_earlier_read
++; CHECK-NOT:   call void @__tsan_read4(ptr @g)
++; CHECK:       call void @__tsan_read4(ptr @g)
++; CHECK:       ret void
++; NOPOSTDOM-LABEL: @read_covers_earlier_read
++; NOPOSTDOM:       call void @__tsan_read4(ptr @g)
++; NOPOSTDOM:       call void @__tsan_read4(ptr @g)
++; NOPOSTDOM:       ret void
++entry:
++  %v = load i32, ptr @g, align 4
++  store i32 %v, ptr @s, align 4
++  br i1 %c, label %a, label %b
++a:
++  br label %join
++b:
++  br label %join
++join:
++  %w = load i32, ptr @g, align 4
++  store i32 %w, ptr @s, align 4
++  ret void
++}
++
++;--- A later read cannot cover an earlier write. The write may race with a
++;--- remote read, which the covering read would never flag.
++define void @read_does_not_cover_earlier_write(i1 %c) nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @read_does_not_cover_earlier_write
++; CHECK:       call void @__tsan_write4(ptr @g)
++; CHECK:       call void @__tsan_read4(ptr @g)
++; CHECK:       ret void
++; NOPOSTDOM-LABEL: @read_does_not_cover_earlier_write
++; NOPOSTDOM:       call void @__tsan_write4(ptr @g)
++; NOPOSTDOM:       call void @__tsan_read4(ptr @g)
++; NOPOSTDOM:       ret void
++entry:
++  store i32 7, ptr @g, align 4
++  br i1 %c, label %a, label %b
++a:
++  br label %join
++b:
++  br label %join
++join:
++  %w = load i32, ptr @g, align 4
++  store i32 %w, ptr @s, align 4
++  ret void
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/escape-unidentified.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/escape-unidentified.ll
+new file mode 100644
+index 000000000000..82852a1111cd
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/escape-unidentified.ll
+@@ -0,0 +1,36 @@
++; An access whose base pointer the object walk cannot identify must keep its
++; instrumentation. The walk clears its result and reports failure in that case,
++; but the caller discarded the status and read the empty list as "nothing
++; escapes", so every such access lost its check.
++;
++; The second function is what makes the first meaningful: escape analysis must
++; still be doing its job, or a change that simply stopped eliding anything would
++; satisfy the CHECK.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-escape-analysis-global -S | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++; The address comes from arithmetic on an integer, so there is no object to
++; reason about. Nothing is known, so nothing may be dropped.
++define void @unidentified_base(i64 %bits) nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @unidentified_base
++; CHECK:       call void @__tsan_write4
++; CHECK:       ret void
++entry:
++  %scaled = mul i64 %bits, 8
++  %p = inttoptr i64 %scaled to ptr
++  store i32 1, ptr %p, align 4
++  ret void
++}
++
++; A local that never leaves the function: still elided.
++define void @local_alloca() nounwind uwtable sanitize_thread {
++; CHECK-LABEL: @local_alloca
++; CHECK-NOT:   call void @__tsan_write4
++; CHECK:       ret void
++entry:
++  %x = alloca i32, align 4
++  store i32 1, ptr %x, align 4
++  ret void
++}

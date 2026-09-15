@@ -19,9 +19,23 @@ RUN git init llvm-project && cd llvm-project \
     && git remote add origin https://github.com/llvm/llvm-project.git \
     && git fetch --depth 1 origin ${LLVM_BASE} && git checkout FETCH_HEAD
 COPY compiler/patches/ /src/patches/
+# `git apply --index` fails in this image with "does not match index" on 24 files even
+# though every preimage blob matches the index and is present in the object store; plain
+# `git apply` applies the identical patches cleanly. The index is not used by the build, so
+# apply to the working tree and verify the RESULT instead of trusting the mechanism: the
+# reconstructed tree must hash to the branch's tree, which is the reproducibility claim a
+# reviewer can check without building anything.
+ARG EXPECTED_TREE=83c8a2a16db10bd5f826a76f84911ae171d05d3f
 RUN cd llvm-project && for p in $(ls /src/patches/*.patch | sort); do \
-      echo "applying $p"; git apply --index "$p" || exit 1; done
+      echo "applying $p"; git apply "$p" || exit 1; done \
+    && git add -A \
+    && t=$(git write-tree) \
+    && echo "reconstructed tree $t (expected ${EXPECTED_TREE})" \
+    && [ "$t" = "${EXPECTED_TREE}" ] || { echo "TREE MISMATCH: the patch series did not reproduce the branch"; exit 1; }
 
+# llvm-lit is NOT a ninja target: cmake generates bin/llvm-lit at configure time and there is
+# no install rule for it, so it is installed explicitly below. Do not re-add it to the ninja
+# target list. LLVM_INSTALL_UTILS=ON is what installs FileCheck, not and count.
 # Configure and build INSIDE the container at the final path, with a relocatable install:
 # LLVM_LINK_LLVM_DYLIB puts the LLVM libraries in one shared object under the prefix, and
 # cmake --install writes lit configuration files with the prefix's own paths.
@@ -31,8 +45,10 @@ RUN cmake -G Ninja -S llvm-project/llvm -B build \
       -DLLVM_TARGETS_TO_BUILD=X86 \
       -DLLVM_BUILD_LLVM_DYLIB=ON -DLLVM_LINK_LLVM_DYLIB=ON -DBUILD_SHARED_LIBS=OFF \
       -DCMAKE_INSTALL_PREFIX=/opt/tsan-llvm \
-    && ninja -C build -j ${JOBS} clang lld compiler-rt llvm-lit FileCheck not count opt llvm-objdump \
-    && ninja -C build install
+      -DLLVM_INSTALL_UTILS=ON \
+    && ninja -C build -j ${JOBS} clang lld compiler-rt FileCheck not count opt llvm-objdump \
+    && ninja -C build install \
+    && install -m755 build/bin/llvm-lit /opt/tsan-llvm/bin/llvm-lit
 
 # The RUNPATH check: every LLVM library the installed clang loads must live under the prefix.
 RUN ldd /opt/tsan-llvm/bin/clang | grep -i llvm | grep -qv /opt/tsan-llvm && { echo "clang resolves an LLVM library outside the prefix"; exit 1; } || true \

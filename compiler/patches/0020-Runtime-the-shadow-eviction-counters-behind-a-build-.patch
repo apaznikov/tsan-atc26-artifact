@@ -1,0 +1,533 @@
+From a0972bbb777da40d7234f841c8f92c24daffcb89 Mon Sep 17 00:00:00 2001
+From: Alexey Paznikov <apaznikov@gmail.com>
+Date: Mon, 14 Sep 2026 19:59:34 +0800
+Subject: Runtime: the shadow-eviction counters behind a build option, per
+ thread when on
+
+---
+ compiler-rt/lib/tsan/rtl/CMakeLists.txt      | 10 +++
+ compiler-rt/lib/tsan/rtl/tsan_flags.cpp      | 16 ++++
+ compiler-rt/lib/tsan/rtl/tsan_flags.inc      | 20 +++--
+ compiler-rt/lib/tsan/rtl/tsan_rtl.cpp        | 45 ++++++++--
+ compiler-rt/lib/tsan/rtl/tsan_rtl.h          | 42 ++++++---
+ compiler-rt/lib/tsan/rtl/tsan_rtl_access.cpp | 90 +++++++++++++-------
+ compiler-rt/lib/tsan/rtl/tsan_rtl_thread.cpp | 10 +++
+ compiler-rt/lib/tsan/tests/CMakeLists.txt    |  9 ++
+ compiler-rt/test/tsan/CMakeLists.txt         |  1 +
+ compiler-rt/test/tsan/lit.cfg.py             |  5 ++
+ compiler-rt/test/tsan/lit.site.cfg.py.in     |  1 +
+ compiler-rt/test/tsan/shadow_evictions.c     |  4 +-
+ llvm/docs/TSanAnalysesAudit.md               | 20 ++++-
+ 13 files changed, 211 insertions(+), 62 deletions(-)
+
+diff --git a/compiler-rt/lib/tsan/rtl/CMakeLists.txt b/compiler-rt/lib/tsan/rtl/CMakeLists.txt
+index 3bfc34ca9441..27066ef99f99 100644
+--- a/compiler-rt/lib/tsan/rtl/CMakeLists.txt
++++ b/compiler-rt/lib/tsan/rtl/CMakeLists.txt
+@@ -17,6 +17,16 @@ if(COMPILER_RT_TSAN_REX_FILTER)
+   list(APPEND TSAN_RTL_CFLAGS -DTSAN_REX_FILTER=1)
+ endif()
+ 
++# The shadow-eviction counters (the bounded-shadow measurement) are off by
++# default too: counted per thread they still add work to the access callbacks'
++# eviction branch, and the shipped runtime's access path must be upstream's.
++# See NoteEviction in tsan_rtl_access.cpp.
++option(COMPILER_RT_TSAN_EVICTION_STATS
++  "Compile the shadow-eviction counters into the TSan runtime" OFF)
++if(COMPILER_RT_TSAN_EVICTION_STATS)
++  list(APPEND TSAN_RTL_CFLAGS -DTSAN_EVICTION_STATS=1)
++endif()
++
+ set(TSAN_RTL_DYNAMIC_CFLAGS ${TSAN_RTL_CFLAGS})
+ list(REMOVE_ITEM TSAN_RTL_DYNAMIC_CFLAGS -fPIE)
+ 
+diff --git a/compiler-rt/lib/tsan/rtl/tsan_flags.cpp b/compiler-rt/lib/tsan/rtl/tsan_flags.cpp
+index 3fd58f46983f..b6fdcdbfa7f6 100644
+--- a/compiler-rt/lib/tsan/rtl/tsan_flags.cpp
++++ b/compiler-rt/lib/tsan/rtl/tsan_flags.cpp
+@@ -77,6 +77,22 @@ void InitializeFlags(Flags *f, const char *env, const char *env_option_name) {
+   FlagParser parser;
+   RegisterTsanFlags(&parser, f);
+   RegisterCommonFlags(&parser);
++#if !TSAN_EVICTION_STATS
++  // The eviction-counter flags exist only in a runtime built with
++  // COMPILER_RT_TSAN_EVICTION_STATS; accept and ignore them here so that a
++  // TSAN_OPTIONS written for that build is harmless in this one.
++  static bool ignored_bool;
++  static const char *ignored_str;
++  RegisterFlag(&parser, "print_evictions",
++               "Ignored: runtime built without eviction counters.",
++               &ignored_bool);
++  RegisterFlag(&parser, "evict_watch",
++               "Ignored: runtime built without eviction counters.",
++               &ignored_str);
++  RegisterFlag(&parser, "trace_evictions",
++               "Ignored: runtime built without eviction counters.",
++               &ignored_bool);
++#endif
+ 
+ #if TSAN_CONTAINS_UBSAN
+   __ubsan::Flags *uf = __ubsan::flags();
+diff --git a/compiler-rt/lib/tsan/rtl/tsan_flags.inc b/compiler-rt/lib/tsan/rtl/tsan_flags.inc
+index 5eb85d10ec0c..2d2faaaad92c 100644
+--- a/compiler-rt/lib/tsan/rtl/tsan_flags.inc
++++ b/compiler-rt/lib/tsan/rtl/tsan_flags.inc
+@@ -23,15 +23,6 @@ TSAN_FLAG(bool, enable_annotations, true,
+ TSAN_FLAG(bool, suppress_equal_stacks, true,
+           "Suppress a race report if we've already output another race report "
+           "with the same stack.")
+-TSAN_FLAG(bool, print_evictions, false,
+-          "Print shadow-cell eviction counters at exit.")
+-TSAN_FLAG(const char *, evict_watch, "",
+-          "Application addresses joined by '+'; evictions on their 8-byte "
+-          "granules are counted separately (total/uncovered/plain) and "
+-          "printed with print_evictions.")
+-TSAN_FLAG(bool, trace_evictions, false,
+-          "Print every eviction of a concurrent access of another thread "
+-          "(address, evicting tid, evicted sid/epoch).")
+ TSAN_FLAG(bool, report_bugs, true,
+           "Turns off bug reporting entirely (useful for benchmarking).")
+ TSAN_FLAG(bool, report_thread_leaks, true, "Report thread leaks at exit?")
+@@ -93,3 +84,14 @@ TSAN_FLAG(bool, print_full_thread_history, false,
+ TSAN_FLAG(bool, enable_filter, false,
+           "If set, we use 'ReX' filter to filter out redundancy.")
+ #endif
++#if TSAN_EVICTION_STATS
++TSAN_FLAG(bool, print_evictions, false,
++          "Print shadow-cell eviction counters at exit.")
++TSAN_FLAG(const char *, evict_watch, "",
++          "Application addresses joined by '+'; evictions on their 8-byte "
++          "granules are counted separately (total/uncovered/plain) and "
++          "printed with print_evictions.")
++TSAN_FLAG(bool, trace_evictions, false,
++          "Print every eviction of a concurrent access of another thread "
++          "(address, evicting tid, evicted sid/epoch).")
++#endif
+diff --git a/compiler-rt/lib/tsan/rtl/tsan_rtl.cpp b/compiler-rt/lib/tsan/rtl/tsan_rtl.cpp
+index 0314a936b6e2..fe1683a9813a 100644
+--- a/compiler-rt/lib/tsan/rtl/tsan_rtl.cpp
++++ b/compiler-rt/lib/tsan/rtl/tsan_rtl.cpp
+@@ -431,6 +431,11 @@ ThreadState::ThreadState(Tid tid)
+ #endif
+   shadow_stack_pos = shadow_stack;
+   shadow_stack_end = shadow_stack + kInitStackSize;
++#if TSAN_EVICTION_STATS
++  evict_total = 0;
++  evict_concurrent_foreign = 0;
++  evict_concurrent_foreign_plain = 0;
++#endif
+ }
+ 
+ #if !SANITIZER_GO
+@@ -756,6 +761,7 @@ void Initialize(ThreadState *thr) {
+     while (__tsan_resumed == 0) {}
+   }
+ 
++#if TSAN_EVICTION_STATS
+   // Parse evict_watch: hex or decimal addresses joined by '+' (the flag
+   // parser reserves ',' and ':').
+   ctx->evict_watch_n = 0;
+@@ -788,6 +794,8 @@ void Initialize(ThreadState *thr) {
+     ctx->evict_watch_addr[ctx->evict_watch_n++] = a & ~(uptr)7;
+     p = (*q == '+') ? q + 1 : q;
+   }
++  ctx->evict_slow = ctx->evict_watch_n > 0 || flags()->trace_evictions;
++#endif
+   OnInitialize();
+ #if TSAN_REX_FILTER
+   InitializeFilter();
+@@ -808,6 +816,21 @@ void MaybeSpawnBackgroundThread() {
+ #endif
+ }
+ 
++#if TSAN_EVICTION_STATS
++// Adds the eviction counters of a thread that is still running (its
++// ThreadState still exists) to the sums; finished threads already handed
++// theirs to Context in ThreadContext::OnFinished.
++static void SumLiveEvictionCounters(ThreadContextBase *tctx_base, void *arg) {
++  auto *tctx = static_cast<ThreadContext *>(tctx_base);
++  if (tctx->status != ThreadStatusRunning || !tctx->thr)
++    return;
++  u64 *sum = static_cast<u64 *>(arg);
++  sum[0] += tctx->thr->evict_total;
++  sum[1] += tctx->thr->evict_concurrent_foreign;
++  sum[2] += tctx->thr->evict_concurrent_foreign_plain;
++}
++#endif
++
+ int Finalize(ThreadState *thr) {
+   bool failed = false;
+ 
+@@ -839,14 +862,25 @@ int Finalize(ThreadState *thr) {
+ #endif
+   }
+ 
++#if TSAN_EVICTION_STATS
+   if (flags()->print_evictions) {
++    // Finished threads handed their counts to ctx in OnFinished; the live
++    // ones (main included) still hold theirs. Both under the registry lock,
++    // so a thread cannot finish between the two reads. The live counters are
++    // read without synchronisation: aligned 8-byte loads, and this runtime
++    // is not itself instrumented.
++    u64 sum[3] = {atomic_load_relaxed(&ctx->evict_total),
++                  atomic_load_relaxed(&ctx->evict_concurrent_foreign),
++                  atomic_load_relaxed(&ctx->evict_concurrent_foreign_plain)};
++    {
++      ThreadRegistryLock l(&ctx->thread_registry);
++      ctx->thread_registry.RunCallbackForEachThreadLocked(
++          SumLiveEvictionCounters, sum);
++    }
+     Printf("ThreadSanitizer: shadow evictions total=%llu "
+            "concurrent_foreign=%llu concurrent_foreign_plain=%llu\n",
+-           (unsigned long long)atomic_load_relaxed(&ctx->evict_total),
+-           (unsigned long long)atomic_load_relaxed(
+-               &ctx->evict_concurrent_foreign),
+-           (unsigned long long)atomic_load_relaxed(
+-               &ctx->evict_concurrent_foreign_plain));
++           (unsigned long long)sum[0], (unsigned long long)sum[1],
++           (unsigned long long)sum[2]);
+     for (int i = 0; i < ctx->evict_watch_n; i++)
+       Printf("ThreadSanitizer: evictions at %p: total=%llu "
+              "concurrent_foreign=%llu concurrent_foreign_plain=%llu\n",
+@@ -857,6 +891,7 @@ int Finalize(ThreadState *thr) {
+              (unsigned long long)atomic_load_relaxed(
+                  &ctx->evict_watch_plain[i]));
+   }
++#endif
+ 
+   if (common_flags()->print_suppressions)
+     PrintMatchedSuppressions();
+diff --git a/compiler-rt/lib/tsan/rtl/tsan_rtl.h b/compiler-rt/lib/tsan/rtl/tsan_rtl.h
+index e50af50d30ec..f858e068e67c 100644
+--- a/compiler-rt/lib/tsan/rtl/tsan_rtl.h
++++ b/compiler-rt/lib/tsan/rtl/tsan_rtl.h
+@@ -265,6 +265,13 @@ struct ThreadState {
+ 
+   explicit ThreadState(Tid tid);
+ 
++#if TSAN_EVICTION_STATS
++  // Evictions by this thread: plain counters written only by the owner on
++  // the eviction branch of CheckRaces, added into Context in OnFinished.
++  u64 evict_total;
++  u64 evict_concurrent_foreign;
++  u64 evict_concurrent_foreign_plain;
++#endif
+ #if TSAN_REX_FILTER
+   LocksetContext filter_ctx;
+ #endif
+@@ -344,20 +351,6 @@ struct Context {
+   Mutex report_mtx;
+   int nreported;
+   atomic_uint64_t last_symbolize_time_ns;
+-  // Shadow-cell evictions: every time CheckRaces found no empty or
+-  // rewritable slot and overwrote a random one, and the subset where the
+-  // overwritten access belonged to another thread and was not ordered
+-  // before the current one -- the case that can hide a later race.
+-  atomic_uint64_t evict_total;
+-  atomic_uint64_t evict_concurrent_foreign;
+-  atomic_uint64_t evict_concurrent_foreign_plain;
+-  // Per-granule counters for the addresses named in evict_watch.
+-  static const int kEvictWatchMax = 8;
+-  uptr evict_watch_addr[kEvictWatchMax];
+-  int evict_watch_n;
+-  atomic_uint64_t evict_watch_total[kEvictWatchMax];
+-  atomic_uint64_t evict_watch_foreign[kEvictWatchMax];
+-  atomic_uint64_t evict_watch_plain[kEvictWatchMax];
+ 
+   void *background_thread;
+   atomic_uint32_t stop_background_thread;
+@@ -426,6 +419,27 @@ struct Context {
+   uptr mapped_shadow_begin;
+   uptr mapped_shadow_end;
+ #endif
++#if TSAN_EVICTION_STATS
++  // Shadow-cell evictions: every time CheckRaces found no empty or
++  // rewritable slot and overwrote a random one, and the subset where the
++  // overwritten access belonged to another thread and was not ordered
++  // before the current one -- the case that can hide a later race. Threads
++  // count in their ThreadState and hand the totals over here when they
++  // finish (ThreadContext::OnFinished); Finalize adds the live threads'.
++  atomic_uint64_t evict_total;
++  atomic_uint64_t evict_concurrent_foreign;
++  atomic_uint64_t evict_concurrent_foreign_plain;
++  // True when the out-of-line part of NoteEviction has work to do
++  // (evict_watch or trace_evictions); set once in Initialize.
++  bool evict_slow;
++  // Per-granule counters for the addresses named in evict_watch.
++  static const int kEvictWatchMax = 8;
++  uptr evict_watch_addr[kEvictWatchMax];
++  int evict_watch_n;
++  atomic_uint64_t evict_watch_total[kEvictWatchMax];
++  atomic_uint64_t evict_watch_foreign[kEvictWatchMax];
++  atomic_uint64_t evict_watch_plain[kEvictWatchMax];
++#endif
+ };
+ 
+ extern Context *ctx;  // The one and the only global runtime context.
+diff --git a/compiler-rt/lib/tsan/rtl/tsan_rtl_access.cpp b/compiler-rt/lib/tsan/rtl/tsan_rtl_access.cpp
+index ac58a48508b4..2f2c5bcbfd18 100644
+--- a/compiler-rt/lib/tsan/rtl/tsan_rtl_access.cpp
++++ b/compiler-rt/lib/tsan/rtl/tsan_rtl_access.cpp
+@@ -171,41 +171,44 @@ NOINLINE void DoReportRace(ThreadState* thr, RawShadow* shadow_mem, Shadow cur,
+     SlotLock(thr);
+ }
+ 
+-// Called only on the slow path where no slot was empty or rewritable.
+-// "Concurrent foreign": the overwritten access belongs to another thread and
+-// the current thread's clock does not cover it, so it could still have raced
+-// with a later conflicting access. The atomic reads the mutex interceptors
+-// issue on the mutex word are the bulk of these in lock-heavy code and can
+-// only race with a plain access to the mutex itself; the "plain" subset
+-// excludes them.
+-static NOINLINE void NoteEviction(ThreadState* thr, RawShadow* shadow_mem,
+-                                  Shadow old, Shadow cur) {
+-  atomic_fetch_add(&ctx->evict_total, 1, memory_order_relaxed);
++#if TSAN_EVICTION_STATS
++// Shadow-cell eviction counters (COMPILER_RT_TSAN_EVICTION_STATS). Called
++// only on the slow path where no slot was empty or rewritable. "Concurrent
++// foreign": the overwritten access belongs to another thread and the current
++// thread's clock does not cover it, so it could still have raced with a
++// later conflicting access. The atomic reads the mutex interceptors issue on
++// the mutex word are the bulk of these in lock-heavy code and can only race
++// with a plain access to the mutex itself; the "plain" subset excludes them.
++//
++// The counters are per thread and plain (ThreadState; handed to Context when
++// the thread finishes): a shared counter was a lock-prefixed increment on one
++// cache line at every eviction, and the out-of-line call it sat in cost every
++// access callback a callee-saved prologue on the path that evicts nothing.
++// Only the rare work -- the per-granule watch and the trace line -- is out of
++// line, and it is the last thing on the path.
++// preserve_most: the callee saves every register the caller might hold, so
++// the access callbacks this is inlined into need no callee-saved prologue
++// for the sake of this call.
++static NOINLINE __attribute__((preserve_most)) void NoteEvictionSlow(
++    ThreadState* thr, RawShadow* shadow_mem, Shadow old, Shadow cur) {
+   // Watched granules: the application address of this shadow cell.
+   int w = -1;
+-  if (UNLIKELY(ctx->evict_watch_n)) {
+-    const uptr app = ShadowToMem(shadow_mem) & ~(uptr)7;
+-    for (int i = 0; i < ctx->evict_watch_n; i++)
+-      if (ctx->evict_watch_addr[i] == app) {
+-        w = i;
+-        atomic_fetch_add(&ctx->evict_watch_total[i], 1, memory_order_relaxed);
+-        break;
+-      }
+-  }
++  const uptr app = ShadowToMem(shadow_mem) & ~(uptr)7;
++  for (int i = 0; i < ctx->evict_watch_n; i++)
++    if (ctx->evict_watch_addr[i] == app) {
++      w = i;
++      atomic_fetch_add(&ctx->evict_watch_total[i], 1, memory_order_relaxed);
++      break;
++    }
+   if (old.sid() == cur.sid() || thr->clock.Get(old.sid()) >= old.epoch())
+     return;
+-  atomic_fetch_add(&ctx->evict_concurrent_foreign, 1, memory_order_relaxed);
+-  if (w >= 0)
+-    atomic_fetch_add(&ctx->evict_watch_foreign[w], 1, memory_order_relaxed);
+   const bool atomic = old.IsAtomic();
+-  const bool plain = !atomic;
+-  if (plain) {
+-    atomic_fetch_add(&ctx->evict_concurrent_foreign_plain, 1,
+-                     memory_order_relaxed);
+-    if (w >= 0)
++  if (w >= 0) {
++    atomic_fetch_add(&ctx->evict_watch_foreign[w], 1, memory_order_relaxed);
++    if (!atomic)
+       atomic_fetch_add(&ctx->evict_watch_plain[w], 1, memory_order_relaxed);
+   }
+-  if (UNLIKELY(flags()->trace_evictions))
++  if (flags()->trace_evictions)
+     Printf("ThreadSanitizer: evicted concurrent %s %s at %p "
+            "(tid=%d clock[%d]=%d; evicted sid=%d epoch=%d)\n",
+            atomic ? "atomic" : "plain",
+@@ -216,6 +219,19 @@ static NOINLINE void NoteEviction(ThreadState* thr, RawShadow* shadow_mem,
+            static_cast<int>(old.sid()), static_cast<int>(old.epoch()));
+ }
+ 
++ALWAYS_INLINE void NoteEviction(ThreadState* thr, RawShadow* shadow_mem,
++                                Shadow old, Shadow cur) {
++  thr->evict_total++;
++  if (old.sid() != cur.sid() && thr->clock.Get(old.sid()) < old.epoch()) {
++    thr->evict_concurrent_foreign++;
++    if (!old.IsAtomic())
++      thr->evict_concurrent_foreign_plain++;
++  }
++  if (UNLIKELY(ctx->evict_slow))
++    NoteEvictionSlow(thr, shadow_mem, old, cur);
++}
++#endif
++
+ #if !TSAN_VECTORIZE
+ ALWAYS_INLINE
+ bool ContainsSameAccess(RawShadow* s, Shadow cur, int unused0, int unused1,
+@@ -275,8 +291,13 @@ bool CheckRaces(ThreadState* thr, RawShadow* shadow_mem, Shadow cur,
+   // Choose a random candidate slot and replace it.
+   uptr index =
+       atomic_load_relaxed(&thr->trace_pos) / sizeof(Event) % kShadowCnt;
+-  NoteEviction(thr, shadow_mem, Shadow(LoadShadow(&shadow_mem[index])), cur);
++#if TSAN_EVICTION_STATS
++  Shadow old(LoadShadow(&shadow_mem[index]));
++#endif
+   StoreShadow(&shadow_mem[index], cur.raw());
++#if TSAN_EVICTION_STATS
++  NoteEviction(thr, shadow_mem, old, cur);
++#endif
+   return false;
+ }
+ 
+@@ -394,11 +415,18 @@ STORE : {
+     const m128 empty = _mm_cmpeq_epi32(shadow, zero);
+     const int empty_mask = _mm_movemask_epi8(empty);
+     index = __builtin_ffs(empty_mask);
++#if TSAN_EVICTION_STATS
+     if (UNLIKELY(index == 0)) {
+       index = (atomic_load_relaxed(&thr->trace_pos) / 2) % 16;
+-      NoteEviction(thr, shadow_mem,
+-                   Shadow(LoadShadow(&shadow_mem[index / 4])), cur);
++      Shadow old(LoadShadow(&shadow_mem[index / 4]));
++      StoreShadow(&shadow_mem[index / 4], cur.raw());
++      NoteEviction(thr, shadow_mem, old, cur);
++      return false;
+     }
++#else
++    if (UNLIKELY(index == 0))
++      index = (atomic_load_relaxed(&thr->trace_pos) / 2) % 16;
++#endif
+   }
+   StoreShadow(&shadow_mem[index / 4], cur.raw());
+   // We could zero other slots determined by rewrite_mask.
+diff --git a/compiler-rt/lib/tsan/rtl/tsan_rtl_thread.cpp b/compiler-rt/lib/tsan/rtl/tsan_rtl_thread.cpp
+index 24bab5a66534..f81bcae06c1b 100644
+--- a/compiler-rt/lib/tsan/rtl/tsan_rtl_thread.cpp
++++ b/compiler-rt/lib/tsan/rtl/tsan_rtl_thread.cpp
+@@ -276,6 +276,16 @@ void ThreadContext::OnFinished() {
+   // From now on replay will use trace->final_pos.
+   trace.final_pos = (Event *)atomic_load_relaxed(&thr->trace_pos);
+   atomic_store_relaxed(&thr->trace_pos, 0);
++#if TSAN_EVICTION_STATS
++  // Hand this thread's eviction counts to the process totals: three atomic
++  // adds per thread lifetime instead of one per eviction. Under the registry
++  // lock, so Finalize's walk over live threads cannot count them twice.
++  atomic_fetch_add(&ctx->evict_total, thr->evict_total, memory_order_relaxed);
++  atomic_fetch_add(&ctx->evict_concurrent_foreign,
++                   thr->evict_concurrent_foreign, memory_order_relaxed);
++  atomic_fetch_add(&ctx->evict_concurrent_foreign_plain,
++                   thr->evict_concurrent_foreign_plain, memory_order_relaxed);
++#endif
+   thr->tctx = nullptr;
+   thr = nullptr;
+ }
+diff --git a/compiler-rt/lib/tsan/tests/CMakeLists.txt b/compiler-rt/lib/tsan/tests/CMakeLists.txt
+index 1bc08bbf7450..46293d5ddf2f 100644
+--- a/compiler-rt/lib/tsan/tests/CMakeLists.txt
++++ b/compiler-rt/lib/tsan/tests/CMakeLists.txt
+@@ -22,6 +22,15 @@ if(COMPILER_RT_TSAN_DEBUG_OUTPUT)
+                                    -DTSAN_DEBUG_OUTPUT=2)
+ endif()
+ 
++# These two change the layout of ThreadState/Context, which the unit tests
++# construct; they must see the same definition as the runtime.
++if(COMPILER_RT_TSAN_REX_FILTER)
++  list(APPEND TSAN_UNITTEST_CFLAGS -DTSAN_REX_FILTER=1)
++endif()
++if(COMPILER_RT_TSAN_EVICTION_STATS)
++  list(APPEND TSAN_UNITTEST_CFLAGS -DTSAN_EVICTION_STATS=1)
++endif()
++
+ append_list_if(COMPILER_RT_HAS_MSSE4_2_FLAG -msse4.2 TSAN_UNITTEST_CFLAGS)
+ 
+ set(TSAN_TEST_ARCH ${TSAN_SUPPORTED_ARCH})
+diff --git a/compiler-rt/test/tsan/CMakeLists.txt b/compiler-rt/test/tsan/CMakeLists.txt
+index ebd8ddf639df..5292eb389424 100644
+--- a/compiler-rt/test/tsan/CMakeLists.txt
++++ b/compiler-rt/test/tsan/CMakeLists.txt
+@@ -1,4 +1,5 @@
+ set(TSAN_LIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
++pythonize_bool(COMPILER_RT_TSAN_EVICTION_STATS)
+ 
+ set(TSAN_TEST_DEPS ${SANITIZER_COMMON_LIT_TEST_DEPS})
+ if(${COMPILER_RT_DEFAULT_TARGET_ARCH} MATCHES "(x86_64|s390x)")
+diff --git a/compiler-rt/test/tsan/lit.cfg.py b/compiler-rt/test/tsan/lit.cfg.py
+index 922c0d34b842..b2defd23e04d 100644
+--- a/compiler-rt/test/tsan/lit.cfg.py
++++ b/compiler-rt/test/tsan/lit.cfg.py
+@@ -129,6 +129,11 @@ config.suffixes = [".c", ".cpp", ".m", ".mm"]
+ if config.host_os not in ["FreeBSD", "Linux", "Darwin", "NetBSD"]:
+     config.unsupported = True
+ 
++# The shadow-eviction counters are a build-time option of the runtime
++# (COMPILER_RT_TSAN_EVICTION_STATS); tests that read them require this.
++if getattr(config, "tsan_eviction_stats", False):
++    config.available_features.add("tsan-eviction-stats")
++
+ if config.android:
+     config.unsupported = True
+ 
+diff --git a/compiler-rt/test/tsan/lit.site.cfg.py.in b/compiler-rt/test/tsan/lit.site.cfg.py.in
+index c6d453aaee26..9a5aff0eb9ed 100644
+--- a/compiler-rt/test/tsan/lit.site.cfg.py.in
++++ b/compiler-rt/test/tsan/lit.site.cfg.py.in
+@@ -8,6 +8,7 @@ config.apple_platform_min_deployment_target_flag = "@TSAN_TEST_MIN_DEPLOYMENT_TA
+ config.target_cflags = "@TSAN_TEST_TARGET_CFLAGS@"
+ config.target_arch = "@TSAN_TEST_TARGET_ARCH@"
+ config.deflake_threshold = "@TSAN_TEST_DEFLAKE_THRESHOLD@"
++config.tsan_eviction_stats = @COMPILER_RT_TSAN_EVICTION_STATS_PYBOOL@
+ 
+ # Load common config for all compiler-rt lit tests.
+ lit_config.load_config(config, "@COMPILER_RT_BINARY_DIR@/test/lit.common.configured")
+diff --git a/compiler-rt/test/tsan/shadow_evictions.c b/compiler-rt/test/tsan/shadow_evictions.c
+index aaadbe66aa4d..c2d9401e8c86 100644
+--- a/compiler-rt/test/tsan/shadow_evictions.c
++++ b/compiler-rt/test/tsan/shadow_evictions.c
+@@ -6,8 +6,10 @@
+ // ordered by the join in main, so the concurrent counts are zero and the
+ // total is not; the interceptors' atomic reads on the mutex word are what
+ // makes the unordered subset non-zero in lock-heavy code, and the "plain"
+-// subset excludes them. Nothing is printed by default.
++// subset excludes them. Nothing is printed by default. The counters exist
++// only in a runtime built with COMPILER_RT_TSAN_EVICTION_STATS.
+ //
++// REQUIRES: tsan-eviction-stats
+ // RUN: %clang_tsan -O1 %s -o %t
+ // RUN: %env_tsan_opts=print_evictions=1 %run %t 2>&1 | FileCheck %s
+ // RUN: %run %t 2>&1 | FileCheck %s --check-prefix=QUIET --allow-empty
+diff --git a/llvm/docs/TSanAnalysesAudit.md b/llvm/docs/TSanAnalysesAudit.md
+index 9766198d6347..b29fa0fe5d2e 100644
+--- a/llvm/docs/TSanAnalysesAudit.md
++++ b/llvm/docs/TSanAnalysesAudit.md
+@@ -498,9 +498,9 @@ Lines as of b4bf8b8f4613.
+ | `__tsan_active_thread_count` (tsan_rtl.cpp:35; `ThreadCreate` :117 `+1`, `ThreadJoin` :320 `-1`, both `seq_cst`) | counter for the dynamic guard | sound (decrement at join, not exit; detach/fork over-count) |
+ | `InterceptorEnabled` (sanitizer_common.cpp:23, THREADLOCAL) and its six readers | skip a string/memory interceptor for local operands | sound (real call still performed); RT-1 note |
+ | `MutexLock/ReadLock` `process_lock` guards (tsan_rtl_mutex.cpp) | ReX bookkeeping only with `g_filter` | sound (1af068d46cae) |
+-| ReX filter (`tsan_filter.*`, `filter_ctx`) | research code | fixed:RT-2 (0d63553b3e43): behind `COMPILER_RT_TSAN_REX_FILTER` (default OFF); with OFF, upstream's `tsan_rtl_mutex.cpp` compiled with this tree's headers is byte-identical except `__LINE__` immediates, `ThreadState` has upstream's members, `tsan_rtl_access.cpp` differs by `NoteEviction` and its two call sites only; the dead RUN-less `ReXFilter/` tests are deleted (previously: compiled in, hooks dead, `enable_filter=1` paid and never filteredcal |
++| ReX filter (`tsan_filter.*`, `filter_ctx`) | research code | fixed:RT-2 (0d63553b3e43): behind `COMPILER_RT_TSAN_REX_FILTER` (default OFF); with OFF, upstream's `tsan_rtl_mutex.cpp` compiled with this tree's headers is byte-identical except `__LINE__` immediates, `ThreadState` has upstream's members, `tsan_rtl_access.cpp` differs by `NoteEviction` and its two call sites only (and since the performance pass not even by those: see the `NoteEviction` row); the dead RUN-less `ReXFilter/` tests are deleted (previously: compiled in, hooks dead, `enable_filter=1` paid and never filteredcal |
+ | `__tsan_enable/__tsan_disable` (tsan_interface.inc) | no-op symbols | fixed:RT-2 (the racy `int GV` counter, the `MemoryRangeFreed` VPrintf and the CheckRaces debug prints are gone) |
+-| `NoteEviction` (tsan_rtl_access.cpp, eviction branch of both `CheckRaces`), `evict_total` / `evict_concurrent_foreign` / `evict_concurrent_foreign_plain`, flags `print_evictions`, `trace_evictions`, `evict_watch` (per-granule counters, 248f45c260ef) | measure the bounded-shadow loss channel: overwrites of another thread's uncovered access | P3 implemented (5eca63015f63); default path unchanged except one call on the slow branch; the uncovered evictions in lock-heavy code are the interceptors' atomic reads on the mutex word, hence the plain subset | shadow_evictions.c |
++| `NoteEviction` (tsan_rtl_access.cpp, eviction branch of both `CheckRaces`), `evict_total` / `evict_concurrent_foreign` / `evict_concurrent_foreign_plain`, flags `print_evictions`, `trace_evictions`, `evict_watch` (per-granule counters, 248f45c260ef) | measure the bounded-shadow loss channel: overwrites of another thread's uncovered access | P3 implemented (5eca63015f63); **fixed:RT-3** (performance pass, branch `perf/runtime-counters`): the counters were an unconditional lock-prefixed increment on one process-global cache line per eviction and an out-of-line call inside the inlined `CheckRaces`, which cost every `__tsan_read*/write*` a three-register callee-saved prologue on its fast path — stock TSan ran ~1.4× slower than the paper compiler's (SQLite threadtest3; 2.67× on `checkpoint_starvation_1`, 3.0e8 evictions in 10 s). Now behind `COMPILER_RT_TSAN_EVICTION_STATS` (default OFF): with OFF every symbol of `tsan_rtl_access.cpp` is byte-identical to upstream c609043dd009 compiled with the same command line, except the fork-only `__tsan_enable/__tsan_disable` and one `CHECK` line immediate in `DoReportRaceV`; with ON the counters are per-thread plain increments handed to `Context` at thread finish, the watch/trace work out of line (`preserve_most`), and the access callbacks keep one callee-saved register (`rbx`) — a measurement build. The uncovered evictions in lock-heavy code are the interceptors' atomic reads on the mutex word, hence the plain subset | shadow_evictions.c (`REQUIRES: tsan-eviction-stats`) |
+ 
+ ## Verification on the final tree
+ 
+@@ -622,6 +622,22 @@ named in its row.
+ 
+ 
+ 
++## Performance pass (2026-09-05, separate branches off 729521af8965)
++
++Prompted by tsan-exp's Stage A: (1) `sql_yacc.cc` compiles for 3 h 02 min
++under `-tsan-use-escape-analysis-global` (16–55 s without) — the escape
++analysis's per-function fixpoint, not its verdicts; (2) stock TSan on this
++tree ~1.4× slower than the paper compiler's — the eviction counters (RT-3
++above); (3) after the soundness fixes no configuration beats stock by much
++(memcached 0.80 with peeling and summaries, FFmpeg 0.83 with summaries,
++SQLite/Redis/MySQL ≈ 1.0), because the paper's dominance yield came from
++the unsound location test. Nothing here lands on `tsan-dev`; each branch
++carries its own tests, static-count delta and frozen copy.
++
++| branch | change | gate and measurement |
++|---|---|---|
++| `perf/runtime-counters` | RT-3: counters behind `COMPILER_RT_TSAN_EVICTION_STATS` (OFF), per-thread when ON | objdump per-symbol identity with upstream (above); check-tsan OFF/ON: <RT3-CHECK> |
++
+ ## Commit map after the history consolidation (2026-09-03)
+ 
+ The hashes cited above are those of the working history, preserved as

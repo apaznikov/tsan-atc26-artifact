@@ -1,0 +1,781 @@
+From f3deebfbab602f4e05289e0acbde0efd06b8058c Mon Sep 17 00:00:00 2001
+From: Alexey Paznikov <apaznikov@gmail.com>
+Date: Tue, 15 Sep 2026 15:51:40 +0800
+Subject: EA: walk pointee lists in place; cut the closure's and the walk's
+ dead steps
+
+---
+ llvm/include/llvm/Analysis/EscapeAnalysis.h   | 110 +++++-
+ llvm/lib/Analysis/EscapeAnalysis.cpp          | 324 ++++++++++++++++--
+ .../EscapeAnalysis/escape-pointee-chain.ll    | 117 +++++++
+ 3 files changed, 510 insertions(+), 41 deletions(-)
+ create mode 100644 llvm/test/Analysis/EscapeAnalysis/escape-pointee-chain.ll
+
+diff --git a/llvm/include/llvm/Analysis/EscapeAnalysis.h b/llvm/include/llvm/Analysis/EscapeAnalysis.h
+index 77eacf031349..5af0bde15ef0 100644
+--- a/llvm/include/llvm/Analysis/EscapeAnalysis.h
++++ b/llvm/include/llvm/Analysis/EscapeAnalysis.h
+@@ -15,7 +15,11 @@
+ 
+ #include "ValueTracking.h"
+ 
++#include "llvm/ADT/DenseMap.h"
++#include "llvm/ADT/DenseSet.h"
++#include "llvm/ADT/Hashing.h"
+ #include "llvm/ADT/STLFunctionalExtras.h"
++#include "llvm/ADT/SmallPtrSet.h"
+ #include "llvm/ADT/SmallSet.h"
+ #include "llvm/Analysis/CallGraph.h"
+ #include "llvm/Analysis/TargetLibraryInfo.h"
+@@ -73,6 +77,25 @@ struct UnderlObjTy : ObjAndPath {
+   bool Loaded;
+ };
+ 
++/// ObjAndPath as a DenseMap key: the object's pointer and the path's
++/// elements. The empty and tombstone keys are the pointer sentinels with an
++/// empty path, which no real node has.
++template <> struct DenseMapInfo<ObjAndPath> {
++  static inline ObjAndPath getEmptyKey() {
++    return {DenseMapInfo<const Value *>::getEmptyKey(), {}};
++  }
++  static inline ObjAndPath getTombstoneKey() {
++    return {DenseMapInfo<const Value *>::getTombstoneKey(), {}};
++  }
++  static unsigned getHashValue(const ObjAndPath &OAP) {
++    return hash_combine(OAP.Obj,
++                        hash_combine_range(OAP.Path.begin(), OAP.Path.end()));
++  }
++  static bool isEqual(const ObjAndPath &A, const ObjAndPath &B) {
++    return A == B;
++  }
++};
++
+ /// Interface to access escape analysis results for single function.
+ class EscapeAnalysisInfo {
+   friend class EscapeAnalysisGlobalInfo;
+@@ -251,8 +274,14 @@ private:
+   private:
+     DenseMap<const Value *, PathToPointeeMap> PointsToMap;
+     /// The number of (pointer, path, pointee) triples, so that a relation
+-    /// can be sized without a walk.
++    /// can be sized without a walk. Pairs are never removed, so two equal
++    /// counts mean the relation is the same; the escape-marking walk keys
++    /// its "already walked" cache on it (see addEscObjImpl).
+     unsigned NumPairs = 0;
++    /// The pointers whose stored lists forEachPointee is iterating in
++    /// place, innermost last; addPointsToPair asserts it is not adding to
++    /// one of them.
++    mutable SmallVector<const Value *, 8> IteratingObjs;
+ 
+   public:
+     /// Merge with other PointsToRel object (needed in basic data flow analysis)
+@@ -265,8 +294,27 @@ private:
+     bool containsPointsToPair(const ObjAndPath &Pointer,
+                               const ObjAndPath &Pointee) const;
+ 
+-    /// Traverse the (implicit) tree of aliases and get the list of aliases
+-    std::optional<PointeeListTy> getPointees(const ObjAndPath &Pointer) const;
++    /// Call \p Action on every pointee recorded for \p Pointer: those under
++    /// every stored path of the object that overlaps the query's path (the
++    /// whole object covers every field, a field covers the whole object).
++    /// When one stored path matches, the list is iterated in place; when
++    /// several do, their union is built first, exactly as it always was, so
++    /// the order \p Action sees is the same either way. \p Action may add
++    /// pairs, but not for \p Pointer's object -- the list being iterated is
++    /// that object's -- which is what addPointsTo's closure does: it only
++    /// ever adds to its own pointer, and never iterates that pointer's list.
++    void forEachPointee(const ObjAndPath &Pointer,
++                        function_ref<void(const ObjAndPath &)> Action) const;
++
++    /// Walk one of this relation's stored lists -- \p Obj's -- in place,
++    /// guarded as forEachPointee guards it (see IteratingObjs); the single
++    /// matching list of forEachPointee, or of forEachPointeeOver when it
++    /// belongs to a base or to a journal.
++    void walkList(const Value *Obj, const PointeeListTy &List,
++                  function_ref<void(const ObjAndPath &)> Action) const;
++
++    /// See NumPairs.
++    unsigned getVersion() const { return NumPairs; }
+ 
+     /// Add to \p Out every pointee recorded under a path of \p Pointer.Obj
+     /// that overlaps \p Pointer.Path, in path order.
+@@ -325,6 +373,16 @@ private:
+     void print(raw_ostream &OS) const;
+   };
+ 
++  /// What the escape-marking walks of one transfer have established: an
++  /// entry (Node -> (Version, Bits)) says that at points-to version Version
++  /// -- the count of the pairs the state has, a base's and a journal's
++  /// together for a StateView -- every object reachable from Node, Node
++  /// included, was recorded escaped with every bit of Bits, so marking any
++  /// of them with a subset of Bits again changes nothing (see
++  /// addEscObjImpl). Held by the state the transfer runs on: EscapeState
++  /// keeps one across its own transfer, a StateView one for its lifetime.
++  using WalkCacheTy = DenseMap<ObjAndPath, std::pair<unsigned, EscReasonTy>>;
++
+   struct EscapeState {
+     /// Compare EscapeStates (need in data flow analysis)
+     bool operator==(const EscapeState &ES) const;
+@@ -361,20 +419,29 @@ private:
+     void merge(const EscapeState &OtherES, const EscapeAnalysisInfo *EAI) {
+       PointsTo.merge(OtherES.PointsTo);
+       mergeEscapedObjects(OtherES.EscapedObjs);
++      // A merge inserts entries without the whole-object rule of
++      // addEscObjOrReason, so what the walks recorded no longer holds.
++      WalkedClosure.clear();
+     }
+ 
+     /// Replay a journal that was recorded on top of this very state: the
+     /// result is the state the journal stands for.
+     void applyJournal(const StateJournal &J);
+ 
++    /// Drop the walk cache, buckets included -- the state outlives the
++    /// transfer, and a cleared DenseMap keeps its allocation; the transfer
++    /// calls it once its block is done (the next evaluation starts from a
++    /// fresh merge anyway).
++    void forgetWalks() { decltype(WalkedClosure)().swap(WalkedClosure); }
++
+     const EscapedObjectsTy &getEscObjs() const { return EscapedObjs; };
+     const PointsToRelTy &getPointsTo() const { return PointsTo; }
+ 
+     /// The primitives the transfer is written over (StateView has the same
+-    /// four, plus getEscReason and addEscObjOrReason).
+-    std::optional<PointsToRelTy::PointeeListTy>
+-    getPointees(const ObjAndPath &Pointer) const {
+-      return PointsTo.getPointees(Pointer);
++    /// six, plus getEscReason and addEscObjOrReason).
++    void forEachPointee(const ObjAndPath &Pointer,
++                        function_ref<void(const ObjAndPath &)> Action) const {
++      PointsTo.forEachPointee(Pointer, Action);
+     }
+     bool containsPointsToPair(const ObjAndPath &Pointer,
+                               const ObjAndPath &Pointee) const {
+@@ -383,6 +450,9 @@ private:
+     void addPointsToPair(const ObjAndPath &Pointer, const ObjAndPath &Pointee) {
+       PointsTo.addPointsToPair(Pointer, Pointee);
+     }
++    /// The points-to version the walk cache is keyed on: the pair count.
++    unsigned getVersion() const { return PointsTo.getVersion(); }
++    WalkCacheTy &walkCache() { return WalkedClosure; }
+ 
+     /// Try to find object in the EscapedObjects and return escape reason
+     EscReasonTy getEscReason(const ObjAndPath &OAP) const;
+@@ -395,6 +465,11 @@ private:
+     // Note that a Value may be the alias of multiple Allocas
+     PointsToRelTy PointsTo;
+ 
++    /// What the escape-marking walks have established (WalkCacheTy). A
++    /// cache, not state: not compared, not printed, dropped on merge, on a
++    /// journal replay and at the end of a transfer.
++    WalkCacheTy WalkedClosure;
++
+     /// Merge a list of escaped objects into this state's: entries added,
+     /// reasons OR'd, nothing erased -- the join's union.
+     void mergeEscapedObjects(const EscapedObjectsTy &Other);
+@@ -512,6 +587,27 @@ private:
+                               const UnderlObjTy &Pointee,
+                               const EscapeAnalysisInfo *EAI,
+                               const Instruction *I);
++  /// The transitive step of addPointsTo: record Pointer -> Pointee, then
++  /// Pointer -> everything Pointee reaches (depth first, in the stored
++  /// order), then the escape checks -- see the definition. \p Reached
++  /// holds the objects already known to be pointees of Pointer at the
++  /// closure's path, so an edge to one of them is skipped without a
++  /// lookup.
++  template <class StateT>
++  static void addPointsToClosureImpl(StateT &S, const UnderlObjTy &Pointer,
++                                     const UnderlObjTy &Pointee,
++                                     const EscapeAnalysisInfo *EAI,
++                                     const Instruction *I,
++                                     SmallPtrSetImpl<const Value *> &Reached);
++  /// Call \p Action on every pointee of \p Pointer in the state that is
++  /// \p Base with \p J on top, in the order the materialised state's
++  /// forEachPointee would: the one stored list -- the base's or the
++  /// journal's -- that overlaps the query walked in place when there is
++  /// exactly one, the union StateJournal::collectPointees builds otherwise.
++  static void forEachPointeeOver(const EscapeState &Base,
++                                 const StateJournal &J,
++                                 const ObjAndPath &Pointer,
++                                 function_ref<void(const ObjAndPath &)> Action);
+   template <class StateT>
+   static void checkAndUpdEscStatusImpl(StateT &S, const ObjAndPath &Pointer,
+                                        const ObjAndPath &Pointee,
+diff --git a/llvm/lib/Analysis/EscapeAnalysis.cpp b/llvm/lib/Analysis/EscapeAnalysis.cpp
+index e57a75ba5754..238d00795ab4 100644
+--- a/llvm/lib/Analysis/EscapeAnalysis.cpp
++++ b/llvm/lib/Analysis/EscapeAnalysis.cpp
+@@ -140,6 +140,22 @@ static cl::opt<bool> ClEAReportAbandoned(
+     cl::desc("Escape analysis: print a line for every function it gave up "
+              "on"));
+ 
++/// Measurement switches for the two exact compile-time cuts in the state's
++/// pointee handling. Off restores the old code paths: every pointee list is
++/// copied before it is walked, and the closure and the escape-marking walk
++/// take every step, including the ones that cannot change anything. The
++/// verdicts and the printed states are the same either way (pinned by
++/// escape-pointee-chain.ll); the switches exist to attribute the time.
++static cl::opt<bool> ClEAPointeeViews(
++    "tsan-ea-pointee-views", cl::init(true), cl::Hidden,
++    cl::desc("Escape analysis: walk a pointer's stored pointee list in place "
++             "instead of copying it (off: the old copying path)"));
++static cl::opt<bool> ClEAClosureCuts(
++    "tsan-ea-closure-cuts", cl::init(true), cl::Hidden,
++    cl::desc("Escape analysis: skip the steps of the points-to closure and "
++             "of the escape-marking walk that provably change nothing (off: "
++             "take every step)"));
++
+ #define DEBUG_TYPE "ea"
+ 
+ STATISTIC(NumEAAbandoned,
+@@ -192,6 +208,23 @@ STATISTIC(NumEAUnresolvedOther, "  unresolved: other");
+ STATISTIC(NumEAUnseenPointeeLoads,
+           "Escape analysis: queries answered escaped because the loaded "
+           "pointer's slot had no recorded pointee");
++STATISTIC(NumEAPointeeViews,
++          "Escape analysis: pointee lists walked in place (one stored path "
++          "matched the query)");
++STATISTIC(NumEAPointeeSnapshots,
++          "Escape analysis: pointee lists copied before the walk (several "
++          "stored paths overlap the query, or -tsan-ea-pointee-views=0)");
++STATISTIC(NumEAClosureSteps,
++          "Escape analysis: points-to pairs added by addPointsTo (direct and "
++          "transitive)");
++STATISTIC(NumEAClosureSkipped,
++          "Escape analysis: closure edges to an object already reached, "
++          "skipped without a lookup");
++STATISTIC(NumEAEscWalkNodes,
++          "Escape analysis: nodes visited by the escape-marking walks");
++STATISTIC(NumEAEscWalkPruned,
++          "Escape analysis: escape-marking subtrees pruned (walked already at "
++          "this points-to version with these bits)");
+ 
+ #define PRINT_ESCAPING_CALLEES "ea-escaping-callees"
+ 
+@@ -313,8 +346,9 @@ static bool isPointerArgument(const Value *V) {
+ // addEscObj -- are written once, over the state type, and instantiated for
+ // EscapeState (a materialised state) and for StateView (a shared base plus
+ // the journal of one evaluation's effect on it; see below). They bottom out
+-// in getEscReason, getPointees, containsPointsToPair, addEscObjOrReason and
+-// addPointsToPair; only the last two mutate, and nothing else does.
++// in getEscReason, forEachPointee, containsPointsToPair, getVersion,
++// walkCache, addEscObjOrReason and addPointsToPair; only the last two mutate
++// the state, and nothing else does.
+ 
+ /// If instruction creates an alias to the object which has escaped before
+ /// or escapes "by definition" (e.g. pointer function argument,
+@@ -370,9 +404,8 @@ void EscapeAnalysisInfo::EscapeState::forEachPointeeDo(
+     const std::function<void(const ObjAndPath &)> &Action) const {
+   LLVM_DEBUG(dbgs() << "\t\t\tforEachPointeeDo: " << *OAP.Obj
+                     << dbgPathToStr(OAP.Path) << "\n";);
+-  if (const auto Pointees = PointsTo.getPointees(OAP); Pointees)
+-    for (const ObjAndPath &Pointee : Pointees.value())
+-      Action(Pointee);
++  PointsTo.forEachPointee(OAP,
++                          [&](const ObjAndPath &Pointee) { Action(Pointee); });
+ }
+ 
+ /// Add the alias: Alias --> PointeeValue
+@@ -387,17 +420,60 @@ void EscapeAnalysisInfo::addPointsToImpl(StateT &S, const UnderlObjTy &Pointer,
+       S.containsPointsToPair(Pointer, Pointee))
+     return;
+ 
++  // The objects Pointer is known to point to at Pointee's path, as the
++  // closure goes: Pointer itself (the step to it would return at the first
++  // test above), every object it adds, and every object it finds already
++  // there. The closure is a depth-first walk from Pointee whose "visited"
++  // mark is membership in Pointer's list, so every edge into a visited object
++  // is a lookup that returns; over a clique of n objects that is n^2 lookups
++  // per fresh pointer, of a three-level map. The set answers them instead.
++  SmallPtrSet<const Value *, 16> Reached;
++  Reached.insert(Pointer.Obj);
++  addPointsToClosureImpl(S, Pointer, Pointee, EAI, I, Reached);
++}
++
++/// One step of the closure, for a pair that is not yet recorded: record it,
++/// then Pointer -> every object Pointee reaches (each at Pointee's path), then
++/// the escape checks for the pair -- in exactly this order, since the checks
++/// read the escaped set the earlier steps wrote.
++template <class StateT>
++void EscapeAnalysisInfo::addPointsToClosureImpl(
++    StateT &S, const UnderlObjTy &Pointer, const UnderlObjTy &Pointee,
++    const EscapeAnalysisInfo *EAI, const Instruction *I,
++    SmallPtrSetImpl<const Value *> &Reached) {
++  assert(Pointer.Obj != Pointee.Obj && Pointee.Obj && "not a closure step");
+   LLVM_DEBUG(dbgs() << "\taddPointsTo: " << *Pointer.Obj
+                     << dbgPathToStr(Pointer.Path) << " --> " << *Pointee.Obj
+                     << dbgPathToStr(Pointee.Path) << "\n");
+ 
+   S.addPointsToPair(Pointer, Pointee);
++  Reached.insert(Pointee.Obj);
++  ++NumEAClosureSteps;
+ 
+   // Considering transitivity: recursively add new alias to all existing aliases
+-  // of Pointee
+-  S.forEachPointeeDo(Pointee, [&](const ObjAndPath &Ptee) {
++  // of Pointee. Pointee's list is walked in place while the steps below add
++  // to Pointer's list -- a different object's, by the assertion above -- so
++  // nothing the walk holds moves under it (on a StateView the list walked is
++  // the base's, never written, or the journal's, and the additions go to the
++  // journal under Pointer's object).
++  LLVM_DEBUG(dbgs() << "\t\t\tforEachPointeeDo: " << *Pointee.Obj
++                    << dbgPathToStr(Pointee.Path) << "\n";);
++  S.forEachPointee(Pointee, [&](const ObjAndPath &Ptee) {
+     // Ptee inherits path of Pointee
+-    S.addPointsTo(Pointer, {{Ptee.Obj, Pointee.Path}, false}, EAI, I);
++    const UnderlObjTy Next{{Ptee.Obj, Pointee.Path}, false};
++    if (!ClEAClosureCuts) {
++      S.addPointsTo(Pointer, Next, EAI, I);
++      return;
++    }
++    if (Next.Obj == nullptr)
++      return;
++    if (!Reached.insert(Next.Obj).second) {
++      ++NumEAClosureSkipped;
++      return;
++    }
++    if (S.containsPointsToPair(Pointer, Next))
++      return; // recorded before this closure began; Reached remembers it
++    addPointsToClosureImpl(S, Pointer, Next, EAI, I, Reached);
+   });
+ 
+   if (Pointee.Loaded)
+@@ -437,6 +513,8 @@ void EscapeAnalysisInfo::PointsToRelTy::merge(const PointsToRelTy &Other) {
+ /// Add an points-to relation between two objects
+ bool EscapeAnalysisInfo::PointsToRelTy::addPointsToPair(
+     const ObjAndPath &Pointer, const ObjAndPath &Pointee) {
++  assert(!is_contained(IteratingObjs, Pointer.Obj) &&
++         "adding to a pointee list that is being walked in place");
+   if (!PointsToMap[Pointer.Obj][Pointer.Path].insert(Pointee).second)
+     return false;
+   ++NumPairs;
+@@ -483,13 +561,68 @@ void EscapeAnalysisInfo::PointsToRelTy::collectPointees(
+       Out.insert(Pointees.begin(), Pointees.end());
+ }
+ 
+-/// Get list of pointees for the object
+-std::optional<EscapeAnalysisInfo::PointsToRelTy::PointeeListTy>
+-EscapeAnalysisInfo::PointsToRelTy::getPointees(
+-    const ObjAndPath &Pointer) const {
+-  PointeeListTy Result;
+-  collectPointees(Pointer, Result);
+-  return Result.empty() ? std::nullopt : std::make_optional(Result);
++/// The stored lists of \p PathToPointee (a PointsToRelTy::PathToPointeeMap)
++/// whose path overlaps \p Path: how many, and the last of them.
++template <class PathToPointeeMapT, class PointeeListT>
++static unsigned countOverlappingLists(const PathToPointeeMapT &PathToPointee,
++                                      const FieldPathTy &Path,
++                                      const PointeeListT *&Only) {
++  unsigned NumMatching = 0;
++  for (const auto &[StoredPath, Pointees] : PathToPointee)
++    if (pathsOverlap(StoredPath, Path)) {
++      ++NumMatching;
++      Only = &Pointees;
++    }
++  return NumMatching;
++}
++
++void EscapeAnalysisInfo::PointsToRelTy::walkList(
++    const Value *Obj, const PointeeListTy &List,
++    function_ref<void(const ObjAndPath &)> Action) const {
++  if (List.empty())
++    return;
++  IteratingObjs.push_back(Obj);
++  for (const ObjAndPath &Pointee : List)
++    Action(Pointee);
++  IteratingObjs.pop_back();
++}
++
++void EscapeAnalysisInfo::PointsToRelTy::forEachPointee(
++    const ObjAndPath &Pointer,
++    function_ref<void(const ObjAndPath &)> Action) const {
++  const auto It = PointsToMap.find(Pointer.Obj);
++  if (It == PointsToMap.end())
++    return;
++
++  // Pointees recorded under every path that overlaps the query's (see
++  // collectPointees).
++  const auto &PathToPointee = It->second;
++  const PointeeListTy *Only = nullptr;
++  const unsigned NumMatching =
++      countOverlappingLists(PathToPointee, Pointer.Path, Only);
++  if (NumMatching == 0)
++    return;
++
++  // One list matches (an object with a single stored path -- almost every
++  // one): walk it where it is. This used to copy it into a fresh set, an
++  // allocation per element, on every query; the copy of a list with one
++  // source has the source's order (a SmallSet keeps insertion order up to
++  // four elements and is sorted beyond, and a copy passes through the same
++  // states), so the walk sees what it always saw.
++  if (NumMatching == 1 && ClEAPointeeViews) {
++    ++NumEAPointeeViews;
++    walkList(Pointer.Obj, *Only, Action);
++    return;
++  }
++
++  // Several lists overlap the query (a whole-object query on an object with
++  // field entries, or a field query with a whole-object entry beside it):
++  // their union, built exactly as before, so the walk's order is the old one.
++  ++NumEAPointeeSnapshots;
++  PointeeListTy Union;
++  collectPointees(Pointer, Union);
++  for (const ObjAndPath &Pointee : Union)
++    Action(Pointee);
+ }
+ 
+ /// We need it to check if something changed in the data-flow analysis
+@@ -597,22 +730,82 @@ void EscapeAnalysisInfo::addEscObjImpl(StateT &S, const ObjAndPath &EscObj,
+                                        const Instruction *I) {
+   LLVM_DEBUG(dbgs() << "\t\taddEscObj: " << dbgObjToStr(EscObj.Obj) << "\n");
+   SmallVector<ObjAndPath> WorkList;
+-  SmallSet<ObjAndPath, 4> Visited;
+ 
++  // The walk marks everything reachable from EscObj with EscReason. Once a
++  // node has been marked with a set of bits, marking it with a subset again
++  // is a no-op for good: addEscObjOrReason only ever adds bits to an entry
++  // (a field entry it erases is one a whole-object entry then answers for,
++  // and that is never erased), and merges -- which do insert beside a
++  // whole-object entry -- drop the cache. Pairs are only ever added, so at
++  // an unchanged version a node's reach is what it was. Hence: a node that a
++  // walk at this version already marked with these bits, together with all
++  // it reaches, can be left with everything below it. Without this, the
++  // closure of a pointer that is itself escaped ran one full walk per object
++  // it reached, each over the same clique: cubic per pointer. On a StateView
++  // the version counts the base's pairs and the journal's together, and the
++  // cache lives in the view, so it spans exactly one transfer.
++  const unsigned Version = S.getVersion();
++
++  if (!ClEAClosureCuts) {
++    // The old walk: a node is marked when popped, so it is pushed once per
++    // node that points to it -- over a clique, as many times as there are
++    // nodes -- and processed at its last push.
++    SmallSet<ObjAndPath, 4> Visited;
++    WorkList.push_back(EscObj);
++    while (!WorkList.empty()) {
++      const ObjAndPath Curr = WorkList.pop_back_val();
++      if (!Visited.insert(Curr).second)
++        continue;
++      ++NumEAEscWalkNodes;
++      S.addEscObjOrReason(Curr, EscReason, I);
++      S.forEachPointee(Curr, [&](const ObjAndPath &OAP) {
++        if (!Visited.contains(OAP))
++          WorkList.push_back(OAP);
++      });
++    }
++    return;
++  }
++
++  // A node is marked when pushed, so it is pushed once and the walk is
++  // linear in the edges it examines. The nodes are then processed in a
++  // different order than the old walk's, which is not observable: the calls
++  // of one walk all carry the same bits, and two such calls commute --
++  // addEscObjOrReason's outcome for an object is "the whole-object entry
++  // with the union of the bits given to it, if there was one, else the
++  // field entries with theirs" whichever comes first -- and nothing reads
++  // the escaped set between them.
++  WalkCacheTy &WalkedClosure = S.walkCache();
++  DenseSet<ObjAndPath> Pushed;
+   WorkList.push_back(EscObj);
++  Pushed.insert(EscObj);
+ 
+   while (!WorkList.empty()) {
+     const ObjAndPath Curr = WorkList.pop_back_val();
+ 
+-    if (!Visited.insert(Curr).second)
++    if (const auto WIt = WalkedClosure.find(Curr);
++        WIt != WalkedClosure.end() && WIt->second.first == Version &&
++        (WIt->second.second & EscReason) == EscReason) {
++      ++NumEAEscWalkPruned;
+       continue;
++    }
++    ++NumEAEscWalkNodes;
+ 
+     S.addEscObjOrReason(Curr, EscReason, I);
+ 
+-    if (const auto Pointees = S.getPointees(Curr); Pointees.has_value())
+-      for (const auto &OAP : Pointees.value())
+-        if (!Visited.contains(OAP))
+-          WorkList.push_back(OAP);
++    S.forEachPointee(Curr, [&](const ObjAndPath &OAP) {
++      if (Pushed.insert(OAP).second)
++        WorkList.push_back(OAP);
++    });
++  }
++
++  // Every node the walk reached leads only to nodes it reached, each of
++  // them processed or pruned, and all of those now carry EscReason.
++  for (const ObjAndPath &Node : Pushed) {
++    auto &Entry = WalkedClosure[Node];
++    if (Entry.first != Version)
++      Entry = {Version, EscReason};
++    else
++      Entry.second |= EscReason;
+   }
+ }
+ 
+@@ -647,6 +840,10 @@ void EscapeAnalysisInfo::EscapeState::applyJournal(const StateJournal &J) {
+   for (const auto &[OAP, Reason] : J.Set)
+     EscapedObjs.insert_or_assign(OAP, Reason);
+   PointsTo.merge(J.AddedPT);
++  // Entries came and went without the walks' rule: what they recorded no
++  // longer holds (the cache is empty here in practice -- a state is replayed
++  // on outside a transfer).
++  WalkedClosure.clear();
+ }
+ 
+ void EscapeAnalysisInfo::StateJournal::fold(const EscapeState &Base,
+@@ -778,15 +975,65 @@ EscapeAnalysisInfo::StateJournal::Cursor::next() {
+   return nullptr;
+ }
+ 
++void EscapeAnalysisInfo::forEachPointeeOver(
++    const EscapeState &Base, const StateJournal &J, const ObjAndPath &Pointer,
++    function_ref<void(const ObjAndPath &)> Action) {
++  const PointsToRelTy &BasePT = Base.getPointsTo();
++  const auto *BM = BasePT.pathMap(Pointer.Obj);
++  const auto *JM = J.AddedPT.pathMap(Pointer.Obj);
++  // Only one of the two relations knows the object: its own rule applies
++  // (one overlapping list in place, several as their union), and its order
++  // is the materialised state's -- StateJournal::collectPointees inserts
++  // exactly that relation's overlapping lists, in path order.
++  if (!JM) {
++    if (BM)
++      BasePT.forEachPointee(Pointer, Action);
++    return;
++  }
++  if (!BM) {
++    J.AddedPT.forEachPointee(Pointer, Action);
++    return;
++  }
++  // Both know the object. Exactly one stored list, of either, overlapping
++  // the query is walked in place: the materialised list would be a copy of
++  // it (the journal's pairs are not in the base, so under one path the
++  // materialised list is the base's list with the journal's appended --
++  // here one of the two is empty). Two or more lists -- the same path in
++  // both, or a whole-object list beside a field list -- are the union in
++  // the materialised state's order, built as collectPointees builds it.
++  if (ClEAPointeeViews) {
++    const PointsToRelTy *Owner = nullptr;
++    const PointsToRelTy::PointeeListTy *Only = nullptr;
++    unsigned NumMatching = countOverlappingLists(*BM, Pointer.Path, Only);
++    if (NumMatching)
++      Owner = &BasePT;
++    if (const unsigned InJournal =
++            countOverlappingLists(*JM, Pointer.Path, Only)) {
++      NumMatching += InJournal;
++      Owner = &J.AddedPT;
++    }
++    if (NumMatching == 0)
++      return;
++    if (NumMatching == 1) {
++      ++NumEAPointeeViews;
++      Owner->walkList(Pointer.Obj, *Only, Action);
++      return;
++    }
++  }
++  ++NumEAPointeeSnapshots;
++  PointsToRelTy::PointeeListTy Union;
++  J.collectPointees(Base, Pointer, Union);
++  for (const ObjAndPath &Pointee : Union)
++    Action(Pointee);
++}
++
+ void EscapeAnalysisInfo::BlockState::forEachPointeeDo(
+     const ObjAndPath &OAP,
+     const std::function<void(const ObjAndPath &)> &Action) const {
+   LLVM_DEBUG(dbgs() << "\t\t\tforEachPointeeDo: " << *OAP.Obj
+                     << dbgPathToStr(OAP.Path) << "\n";);
+-  PointsToRelTy::PointeeListTy Pointees;
+-  Journal.collectPointees(*Base, OAP, Pointees);
+-  for (const ObjAndPath &Pointee : Pointees)
+-    Action(Pointee);
++  forEachPointeeOver(*Base, Journal, OAP,
++                     [&](const ObjAndPath &Pointee) { Action(Pointee); });
+ }
+ 
+ void EscapeAnalysisInfo::BlockState::forEachEscObj(
+@@ -838,6 +1085,9 @@ bool EscapeAnalysisInfo::BlockState::sameStateAs(const BlockState &O) const {
+ class EscapeAnalysisInfo::StateView {
+   const EscapeState &Base;
+   StateJournal &J;
++  /// The walk cache of this transfer (WalkCacheTy): the view is made for
++  /// one evaluation and goes with it.
++  WalkCacheTy WalkedClosure;
+ 
+ public:
+   StateView(const EscapeState &Base, StateJournal &J) : Base(Base), J(J) {}
+@@ -845,11 +1095,9 @@ public:
+   EscReasonTy getEscReason(const ObjAndPath &OAP) const {
+     return J.getEscReason(Base, OAP);
+   }
+-  std::optional<PointsToRelTy::PointeeListTy>
+-  getPointees(const ObjAndPath &Pointer) const {
+-    PointsToRelTy::PointeeListTy Result;
+-    J.collectPointees(Base, Pointer, Result);
+-    return Result.empty() ? std::nullopt : std::make_optional(Result);
++  void forEachPointee(const ObjAndPath &Pointer,
++                      function_ref<void(const ObjAndPath &)> Action) const {
++    forEachPointeeOver(Base, J, Pointer, Action);
+   }
+   bool containsPointsToPair(const ObjAndPath &Pointer,
+                             const ObjAndPath &Pointee) const {
+@@ -860,6 +1108,15 @@ public:
+     if (!Base.containsPointsToPair(Pointer, Pointee))
+       J.AddedPT.addPointsToPair(Pointer, Pointee);
+   }
++  /// The pairs the view sees: the base's and the journal's (the journal
++  /// holds only pairs the base lacks, so the count is their sum). The base
++  /// never changes under a view and the journal only gains pairs, so the
++  /// version grows with the relation exactly as EscapeState's does.
++  unsigned getVersion() const {
++    return Base.getPointsTo().getVersion() + J.AddedPT.getVersion();
++  }
++  WalkCacheTy &walkCache() { return WalkedClosure; }
++  void forgetWalks() { WalkCacheTy().swap(WalkedClosure); }
+   void addEscObjOrReason(const ObjAndPath &OAP, EscReasonTy EscReason,
+                          const Instruction *I);
+ 
+@@ -882,10 +1139,8 @@ public:
+       const std::function<void(const ObjAndPath &)> &Action) const {
+     LLVM_DEBUG(dbgs() << "\t\t\tforEachPointeeDo: " << *OAP.Obj
+                       << dbgPathToStr(OAP.Path) << "\n";);
+-    PointsToRelTy::PointeeListTy Pointees;
+-    J.collectPointees(Base, OAP, Pointees);
+-    for (const ObjAndPath &Pointee : Pointees)
+-      Action(Pointee);
++    forEachPointeeOver(Base, J, OAP,
++                       [&](const ObjAndPath &Pointee) { Action(Pointee); });
+   }
+ };
+ 
+@@ -1436,6 +1691,7 @@ void EscapeAnalysisInfo::compBBEscapeState(const BasicBlock *BB, StateT &ES) {
+       }
+     }
+   }
++  ES.forgetWalks();
+ }
+ 
+ std::shared_ptr<const EscapeAnalysisInfo::EscapeState>
+diff --git a/llvm/test/Analysis/EscapeAnalysis/escape-pointee-chain.ll b/llvm/test/Analysis/EscapeAnalysis/escape-pointee-chain.ll
+new file mode 100644
+index 000000000000..a5d96ad00897
+--- /dev/null
++++ b/llvm/test/Analysis/EscapeAnalysis/escape-pointee-chain.ll
+@@ -0,0 +1,117 @@
++; The points-to closure over a chain of call results, with the state's two
++; compile-time cuts on (the default) and off. Linking the chain back to front
++; makes every link's closure walk the links already made (b -> c finds c -> d,
++; a -> b finds b -> c -> d); publishing the head before the chain is built makes
++; every step of that walk an escape-marking walk of its own (the shape of
++; vk_safe_struct_utils' pNext chain); the struct with a whole-object slot and a
++; field slot is the one case where a query overlaps two stored lists. Off, the
++; old code paths run: every pointee list copied before it is walked, every
++; closure step and walk node taken. The printed states, the instrumentation and
++; the statistics must not depend on the setting.
++
++; RUN: opt < %s -passes='print<escape-analysis-global>' -disable-output 2>&1 | FileCheck %s
++; RUN: opt < %s -passes='print<escape-analysis-global>' -disable-output -tsan-ea-pointee-views=0 -tsan-ea-closure-cuts=0 2>&1 | FileCheck %s
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-escape-analysis-global -S | FileCheck --check-prefix=TSAN %s
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-escape-analysis-global -tsan-ea-pointee-views=0 -tsan-ea-closure-cuts=0 -S | FileCheck --check-prefix=TSAN %s
++; RUN: opt < %s -passes='print<escape-analysis-global>' -disable-output -stats 2>&1 | FileCheck --check-prefix=STATS %s
++; RUN: opt < %s -passes='print<escape-analysis-global>' -disable-output -stats -tsan-ea-pointee-views=0 -tsan-ea-closure-cuts=0 2>&1 | FileCheck --check-prefix=STATS-OFF %s
++; REQUIRES: asserts
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++declare noalias ptr @malloc(i64)
++
++; A chain nobody publishes: nothing escapes, the write through the head's
++; pointee is to a local.
++; CHECK: Printing analysis 'Escape Analysis' for function 'local_chain':
++; CHECK-NEXT: Printing analysis 'Escape Analysis' for function 'published_head_chain':
++; TSAN-LABEL: @local_chain
++; TSAN-NOT: call void @__tsan_write
++; TSAN: ret void
++define void @local_chain() sanitize_thread {
++entry:
++  %a = call ptr @malloc(i64 16)
++  %b = call ptr @malloc(i64 16)
++  %c = call ptr @malloc(i64 16)
++  %d = call ptr @malloc(i64 16)
++  store ptr %d, ptr %c
++  store ptr %c, ptr %b
++  store ptr %b, ptr %a
++  %pb = load ptr, ptr %a
++  store i32 1, ptr %pb
++  ret void
++}
++
++; The head is published first; every link then joins an escaped pointer, and
++; the closure carries the escape down the chain: d, linked last, is escaped
++; through a -> b -> c -> d.
++; CHECK: Escaping objects for BB entry:
++; CHECK-DAG: ptr %sink
++; CHECK-DAG: %a = call ptr @malloc(i64 16)
++; CHECK-DAG: %b = call ptr @malloc(i64 16)
++; CHECK-DAG: %c = call ptr @malloc(i64 16)
++; CHECK-DAG: %d = call ptr @malloc(i64 16)
++; CHECK-EMPTY:
++; TSAN-LABEL: @published_head_chain
++; TSAN: call void @__tsan_write4(ptr {{%d[0-9]*}})
++; TSAN: ret void
++define void @published_head_chain(ptr %sink) sanitize_thread {
++entry:
++  %a = call ptr @malloc(i64 16)
++  store ptr %a, ptr %sink
++  %b = call ptr @malloc(i64 16)
++  %c = call ptr @malloc(i64 16)
++  %d = call ptr @malloc(i64 16)
++  store ptr %d, ptr %c
++  store ptr %c, ptr %b
++  store ptr %b, ptr %a
++  store i32 2, ptr %d
++  ret void
++}
++
++; A whole-object slot and a field slot of the same struct: the walk from the
++; published struct takes the union of both lists.
++; CHECK: Printing analysis 'Escape Analysis' for function 'two_slots':
++; CHECK-NEXT: Escaping objects for BB entry:
++; CHECK-DAG: ptr %sink
++; CHECK-DAG: %s = call ptr @malloc(i64 16)
++; CHECK-DAG: %x = call ptr @malloc(i64 8)
++; CHECK-DAG: %y = call ptr @malloc(i64 8)
++; CHECK-EMPTY:
++; TSAN-LABEL: @two_slots
++; TSAN: call void @__tsan_write4(ptr {{%y[0-9]*}})
++; TSAN: ret void
++define void @two_slots(ptr %sink) sanitize_thread {
++entry:
++  %s = call ptr @malloc(i64 16)
++  %x = call ptr @malloc(i64 8)
++  %y = call ptr @malloc(i64 8)
++  %f1 = getelementptr { ptr, ptr }, ptr %s, i32 0, i32 1
++  store ptr %x, ptr %s
++  store ptr %y, ptr %f1
++  store ptr %s, ptr %sink
++  store i32 3, ptr %y
++  ret void
++}
++
++; The pairs: the two chains' 3 direct and 3 transitive each, sink -> a,
++; s -> x, s.1 -> y, sink -> s and its closure sink -> x, sink -> y. The two
++; copies are the two queries of the struct's whole object (the closure of
++; sink -> s and the walk from s), which overlap both of its lists; every other
++; query is answered in place. Each chain's closure meets d twice, once from c
++; and once from b: the second meeting is the skipped edge. Publishing the head
++; before the chain makes the closure of a -> b mark d, then c (d below it,
++; pruned), then b (c and d pruned); the fourth prune is sink's closure marking
++; s after the walk from s. Off, the walk takes those four nodes too.
++; STATS-DAG: 8 ea - Escape analysis: pointee lists walked in place
++; STATS-DAG: 2 ea - Escape analysis: pointee lists copied
++; STATS-DAG: 18 ea - Escape analysis: points-to pairs added by addPointsTo
++; STATS-DAG: 2 ea - Escape analysis: closure edges to an object already reached
++; STATS-DAG: 10 ea - Escape analysis: nodes visited by the escape-marking walks
++; STATS-DAG: 4 ea - Escape analysis: escape-marking subtrees pruned
++; STATS-OFF-NOT: pointee lists walked in place
++; STATS-OFF-NOT: closure edges to an object already reached
++; STATS-OFF-NOT: escape-marking subtrees pruned
++; STATS-OFF-DAG: 11 ea - Escape analysis: pointee lists copied
++; STATS-OFF-DAG: 18 ea - Escape analysis: points-to pairs added by addPointsTo
++; STATS-OFF-DAG: 14 ea - Escape analysis: nodes visited by the escape-marking walks

@@ -1,0 +1,142 @@
+From 5d17119ed56e52e1329e3a32633af5113ab2b906 Mon Sep 17 00:00:00 2001
+From: Alexey Paznikov <apaznikov@gmail.com>
+Date: Mon, 14 Sep 2026 19:59:35 +0800
+Subject: EA: the arguments of a call whose result escapes are analysed too
+ (shape 19)
+
+---
+ llvm/docs/TSanAnalysesAudit.md                |  4 +-
+ llvm/lib/Analysis/EscapeAnalysis.cpp          | 10 ++-
+ .../escape-arg-of-escaped-result-call.ll      | 73 +++++++++++++++++++
+ 3 files changed, 85 insertions(+), 2 deletions(-)
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/escape-arg-of-escaped-result-call.ll
+
+diff --git a/llvm/docs/TSanAnalysesAudit.md b/llvm/docs/TSanAnalysesAudit.md
+index 9d0c4cc5616a..7a9fc368ccb3 100644
+--- a/llvm/docs/TSanAnalysesAudit.md
++++ b/llvm/docs/TSanAnalysesAudit.md
+@@ -40,6 +40,7 @@ commit and a positive control that still elides. Reach is measured per commit
+ | 16 | dominance across `qsort` whose comparator releases a lock that another thread acquires before writing the location (the sync-free-default decision, closed 2026-09-04; reproduced on 3d70ff61f640 by `elim-by-dominance-tli-sync-free-table.ll`) | `TLI::isSyncFree` answered true for every library function its blocklist did not name — every file, directory and time system call, `qsort`, `strtok`, the `_unlocked` stream family | DE-6 — fixed 92f2b95e9d83 |
+ | 17 | a store after `__kmpc_fork_call` counted as protected although the microtask, which the fork runs on the calling thread too, released the lock (found in the STC-3 design review; reproduced on 3d70ff61f640 by `fork-call-runs-on-caller.ll`) | LO's callback exemption assumed every known thread creator runs its routine only on the new thread | LO-7 — fixed 729521af8965 |
+ | 18 | `f(&local, &slot)` where `f` stores its first argument through its second; the caller publishes the slot's content and starts a thread that writes through it; the caller's later store to `local` was elided (found in the performance-pass design review; reproduced on 729521af8965 by `escape-callee-out-param.ll`) | the bottom-up summary recorded the stored argument as escaping only by the seed bit `PTR_ARG_ALIASING`, which callers mask out as "merely an argument" | EA-10 — fixed on the performance branch (commit `EA: a pointer stored through an argument has escaped to the caller`) |
++| 19 | `%r = call ptr @f(ptr %local)` where `f` stores its argument to a global and returns an escaped pointer; a thread writes through the global; the caller's later store to `local` was elided (found while writing the budget test; reproduced on 729521af8965 by `escape-arg-of-escaped-result-call.ll`; the void-returning callee was handled) | `getEscInfoCall` answered "the result escapes" for every pointer operand of such a call, so its arguments were never classified; **fixed:EA-11** (shape 19: the escaped-result answer only on the callee operand; arguments classified) | EA-11 — fixed on the performance branch (commit `EA: the arguments of a call whose result escapes are analysed too`), escape-arg-of-escaped-result-call |
+ 
+ ## Design versus paper
+ 
+@@ -164,7 +165,7 @@ a field of an escaped object" only in one order (`fixed:EA-3`), reason bits
+ lost (`fixed:EA-1`, `fixed:EA-4`), unknown objects dropped (`fixed:EA-5`),
+ unlisted opcodes and loaded pointers with no recorded pointee
+ (`fixed:EA-6`), argument escape for functions reached other than by a direct
+-call (`fixed:EA-7`), library retention table (`fixed:EA-8`). A pointee stored through a pointer that is external only by being an argument now carries `GPTR_ALIASING` beside the seed bit, so the callers' mask cannot erase the escape — `fixed:EA-10` (performance branch; shape 18).
++call (`fixed:EA-7`), library retention table (`fixed:EA-8`). A pointee stored through a pointer that is external only by being an argument now carries `GPTR_ALIASING` beside the seed bit, so the callers' mask cannot erase the escape — `fixed:EA-10` (performance branch; shape 18). The escaped-result answer of a call is now given once, on the callee operand, so the argument operands of a call whose returned pointer escapes go through the ordinary classification — `fixed:EA-11` (performance branch; shape 19).
+ 
+ ### DE — dominance elimination (`3b-redundancy.tex`, `appendix/de-proofs.tex`)
+ 
+@@ -639,6 +640,7 @@ carries its own tests, static-count delta and frozen copy.
+ |---|---|---|
+ | `perf/runtime-counters` | RT-3: counters behind `COMPILER_RT_TSAN_EVICTION_STATS` (OFF), per-thread when ON | objdump per-symbol identity with upstream (above); check-tsan OFF/ON: <RT3-CHECK> |
+ | `perf/ea-compile-time` (first commit) | EA-10, shape 18: the out-parameter escape | `escape-callee-out-param.ll` fails on 729521af8965 at both checks |
++| `perf/ea-compile-time` (second commit) | EA-11, shape 19: arguments of an escaped-result call | `escape-arg-of-escaped-result-call.ll` fails on 729521af8965 |
+ 
+ ## Commit map after the history consolidation (2026-09-03)
+ 
+diff --git a/llvm/lib/Analysis/EscapeAnalysis.cpp b/llvm/lib/Analysis/EscapeAnalysis.cpp
+index 1bbdfee14e05..c249ad0f9321 100644
+--- a/llvm/lib/Analysis/EscapeAnalysis.cpp
++++ b/llvm/lib/Analysis/EscapeAnalysis.cpp
+@@ -899,7 +899,15 @@ EscapeAnalysisInfo::getEscInfoCall(const Use &U, const Instruction *I) const {
+         (*IPABottomTopInfo)[F].IsPassedAsPtr = true;
+     }
+ 
+-    if (Call->getType()->isPointerTy())
++    // The call's returned pointer escapes: the result register is an escaped
++    // object, recorded once per call, on its callee operand (every call has
++    // one, and the caller rewrites ESCAPED_CALL's object to the call itself).
++    // This used to be returned for every pointer operand of such a call, so
++    // the arguments were never looked at: a callee that stored its argument
++    // to a global and returned a global pointer reported nothing about the
++    // argument, and the caller's later store to that local was elided while
++    // a thread wrote it through the global (shape 19).
++    if (Call->getType()->isPointerTy() && Call->isCallee(&U))
+       return {EscKindTy::MAY_ESCAPE, EscReasonBits::ESCAPED_CALL};
+   }
+ 
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/escape-arg-of-escaped-result-call.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/escape-arg-of-escaped-result-call.ll
+new file mode 100644
+index 000000000000..5e0bc29fecc8
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/escape-arg-of-escaped-result-call.ll
+@@ -0,0 +1,73 @@
++; The arguments of a call whose returned pointer escapes must be analysed
++; like any other call's. The classifier answered "the result escapes" for
++; every pointer operand of such a call, so the arguments were never looked
++; at: @leak_and_return stores its argument to a global and returns a global
++; pointer, the caller starts a thread that writes through the global, and
++; the caller's later store to the local was elided -- a lost race. The same
++; callee returning void (@leak) was handled, which is the first control; a
++; callee that returns an escaped pointer but retains nothing (@harmless)
++; leaves the local unpublished, and its store is still elided.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-escape-analysis-global -S | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@sink = global ptr null, align 8
++@box = global i32 0, align 4
++declare i32 @pthread_create(ptr, ptr, ptr, ptr)
++
++define internal ptr @leak_and_return(ptr %p) noinline {
++  store ptr %p, ptr @sink, align 8
++  ret ptr @box
++}
++define internal void @leak(ptr %p) noinline {
++  store ptr %p, ptr @sink, align 8
++  ret void
++}
++define internal ptr @harmless(ptr %p) noinline {
++  %v = load i32, ptr %p, align 4
++  store i32 %v, ptr @box, align 4
++  ret ptr @box
++}
++define internal ptr @worker(ptr %a) sanitize_thread {
++  %v = load ptr, ptr @sink, align 8
++  store i32 9, ptr %v, align 4
++  ret ptr null
++}
++
++; CHECK-LABEL: @caller
++; CHECK:       call void @__tsan_write4(ptr %local)
++; CHECK:       ret i32 0
++define i32 @caller() sanitize_thread {
++  %local = alloca i32, align 4
++  %t = alloca i64, align 8
++  %r = call ptr @leak_and_return(ptr %local)
++  %c = call i32 @pthread_create(ptr %t, ptr null, ptr @worker, ptr null)
++  store i32 1, ptr %local, align 4
++  ret i32 0
++}
++
++; CHECK-LABEL: @control_void
++; CHECK:       call void @__tsan_write4(ptr %local)
++; CHECK:       ret i32 0
++define i32 @control_void() sanitize_thread {
++  %local = alloca i32, align 4
++  %t = alloca i64, align 8
++  call void @leak(ptr %local)
++  %c = call i32 @pthread_create(ptr %t, ptr null, ptr @worker, ptr null)
++  store i32 1, ptr %local, align 4
++  ret i32 0
++}
++
++; CHECK-LABEL: @control_harmless
++; CHECK-NOT:   call void @__tsan_write4(ptr %local)
++; CHECK:       ret i32 0
++define i32 @control_harmless() sanitize_thread {
++  %local = alloca i32, align 4
++  %t = alloca i64, align 8
++  store i32 0, ptr %local, align 4
++  %r = call ptr @harmless(ptr %local)
++  %c = call i32 @pthread_create(ptr %t, ptr null, ptr @worker, ptr null)
++  store i32 1, ptr %local, align 4
++  ret i32 0
++}
