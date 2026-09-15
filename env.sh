@@ -14,7 +14,8 @@ export ART_DATA="${ART_DATA:-$ART_ROOT/data}"
 # Leave empty to use every CPU the container was given.
 # Empty means "every CPU" and also means "not gate-checked": the disturbance gate measures busy time on
 # the CPUs OUTSIDE the set, and with no set there is nothing to measure. Unpinned runs record
-# outside_busy_share = null and print "not gate-checked"; do not compare them with the pinned numbers in
+# outside_busy_share = null with gate_checked = false in session.json and print "not gate-checked"; do not
+# compare them with the pinned numbers in
 # CLAIMS.md as if the conditions matched.
 export ART_CPUSET="${ART_CPUSET:-}"
 

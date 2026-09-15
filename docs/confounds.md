@@ -62,8 +62,8 @@ CPU share per run so a disturbed run is dropped, not averaged in.
 
 The disturbance gate reads busy time on the CPUs outside `ART_CPUSET`. With `ART_CPUSET` empty, the
 artifact's default on a machine that is not ours, there are no CPUs outside the set and nothing to
-measure; the harness records `outside_busy_share` as null and prints "not gate-checked" rather than
-a zero that would read as a quiet machine. Pin a set of at least 32 CPUs and leave the rest idle if
+measure; the harness records `outside_busy_share` as null with `gate_checked: false` beside it and prints
+"not gate-checked" rather than a zero that would read as a quiet machine. Pin a set of at least 32 CPUs and leave the rest idle if
 you want a run that can be compared with ours.
 
 ## Lower N is not a smaller interval

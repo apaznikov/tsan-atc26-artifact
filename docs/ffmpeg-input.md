@@ -58,4 +58,5 @@ fetched by `40-perf.sh ffmpeg` with the sha256 above pinned; every run records t
 its `meta.json`, so a reviewer can check they measured the same file. The fallback is to regenerate it
 from the Blender source with the command above (set `ART_FFMPEG_SOURCE` to the unpacked `.mov`): a
 re-encode's sha256 may differ from ours while the shape matches, and a run on a regenerated clip is
-labelled as such in `meta.json`. With `--smoke` a 10-second cut is used.
+labelled as such in `meta.json` (`input_is_reference: false` beside `input_sha`; the run is valid, only not
+byte-for-byte comparable with ours). With `--smoke` a 10-second cut is used.
