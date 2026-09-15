@@ -132,9 +132,52 @@ The peeling pair on memcached, AllOpt with against without peeling: 1.0332 [0.95
 
 Script: `scripts/40-perf.sh memcached` (about 4 hours at N = 5 on 48 CPUs).
 
-### FFmpeg, SQLite, MySQL
+### SQLite 3.50.2 (`threadtest3`, all seven subtests at their default thread counts; session of 16 Sep 00:30, pinned)
 
-Filled when their legs complete (16-17 September). Until then the artifact claims no performance
+Stock ThreadSanitizer against native: 2.96x [2.79, 3.28] (the paper: 3.18x). This is the campaign's
+widest slowdown column, because SQLite's uninstrumented build varies by 37.9% run to run; that is the
+workload, not the measurement. Resolvable subtests: 5 of 7 (`stress1` and `stress2` excluded).
+
+**Nothing is claimed for SQLite: every headline interval contains 1.0**, over all seven subtests and
+on both run ranges. The paper's SQLite bars, which include its largest single claim (AllOpt 1.71),
+are not reproduced: the campaign measures 1.020 for the same configuration.
+
+| Configuration | Paper | All five runs [95%] | Runs 2-5 [95%] | Resolvable subtests [95%] |
+|---|---|---|---|---|
+| EA | 1.17 | 1.016 [0.962, 1.100] | 1.007 [0.982, 1.108] | 1.003 [0.987, 1.017] |
+| LO | 1.01 | 0.990 [0.931, 1.048] | 0.977 [0.943, 1.048] | 0.994 [0.968, 1.010] |
+| STC | 1.00 | 1.016 [0.940, 1.079] | 1.017 [0.953, 1.085] | 0.997 [0.972, 1.014] |
+| SWMR | 1.00 | 1.006 [0.940, 1.089] | 1.014 [0.949, 1.093] | 0.995 [0.959, 1.009] |
+| DE | 1.21 | 1.003 [0.947, 1.071] | 0.997 [0.957, 1.072] | 1.002 [0.985, 1.018] |
+| DE + peeling | 1.24 | 1.006 [0.958, 1.088] | 1.011 [0.971, 1.090] | 0.999 [0.990, 1.020] |
+| DynSTC | 1.00 | 0.995 [0.928, 1.082] | 0.992 [0.941, 1.086] | **0.980 [0.966, 0.999]** |
+| AllOpt without peeling | 1.71 | 1.020 [0.947, 1.076] | 1.020 [0.957, 1.078] | 1.002 [0.985, 1.027] |
+| AllOpt with peeling | not in the paper | 1.023 [0.942, 1.061] | 1.013 [0.957, 1.063] | 0.998 [0.975, 1.013] |
+| AllOpt with peeling and DynSTC | not in the paper | 0.994 [0.938, 1.087] | 1.004 [0.957, 1.088] | 0.987 [0.967, 1.005] |
+| four sound analyses, whole-program summaries | not in the paper | 1.013 [0.942, 1.099] | 1.023 [0.954, 1.082] | 0.999 [0.978, 1.015] |
+| AllOpt with peeling, whole-program summaries | not in the paper | 1.049 [0.988, 1.113] | **1.042 [1.014, 1.107]** | 0.998 [0.984, 1.017] |
+
+Two entries above are bold because they exclude 1.0 in one column and not in the others, and neither
+is claimed. DynSTC excludes it on the resolvable subtests (0.980, a 2% cost) while the headline
+column contains it; the whole-program AllOpt+peel row excludes it on runs 2-5 only. A row is claimed
+here only when both run ranges of the headline column agree, so both are reported as no measurable
+change, with the disagreement shown rather than resolved by choosing a column.
+
+What the resolvable-subtest column does say, once `stress1` and `stress2` are set aside: on SQLite
+every configuration sits within about 2% of stock, with intervals two to four times narrower than
+the headline ones. SQLite is not a workload on which these analyses do nothing measurable in
+principle; it is one on which they do nothing worth more than 2%.
+
+The peeling pair on SQLite, AllOpt with against without peeling on the resolvable subtests:
+0.9967 [0.9650, 1.0118], resolution floor 3.5%.
+
+Script: `scripts/40-perf.sh sqlite` (about 7 hours at N = 5 on 48 CPUs).
+
+### FFmpeg and MySQL
+
+Filled when their legs complete (17 September). FFmpeg additionally carries a control leg on the
+retired clip, so that the difference from the paper's FFmpeg column can be attributed to the
+compiler or to the input; see `docs/ffmpeg-input.md`. Until then the artifact claims no performance
 number for them; the recorded Stage B runs under `data/perf/stageB-d3bf9f8c39fe` are from an
 earlier compiler and are shipped as data, not as claims.
 
