@@ -78,7 +78,7 @@ RUN /opt/tsan-llvm/bin/llvm-lit --version
 FROM ubuntu:24.04
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      python3 python3-numpy git make cmake ninja-build binutils file util-linux \
+      python3 python3-numpy python3-psutil git make cmake ninja-build binutils file util-linux \
       libstdc++-13-dev gcc g++ pkg-config ca-certificates wget unzip \
       libevent-dev libssl-dev libx264-dev libx265-dev libgnutls28-dev nasm yasm \
     && rm -rf /var/lib/apt/lists/*

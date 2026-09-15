@@ -75,3 +75,11 @@ need_lit() {
   echo "compiler prefix that ships it -- the artifact image has it at lib/python-lit." >&2
   exit 2
 }
+
+# lit_timeout_flag: `--timeout` makes lit exit 2 outright when the psutil module is
+# missing, which reads as a suite failure and is not one. Use the flag when it works and
+# say so plainly when it does not, rather than losing the run to a missing dependency.
+lit_timeout_flag() {
+  if python3 -c 'import psutil' >/dev/null 2>&1; then printf -- '--timeout %s' "$1"
+  else echo "note: python3-psutil not installed; running without a per-test timeout" >&2; fi
+}

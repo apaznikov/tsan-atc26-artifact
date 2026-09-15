@@ -36,7 +36,7 @@ echo
 echo "=== 1. every test passes against the shipped compiler ==="
 set +e
 with_lit_lock env ART_LIT_EXEC_ROOT="$exec_root" \
-  "$TSAN_LLVM_ROOT/bin/llvm-lit" -q --timeout 300 -j"${ART_JOBS}" "$suite" \
+  "$TSAN_LLVM_ROOT/bin/llvm-lit" -q $(lit_timeout_flag 300) -j"${ART_JOBS}" "$suite" \
   > "$outdir/lit.log" 2>&1
 lit_rc=$?
 set -e

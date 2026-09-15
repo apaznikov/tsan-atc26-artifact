@@ -65,7 +65,7 @@ while IFS='|' read -r cname cflags; do
     log="$outdir/lit-$cname-$rep.log"
     set +e
     with_lit_lock env TSAN_MLLVM_FLAGS="$cflags" ART_LIT_EXEC_ROOT="$er" \
-      "$TSAN_LLVM_ROOT/bin/llvm-lit" -q --timeout 600 -j"${ART_JOBS}" "$suite" > "$log" 2>&1
+      "$TSAN_LLVM_ROOT/bin/llvm-lit" -q $(lit_timeout_flag 600) -j"${ART_JOBS}" "$suite" > "$log" 2>&1
     set -e
     nf=$(grep -c '^  ThreadSanitizer' "$log" || true)
     grep '^  ThreadSanitizer' "$log" | sed "s|^  ThreadSanitizer[^:]*:: *|$cname\t$rep\t|" >> "$outdir/failures.tsv" || true
