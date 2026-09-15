@@ -1,3 +1,23 @@
+# Running the preservation suite so that a pass means something
+
+## Do not run it on one core
+
+Two kinds of test live in the suite, and they behave differently when the machine is small.
+A test that passes by *detecting* a race gets harder on fewer cores, so a pass is safe. A test
+that passes by *not reporting* a race gets easier: with one runnable processor the interleaving
+it exists to exercise may never occur, and it passes for a reason the measurement cannot see.
+
+What survives that, and what does not:
+
+| Quantity | Invariant under pinning? | Why |
+|---|---|---|
+| tests discovered, and tests unsupported on this platform | yes | decided by `lit` feature gates before anything runs |
+| tests executed and passed | **no** | a no-report test can pass vacuously when the schedule never interleaves |
+
+So give the suite real parallelism: at least 8 processors, unpinned, and do not run it inside a
+container limited to one CPU. The counts of discovered and unsupported tests are comparable with
+ours on any machine; a pass count taken on one core is not, and we do not quote one.
+
 # Regression-suite tests that are non-deterministic under stock ThreadSanitizer
 
 `30-preservation-suite.sh` compares every test's race report under each configuration with the
