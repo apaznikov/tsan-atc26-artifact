@@ -33,7 +33,9 @@ fi
 echo
 echo "Deterministic core (Tier 1):"
 for c in cmake ninja python3 git objdump; do need "$c" "$c"; done
-need "llvm-lit" "$TSAN_LLVM_ROOT/bin/llvm-lit" "ships with the compiler build"
+# llvm-lit is a Python launcher: an executable bit proves nothing, only starting it does.
+if "$TSAN_LLVM_ROOT/bin/llvm-lit" --version >/dev/null 2>&1; then printf '  ok       %-22s %s\n' "llvm-lit" "$("$TSAN_LLVM_ROOT/bin/llvm-lit" --version 2>/dev/null | head -1)"; ok=$((ok+1))
+else echo "  MISSING  llvm-lit               $TSAN_LLVM_ROOT/bin/llvm-lit does not start (the 'lit' Python package must be importable; the image installs it, on a host set PYTHONPATH to llvm/utils/lit)"; miss=$((miss+1)); fi
 echo
 echo "Performance (Tier 2):"
 need taskset taskset
