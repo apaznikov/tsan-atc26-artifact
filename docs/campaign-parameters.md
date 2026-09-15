@@ -92,6 +92,19 @@ without its completion marker on 5 Sep). MySQL runs four. Flag sets are in
 `tsan-experiments/config_definitions.sh`. The campaign is 58 builds, started 15 Sep 12:55 in the
 order MySQL, Redis, FFmpeg, memcached, SQLite, serialised on the machine memory lock.
 
+## Static counts of the campaign binaries (15 Sep, `static-counts.csv`)
+
+Static sites against stock ThreadSanitizer: AllOpt without peeling removes 5.0% (memcached), 2.3%
+(Redis), 7.8% (FFmpeg), 3.3% (SQLite); AllOpt with peeling carries more sites than stock on every
+application (+5.7%, +14.1%, +5.5%, +6.8%, MySQL +6.3%). The rise is loop peeling alone: DE to
+DE+peeling adds 11.7% / 16.8% / 10.5% / 14.3%, and the same delta appears with the four sound
+analyses on or off (11.7/11.3, 16.8/16.8, 10.5/10.4, 14.3/14.4), so peeling is additive and
+independent of EA, LO, STC and SWMR. A static count says nothing about executed accesses, which is
+where peeling is meant to pay; the legs measure that. DynSTC equals its base configuration in every
+static count by construction (it guards accesses, it does not remove them). The paper's static
+reduction figure (60.8 / 34.7 / 64.9 / 55.6 / 14.5) was produced by the submitted compiler and is
+not reproduced by this one; the camera-ready decision is Alexey's and Michael's.
+
 ## Runs and statistics
 
 | Item | Value |
