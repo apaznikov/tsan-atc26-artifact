@@ -88,7 +88,38 @@ Redis, AllOpt with against without peeling on the stable subtests: 1.0105 [0.990
 Script: `scripts/40-perf.sh redis` (about 2 hours at N = 5 on 48 CPUs; `--smoke` in minutes, not a
 measurement).
 
-### FFmpeg, memcached, SQLite, MySQL
+### memcached 1.6.29 (`memtier_benchmark` 2.1.1, 10 threads x 5 clients, pipeline 16, 100 000 requests each, server at 48 threads; session of 15 Sep, pinned)
+
+Stock ThreadSanitizer against native: 3.20x [2.97, 3.40] (the paper: 2.83x). **No configuration is
+resolved on memcached**: every interval is 12 to 16 points wide and contains 1.0. The cause is the
+workload, not the analyses: memcached reports one metric, operations per second, so the geometric
+mean is over a single number and the whole interval is its run-to-run variance at N = 5. Only more
+repetitions would narrow it; no subtest filter can, because there are no subtests. The paper's
+memcached bars (1.00 to 1.07) lie inside these intervals, so the campaign neither confirms nor
+contradicts them.
+
+| Configuration | Paper | All five runs [95%] | Interval width | Verdict |
+|---|---|---|---|---|
+| EA | 1.00 | 0.989 [0.933, 1.064] | 13 points | no measurable change |
+| LO | 1.01 | 1.003 [0.946, 1.090] | 14 points | no measurable change |
+| STC | 1.00 | 1.016 [0.948, 1.082] | 13 points | no measurable change |
+| SWMR | 1.00 | 1.020 [0.932, 1.089] | 16 points | no measurable change |
+| DE | 1.03 | 0.986 [0.935, 1.085] | 15 points | no measurable change |
+| DE + peeling | 1.03 | 0.990 [0.934, 1.077] | 14 points | no measurable change |
+| DynSTC | 0.98 | 0.986 [0.944, 1.063] | 12 points | no measurable change |
+| AllOpt without peeling | 1.07 | 0.986 [0.940, 1.078] | 14 points | no measurable change |
+| AllOpt with peeling | not in the paper | 1.019 [0.951, 1.079] | 13 points | no measurable change |
+| AllOpt with peeling and DynSTC | not in the paper | 1.003 [0.961, 1.099] | 14 points | no measurable change |
+| four sound analyses, whole-program summaries | not in the paper | 1.005 [0.947, 1.089] | 14 points | no measurable change |
+| AllOpt with peeling, whole-program summaries | not in the paper | 1.023 [0.961, 1.112] | 15 points | no measurable change |
+
+Redis's DynSTC cost does not appear here (0.986, interval 12 points wide); whether that is a real
+difference between the two applications or memcached's noise cannot be told from this measurement.
+The peeling pair on memcached, AllOpt with against without peeling: 1.0332 [0.9593, 1.0567].
+
+Script: `scripts/40-perf.sh memcached` (about 4 hours at N = 5 on 48 CPUs).
+
+### FFmpeg, SQLite, MySQL
 
 Filled when their legs complete (16-17 September). Until then the artifact claims no performance
 number for them; the recorded Stage B runs under `data/perf/stageB-d3bf9f8c39fe` are from an
