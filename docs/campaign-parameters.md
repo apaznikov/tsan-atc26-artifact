@@ -29,7 +29,7 @@ R2 (the whole-machine values as a second row).
 
 | Application | Workload | Primary (R3 / R1) | Second row | Notes |
 |---|---|---|---|---|
-| FFmpeg | 4 codecs (h264, h265, mjpeg, stream copy), CC-BY input, `-c:v` only | `-threads 4` (March) | `-threads 16` (libx265's ceiling) | sweep: AllOpt+peel 1.008 at 4, 1.055 at 16; DynSTC ~1.12 throughout |
+| FFmpeg | 4 codecs (h264, h265, mjpeg, stream copy), CC-BY input, `-c:v` only; **12 configurations** (no whole-program rows: FFmpeg has no summary generator, and the paper's FFmpeg figure has none either) | `-threads 4` (March) | `-threads 16` (libx265's ceiling) | sweep: AllOpt+peel 1.008 at 4, 1.055 at 16; DynSTC ~1.12 throughout |
 | Redis | `redis-benchmark`, 19 tests, `-P 1024 -n <per-test>` | `-c 50` (tool default, March) | `-c 112` (logical CPU count) | sweep: DynSTC 1.068 at 50, 1.039 at 112, no trend; AllOpt+peel 1.021 at 50, 0.992 at 112 |
 | SQLite | `threadtest3`, all 7 subtests (`SQLITE_TESTS='*'`); resolvable set = walthread1, walthread2, checkpoint_starvation_1, checkpoint_starvation_2 | no thread argument (March) | `--w1-threads 112` for walthread1 | sweep: flat 2-112 |
 | memcached | `memtier_benchmark -t 10 -x 5 --pipeline 16 -P memcache_text --random-data --requests 100000`; server `-c 4096` | server `-t 48` (R1) | server `-t 112` (March `nproc`, R2) | no sweep |
@@ -47,9 +47,12 @@ paper-era default of 10 000 produced ~1 s iterations and meaningless throughput)
 `report_bugs=0` on both arms; provenance gate on every binary (`build_info.txt` compiler stamp must
 equal the campaign hash).
 
-FFmpeg input (decision 4, default applied): Tears of Steel (Blender Foundation, CC-BY), a 100-second
-cut at 1366x768, 30 fps, yuv420p, about 6.4 Mbit/s H.264 in Matroska, produced by the ffmpeg command
-recorded in `docs/ffmpeg-input.md` together with the source URL; the file itself is not shipped.
+FFmpeg input (decision 4, default applied; cut 15 Sep 12:58): Tears of Steel (Blender Foundation,
+CC-BY 3.0), `TearsOfSteel-1366x768-100s.mkv`, sha256 `43b0fba97eb05a0e…`, 100 s from 06:00 at
+1366x768, 30 fps, yuv420p, 6.52 Mbit/s H.264 in Matroska with Vorbis audio, produced by the ffmpeg
+command in `docs/ffmpeg-input.md` (crop 1422x800 then scale, because the source is 2.40:1; 24 to
+30 fps duplicates one frame in five). The file is not shipped. Nothing measured on the retired clip
+is cited; the sweep's FFmpeg arm is re-run on this clip after the campaign.
 
 Sweep evidence, reported as curves rather than used for selection: SQLite walthread1 flat from 2 to
 112 threads (AllOpt+peel 1.016 at 2 and 1.016 at 112, peak 1.027 at 16); Redis flat and non-monotone
@@ -81,7 +84,11 @@ equal the campaign hash).
 The paper's twelve (native; stock TSan; EA, LO, STC, SWMR, DE, DE+peeling alone; DynSTC; the four
 sound analyses; AllOpt without peeling; AllOpt with peeling) plus AllOpt+peel+DynSTC (the paper's
 headline configuration, never yet measured on a corrected compiler) and the two whole-program
-summaries variants. Flag sets are in `tsan-experiments/config_definitions.sh`.
+summaries variants: fourteen for memcached, Redis and SQLite. FFmpeg runs twelve (the whole-program
+variants need a summary generator FFmpeg does not have; handing it a `-wp` row made the build exit
+without its completion marker on 5 Sep). MySQL runs four. Flag sets are in
+`tsan-experiments/config_definitions.sh`. The campaign is 58 builds, started 15 Sep 12:55 in the
+order MySQL, Redis, FFmpeg, memcached, SQLite, serialised on the machine memory lock.
 
 ## Runs and statistics
 
