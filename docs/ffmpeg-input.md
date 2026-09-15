@@ -44,6 +44,14 @@ audio track like the clip it replaces.
 | video bit rate | 6.41 Mbit/s | 6.52 Mbit/s |
 | audio | Vorbis 48 kHz stereo | Vorbis 48 kHz stereo |
 
+**No FFmpeg figure from before 15 September 2026 is comparable with a campaign figure**, in either
+direction: the paper's FFmpeg column and the Stage B runs used the retired clip, so a difference
+between them and the campaign could be the clip as much as the compiler. Within the campaign every
+configuration shares one input, so the speedup column, the peeling pair and its branch rule are
+unaffected. A control leg on the campaign compiler with the retired clip, four configurations, is
+scheduled last so that the clip's own contribution is measured rather than argued; its numbers are
+evidence for the paper only and are not shipped here, because the clip cannot be redistributed.
+
 Shape matches, content does not. No FFmpeg measurement taken on the retired clip is cited by this
 artifact: the FFmpeg arm of the concurrency sweep is re-run on this clip after the campaign, and
 every FFmpeg row in `CLAIMS.md` comes from runs on it. The retired clip had no recorded provenance
