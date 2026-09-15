@@ -105,6 +105,25 @@ static count by construction (it guards accesses, it does not remove them). The 
 reduction figure (60.8 / 34.7 / 64.9 / 55.6 / 14.5) was produced by the submitted compiler and is
 not reproduced by this one; the camera-ready decision is Alexey's and Michael's.
 
+## The pre-registered peeling comparison, and why it was not amended
+
+Peeling is decided by the executed-access pair, AllOpt with peeling against AllOpt without it, on
+four applications, under a rule registered before any of them were measured: three of the four must
+agree for either branch, otherwise the outcome is "measure executed accesses directly". Two rows
+crossed 1.0 (Redis 1.0105 [0.9905, 1.0326]; memcached 1.0332 [0.9593, 1.0567]), and it was proposed
+that memcached, which cannot resolve an effect of the size under study, lose its place in the
+denominator.
+
+Refused, 16 September. A crossing interval votes for neither branch; all an unresolvable row does is
+make the threshold harder to reach, and the branch it pushes toward is exactly "go and measure the
+executed accesses", which is the right response to a row that cannot answer. Restating the rule as a
+majority of the resolvable rows would have made the other branches reachable in cases the registered
+rule sends to that one, and it would have been adopted with two of four rows already visible. The
+remedy is reporting, not amendment: every ratio is printed with its resolution floor, the half-width
+of its own interval, so an unresolvable row is visibly unresolvable. memcached's floor is 5.7% and
+peeling's static site increase there is 5.7%, so that leg cannot resolve the effect under study, and
+the table says so in prose beside the row.
+
 ## Runs and statistics
 
 | Item | Value |
