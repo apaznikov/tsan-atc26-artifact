@@ -85,9 +85,27 @@ So the defensible statement is a bound and not a value: **foreign consumption on
 processors is under roughly one per cent of their capacity, and this accounting cannot resolve it
 more finely.**
 
-It is not correlated with configuration, so it does not bias a comparison between configurations,
-which is what every ratio here is; it contributes instead to the run-to-run variation the confidence
-intervals already carry.
+Whether it is correlated with configuration was tested rather than assumed, by comparing the spread
+between configuration means with the scatter between runs of one configuration:
+
+| | between configurations | within a configuration | reading |
+|---|---|---|---|
+| Redis | 0.063 pp | 0.164 pp | configuration explains little |
+| SQLite | 0.036 pp | 0.086 pp | configuration explains little |
+| memcached | 0.165 pp | 0.189 pp | inconclusive |
+
+On memcached the estimator is dominated by accounting error: its estimates are negative for every
+configuration, because the server runs outside the timed region and its ticks are added back by
+hand. The comparable spreads there are more likely that error tracking configuration than foreign
+load doing so, and the question cannot be answered on that application. It also does not arise
+there: no memcached interval is narrower than 12 points, and the quantity bounded above is under
+one.
+
+Where the question can be answered, foreign activity adds to run-to-run variation rather than
+shifting configurations relative to one another, and that variation is already contained in the
+reported intervals. One mechanism by which it could couple to configuration is known and weak:
+foreign share correlates with run duration at r = 0.18 over the 211 runs, and configurations differ
+slightly in duration.
 
 **The per-process file records presence, not consumption.** Each run ships
 `cpuset-intruders.txt` and the `cpuset_intruders` fields of `meta.json`, listing the processes seen
