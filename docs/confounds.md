@@ -24,8 +24,8 @@ we measured:
   steady state, and the campaign shows that this works rather than assuming it: with the warm-up
   in place, run 1 is above the median of runs 2 to 5 in 9 of 14 Redis configurations (median
   difference +0.63%) and 6 of 14 memcached configurations (median difference -1.47%), which is a
-  coin toss around zero. The tables computed over all five runs and over runs 2 to 5 agree
-  everywhere within intervals, for the same reason.
+  coin toss around zero. The point estimate over runs 2 to 5 lies inside the all-five interval on every row, for the
+  same reason; overlap of the two intervals was never the test, since the two share four runs.
 - **Between sessions.** Byte-identical Redis binaries measured six days apart on the same host
   gave stock ThreadSanitizer 14% less throughput on the later date and an uninstrumented build 5%
   less, so eight of thirteen Redis rows changed verdict between the two sessions. The cause was not

@@ -185,7 +185,7 @@ the table says so in prose beside the row.
 | Order | run-major (repetition outer, configuration inner) |
 | Statistic | geometric mean over the application's tests of per-test medians; 95% bootstrap interval, B = 2000, seed 1, resampling runs |
 | Resolvable-subtest column | set taken once from the stock baseline's pooled coefficient of variation, applied to every row |
-| Cross-check | every curve reported on all five runs and on runs 2-5; if the two disagree in direction, neither is reported and the leg is repeated |
+| Cross-check | every row reported over all five runs with its interval and over runs 2-5 as a point (four runs get no interval); the runs-2-5 point must lie inside the all-five interval, which shows the first measured run did not drive the result; a row failing that is not reported and the leg is repeated. Overlap of two intervals sharing four runs was never a test and is no longer claimed |
 | Reported as | the full table; "best configuration per application" is derived from it, never a substitute |
 
 ## Conditions on record

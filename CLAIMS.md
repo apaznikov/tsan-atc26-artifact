@@ -65,9 +65,12 @@ and be unattributable.
 Filled per application as the campaign of 15-17 September completes on compiler `f3deebfbab60`;
 an application not yet listed is not yet claimed. Every configuration of the paper's figure is
 listed with the paper's bar beside it, plus the three configurations the paper does not show.
-Two intervals per row: over all five measured runs and over runs 2-5; a row is claimed to differ
-from stock only when both exclude 1.0, and "no measurable change" means the interval contains 1.0,
-not that the effect is zero. "Stable subtests" repeats the speedup over the subtests whose pooled
+Each row carries its interval over all five measured runs and, beside it, the point estimate over
+runs 2-5 with no interval (four runs never get one). The two share four runs, so overlap of two
+intervals was never a test; the check is that the runs-2-5 point lies inside the all-five interval,
+which says that the first measured run did not drive the result. A row is claimed to differ from
+stock only when the all-five interval excludes 1.0 and that check holds; "no measurable change"
+means the interval contains 1.0, not that the effect is zero. "Stable subtests" repeats the speedup over the subtests whose pooled
 run-to-run variation is at most 5%; the set is a property of the workload and applies to every row.
 
 ### Redis 7.0.15 (`redis-benchmark`, 19 commands, 50 clients, pipeline 1024; session of 15 Sep 18:49, pinned, governor powersave)
@@ -75,20 +78,20 @@ run-to-run variation is at most 5%; the set is a property of the workload and ap
 Stock ThreadSanitizer against native: 8.01x [7.83, 8.21] (the paper: 9.2x). Stable subtests: 16 of 19
 (`PING_MBULK`, `ZPOPMIN`, `MSET` excluded).
 
-| Configuration | Paper | All five runs [95%] | Runs 2-5 [95%] | Stable subtests, all five [95%] | Verdict |
+| Configuration | Paper | All five runs [95%] | Runs 2-5, point | Stable subtests, all five [95%] | Verdict |
 |---|---|---|---|---|---|
-| EA | 1.00 | 0.994 [0.974, 1.019] | 0.989 [0.967, 1.008] | 0.991 [0.972, 1.019] | no measurable change |
-| LO | 1.00 | 0.981 [0.967, 1.010] | 0.980 [0.965, 1.002] | 0.981 [0.969, 1.009] | no measurable change |
-| STC | 1.12 | 0.980 [0.962, 1.003] | 0.979 [0.961, 0.997] | 0.978 [0.959, 1.002] | no measurable change (on the boundary: runs 2-5 exclude 1.0, all five do not) |
-| SWMR | 1.00 | 0.988 [0.971, 1.015] | 0.987 [0.963, 1.007] | 0.982 [0.970, 1.014] | no measurable change |
-| DE | 1.35 | 0.992 [0.970, 1.015] | 0.992 [0.967, 1.010] | 0.992 [0.972, 1.017] | no measurable change |
-| DE + peeling | 1.25 | 0.996 [0.977, 1.024] | 0.997 [0.972, 1.018] | 0.990 [0.971, 1.021] | no measurable change |
-| DynSTC | 1.12 | 0.944 [0.927, 0.970] | 0.944 [0.922, 0.962] | 0.939 [0.922, 0.963] | **below stock** |
-| AllOpt without peeling | 1.45 (the paper's AllOpt bar; the paper does not say whether peeling was on) | 0.989 [0.975, 1.015] | 0.984 [0.965, 1.000] | 0.984 [0.968, 1.011] | no measurable change |
-| AllOpt with peeling | not in the paper | 1.000 [0.983, 1.026] | 0.994 [0.974, 1.016] | 0.994 [0.978, 1.024] | no measurable change |
-| AllOpt with peeling and DynSTC | not in the paper | 0.958 [0.944, 0.985] | 0.963 [0.944, 0.981] | 0.951 [0.940, 0.981] | **below stock** |
-| four sound analyses, whole-program summaries | not in the paper | 0.996 [0.971, 1.017] | 0.993 [0.971, 1.013] | 0.994 [0.968, 1.015] | no measurable change |
-| AllOpt with peeling, whole-program summaries | not in the paper | 0.998 [0.980, 1.027] | 0.996 [0.979, 1.019] | 0.997 [0.976, 1.023] | no measurable change |
+| EA | 1.00 | 0.994 [0.974, 1.019] | 0.989 | 0.991 [0.972, 1.019] | no measurable change |
+| LO | 1.00 | 0.981 [0.967, 1.010] | 0.980 | 0.981 [0.969, 1.009] | no measurable change |
+| STC | 1.12 | 0.980 [0.962, 1.003] | 0.979 | 0.978 [0.959, 1.002] | no measurable change (on the boundary: the upper limit is 1.003) |
+| SWMR | 1.00 | 0.988 [0.971, 1.015] | 0.987 | 0.982 [0.970, 1.014] | no measurable change |
+| DE | 1.35 | 0.992 [0.970, 1.015] | 0.992 | 0.992 [0.972, 1.017] | no measurable change |
+| DE + peeling | 1.25 | 0.996 [0.977, 1.024] | 0.997 | 0.990 [0.971, 1.021] | no measurable change |
+| DynSTC | 1.12 | 0.944 [0.927, 0.970] | 0.944 | 0.939 [0.922, 0.963] | **below stock** |
+| AllOpt without peeling | 1.45 (the paper's AllOpt bar; the paper does not say whether peeling was on) | 0.989 [0.975, 1.015] | 0.984 | 0.984 [0.968, 1.011] | no measurable change |
+| AllOpt with peeling | not in the paper | 1.000 [0.983, 1.026] | 0.994 | 0.994 [0.978, 1.024] | no measurable change |
+| AllOpt with peeling and DynSTC | not in the paper | 0.958 [0.944, 0.985] | 0.963 | 0.951 [0.940, 0.981] | **below stock** |
+| four sound analyses, whole-program summaries | not in the paper | 0.996 [0.971, 1.017] | 0.993 | 0.994 [0.968, 1.015] | no measurable change |
+| AllOpt with peeling, whole-program summaries | not in the paper | 0.998 [0.980, 1.027] | 0.996 | 0.997 [0.976, 1.023] | no measurable change |
 
 Condition that travels with every Redis row: byte-identical Redis binaries measured six days apart
 on this host differed by 14% (stock) and 5% (native) in throughput for reasons we could not
@@ -141,26 +144,25 @@ workload, not the measurement. Resolvable subtests: 5 of 7 (`stress1` and `stres
 on both run ranges. The paper's SQLite bars, which include its largest single claim (AllOpt 1.71),
 are not reproduced: the campaign measures 1.020 for the same configuration.
 
-| Configuration | Paper | All five runs [95%] | Runs 2-5 [95%] | Resolvable subtests [95%] |
+| Configuration | Paper | All five runs [95%] | Runs 2-5, point | Resolvable subtests [95%] |
 |---|---|---|---|---|
-| EA | 1.17 | 1.016 [0.962, 1.100] | 1.007 [0.982, 1.108] | 1.003 [0.987, 1.017] |
-| LO | 1.01 | 0.990 [0.931, 1.048] | 0.977 [0.943, 1.048] | 0.994 [0.968, 1.010] |
-| STC | 1.00 | 1.016 [0.940, 1.079] | 1.017 [0.953, 1.085] | 0.997 [0.972, 1.014] |
-| SWMR | 1.00 | 1.006 [0.940, 1.089] | 1.014 [0.949, 1.093] | 0.995 [0.959, 1.009] |
-| DE | 1.21 | 1.003 [0.947, 1.071] | 0.997 [0.957, 1.072] | 1.002 [0.985, 1.018] |
-| DE + peeling | 1.24 | 1.006 [0.958, 1.088] | 1.011 [0.971, 1.090] | 0.999 [0.990, 1.020] |
-| DynSTC | 1.00 | 0.995 [0.928, 1.082] | 0.992 [0.941, 1.086] | **0.980 [0.966, 0.999]** |
-| AllOpt without peeling | 1.71 | 1.020 [0.947, 1.076] | 1.020 [0.957, 1.078] | 1.002 [0.985, 1.027] |
-| AllOpt with peeling | not in the paper | 1.023 [0.942, 1.061] | 1.013 [0.957, 1.063] | 0.998 [0.975, 1.013] |
-| AllOpt with peeling and DynSTC | not in the paper | 0.994 [0.938, 1.087] | 1.004 [0.957, 1.088] | 0.987 [0.967, 1.005] |
-| four sound analyses, whole-program summaries | not in the paper | 1.013 [0.942, 1.099] | 1.023 [0.954, 1.082] | 0.999 [0.978, 1.015] |
-| AllOpt with peeling, whole-program summaries | not in the paper | 1.049 [0.988, 1.113] | **1.042 [1.014, 1.107]** | 0.998 [0.984, 1.017] |
+| EA | 1.17 | 1.016 [0.962, 1.100] | 1.007 | 1.003 [0.987, 1.017] |
+| LO | 1.01 | 0.990 [0.931, 1.048] | 0.977 | 0.994 [0.968, 1.010] |
+| STC | 1.00 | 1.016 [0.940, 1.079] | 1.017 | 0.997 [0.972, 1.014] |
+| SWMR | 1.00 | 1.006 [0.940, 1.089] | 1.014 | 0.995 [0.959, 1.009] |
+| DE | 1.21 | 1.003 [0.947, 1.071] | 0.997 | 1.002 [0.985, 1.018] |
+| DE + peeling | 1.24 | 1.006 [0.958, 1.088] | 1.011 | 0.999 [0.990, 1.020] |
+| DynSTC | 1.00 | 0.995 [0.928, 1.082] | 0.992 | **0.980 [0.966, 0.999]** |
+| AllOpt without peeling | 1.71 | 1.020 [0.947, 1.076] | 1.020 | 1.002 [0.985, 1.027] |
+| AllOpt with peeling | not in the paper | 1.023 [0.942, 1.061] | 1.013 | 0.998 [0.975, 1.013] |
+| AllOpt with peeling and DynSTC | not in the paper | 0.994 [0.938, 1.087] | 1.004 | 0.987 [0.967, 1.005] |
+| four sound analyses, whole-program summaries | not in the paper | 1.013 [0.942, 1.099] | 1.023 | 0.999 [0.978, 1.015] |
+| AllOpt with peeling, whole-program summaries | not in the paper | 1.049 [0.988, 1.113] | 1.042 | 0.998 [0.984, 1.017] |
 
-Two entries above are bold because they exclude 1.0 in one column and not in the others, and neither
-is claimed. DynSTC excludes it on the resolvable subtests (0.980, a 2% cost) while the headline
-column contains it; the whole-program AllOpt+peel row excludes it on runs 2-5 only. A row is claimed
-here only when both run ranges of the headline column agree, so both are reported as no measurable
-change, with the disagreement shown rather than resolved by choosing a column.
+One entry above is bold because it excludes 1.0 in one column and not in the headline one, and it
+is not claimed: DynSTC excludes it on the resolvable subtests (0.980, a 2% cost) while the headline
+column contains it. A row is claimed only on the headline column, so it is reported as no measurable
+change, with the disagreement shown rather than resolved by choosing the column that separates.
 
 What the resolvable-subtest column does say, once `stress1` and `stress2` are set aside: on SQLite
 every configuration sits within about 2% of stock, with intervals two to four times narrower than
@@ -172,9 +174,28 @@ The peeling pair on SQLite, AllOpt with against without peeling on the resolvabl
 
 Script: `scripts/40-perf.sh sqlite` (about 7 hours at N = 5 on 48 CPUs).
 
-### FFmpeg and MySQL
+### MySQL 8.0.39 (sysbench 1.0.20, five scripts at 180 s, 36 threads; four configurations; session of 16 Sep 07:27, pinned)
 
-Filled when their legs complete (17 September). FFmpeg additionally carries a control leg on the
+Stock ThreadSanitizer against native: 9.70x [9.29, 10.08], the largest of the five applications (the
+paper: 7.1x). Resolvable subtests: 4 of 5 (`oltp_read_only` excluded at 6.1% pooled variation; the
+others are between 1.8 and 3.8%, far tighter than the earlier campaign this workload was expected
+from). Only four configurations are measured, because each configuration with the escape analysis
+takes about 2.2 hours to build on the previous compiler; `docs/mysql.md`.
+
+| Configuration | Paper | All five runs [95%] | Runs 2-5, point | Resolvable subtests [95%] | Verdict |
+|---|---|---|---|---|---|
+| AllOpt with peeling | 1.16 and 1.11 on the two scripts the paper plots (`select-random-points`, `write-only`); the campaign's figure is a geometric mean over five scripts | 1.042 [0.985, 1.062] | 1.025 | 1.027 [0.991, 1.052] | no measurable change |
+| AllOpt with peeling and DynSTC | not in the paper | 1.018 [0.967, 1.037] | 1.009 | 1.000 [0.964, 1.023] | no measurable change |
+
+AllOpt with peeling at 1.042 is the nearest any row in this campaign comes to separating from stock
+in its favour, and it does not. Both runs-2-5 points lie inside their all-five intervals.
+
+Script: `scripts/40-perf.sh mysql` (four configurations only; about 3.4 hours at the default N = 2,
+6.7 at N = 5, on 48 CPUs; builds about half an hour each with the shipped compiler).
+
+### FFmpeg
+
+Filled when its leg completes (17 September). FFmpeg additionally carries a control leg on the
 retired clip, so that the difference from the paper's FFmpeg column can be attributed to the
 compiler or to the input; see `docs/ffmpeg-input.md`. Until then the artifact claims no performance
 number for them; the recorded Stage B runs under `data/perf/stageB-d3bf9f8c39fe` are from an
