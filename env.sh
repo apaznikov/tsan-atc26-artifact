@@ -20,7 +20,13 @@ export ART_DATA="${ART_DATA:-$ART_ROOT/data}"
 export ART_CPUSET="${ART_CPUSET:-}"
 
 # Number of measured runs per configuration and whether a discarded warm-up run precedes them.
-export ART_RUNS="${ART_RUNS:-5}"
+# Three modes, and the tables say which one produced them:
+#   ART_RUNS=2  (default)  a point estimate per row, no confidence interval; the reviewer's mode.
+#                          Match criterion: the point falls inside the interval shipped in CLAIMS.md.
+#   ART_RUNS=5             our campaign; a 95% bootstrap interval per row; criterion: intervals overlap.
+#   ART_SMOKE=1            one run, reduced workloads; printed as "not a measurement".
+# No interval is ever printed for fewer than five runs.
+export ART_RUNS="${ART_RUNS:-2}"
 export ART_WARMUP="${ART_WARMUP:-1}"
 
 # Smoke mode: one run, short workloads, reduced test lists. Prints "not a measurement".

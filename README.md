@@ -90,9 +90,14 @@ regenerated from whichever runs you point them at.
 | `21-compile-time.sh` | compile-time overhead | 1 h | 8 cores |
 | `30-preservation-suite.sh` | 12 configurations over ThreadSanitizer's regression suite, with a report-level diff | 2 h | 8 cores |
 | `31-preservation-apps.sh` | races reported on the applications, against stock | 3 h | 16 cores |
-| `40-perf.sh` | the performance table | 1 day | 32 cores |
+| `40-perf.sh` | the performance table, one application at a time | default (4 configurations, N = 2): Redis 17 min, memcached 34, FFmpeg 24, SQLite 58, MySQL 3.4 h; everything at N = 2 about 14 h with builds; `ART_RUNS=5` for intervals, 2.5x longer | 32 cores |
 | `50-eviction-stress.sh` | the bounded-shadow experiments | 1 h | 4 cores |
 | `90-tables.sh` | regenerates every table, from your runs or from ours | 1 min | any |
+
+The whole artifact, every script at its defaults, is about 14 hours on 48 processors; the reviewer's
+subset of the performance table, four configurations on the four cheaper applications, is about two
+hours. Our own campaign used five runs per configuration and took 43 hours; that setting is one
+variable away (`ART_RUNS=5`) and `CLAIMS.md` says what each mode can and cannot conclude.
 
 `90-tables.sh` works without running anything else: pointed at `data/`, it re-derives every table
 in the paper from the runs we recorded. That is the fastest way to check that our tables follow

@@ -18,6 +18,18 @@ So give the suite real parallelism: at least 8 processors, unpinned, and do not 
 container limited to one CPU. The counts of discovered and unsupported tests are comparable with
 ours on any machine; a pass count taken on one core is not, and we do not quote one.
 
+## The applications: a race set is an observation, not a guarantee
+
+`31-preservation-apps.sh` runs each application with reporting on, N times per configuration, and
+compares the sites reported. Detection there is schedule-dependent, so the set of sites we saw (five
+on SQLite over 10 runs) is what our schedule produced, and a reviewer's run can legitimately see
+fewer or more. The script therefore never compares against a fixed set. It prints, for stock and for
+each configuration, how many of the N runs reported each site, and classifies each site: KEPT; LOST,
+meaning stock reported it in every run and the configuration in none; or UNDETERMINED at this N,
+meaning stock itself reported it only sometimes, so its absence from a configuration at the same N
+is not evidence either way and more runs are needed. Only LOST fails the script. This is the same
+rule the regression suite uses, applied where the schedule is the workload's own.
+
 # Regression-suite tests that are non-deterministic under stock ThreadSanitizer
 
 `30-preservation-suite.sh` compares every test's race report under each configuration with the

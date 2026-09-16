@@ -72,7 +72,10 @@ regression suite in 12 configurations, preceded by a self-test that requires the
 deliberately lost races; and the regeneration of every table in the paper from the recorded runs.
 About forty minutes on eight processors.
 
-Performance is separate, needs the hardware above, and takes about a day:
+Performance is separate and needs the hardware above. At the defaults (four configurations, two
+runs each, a point estimate per row) it is about two hours for Redis, memcached, FFmpeg and SQLite
+together; everything at fourteen configurations is about 14 hours; our own five-run setting, which
+produces the confidence intervals in `CLAIMS.md`, is a variable away and 2.5 times longer:
 
 ```
 ./docker/run.sh scripts/40-perf.sh <redis|memcached|sqlite|ffmpeg|mysql>

@@ -4,8 +4,8 @@ Every claim the paper makes, the script that produces it, and what counts as a m
 the contract between the paper and this artifact: if a number is not here, the artifact does not
 claim it.
 
-Measurement provenance for every performance row: compiler `f3deebfbab60` (branch `artifact/paper-sound`,
-the one the image reproduces), five applications, one discarded warm-up then N = 5 runs per configuration, pinned to 48 processors (CPUs 4-27 and 60-83 on our machine), one
+Measurement provenance for every performance row: compiler `f3deebfbab60` (branch `artifact/atc26`,
+the one the image reproduces), five applications, one discarded warm-up then N = 5 runs per configuration (our campaign; the artifact's default for a reviewer is N = 2, see "What an evaluator actually has to run"), pinned to 48 processors (CPUs 4-27 and 60-83 on our machine), one
 measurement at a time in run-major order. The statistic is the geometric mean over an
 application's tests of per-test medians, with a 95% confidence interval from 2000 bootstrap
 resamples over runs (seed 1). Our machine: Intel Xeon w9-3495X, 56 cores / 112 threads, 250 GB
@@ -21,8 +21,7 @@ RAM, Ubuntu 24.04, kernel 6.8.
 | The harness can detect a loss at all | `scripts/30-preservation-suite.sh --self-test` | required first: it runs a detector with load and store instrumentation switched off and requires the harness to report the losses. A suite reporting nothing looks the same whether races are preserved or the harness is blind |
 | Every race test's report is identical to stock ThreadSanitizer's: same kind, both stacks with file and line | `scripts/30-preservation-suite.sh --diff` | exact, except the three tests listed in `docs/nondeterministic-tests.md`, which are non-deterministic under stock as well (verified at K = 20) |
 | No test that expects no report produces one | `scripts/30-preservation-suite.sh` | exact |
-| On SQLite, the union of races over 10 runs is the set stock reports (5 sites) | `scripts/31-preservation-apps.sh sqlite` | same set; per-site frequencies vary with the schedule |
-| On memcached, the sound configuration reports the stock set; AllOpt relocates one report in 1 of 30 runs, within the same function | `scripts/31-preservation-apps.sh memcached` | same set at the location level |
+| On the applications, no race site that stock ThreadSanitizer reports in every run is absent from an optimized configuration in every run | `scripts/31-preservation-apps.sh <app>` | comparative, on your own runs, never against a fixed set: detection is schedule-dependent, so the script prints the per-site frequency (k of N) under stock and under each configuration and classifies each site as KEPT, LOST (stock every run, the configuration never) or UNDETERMINED at this N (stock itself reports it only sometimes; more runs are needed before it can be called either way). It exits non-zero only on LOST. What we saw, as an observation and not a criterion: on SQLite five sites over 10 runs, the same set under every configuration; on memcached the stock set under the sound configuration, and AllOpt relocating one report within the same function in 1 of 30 runs |
 
 The 12 configurations: stock, each analysis alone (STC, SWMR, LO, EA, DE), DE with peeling, the
 four sound analyses combined, AllOpt with and without peeling, and each of the last two with
@@ -183,36 +182,40 @@ earlier compiler and are shipped as data, not as claims.
 
 ### What an evaluator actually has to run
 
-Reproducing all five applications at fourteen configurations is 43 hours, which is what we spent and
-not what anyone should be asked for. The claims are per row, so a subset reproduces a subset, and the
-cost is linear in the number of configurations. Four configurations decide every claim in the paper's
-figure that matters: native, stock ThreadSanitizer, AllOpt with peeling, and DynSTC.
+Reproducing all five applications at fourteen configurations with five runs each is 43 hours; that is
+our campaign and not what anyone should be asked for. The claims are per row, so a subset reproduces
+a subset, and the cost is linear in configurations and in runs. Measured from the campaign's per-cell
+costs (Redis 86 s, memcached 169 s, FFmpeg 119 s, SQLite 291 s, MySQL 1012 s), with one warm-up plus
+N runs per configuration:
 
-| Application | Per cell | Four configurations, warm-up plus N = 5 | All fourteen |
-|---|---|---|---|
-| Redis | 86 s | **0.6 h** | 2.0 h |
-| memcached | 169 s | **1.1 h** | 3.9 h |
-| FFmpeg | 119 s | **0.8 h** | 2.4 h |
-| SQLite | 291 s | **1.9 h** | 6.8 h |
-| MySQL | 1012 s | **6.7 h** | 23.6 h (never run; MySQL is measured at four) |
+| Mode | Runs | Configurations | Time on 48 processors | What a row yields |
+|---|---|---|---|---|
+| **default** | N = 2 | four: native, stock, AllOpt with peeling, DynSTC | Redis 17 min, memcached 34, FFmpeg 24, SQLite 58: **about 2 h** together; MySQL a further 3.4 h | a point estimate, no interval |
+| everything at the default | N = 2 | all fourteen (MySQL four) | Redis 1.0 h, memcached 2.0, FFmpeg 1.2, SQLite 3.4, MySQL 3.4: **about 11 h**, 14 h with the builds | a point estimate, no interval |
+| our campaign | N = 5 | any of the above | 2.5 times the figures above; everything, 43 h | a 95% interval |
 
 ```
-./docker/run.sh scripts/40-perf.sh redis --configs "orig tsan tsan-dom_peeling-ea-lo-st-swmr tsan-stmt"
+./docker/run.sh scripts/40-perf.sh redis                 # default: four configurations, N = 2
+ART_RUNS=5 ./docker/run.sh scripts/40-perf.sh redis      # our setting: intervals
+./docker/run.sh scripts/40-perf.sh redis --all-configs   # all fourteen
 ```
 
-Redis, memcached and FFmpeg together are about two and a half hours and cover the two rows where this
-campaign found anything: DynSTC's cost on Redis, and every other row's absence of a measurable
-effect. Adding SQLite makes it four and a half. MySQL is the expensive one and its table ships, so
-`scripts/90-tables.sh` gives it without running anything.
+The four configurations decide everything the paper's figure turns on, and Redis, memcached and
+FFmpeg together, about an hour and a quarter, cover the two things this campaign found: DynSTC's
+cost on Redis, and the absence of a measurable effect elsewhere. MySQL is the expensive one and its
+table ships, so `scripts/90-tables.sh` gives it without running anything.
 
-Do not reduce N below five to save time: at N = 3 the interval is 6 to 14 per cent narrower than at
-N = 5 while the point estimate moves by about four points depending on which runs are kept, so it
-buys speed by making the interval wrong rather than by making the measurement shorter. `--smoke` is
-for checking that the pipeline runs and prints "not a measurement" on its own output.
+Two runs give no confidence interval, and the artifact does not print one: below five runs a row is
+rendered as a point estimate labelled "N = k, no interval; compare with the shipped interval", never
+as a bootstrap over too few samples (at N = 3 such an interval is narrower than at N = 5 while the
+point moves by about four points with the choice of runs, which is precision that is not there).
+`--smoke` is for checking that the pipeline runs and prints "not a measurement" on its own output.
 
-**Match criterion for every row**: the evaluator's confidence interval overlaps ours. A row whose
-interval contains 1.0 here must contain 1.0 there; a row that excludes it should exclude it on
-comparable hardware. `docs/confounds.md` lists what makes this vary: memcached's wall time is
+**Match criterion for every row.** At the default N = 2: the evaluator's point estimate falls inside
+our 95% interval, and for the rows whose interval excludes 1.0 (Redis under DynSTC, alone and with
+AllOpt) it falls on the same side of 1.0. At N = 5: the evaluator's interval overlaps ours, a row whose
+interval contains 1.0 here contains 1.0 there, and a row that excludes it excludes it on comparable
+hardware. `docs/confounds.md` lists what makes this vary: memcached's wall time is
 bimodal with a 10 to 12 per cent coefficient of variation, SQLite's seven subtests are
 heterogeneous and three of them carry 16 to 20 per cent run-to-run variation, and absolute
 overheads are not comparable across compiler trees even when ratios are.
