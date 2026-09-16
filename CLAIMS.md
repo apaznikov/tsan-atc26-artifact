@@ -181,6 +181,35 @@ compiler or to the input; see `docs/ffmpeg-input.md`. Until then the artifact cl
 number for them; the recorded Stage B runs under `data/perf/stageB-d3bf9f8c39fe` are from an
 earlier compiler and are shipped as data, not as claims.
 
+### What an evaluator actually has to run
+
+Reproducing all five applications at fourteen configurations is 43 hours, which is what we spent and
+not what anyone should be asked for. The claims are per row, so a subset reproduces a subset, and the
+cost is linear in the number of configurations. Four configurations decide every claim in the paper's
+figure that matters: native, stock ThreadSanitizer, AllOpt with peeling, and DynSTC.
+
+| Application | Per cell | Four configurations, warm-up plus N = 5 | All fourteen |
+|---|---|---|---|
+| Redis | 86 s | **0.6 h** | 2.0 h |
+| memcached | 169 s | **1.1 h** | 3.9 h |
+| FFmpeg | 119 s | **0.8 h** | 2.4 h |
+| SQLite | 291 s | **1.9 h** | 6.8 h |
+| MySQL | 1012 s | **6.7 h** | 23.6 h (never run; MySQL is measured at four) |
+
+```
+./docker/run.sh scripts/40-perf.sh redis --configs "orig tsan tsan-dom_peeling-ea-lo-st-swmr tsan-stmt"
+```
+
+Redis, memcached and FFmpeg together are about two and a half hours and cover the two rows where this
+campaign found anything: DynSTC's cost on Redis, and every other row's absence of a measurable
+effect. Adding SQLite makes it four and a half. MySQL is the expensive one and its table ships, so
+`scripts/90-tables.sh` gives it without running anything.
+
+Do not reduce N below five to save time: at N = 3 the interval is 6 to 14 per cent narrower than at
+N = 5 while the point estimate moves by about four points depending on which runs are kept, so it
+buys speed by making the interval wrong rather than by making the measurement shorter. `--smoke` is
+for checking that the pipeline runs and prints "not a measurement" on its own output.
+
 **Match criterion for every row**: the evaluator's confidence interval overlaps ours. A row whose
 interval contains 1.0 here must contain 1.0 there; a row that excludes it should exclude it on
 comparable hardware. `docs/confounds.md` lists what makes this vary: memcached's wall time is
