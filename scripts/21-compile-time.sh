@@ -9,8 +9,11 @@
 # analysis can show. See the header of compile_time.sh for the session where that mattered.
 set -euo pipefail
 . "$(dirname "$0")/_lib.sh"
-need_harness tools/perf; need_compiler
+# arguments before environment, for the reason given in 40-perf.sh
 app="${1:?usage: 21-compile-time.sh <app> [config ...]}"; shift || true
+case "$app" in sqlite|memcached|redis|ffmpeg|mysql) ;; *) echo "unknown app $app" >&2; exit 2;; esac
+
+need_harness tools/perf; need_compiler
 
 if [ -r "$TSAN_LLVM_ROOT/TSAN_AUDIT_HASH" ]; then
   hash=$(grep -oE '[0-9a-f]{40}' "$TSAN_LLVM_ROOT/TSAN_AUDIT_HASH" | head -1)
