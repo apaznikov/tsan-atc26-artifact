@@ -62,8 +62,11 @@ and be unattributable.
 
 ## 5. Performance (machine-dependent)
 
-Filled per application as the campaign of 15-17 September completes on compiler `f3deebfbab60`;
-an application not yet listed is not yet claimed. Every configuration of the paper's figure is
+All five applications, from the campaign of 15-17 September on compiler `f3deebfbab60`: 330 cells,
+none retired by the disturbance gate, provenance verified on every root. **Of the 48 rows at the
+primary concurrency, four separate from stock, and all four are DynSTC: a 5.6% cost on Redis and an
+11.3% gain on FFmpeg, alone and inside AllOpt.** Every other configuration of every application
+crosses 1.0. Every configuration of the paper's figure is
 listed with the paper's bar beside it, plus the three configurations the paper does not show.
 Each row carries its interval over all five measured runs and, beside it, the point estimate over
 runs 2-5 with no interval (four runs never get one). The two share four runs, so overlap of two
@@ -96,8 +99,13 @@ Stock ThreadSanitizer against native: 8.01x [7.83, 8.21] (the paper: 9.2x). Stab
 Condition that travels with every Redis row: byte-identical Redis binaries measured six days apart
 on this host differed by 14% (stock) and 5% (native) in throughput for reasons we could not
 identify (`docs/confounds.md`). Ratios within one session are what is claimed; a disagreement of a
-few points with an evaluator's run is inside that effect. The second concurrency point, 112
-clients, is measured at the end of the campaign and added here when it lands. The peeling pair on
+few points with an evaluator's run is inside that effect. The second concurrency point, 112 clients, the
+post-hoc rule's value, measured at the end of the campaign (session of 17 Sep, N = 5): DynSTC 0.967
+[0.948, 0.988] and AllOpt with peeling and DynSTC 0.974 [0.949, 0.988], both still below stock, so
+the sign is a property of the application and not of the client count; every other row at 112
+clients crosses 1.0 (EA 0.986, LO 0.985, STC 0.989, SWMR 0.987, DE 1.000, DE+peeling 1.001, AllOpt
+without peeling 1.005, with peeling 1.006, whole-program 0.984 and 1.004, each within about two
+points of 1.0). Stock against native at 112 clients: 7.96x [7.83, 8.12]. The peeling pair on
 Redis, AllOpt with against without peeling on the stable subtests: 1.0105 [0.9905, 1.0326].
 
 Script: `scripts/40-perf.sh redis` (about 2 hours at N = 5 on 48 CPUs; `--smoke` in minutes, not a
@@ -132,7 +140,12 @@ Redis's DynSTC cost does not appear here (0.986, interval 11.9 points wide, the 
 difference between the two applications or memcached's noise cannot be told from this measurement.
 The peeling pair on memcached, AllOpt with against without peeling: 1.0332 [0.9593, 1.0567].
 
-Script: `scripts/40-perf.sh memcached` (about 4 hours at N = 5 on 48 CPUs).
+Second concurrency row, the server at 112 threads (the paper's `nproc` value; N = 5): AllOpt with
+peeling 1.006 [0.890, 1.161], with DynSTC 1.089 [0.875, 1.129]; both cross 1.0 with intervals of 25
+to 27 points, wider still than at 48 threads. Stock against native at 112 threads: 5.11x [4.49, 5.22].
+
+Script: `scripts/40-perf.sh memcached` (about 34 minutes at the default N = 2 and four configurations;
+4 hours at N = 5 and fourteen).
 
 ### SQLite 3.50.2 (`threadtest3`, all seven subtests at their default thread counts; session of 16 Sep 00:30, pinned)
 
@@ -190,12 +203,50 @@ takes about 2.2 hours to build on the previous compiler; `docs/mysql.md`.
 AllOpt with peeling at 1.042 is the nearest any row in this campaign comes to separating from stock
 in its favour, and it does not. Both runs-2-5 points lie inside their all-five intervals.
 
+Second concurrency row, 84 threads (the paper's `nproc*3/4` value; N = 5): AllOpt with peeling 1.011
+[0.978, 1.049], with DynSTC 0.992 [0.966, 1.023]; both cross 1.0. Stock against native at 84 threads:
+8.77x [8.56, 9.37].
+
 Script: `scripts/40-perf.sh mysql` (four configurations only; about 3.4 hours at the default N = 2,
 6.7 at N = 5, on 48 CPUs; builds about half an hour each with the shipped compiler).
 
-### FFmpeg
+### FFmpeg 4.3.9 (libx264, libx265, mjpeg, stream copy at `-threads 4`; the Tears of Steel clip; session of 17 Sep, pinned)
 
-Filled when its leg completes (17 September). FFmpeg additionally carries a control leg on the
+Stock ThreadSanitizer against native: 2.76x [2.70, 2.80] (the paper: 2.9x, on a different clip).
+Every FFmpeg run carries all four codecs, checked per run; the resolvable set is all four, so the
+headline column is the stable column. Twelve configurations rather than fourteen: FFmpeg has no
+whole-program summary generator.
+
+**The paper's FFmpeg column is not comparable with this one in either direction**: it was measured on
+a clip that cannot be redistributed, and a difference between the two could be the input as much as
+the compiler. Within this table every configuration shares one input, so the rows compare with each
+other exactly. A control leg on the retired clip, five configurations on this compiler, separates the
+two contributions for the paper's text; its numbers are not shipped (`docs/ffmpeg-input.md`).
+
+| Configuration | Paper (retired clip) | All five runs [95%] | Runs 2-5, point | Verdict |
+|---|---|---|---|---|
+| EA | 1.05 | 0.996 [0.980, 1.011] | 0.997 | no measurable change |
+| LO | 1.00 | 1.001 [0.962, 1.013] | 1.003 | no measurable change |
+| STC | 1.00 | 1.000 [0.976, 1.011] | 1.001 | no measurable change |
+| SWMR | 1.00 | 1.004 [0.992, 1.019] | 1.008 | no measurable change |
+| DE | 1.30 | 1.006 [0.996, 1.020] | 1.009 | no measurable change |
+| DE + peeling | 1.42 | 1.010 [0.994, 1.023] | 1.013 | no measurable change |
+| DynSTC | 1.15 | **1.113 [1.099, 1.129]** | 1.114 | **above stock** |
+| AllOpt without peeling | 1.57 | 1.012 [0.996, 1.029] | 1.015 | no measurable change |
+| AllOpt with peeling | not in the paper | 1.006 [0.990, 1.024] | 1.008 | no measurable change |
+| AllOpt with peeling and DynSTC | not in the paper | **1.123 [1.112, 1.142]** | 1.125 | **above stock** |
+
+DynSTC is the one analysis with a measurable runtime effect anywhere in this campaign, and its sign
+depends on the application: an 11.3% gain here, where the transcode has long single-threaded phases
+and the guard skips instrumentation during them, against a 5.6% cost on Redis, whose background
+threads start before the first client so the guard is paid for and never pays back. Both intervals
+are far from 1.0 and both survive the second concurrency point on Redis. The peeling pair on FFmpeg,
+the tightest of the four at a resolution floor of 2.5%: 0.9941 [0.9753, 1.0125], crossing 1.0 like
+the other three.
+
+Script: `scripts/40-perf.sh ffmpeg` (about 24 minutes at the default N = 2 and four configurations;
+2.4 hours at N = 5 and twelve). The clip is fetched from the artifact's archive by sha256; see
+`docs/ffmpeg-input.md` if you regenerate it instead. FFmpeg additionally carries a control leg on the
 retired clip, so that the difference from the paper's FFmpeg column can be attributed to the
 compiler or to the input; see `docs/ffmpeg-input.md`. Until then the artifact claims no performance
 number for them; the recorded Stage B runs under `data/perf/stageB-d3bf9f8c39fe` are from an
