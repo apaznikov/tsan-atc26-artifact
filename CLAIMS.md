@@ -200,6 +200,14 @@ overheads are not comparable across compiler trees even when ratios are.
 - **Chromium.** No performance number. The only Chromium build we have is on an earlier compiler
   and corresponds to no measurement in the paper. `docs/chromium.md` records the revision
   (`bdef6783a05f0b3f885591e7d2c7b2aec1a89dea`), the configuration and the timeout patch.
-- **MySQL performance.** Scripts and recorded data ship, but a full run is about seven hours and
-  the build about an hour, so it is documented rather than offered as a runnable claim.
-- **Loop peeling in isolation.** Its effect is below the noise floor of every measurement we have.
+- **Loop peeling in isolation.** Its runtime effect is smaller than any of these workloads resolves,
+  so the artifact claims the static cost it carries and not a runtime verdict either way; see
+  `docs/campaign-parameters.md`.
+
+Expensive rather than unclaimed, and the distinction matters: **MySQL performance is claimed** in
+section 5 like every other application, from campaign runs that ship with the rest. What it is not is
+cheap to re-run: four configurations, about an hour of build each and seven hours of runs, and about
+100 GB of disk. An evaluator who does not spend that gets the table from the shipped runs with
+`scripts/90-tables.sh`, which regenerates it without running anything; one who does gets the same
+comparison we made. It is measured at four configurations rather than fourteen because a build with
+the escape analysis takes about 2.2 hours, and `docs/mysql.md` gives the reason in full.
