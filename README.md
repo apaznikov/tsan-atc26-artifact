@@ -53,6 +53,28 @@ analysis removes and why, then compiles and runs a program with a real race to s
 still reported. It needs no special hardware and finishes in about ten minutes, most of which is
 the container build if you have not run it before.
 
+## The correctness set: one command, no performance
+
+For the Functional badge, and for anyone who wants to know the artifact does what it says without
+spending a day on measurements:
+
+```
+./docker/run.sh scripts/01-functional.sh            # about 40 minutes on 8 processors
+./docker/run.sh scripts/01-functional.sh --quick    # about 5 minutes, without the regression suite
+```
+
+It runs the deterministic checks in order and prints one verdict per step: the minimal example, the
+23 lost-race shapes with their vacuity control, the compiler's equivalence to the one we measured on,
+the provenance of the shipped runs, the ThreadSanitizer regression suite in 12 configurations
+preceded by its self-test, and the regeneration of every table from the shipped data. It stops at the
+first failure, because each later step assumes the compiler is the one the earlier steps identified.
+A step whose prerequisite is absent is reported as SKIP and the set is declared incomplete: a skipped
+check is one not made, and it counts as neither a pass nor a failure.
+
+The correctness tests themselves are 62 IR tests of our own (`tests/ir`, one per lost-race shape with
+its negative control) and 278 tests of ThreadSanitizer's own regression suite vendored from
+compiler-rt (`tests/tsan`), run in each of 12 configurations.
+
 ## Running the experiments
 
 Each script prints what it will do, how long it takes and how much disk it needs, then does it.
