@@ -24,10 +24,13 @@ ours on any machine; a pass count taken on one core is not, and we do not quote 
 compares the sites reported. Detection there is schedule-dependent, so the set of sites we saw (five
 on SQLite over 10 runs) is what our schedule produced, and a reviewer's run can legitimately see
 fewer or more. The script therefore never compares against a fixed set. It prints, for stock and for
-each configuration, how many of the N runs reported each site, and classifies each site: KEPT; LOST,
-meaning stock reported it in every run and the configuration in none; or UNDETERMINED at this N,
-meaning stock itself reported it only sometimes, so its absence from a configuration at the same N
-is not evidence either way and more runs are needed. Only LOST fails the script. This is the same
+each configuration, how many of the N runs reported each site, and classifies each site by the
+configuration's count first. KEPT: the configuration reported it in at least one run, so it can find
+it, whatever stock's frequency. LOST: the configuration never reported it and stock did in every run.
+UNDETERMINED at this N: the configuration never reported it and stock did only sometimes, so an
+unlucky schedule cannot be told from a loss without more runs. ONLY-OPTIMIZED: the configuration
+reported a site stock never did; not a loss, and labelled rather than dropped, because the
+shadow-eviction effect can produce exactly this. Only LOST fails the script. This is the same
 rule the regression suite uses, applied where the schedule is the workload's own.
 
 # Regression-suite tests that are non-deterministic under stock ThreadSanitizer
