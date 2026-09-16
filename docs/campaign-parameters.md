@@ -203,6 +203,18 @@ the build is still running the retry fails too and the leg reports DONE with cel
 the Redis c=112 leg lost runs 3-5 of every configuration this way). Every table is therefore computed
 from run directories, never from a completion marker.
 
+**Where a run's compiler stamp comes from (16 Sep).** The preservation runner's manifest recorded
+`git_head` by walking up from the compiler prefix to a `.git` directory. That works for a live
+worktree, which our rules forbid measuring from because it is relinked without notice, and fails
+for a frozen copy under `/extra/alexey/builds`, which the rules mandate: four of seven shipped
+application-preservation manifests carry an empty `git_head` for exactly that reason, and their
+directory names being right is luck. The writer now falls back through the stamps a frozen copy
+does carry, recording which one it used (`TSAN_AUDIT_HASH`; the 40-hex commit in `clang --version`;
+`git rev-parse` in a source tree), and refuses to write a manifest whose head is not 40 hex, naming
+the three places it looked. The one shipped table taken from a working copy
+(`memcached/2026-09-02-final-b4bf8b8f4613`) is cited with that said and with the evidence that no
+relink intervened: all three configurations built within 21 s of one compiler binary's timestamp.
+
 **Two provenance gates per run (15 Sep).** Building Redis on the fallback compiler put `aa8a6dd8a2e8`
 into the canonical build directories with the campaign binaries archived beside them. `bench_one.sh`'s
 gate resolved the archive and passed, while Redis, SQLite, MySQL and FFmpeg are launched by name from the
