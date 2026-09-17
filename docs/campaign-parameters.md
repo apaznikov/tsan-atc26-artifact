@@ -144,8 +144,11 @@ source with the campaign's own flags taken from `build_info.txt`: the multiset o
 configuration. No access was elided. The module gains 171 sites under AllOpt with peeling (1 833 to
 2 004) and the binary 382, because peeling duplicates first iterations; that extra pressure on the
 four shadow slots of the granule changes which reader's record survives. The rule "no lost races" is
-not engaged; the relocation is stated in the contract beside the L3 verdict. A run of DE alone and DE
-with peeling alone at N = 10 follows, to show which transform moves the report.
+not engaged; the relocation is stated in the contract beside the L3 verdict. The isolation run (N = 10)
+then showed that no single transform moves the reader: the pairing is kept 10 of 10 under the sound
+bundle, under DE alone and under DE with peeling, and relocates only under the full combination. The
+shift in shadow-slot arithmetic needs all of their instrumentation changes together, which is a
+sharper statement of the eviction mechanism than any one transform's site count.
 
 ## Outcome of the pre-registered peeling comparison: branch C
 
