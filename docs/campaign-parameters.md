@@ -49,20 +49,22 @@ paper-era default of 10 000 produced ~1 s iterations and meaningless throughput)
 `report_bugs=0` on both arms; provenance gate on every binary (`build_info.txt` compiler stamp must
 equal the campaign hash).
 
-Thread counts are fixed values, not a formula: the memcached server runs `-t 48`, sysbench
-`--threads=36`, FFmpeg `-threads 4` (absolute because libx265 refuses more than 16 frame threads), on
-every machine. They are the campaign's values on its 48-processor pinned set, and they stay the same
-elsewhere on purpose: the match criterion compares an evaluator's point with our interval and presumes the
-same workload, so a thread count that scaled with the machine would turn the comparison into two different
-workloads while looking sound, and a smaller machine would carry a second, invisible condition inside a
-formula on top of the documented one (32 or more processors, otherwise idle). On a smaller machine these
-values oversubscribe, deliberately. The variables `MC_THREADS`, `MYSQL_THREADS` and `FF_THREADS` override
-them for anyone measuring a different point, and every cell records the value it actually ran with
-(`threads_effective`, with `threads_from_env` saying whether it was overridden), so a different point is
-visible in the first `meta.json` opened. Defect found by the rehearsal of 17 Sep 2026: the shipped defaults
-were `NCPU/2` and `NCPU/2*3/4`, one erroneous `/2` visible twice, so the evaluator path ran memcached at 24
-threads and would have run sysbench at 18 on the same 48-processor set, while the campaign's 48 and 36
-lived only in a lab launcher that is not shipped.
+Thread counts follow a rule, and the rule is the lab's, not a number copied from one machine: the memcached
+server runs one thread per processor of the set it is pinned to (`-t 48` here), sysbench three quarters of
+that (`--threads=36` here), and FFmpeg an absolute `-threads 4` because libx265 refuses more than 16 frame
+threads. The same rule evaluated on the whole 112-thread host is the lab's "paper" policy (`MC_THREADS=112
+MYSQL_THREADS=84` in the lab's launcher), which is how the paper's March runs were taken; the campaign is
+the rule at the 48-processor pinned set. The intervals in `CLAIMS.md` describe that set: to compare a point
+with them, pin 48 processors, where the rule reproduces 48 and 36 exactly. On a different count the rule
+yields that machine's point on the paper's own design, every cell records the value it ran with
+(`threads_effective`, and `threads_from_env` saying whether `MC_THREADS`, `MYSQL_THREADS` or `FF_THREADS`
+overrode it), and such a row is reported with its thread count rather than compared. Defect found by the
+rehearsal of 17 Sep 2026: the shipped defaults carried one erroneous `/2` (`NCPU/2` and `NCPU/2*3/4`), so
+the evaluator path ran memcached at 24 threads and would have run sysbench at 18 on the 48-processor set,
+while the campaign's values were set only by a lab launcher that is not shipped; the defaults now implement
+the rule. (The launcher's own "pinned" branch leaves both variables unset, which under the old defaults
+would have given 24 and 18; the campaign's cells record 48 and 36, and the cells, not the launcher, are the
+record.)
 
 FFmpeg input (decision 4, default applied; cut 15 Sep 12:58): Tears of Steel (Blender Foundation,
 CC-BY 3.0), `TearsOfSteel-1366x768-100s.mkv`, sha256 `43b0fba97eb05a0e…`, 100 s from 06:00 at

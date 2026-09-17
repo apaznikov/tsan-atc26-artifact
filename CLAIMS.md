@@ -276,13 +276,14 @@ compiler or to the input; see `docs/ffmpeg-input.md`. Until then the artifact cl
 number for them; the recorded Stage B runs under `data/perf/stageB-d3bf9f8c39fe` are from an
 earlier compiler and are shipped as data, not as claims.
 
-Workload parameters are the campaign's fixed values, set by the harness on every machine and recorded
-per cell: the memcached server at 48 threads, sysbench at 36, FFmpeg at an absolute 4; each cell's
-`meta.json` carries the value it ran with. They do not scale with the machine, so that the match
-criterion compares the same workload and the only condition left is the documented hardware one. The
-rehearsal of 17 Sep found the shipped defaults off by one `/2` (24 and 18 on this set) while the
-campaign's values lived only in a lab launcher; a memcached row measured at 24 threads is reported as
-not comparable for that reason, not as a match.
+Workload thread counts follow the campaign's rule, set by the harness and recorded per cell: the memcached
+server runs one thread per processor of the pinned set, sysbench three quarters of that, FFmpeg an
+absolute four; on the 48-processor set the intervals describe, that is 48 and 36, and each cell's
+`meta.json` carries the value it ran with. To compare a point with these intervals, pin 48 processors; on
+another count the rule yields that machine's point and the row is reported with its thread count rather
+than compared (`docs/campaign-parameters.md`). The rehearsal of 17 Sep found the shipped defaults off by
+one `/2` (24 and 18 on this set) while the campaign's values lived only in a lab launcher; a memcached row
+measured at 24 threads is reported as not comparable for that reason, not as a match.
 
 ### What an evaluator actually has to run
 
