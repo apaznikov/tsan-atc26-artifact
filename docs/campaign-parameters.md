@@ -57,8 +57,8 @@ MYSQL_THREADS=84` in the lab's launcher), which is how the paper's March runs we
 the rule at the 48-processor pinned set. The intervals in `CLAIMS.md` describe that set: to compare a point
 with them, pin 48 processors, where the rule reproduces 48 and 36 exactly. On a different count the rule
 yields that machine's point on the paper's own design, every cell records the value it ran with
-(`threads_effective`, and `threads_from_env` saying whether `MC_THREADS`, `MYSQL_THREADS` or `FF_THREADS`
-overrode it), and such a row is reported with its thread count rather than compared. Defect found by the
+(`threads_setting` is the value it ran with, and `threads_from_env` says whether `MC_THREADS`,
+`MYSQL_THREADS` or `FF_THREADS` overrode it), and such a row is reported with its thread count rather than compared. Defect found by the
 rehearsal of 17 Sep 2026: the shipped defaults carried one erroneous `/2` (`NCPU/2` and `NCPU/2*3/4`), so
 the evaluator path ran memcached at 24 threads and would have run sysbench at 18 on the 48-processor set,
 while the campaign's values were set only by a lab launcher that is not shipped; the defaults now implement
