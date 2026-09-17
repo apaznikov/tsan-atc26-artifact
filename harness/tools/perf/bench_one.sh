@@ -133,13 +133,18 @@ meta = {
   "binary": "$BIN", "sha256": hashlib.sha256(open("$BIN","rb").read()).hexdigest(),
   "compiler_version": bi.get("compiler_version"), "compiler_head": bi.get("compiler_head"), "flags": bi.get("flags"), "summaries": bi.get("summaries"),
   "start": $t0, "end": $t1, "seconds": round($t1 - $t0, 1),
-  "cpuset": "$CPUSET", "ncpu": $NCPU, "mode": "${P5_MODE:-pinned}",
+  "cpuset": ("$CPUSET" or "all"), "ncpu": $NCPU, "mode": "${P5_MODE:-pinned}",
   "governor": "$(p5_governor)", "no_turbo": "$(p5_turbo)",
   "regime": "$regime", "bench_session": $(p5_bench_session), "cpu_mhz_start": "$mhz0", "cpu_mhz_end": "$(p5_cpu_mhz 4)/$(p5_cpu_mhz 60)",
   "loadavg_before": "$load0", "loadavg_after": "$load1",
   "machine_busy_ticks": $machine_busy, "ours_ticks": $ours_ticks, "extra_ticks": ${EXTRA_TICKS:-0}, "hz": $HZ,
   "inside_busy_share": round(($in1 - $in0) / max(1.0, ($t1 - $t0) * $HZ * $nin), 4),
-  "outside_busy_share": round(($out1 - $out0) / max(1.0, ($t1 - $t0) * $HZ * $nout), 4),
+  # UNPINNED MEANS THERE ARE NO OUTSIDE CPUs, SO THERE IS NO SHARE TO REPORT. Dividing by an empty set
+  # would give 0.0, which reads as a perfectly quiet machine and passes the disturbance gate
+  # unconditionally — a gate that always passes. null says the quantity does not exist here; gate_checked
+  # says so positively, because a reader filtering on the share alone cannot tell null from absent.
+  "outside_busy_share": (round(($out1 - $out0) / max(1.0, ($t1 - $t0) * $HZ * $nout), 4) if $nout > 0 else None),
+  "gate_checked": ($nout > 0),
   "n_inside": $nin, "n_outside": $nout,
   "foreign_ticks": max(0, $machine_busy - $ours_ticks),
   "foreign_cpu_share": round(max(0, $machine_busy - $ours_ticks) / max(1.0, ($t1 - $t0) * $HZ * $(nproc)), 4),
