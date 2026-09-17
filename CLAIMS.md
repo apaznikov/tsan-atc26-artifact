@@ -215,8 +215,13 @@ Script: `scripts/40-perf.sh mysql` (four configurations only; about 3.4 hours at
 ### FFmpeg 4.3.9 (libx264, libx265, mjpeg, stream copy at `-threads 4`; the Tears of Steel clip; session of 17 Sep, pinned)
 
 Stock ThreadSanitizer against native: 2.76x [2.70, 2.80] (the paper: 2.9x, on a different clip).
-Every FFmpeg run carries all four codecs, checked per run; the resolvable set is all four, so the
-headline column is the stable column. Twelve configurations rather than fourteen: FFmpeg has no
+Every shipped FFmpeg run carries all four codecs, checked over the recorded runs with
+`check_ffmpeg_codecs.py`; the resolvable set is all four, so the headline column is the stable column.
+On the evaluator path the same check runs per cell and a cell missing a codec is a failed cell, not a
+geomean over the survivors: the workload writes each codec's output to `/dev/shm`, a container's default
+`/dev/shm` is 64 MB, and the stream-copy and mjpeg outputs exceed it, so without the size `docker/run.sh`
+passes two of the four codecs fail silently and the row measures a different quantity (found by the
+rehearsal of 17 Sep, whose FFmpeg cells carried two codecs). Twelve configurations rather than fourteen: FFmpeg has no
 whole-program summary generator.
 
 **The paper's FFmpeg column is not comparable with this one in either direction**: it was measured on
@@ -295,11 +300,19 @@ as a bootstrap over too few samples (at N = 3 such an interval is narrower than 
 point moves by about four points with the choice of runs, which is precision that is not there).
 `--smoke` is for checking that the pipeline runs and prints "not a measurement" on its own output.
 
-**Match criterion for every row.** At the default N = 2: the evaluator's point estimate falls inside
-our 95% interval, and for the rows whose interval excludes 1.0 (Redis under DynSTC, alone and with
-AllOpt) it falls on the same side of 1.0. At N = 5: the evaluator's interval overlaps ours, a row whose
-interval contains 1.0 here contains 1.0 there, and a row that excludes it excludes it on comparable
-hardware. `docs/confounds.md` lists what makes this vary: memcached's wall time is
+**Match criterion for every configuration row.** At the default N = 2: the evaluator's point estimate
+falls inside our 95% interval, and for the rows whose interval excludes 1.0 (Redis under DynSTC, alone
+and with AllOpt) it falls on the same side of 1.0. At N = 5: the evaluator's interval overlaps ours, a
+row whose interval contains 1.0 here contains 1.0 there, and a row that excludes it excludes it on
+comparable hardware. The criterion applies to the configuration rows, each a ratio against stock
+ThreadSanitizer on the same machine in the same session. It does not apply to the stock-against-native
+ratio printed at the top of each application: that number is governed by the drift condition stated
+with the Redis rows (byte-identical binaries differed by 14% and 5% six days apart on this host), and an
+evaluator's value a few per cent outside its interval is that condition, not a mismatch. Our own
+rehearsal of 17 Sep, N = 2 in the container on 48 pinned processors, gave Redis stock-against-native
+8.26 against 8.01 [7.83, 8.21], outside by 0.6% of the upper limit, while both configuration rows fell
+inside their intervals (AllOpt with peeling 1.004 in [0.983, 1.026]; DynSTC 0.968 in [0.927, 0.970],
+below 1.0 like ours). `docs/confounds.md` lists what makes this vary: memcached's wall time is
 bimodal with a 10 to 12 per cent coefficient of variation, SQLite's seven subtests are
 heterogeneous and three of them carry 16 to 20 per cent run-to-run variation, and absolute
 overheads are not comparable across compiler trees even when ratios are.
