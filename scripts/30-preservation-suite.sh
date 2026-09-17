@@ -99,8 +99,20 @@ while IFS='|' read -r cname cflags; do
     with_lit_lock env TSAN_MLLVM_FLAGS="$cflags" ART_LIT_EXEC_ROOT="$er" \
       "$TSAN_LLVM_ROOT/bin/llvm-lit" -q $(lit_timeout_flag "${ART_LIT_TIMEOUT:-120}") -j"${ART_JOBS}" "$suite" > "$log" 2>&1
     set -e
-    nf=$(grep -c '^  ThreadSanitizer' "$log" || true)
-    grep '^  ThreadSanitizer' "$log" | sed "s|^  ThreadSanitizer[^:]*:: *|$cname\t$rep\t|" >> "$outdir/failures.tsv" || true
+    # lit prints "Failed Tests (N):", "Timed Out Tests (N):" and "Unresolved Tests (N):"
+    # above IDENTICAL "  ThreadSanitizer ... :: name" lines, so a plain grep cannot tell a
+    # compiler result from a clock. That distinction is the difference between reporting a
+    # lost race and reporting that a machine was slow, so the block header is carried
+    # through and a timeout can never reach the lost-race rule.
+    awk -v c="$cname" -v r="$rep" '
+      /^Failed Tests/      {blk="fail";       next}
+      /^Timed Out Tests/   {blk="timeout";    next}
+      /^Unresolved Tests/  {blk="unresolved"; next}
+      /^Unexpectedly Passed/ {blk="xpass";    next}
+      /^  ThreadSanitizer/ {
+        if (blk != "") { t=$0; sub(/^  ThreadSanitizer[^:]*:: */,"",t); print c"\t"r"\t"blk"\t"t }
+      }' "$log" >> "$outdir/failures.tsv"
+    nf=$(awk -v c="$cname" -v r="$rep" -F'\t' '$1==c && $2==r {n++} END{print n+0}' "$outdir/failures.tsv")
     printf " %s" "$nf"
     rm -rf "$er"
   done
@@ -114,10 +126,14 @@ python3 - "$outdir/failures.tsv" "$k" "$outdir/ran.txt" <<'PY' | tee "$outdir/re
 import collections, sys
 fails = collections.defaultdict(set)          # (config, repeat) -> {test}
 seen_cfg = []
+stalls = collections.defaultdict(set)      # (config, repeat) -> {test}  timeouts/unresolved
 for ln in open(sys.argv[1]):
     if not ln.strip(): continue
-    c, r, t = ln.rstrip("\n").split("\t")
-    fails[(c, int(r))].add(t.strip())
+    c, r, kind, t = ln.rstrip("\n").split("\t")
+    if kind == "fail":
+        fails[(c, int(r))].add(t.strip())
+    else:
+        stalls[(c, int(r))].add(t.strip())
 k = int(sys.argv[2])
 # Only configurations that ACTUALLY RAN. Reading the matrix file instead would print
 # "clean" for every configuration this invocation skipped -- no failure rows recorded
@@ -135,6 +151,17 @@ if "stock" not in seen_cfg:
     print("  WARNING: stock was not run, so there is no baseline. Every comparison below is")
     print("           against an empty set and cannot show a loss.")
 print(f"  stock: fails always={len(stock_always)}  fails at least once={len(stock_ever)}")
+all_stalls = collections.Counter()
+for (c, r), ts in stalls.items():
+    for t in ts: all_stalls[t] += 1
+if all_stalls:
+    print()
+    print("  TIMED OUT / UNRESOLVED -- neither a pass nor a lost race, excluded from the rule:")
+    for t, n in all_stalls.most_common():
+        cfgs = sorted({c for (c, _), ts in stalls.items() if t in ts})
+        print(f"    {t}  {n} time(s), under: {' '.join(cfgs)}")
+    print("    A timeout is the machine being slow or a test hanging, not the compiler")
+    print("    declining to instrument. Raise ART_LIT_TIMEOUT if these are legitimate.")
 print()
 rc = 0
 for c in seen_cfg:

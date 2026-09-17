@@ -11,6 +11,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       zlib1g-dev libzstd-dev libxml2-dev binutils file \
     && rm -rf /var/lib/apt/lists/*
 
+# Runtime-stage packages, measured from the applications' actual linkage and build steps, not assumed:
+# memcached libevent; memtier libevent, pcre, ssl, zlib and the autotools (its make.sh runs autoreconf);
+# FFmpeg libx264, libx265, nasm; SQLite's threadtest3 nothing beyond libc (no tcl);
+# MySQL bison, ssl, aio, numa, protobuf and its compiler, ncurses, tirpc and rpcgen.
 # Upstream base commit and the patch series that turns it into the paper's compiler.
 ARG LLVM_BASE=c609043dd00955bf177ff57b0bad2a87c1e61a36
 ARG JOBS=8
@@ -81,7 +85,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       python3 python3-numpy python3-psutil git make cmake ninja-build binutils file util-linux \
       libstdc++-13-dev gcc g++ pkg-config ca-certificates wget unzip \
       libevent-dev libssl-dev libx264-dev libx265-dev libgnutls28-dev nasm yasm \
-      libpcre3-dev zlib1g-dev autoconf automake libtool tcl tcl-dev libncurses-dev libtirpc-dev rpcsvc-proto bison libaio-dev \
+      libpcre3-dev zlib1g-dev autoconf automake libtool \
+      bison libaio-dev libnuma-dev libprotobuf-dev protobuf-compiler libncurses-dev libtirpc-dev rpcsvc-proto \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=build /opt/tsan-llvm /opt/tsan-llvm
 ENV TSAN_LLVM_ROOT=/opt/tsan-llvm PATH=/opt/tsan-llvm/bin:$PATH \
