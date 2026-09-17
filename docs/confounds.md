@@ -131,6 +131,16 @@ measure; the harness records `outside_busy_share` as null with `gate_checked: fa
 "not gate-checked" rather than a zero that would read as a quiet machine. Pin a set of at least 32 CPUs and leave the rest idle if
 you want a run that can be compared with ours.
 
+The absence of a check and a passed check must not take the same channel. A cell for which no gate was
+applied looks, in a naive summary, exactly like a cell that passed one; the difference is only in
+`gate_applied`/`gate_checked`, and a reader who does not consult that field would read an unmeasured
+condition as a clean one. Two things follow, and we hold to both. The absence is recorded explicitly,
+as a false flag beside the cell rather than as a missing field, so it is visible in the record and not
+inferred from what is not there. And the decision that a number which cannot be compared will not be
+quoted is made before the run, not after: once the number exists, discarding it has become
+inconvenient, and a rule adopted then is worth nothing. Our own unpinned rehearsal leg is run only to
+exercise this contract, and its table is quoted nowhere.
+
 ## Lower N is not a smaller interval
 
 At N = 3 the percentile bootstrap interval is 6-14% *narrower* than at N = 5 while the point

@@ -51,9 +51,13 @@ seconds or waits out the per-test timeout, under stock, EA and STC alike, so it 
 configuration-specific, and under the counting rule it can never become a candidate lost race because
 it does not pass under stock every time. Its stall rate rises with machine load, which is why we give
 two figures rather than one: on an otherwise idle machine it stalled 3 times in 21 repeats of the full
-383-test suite, roughly one repeat in six or seven; on a machine under concurrent load (other builds
-and benchmarks running) it stalled far more often, so an evaluator on a busy or small machine should
-expect it frequently and should read a two-minute pause as this test, not as a hang. What we cannot say
+383-test suite, roughly one repeat in six or seven; in the shipped-compiler run of 17 Sep,
+60 repeats at 64 lit jobs beside a concurrent build on the other processors, it stalled 48 times in 60,
+under all twelve configurations including stock. That run differed from the idle one in four recorded
+ways (per-test timeout 120 s against 600 s, 64 lit jobs against 96, a 64-processor cpuset against none,
+and the concurrent load), so we attribute the higher rate to load only loosely; what the two figures
+establish together is that an evaluator on a busy or small machine should expect it frequently and
+should read a two-minute pause as this test, not as a hang. What we cannot say
 is whether a longer limit would let a stalled run finish: those runs were cut at the timeout, not
 observed to complete. The cost is the timeout itself: at 600 s a single stall turned a 25-minute suite
 into a two-hour one, so the per-test timeout is 120 s (`ART_LIT_TIMEOUT` to change it). Nothing else in

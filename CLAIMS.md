@@ -19,7 +19,7 @@ RAM, Ubuntu 24.04, kernel 6.8.
 
 | Claim | Script | Match criterion |
 |---|---|---|
-| No configuration loses a race that stock ThreadSanitizer reports, over ThreadSanitizer's own regression suite | `scripts/30-preservation-suite.sh` | exact: no candidate lost race. The vendored suite discovers 383 tests, of which 85 are unsupported on Linux before anything is compiled (47 Darwin, 37 libdispatch, 1 libcxx); the rest run in each of 12 configurations, K repeats each, and a test counts as a candidate lost race only when it fails every repeat under a configuration and never fails under stock |
+| No configuration loses a race that stock ThreadSanitizer reports, over ThreadSanitizer's own regression suite | `scripts/30-preservation-suite.sh` | exact: no candidate lost race. The vendored suite discovers 383 tests, of which 85 are unsupported on Linux before anything is compiled (47 Darwin, 37 libdispatch, 1 libcxx); the rest run in each of 12 configurations, K repeats each, and a test counts as a candidate lost race only when it fails every repeat under a configuration and never fails under stock. Shipped-compiler run of 17 Sep 2026 (`f3deebfbab60`, K = 5, 12 configurations, 60 repeats, 64 lit jobs on 64 processors disjoint from a concurrent benchmark build): 298 tests executed, 0 failures in all 60 repeats, every configuration always-fail = 0 and ever-fail = 0, so no candidate lost race. `getline_nohang.cpp` timed out in 48 of the 60 repeats under all twelve configurations including stock (5 of 5 under stock and EA, 3 of 5 under LO and 4 of 5 under STC), which the rule excludes as a timeout, not a failure; the same test stalled 3 times in 21 repeats on an idle machine, so the rate follows the machine, not the configuration. The count of 85 unsupported tests is measured on the same suite and image but in a separate `--show-unsupported` run of 16 Sep, because `lit -q` does not print it |
 | The harness can detect a loss at all | `scripts/30-preservation-suite.sh --self-test` | required first: it runs a detector with load and store instrumentation switched off and requires the harness to report the losses. A suite reporting nothing looks the same whether races are preserved or the harness is blind |
 | Every race test's report is identical to stock ThreadSanitizer's: same kind, both stacks with file and line | `scripts/30-preservation-suite.sh --diff` | exact, except the three tests listed in `docs/nondeterministic-tests.md`, which are non-deterministic under stock as well (verified at K = 20) |
 | No test that expects no report produces one | `scripts/30-preservation-suite.sh` | exact |
@@ -76,7 +76,14 @@ intervals was never a test; the check is that the runs-2-5 point lies inside the
 which says that the first measured run did not drive the result. A row is claimed to differ from
 stock only when the all-five interval excludes 1.0 and that check holds; "no measurable change"
 means the interval contains 1.0, not that the effect is zero. "Stable subtests" repeats the speedup over the subtests whose pooled
-run-to-run variation is at most 5%; the set is a property of the workload and applies to every row.
+run-to-run variation is at most 5%; the set is a property of the workload and applies to every row. That
+variation can be estimated only with at least three runs per configuration, so the column exists at our
+N = 5 and not at the reviewer's default N = 2: below three runs the artifact prints "pooled CV not estimable
+at this N -- NOT A STABILITY CLAIM" rather than a bound, because an unmeasured coefficient of variation is
+not a passed one, and reading it as zero would render the unmeasured case as the best case. So the column
+has three states, not two: the subtests are within the bound (the good case), too few are within it to
+restrict the claim (the cautionary case), and at N = 2 there is no estimate and no column (the absent case),
+and each reads differently in the output.
 
 ### Redis 7.0.15 (`redis-benchmark`, 19 commands, 50 clients, pipeline 1024; session of 15 Sep 18:49, pinned, governor powersave)
 
