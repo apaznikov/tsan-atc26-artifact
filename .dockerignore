@@ -1,0 +1,6 @@
+# Never part of the image: evaluator output, working copies, git metadata.
+results/
+build/
+.git/
+.gitignore
+docker/Dockerfile.bak

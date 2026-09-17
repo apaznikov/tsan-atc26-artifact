@@ -81,6 +81,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       python3 python3-numpy python3-psutil git make cmake ninja-build binutils file util-linux \
       libstdc++-13-dev gcc g++ pkg-config ca-certificates wget unzip \
       libevent-dev libssl-dev libx264-dev libx265-dev libgnutls28-dev nasm yasm \
+      libpcre3-dev zlib1g-dev autoconf automake libtool tcl tcl-dev libncurses-dev libtirpc-dev rpcsvc-proto bison libaio-dev \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=build /opt/tsan-llvm /opt/tsan-llvm
 ENV TSAN_LLVM_ROOT=/opt/tsan-llvm PATH=/opt/tsan-llvm/bin:$PATH \

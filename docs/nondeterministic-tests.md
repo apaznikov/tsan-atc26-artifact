@@ -46,5 +46,14 @@ than letting them appear as differences.
 | `fd_location_closed.cpp` | the wording of the location descriptor line, not the race or its stacks | one L2 key 20/20 | one L2 key 20/20 |
 | `fork_atexit.cpp` | whether the report appears at all in a given run | about one run in five | about one run in five |
 
+One further test is not a report-level variation but a stall. `getline_nohang.cpp` either passes in
+seconds or hangs until the per-test timeout: observed 3 times in 21 repeats of the full 383-test
+suite, roughly one repeat in six or seven, under stock, EA and STC alike, so it is flaky and not
+configuration-specific, and under the counting rule it can never become a candidate lost race
+because it does not pass under stock every time. Its cost was the timeout: at 600 s one stall in six
+repeats turned a 25-minute suite into a two-hour one. The per-test timeout is therefore 120 s
+(`ART_LIT_TIMEOUT` to change it). If the suite appears to stop for a couple of minutes, it has not
+hung; one test is waiting out its timeout. In those 21 repeats nothing else failed.
+
 Everything else in the suite is deterministic: it reports the same race with the same stacks
 (function, file, line) under every configuration, or reports nothing under every configuration.
