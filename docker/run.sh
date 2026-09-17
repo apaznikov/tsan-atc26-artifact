@@ -8,7 +8,7 @@
 # "CHECK failed: tsan_platform_linux.cpp ... personality". See docs/troubleshooting.md.
 set -euo pipefail
 here="$(cd "$(dirname "$0")/.." && pwd)"
-mkdir -p "$here/results"
+mkdir -p "$here/results" "$here/build"
 cpus_flag=()
 [ -n "${ART_CPUSET:-}" ] && cpus_flag=(--cpuset-cpus "$ART_CPUSET")
 tty_flag=()
@@ -17,6 +17,7 @@ exec docker run --rm "${tty_flag[@]}" "${cpus_flag[@]}" \
   --security-opt seccomp=unconfined \
   -e ART_RUNS -e ART_WARMUP -e ART_SMOKE -e ART_CPUSET \
   -v "$here/results:/artifact/results" \
+  -v "$here/build:/artifact/build" \
   -v "$here/data:/artifact/data:ro" \
   -v "$here/scripts:/artifact/scripts:ro" \
   -v "$here/env.sh:/artifact/env.sh:ro" \

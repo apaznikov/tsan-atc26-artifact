@@ -2,8 +2,21 @@
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=../env.sh
 . "$here/env.sh"
-harness="$here/harness"          # the measurement harness, vendored by tsan-exp (tools/perf, tools/preservation, ...)
-need_harness() { [ -d "$harness/$1" ] || { echo "this script needs $harness/$1 (the vendored harness); not present in this checkout"; exit 2; }; }
+# The measurement harness is vendored read-only at harness/ (a sha256 manifest, MANIFEST.tsv, checks it
+# against the live tree). Its build scripts build IN-TREE, and inside the container that tree is a
+# read-only mount, so every script works from a writable copy under $ART_BUILD/harness, made on first
+# use and refreshed whenever the vendored manifest changes. The shipped tree is never written to, so
+# `scripts/vendor-harness.sh --check` still reports drift only when the source moved.
+harness_src="$here/harness"
+harness="$ART_BUILD/harness"
+need_harness() {
+  [ -d "$harness_src/$1" ] || { echo "this script needs $harness_src/$1 (the vendored harness); not present in this checkout"; exit 2; }
+  if [ ! -f "$harness/MANIFEST.tsv" ] || ! cmp -s "$harness_src/MANIFEST.tsv" "$harness/MANIFEST.tsv"; then
+    mkdir -p "$ART_BUILD" && rm -rf "$harness" && cp -a "$harness_src" "$harness" \
+      || { echo "cannot make a working copy of the harness under $ART_BUILD (is it writable?)"; exit 2; }
+    echo "harness: working copy refreshed at $harness (from $harness_src)"
+  fi
+}
 need_compiler() { [ -x "$TSAN_LLVM_ROOT/bin/clang" ] || { echo "no TSan clang at $TSAN_LLVM_ROOT/bin/clang (set TSAN_LLVM_ROOT or run inside the container)"; exit 2; }; }
 stamp() { date +%Y%m%d-%H%M%S; }
 smoke_banner() { [ "$ART_SMOKE" = 1 ] && echo "SMOKE MODE: N=1, reduced workload. Output is NOT A MEASUREMENT and must not be compared with CLAIMS.md." || true; }
