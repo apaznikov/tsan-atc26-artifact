@@ -51,11 +51,13 @@ build_one() {  # cfg
   p5_log "build $APP $cfg (jobs $JOBS) -> $log"
   local t0=$SECONDS
   case "$APP" in
-    memcached) ( cd "$APPDIR" && env "${env[@]}" $(build_scope memcached) $NICE ./build_memcached.sh "$base" ) > "$log" 2>&1; rc=$?;;
+    memcached) ( cd "$APPDIR" && ./build_memtier.sh >> "$log" 2>&1 || exit 1
+                 env "${env[@]}" $(build_scope memcached) $NICE ./build_memcached.sh "$base" ) > "$log" 2>&1; rc=$?;;
     redis)     ( cd "$APPDIR" && env "${env[@]}" BUILD_OPTIONS="$(p5_redis_name "$cfg")" $(build_scope redis) $NICE $(p5_taskset) ./redis.sh --compile-only ) > "$log" 2>&1; rc=$?;;
     sqlite)    ( cd "$APPDIR" && env "${env[@]}" $(build_scope sqlite) $NICE ./build_sqlite_test.sh "$base" ) > "$log" 2>&1; rc=$?;;
     mysql)     ( cd "$APPDIR" && env "${env[@]}" INSTALL_ROOT="$P5_INSTALL_ROOT/mysql" $(build_scope mysql) $NICE ./build_mysql.sh "$base" ) > "$log" 2>&1; rc=$?;;
-    ffmpeg)    ( cd "$APPDIR" && env "${env[@]}" INSTALL_ROOT="$P5_INSTALL_ROOT/ffmpeg" $(build_scope ffmpeg) $NICE ./build_ffmpeg.sh "$base" ) > "$log" 2>&1; rc=$?;;
+    ffmpeg)    ( cd "$APPDIR" && ./ensure_input_clip.sh >> "$log" 2>&1 || exit 1
+                 env "${env[@]}" INSTALL_ROOT="$P5_INSTALL_ROOT/ffmpeg" $(build_scope ffmpeg) $NICE ./build_ffmpeg.sh "$base" ) > "$log" 2>&1; rc=$?;;
   esac
   local dt=$((SECONDS - t0))
   [ $rc = 0 ] && [ -x "$bin" ] || { p5_log "BUILD FAILED $APP $cfg rc=$rc (${dt}s) see $log"; echo "$APP,$cfg,FAILED,$rc,$dt" >> "$OUT/build/builds.csv"; return 1; }

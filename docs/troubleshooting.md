@@ -21,6 +21,28 @@ Docker's default seccomp profile refuses `personality(ADDR_NO_RANDOMIZE)`. Start
 re-exec refused" when it is missing. The compiler and the analyses are unaffected: the instrumentation
 counts are identical either way, only running the binaries needs the flag.
 
+## `docker/build.sh` is slow, prints "Killed signal terminated program cc1plus", or Docker stops answering
+
+The compiler builds inside the Docker daemon's own memory cgroup, and on a systemd host that is
+`docker.slice`, which is often capped well below the machine's RAM. Building clang with assertions
+needs about 2.5 GiB per job at its peak. Too many jobs under the cap does not fail cleanly: without
+swap the cgroup thrashes on page-cache reclaim, every compile stalls, and the daemon stops answering
+`docker` commands. Killing the build client does not stop the daemon-side compile; only root can,
+with `systemctl kill -s KILL docker.slice` (this also stops any running container) or by killing the
+`ninja` and `cc1plus` processes in that cgroup.
+
+`env.sh` therefore derives `ART_JOBS` as `min(80% of the processors, memory / 2.5 GiB)`, where memory
+is the smallest of `MemAvailable`, the cgroup's `memory.max` when finite, and the daemon cgroup's
+`MemoryMax` when systemd reports one; `docker/build.sh` and `docker/run.sh` evaluate it on the host,
+where the daemon's cap is visible, and print the number with its reason. The same value drives the
+application builds and the test suites inside the container. `ART_JOBS=n` overrides it. A container
+started by hand rather than through `docker/run.sh` cannot see the daemon's cap and derives a larger
+number from the host's memory: on our machine 78 jobs from 197 GiB available, against a 64 GiB
+ceiling, which is exactly the thrash described above. The wrapper is where the right number can be
+computed, not a convenience; if you bypass it, set `ART_JOBS` yourself from the daemon's cap. Twenty-four jobs build the compiler in
+about fifteen minutes; eight jobs in under an hour. We found this on our own machine, 112 threads
+under a 64 GiB cap, when the script still defaulted to one job per thread.
+
 ## "Instrumentation counts differ from CLAIMS.md by a few calls"
 
 The counts are of `__tsan_read*`/`__tsan_write*` calls in the whole binary and include code that

@@ -59,7 +59,7 @@ RUN cmake -G Ninja -S llvm-project/llvm -B build \
       -DLLVM_FORCE_VC_REPOSITORY=https://github.com/focs-lab/llvm-project \
       -DLLVM_FORCE_VC_REVISION=${AUDIT_HASH} \
     && ninja -C build -j ${JOBS} clang lld compiler-rt FileCheck not count opt llvm-objdump \
-    && ninja -C build install \
+    && ninja -C build -j ${JOBS} install \
     && install -m755 build/bin/llvm-lit /opt/tsan-llvm/bin/llvm-lit \
     && printf '%s\n%s\n' "${AUDIT_HASH}" "tree ${EXPECTED_TREE}" > /opt/tsan-llvm/TSAN_AUDIT_HASH \
     && mkdir -p /opt/tsan-llvm/lib/python-lit \
@@ -83,7 +83,7 @@ FROM ubuntu:24.04
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
       python3 python3-numpy python3-psutil git make cmake ninja-build binutils file util-linux \
-      libstdc++-13-dev gcc g++ pkg-config ca-certificates wget unzip \
+      libstdc++-13-dev gcc g++ pkg-config ca-certificates wget unzip ffmpeg \
       libevent-dev libssl-dev libx264-dev libx265-dev libgnutls28-dev nasm yasm \
       libpcre3-dev zlib1g-dev autoconf automake libtool \
       bison libaio-dev libnuma-dev libprotobuf-dev protobuf-compiler libncurses-dev libtirpc-dev rpcsvc-proto \

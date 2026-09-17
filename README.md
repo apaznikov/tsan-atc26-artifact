@@ -43,10 +43,13 @@ any x86-64 Linux host. The performance experiments need at least 32 cores to be 
 ./docker/run.sh scripts/10-minimal-example.sh
 ```
 
-Start the container through `docker/run.sh`, or pass `--security-opt seccomp=unconfined` to your
-own `docker run`: the ThreadSanitizer runtime re-executes programs with address-space randomization
-off, and Docker's default seccomp profile refuses that call, so without the flag every instrumented
-program dies with a segmentation fault (`docs/troubleshooting.md`).
+Start the container through `docker/run.sh`. It does two things a hand-written `docker run` will
+not: it passes `--security-opt seccomp=unconfined`, because the ThreadSanitizer runtime re-executes
+programs with address-space randomization off and Docker's default seccomp profile refuses that call,
+so without the flag every instrumented program dies with a segmentation fault; and it computes the
+build parallelism on the host from the memory the Docker daemon actually has, a cap that is invisible
+from inside the container and that an unbounded build does not fail against but thrashes
+(`docs/troubleshooting.md`).
 
 The minimal example compiles one small program per analysis, shows which instrumentation each
 analysis removes and why, then compiles and runs a program with a real race to show the race is

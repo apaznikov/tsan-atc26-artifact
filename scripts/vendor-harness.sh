@@ -40,6 +40,9 @@ INCLUDE_FILES=(
   tools/tsan_compiler.sh
   tools/write_build_info.sh
   tools/static_count_tsan_instrumentation.py
+  tools/fetch_archive.sh
+  tools/verify_archive.sh
+  tools/source_archives.sha256
 )
 APP_DIRS=(nosql/memcached nosql/redis sql/sqlite sql/mysql projects/ffmpeg)
 APP_GLOBS=('*.sh' '*.py' '*.md' '*.conf')

@@ -36,8 +36,42 @@ export ART_SMOKE="${ART_SMOKE:-0}"
 export ART_MEMCACHED_PORT="${ART_MEMCACHED_PORT:-7777}"
 export ART_REDIS_PORT="${ART_REDIS_PORT:-6379}"
 
-# Parallelism for builds.
-export ART_JOBS="${ART_JOBS:-$(nproc)}"
+# Parallelism for builds and test suites. The default is derived from what the machine can carry, not
+# from how many processors it has: 80% of the processors this run may use (the ART_CPUSET count when it
+# is set, else nproc), bounded by memory at about 2.5 GiB per job, where memory is the smallest of
+# MemAvailable, this cgroup's memory.max when it is finite (a container started with --memory), and
+# docker.slice's MemoryMax when systemd reports one. docker/run.sh evaluates this on the host and passes
+# the result into the container, because the daemon's cap is invisible from inside. One job per
+# processor on a shared or memory-capped machine does not fail, it thrashes: 112 jobs under a 64 GiB
+# cap wedged our Docker daemon on 17 Sep 2026. ART_JOBS overrides; ART_JOBS_WHY says where it came from.
+art_default_jobs() {  # prints "<jobs><TAB><reason>"
+  local cpus mem_kib lim src by_mem
+  cpus=""
+  if [ -n "${ART_CPUSET:-}" ]; then
+    cpus=$(printf '%s' "$ART_CPUSET" | tr ',' '\n' | awk -F- '{ n += ($2 == "" ? 1 : $2 - $1 + 1) } END { print n + 0 }')
+  fi
+  [ "${cpus:-0}" -gt 0 ] 2>/dev/null || cpus=$(nproc 2>/dev/null || echo 8)
+  cpus=$((cpus * 4 / 5)); [ "$cpus" -lt 1 ] && cpus=1
+  mem_kib=$(awk '/MemAvailable/ {print $2}' /proc/meminfo 2>/dev/null || echo 0); src="MemAvailable"
+  for lim in "cgroup memory.max:$(cat /sys/fs/cgroup/memory.max 2>/dev/null)" \
+             "docker.slice MemoryMax:$(systemctl show docker.slice -p MemoryMax --value 2>/dev/null)"; do
+    case "${lim#*:}" in ''|max|infinity) ;;
+      *) if [ "${lim#*:}" -gt 0 ] 2>/dev/null && [ $(( ${lim#*:} / 1024 )) -lt "$mem_kib" ]; then
+           mem_kib=$(( ${lim#*:} / 1024 )); src="${lim%%:*}"; fi ;;
+    esac
+  done
+  if [ "$mem_kib" -gt 0 ]; then
+    by_mem=$((mem_kib / 2621440)); [ "$by_mem" -lt 1 ] && by_mem=1
+    if [ "$by_mem" -lt "$cpus" ]; then printf '%s\t%s\n' "$by_mem" "$src $((mem_kib / 1048576)) GiB at 2.5 GiB per job"; return; fi
+  fi
+  printf '%s\t%s\n' "$cpus" "80% of the processors"
+}
+if [ -z "${ART_JOBS:-}" ]; then
+  _art_j=$(art_default_jobs); ART_JOBS="${_art_j%%	*}"; ART_JOBS_WHY="${_art_j#*	}"; unset _art_j
+else
+  ART_JOBS_WHY="${ART_JOBS_WHY:-set by the caller}"
+fi
+export ART_JOBS ART_JOBS_WHY
 
 # The machine lock and the "bench" reservation of our lab are not needed anywhere else.
 # These shims are no-ops unless you point them at your own tools.

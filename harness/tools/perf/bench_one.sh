@@ -104,6 +104,11 @@ case "$APP" in
     # comparable, and the retired WatchingEyeTexture.mkv cannot be redistributed. Record its hash per run.
     INPUT_FILE="${FF_TEST_VIDEO:-$APPDIR/input/TearsOfSteel-1366x768-100s.mkv}"
     [ -f "$INPUT_FILE" ] && INPUT_SHA=$(sha256sum "$INPUT_FILE" | cut -d" " -f1)
+    # A hash on its own leaves the reader to know which one is the reference. A regenerated clip is a
+    # supported path (ensure_input_clip.sh cuts one from the Blender source) and such a run is valid but
+    # NOT bit-comparable with ours, so the artefact says which it is rather than implying it.
+    FF_REFERENCE_SHA=43b0fba97eb05a0e44d7518fe9d6993c140680531a17a240ea6d53582fbe9985
+    [ "${INPUT_SHA:-}" = "$FF_REFERENCE_SHA" ] && INPUT_IS_REF=true || INPUT_IS_REF=false
     ( cd "$APPDIR" && RUNS_COUNT=1 FF_BUILD_LIST="ffmpeg-$BASE$TAG" FFMPEG_BENCH_NPROC_COUNT="${FF_THREADS:-4}" \
         SUMMARY_CSV="$D/summary.csv" SUMMARY_JSON="$D/summary.json" \
         $TIMEF -f "%U %S %M" -o "$OURS" taskset -c "$CPUSET" ./bench_ffmpeg_all.sh ) > "$LOG" 2>&1; rc=$?
@@ -150,6 +155,7 @@ meta = {
   "foreign_cpu_share": round(max(0, $machine_busy - $ours_ticks) / max(1.0, ($t1 - $t0) * $HZ * $(nproc)), 4),
   "tsan_options": "$TSAN_OPTIONS", "max_rss_kb": ${om:-0},
   "input_sha256": "${INPUT_SHA:-}",
+  "input_is_reference": ${INPUT_IS_REF:-null},
   "cpuset_intruders": ${INTRUDERS:-0}, "cpuset_intruder_peak_pcpu": ${INTRUDER_PEAK:-0},
   "threads_setting": "${MC_THREADS:-}${MYSQL_THREADS:-}${FF_THREADS:-}",
 }

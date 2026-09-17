@@ -40,10 +40,10 @@ if [ -z "$CONFIG_TYPE" ]; then
 fi
 
 # Validate archive
-if [ ! -f "$FFMPEG_ARCHIVE" ]; then
-    echo "Error: FFmpeg archive '$FFMPEG_ARCHIVE' not found."
-    exit 1
-fi
+# Fetch when absent, then verify, exactly as redis/sqlite/mysql do. Erroring out and telling the
+# reader to find the file themselves is no use to an evaluator, and the artifact already promises
+# the harness fetches and checks. tools/fetch_archive.sh does both from the pinned list.
+"$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/../../tools/fetch_archive.sh" "$FFMPEG_ARCHIVE" || exit 1
 
 # Determine compiler and base flags
 FLAGS_COMMON_BASE_VAL="-g -O2"
