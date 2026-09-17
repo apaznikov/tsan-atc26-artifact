@@ -228,7 +228,9 @@ On the evaluator path the same check runs per cell and a cell missing a codec is
 geomean over the survivors: the workload writes each codec's output to `/dev/shm`, a container's default
 `/dev/shm` is 64 MB, and the stream-copy and mjpeg outputs exceed it, so without the size `docker/run.sh`
 passes two of the four codecs fail silently and the row measures a different quantity (found by the
-rehearsal of 17 Sep, whose FFmpeg cells carried two codecs). Twelve configurations rather than fourteen: FFmpeg has no
+rehearsal of 17 Sep, whose FFmpeg cells carried two codecs; the rehearsal of the same evening, with the
+size and the `-threads 4` cap in force together, carried all four, the two recovered codecs costing about
+4 seconds of a 90-second run between them). Twelve configurations rather than fourteen: FFmpeg has no
 whole-program summary generator.
 
 **The paper's FFmpeg column is not comparable with this one in either direction**: it was measured on
