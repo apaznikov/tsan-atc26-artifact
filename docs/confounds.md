@@ -123,6 +123,19 @@ over our foreign-activity gate and invalidates every run in flight. Do not build
 `40-perf.sh` runs; the script refuses to start if it detects a compiler build and records foreign
 CPU share per run so a disturbed run is dropped, not averaged in.
 
+## Other people's load retires cells, and the output says so
+
+The gate does not distinguish your builds from anyone else's. On a shared machine, a colleague's
+compilation, an IDE's background build, or a scheduled job on the processors outside your `ART_CPUSET`
+raises `outside_busy_share` above the 0.10 threshold, and every cell measured under it is marked
+DISTURBED, re-run once, marked again if the load persists, and dropped; a leg can take its full two
+hours and end with one usable run per configuration. That is the gate working, not the artifact
+failing: no number taken under foreign load reaches a table. What to do: read `outside_busy_share` in
+each cell's `meta.json` (or the "DISTURBED" marks in the run log), find what was running on the other
+processors, and re-run the leg on a quiet machine; a leg with retired cells is not a result to
+interpret. Our own rehearsal of 17 Sep 2026 lost a SQLite leg this way to an unrelated LLVM build
+pinned to the processors outside the bench set, at `outside_busy_share` 0.50 for seventy minutes.
+
 ## An unpinned run is not gate-checked
 
 The disturbance gate reads busy time on the CPUs outside `ART_CPUSET`. With `ART_CPUSET` empty, the
