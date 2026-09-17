@@ -245,8 +245,13 @@ fires in that case (demonstrated on Redis); the canonical directories were resto
 and every campaign binary is verified by sha256 against `static-counts.csv` before a leg starts.
 The Redis rebuild that restored the canonical directories reproduced the table exactly (14/14 identical
 in sites and calls) with 14/14 different sha256: eight bytes in `.rodata`, a build-time epoch second in the
-host stamp, `.text` byte-identical. A recorded sha256 therefore identifies a build, not the code; the
-campaign objects themselves are kept beside the rebuilt ones. Legs started 15 Sep 18:49:02 and completed 17 Sep (330 cells: 230 primary, 40 second-concurrency,
+host stamp, `.text` byte-identical. A recorded sha256 therefore identifies a build, not the code, on Redis; the
+campaign objects themselves are kept beside the rebuilt ones. memcached is the opposite case and it was
+found by accident: `compile_time.sh` rebuilt two of its four campaign trees on 17 Sep and both came
+back byte-identical to the recorded sha256, same compiler, same flags, same bytes, so for memcached a
+recorded hash does identify the code, and the rebuild doubled as an unplanned reproducibility check
+that passed. Which applications carry a build stamp and which reproduce exactly is stated per
+application rather than as a rule. Legs started 15 Sep 18:49:02 and completed 17 Sep (330 cells: 230 primary, 40 second-concurrency,
 60 FFmpeg after its re-arm, plus the old-clip control outside the shipped roots); zero runs retired by
 the disturbance gate over the whole campaign; provenance verified on `primary`, `r2` and the old-clip
 root; every FFmpeg run carries all four codecs; one input hash per FFmpeg tree, different between
