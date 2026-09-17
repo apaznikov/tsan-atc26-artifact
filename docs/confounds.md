@@ -147,6 +147,13 @@ requested or with no data, and never with a number taken under the load. The thr
 if a shared machine leaves you no quiet window, you can run at a looser threshold knowingly, and the
 record then says so beside every cell, which is the condition under which such a row should be read.
 
+## The container sees the processors the daemon allows
+
+Inside the container `nproc` reports the processors the Docker daemon's own cgroup allows, which can be
+fewer than the host has (104 of 112 on our machine, stable across every container we started). With
+`ART_CPUSET` empty that number is what the thread rule and `ART_JOBS` derive from, and it is recorded
+in each session as `ncpu`; it is a property of the host's Docker configuration, not of the artifact.
+
 ## An unpinned run is not gate-checked
 
 The disturbance gate reads busy time on the CPUs outside `ART_CPUSET`. With `ART_CPUSET` empty, the

@@ -312,6 +312,31 @@ ART_RUNS=5 ./docker/run.sh scripts/40-perf.sh redis      # our setting: interval
 ./docker/run.sh scripts/40-perf.sh redis --all-configs   # all fourteen
 ```
 
+**What the default mode measured when we ran it as an evaluator would** (17-18 Sep 2026, the pushed
+checkout in the container, 48 pinned processors, N = 2, four configurations, nothing else on the machine):
+the functional check 52 s; Redis 15 min; memcached 28 min at the rule's 48 server threads; FFmpeg 25 min
+on the reference clip with all four codecs; SQLite's leg is pending (its first run was lost to a transient
+network failure fetching the source, see below). Every configuration row landed inside our interval, and
+the one row whose interval excludes 1.0 landed on the same side:
+
+| Application | Row | Evaluator's point (N = 2) | Shipped interval (N = 5) | Verdict |
+|---|---|---|---|---|
+| Redis | AllOpt with peeling | 1.004 | 1.000 [0.983, 1.026] | inside |
+| Redis | DynSTC | 0.968 | 0.944 [0.927, 0.970] | inside, below 1.0 like ours |
+| memcached | AllOpt with peeling | 0.991 | 1.019 [0.951, 1.079] | inside |
+| memcached | DynSTC | 0.983 | 0.986 [0.944, 1.063] | inside |
+| FFmpeg | AllOpt with peeling | 1.017 | 1.006 [0.990, 1.024] | inside |
+| FFmpeg | DynSTC | 1.127 | 1.113 [1.099, 1.129] | inside, above 1.0 like ours |
+| SQLite | both | pending | | |
+
+The stock-against-native ratios of the same runs, reported and not judged, since the drift condition
+governs them: Redis 8.26 against 8.01 [7.83, 8.21]; memcached 3.66 against 3.20 [2.97, 3.40] (4.66 before
+the thread-count defect was fixed, so the fix closed three quarters of the gap and the rest is the size of
+the documented session drift); FFmpeg 2.99 against 2.76 [2.70, 2.80]. The table is generated from this
+file's own interval tables and each run's `perf_<app>.md`, not transcribed. The Redis rows are from the
+run of 17 Sep 14:15; memcached and FFmpeg from the run of 17 Sep 23:07, which followed the thread-count
+and shared-memory fixes and carried `input_is_reference: true`.
+
 The four configurations decide everything the paper's figure turns on, and Redis, memcached and
 FFmpeg together, about an hour and a quarter, cover the two things this campaign found: DynSTC's
 cost on Redis, and the absence of a measurable effect elsewhere. MySQL is the expensive one and its
