@@ -21,5 +21,7 @@ tree survives from the campaign, and `091eeec3…` is the hash of a fresh downlo
 URL. It is almost certainly the same file, and we cannot demonstrate that the campaign compiled that
 archive, only that the tree it left behind is `sqlite-src-3500200`. The harness verifies every archive
 against this list before unpacking (`harness/tools/verify_archive.sh`, pinned values in
-`harness/tools/source_archives.sha256`) and refuses a missing, unpinned or mismatching one. The measurement harness (`harness/`, 132 files with their own sha256 manifest)
-contains no third-party source; it is scripts and documentation of ours.
+`harness/tools/source_archives.sha256`) and refuses a missing, unpinned or mismatching one. The measurement harness (`harness/`, 118 files with their own sha256 manifest)
+contains no third-party source; it is scripts and documentation of ours. Its vendoring script refuses
+any shipped file that carries a bare lab path outside an overridable default, and excludes by name
+the lab-only drivers that check found, among them one that deleted a lab directory.

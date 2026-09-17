@@ -7,7 +7,7 @@
 # the default focs-lab build.  ~/.bashrc exports LLVM_ROOT_PATH=~/dev/llvm-project/llvm/build,
 # which since 2026-05 is a symlink to the unrelated llvm-capstone tree, so that value is verified
 # instead of trusted.
-TSAN_LLVM_DEFAULT=/home/alexey/dev/llvm-project-focs-lab/llvm/build
+TSAN_LLVM_DEFAULT="${TSAN_LLVM_DEFAULT:-/home/alexey/dev/llvm-project-focs-lab/llvm/build}"
 _tsan_is_prototype() { [ -x "$1/bin/clang" ] && "$1/bin/clang" --version 2>/dev/null | grep -qE "focs-lab/llvm-project|llvm-project-focs-lab"; }  # GitHub origin or a local clone of it (e.g. /extra/alexey/llvm-project-paper)
 # `set -u`-safe: callers such as gen_summaries.sh run with nounset.
 if [ -n "${LLVM_TSAN_ROOT:-}" ]; then

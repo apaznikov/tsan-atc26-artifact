@@ -27,8 +27,12 @@ The counts are of `__tsan_read*`/`__tsan_write*` calls in the whole binary and i
 depends on the build environment's headers. Two builds in the same container match exactly; a build
 in the container against our host-built campaign binaries shows a small constant offset, measured on
 Redis at 19 sites fewer in every configuration, with the *removed* and *added* columns identical. The
-differences between configurations are the claim; an offset of that size on every row alike is the
-environment, not the compiler.
+cause is named: Redis auto-detects libsystemd at build time and the image has no `libsystemd-dev`, so
+the container build compiles out `redisCommunicateSystemd` and the branches in its four callers, 19
+memory-access sites; the same 19 will appear on every evaluator's image. The differences between
+configurations are the claim; an offset on every row alike is the build environment, not the compiler.
+Making both sides independent of the host (`USE_SYSTEMD=no` in the harness) is a post-submission
+change, since it would also change the campaign's binaries.
 
 ## "DE removed nothing from my own test program"
 

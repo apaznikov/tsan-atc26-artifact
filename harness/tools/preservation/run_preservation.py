@@ -41,7 +41,9 @@ from typing import Dict, List, Optional
 
 HERE = Path(__file__).resolve().parent
 EXP_ROOT = HERE.parent.parent                      # ~/tsan-experiments
-DEFAULT_LLVM_ROOT = Path("/home/alexey/dev/llvm-project-focs-lab/llvm/build")
+# A default, not a fact: this lab's worktree, overridable by LLVM_TSAN_ROOT or --llvm-root. It is also
+# a live working build that must never be measured from, which is why every caller overrides it.
+DEFAULT_LLVM_ROOT = Path(os.environ.get("LLVM_TSAN_ROOT", "/home/alexey/dev/llvm-project-focs-lab/llvm/build"))
 
 
 def now() -> str:
