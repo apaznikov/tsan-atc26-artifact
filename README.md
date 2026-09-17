@@ -102,6 +102,14 @@ subset of the performance table, four configurations on the four cheaper applica
 hours. Our own campaign used five runs per configuration and took 43 hours; that setting is one
 variable away (`ART_RUNS=5`) and `CLAIMS.md` says what each mode can and cannot conclude.
 
+Every performance-side script also has a smoke mode, `ART_SMOKE=1`: one run, short workloads, reduced
+test lists, output marked NOT A MEASUREMENT. It answers one question, whether the pipeline runs end to end
+on your machine, and nothing about the numbers. The preservation smoke (`31-preservation-apps.sh`) attempts
+no verdict at that scale: a single short run cannot show a race site that stock itself reports in only
+two or three of ten paper-scale runs, so the script prints that no verdict was attempted and exits on the
+plumbing alone; the positive control that refuses to certify a run in which stock found nothing applies
+unchanged at the paper scale.
+
 `90-tables.sh` works without running anything else: pointed at `data/`, it re-derives every table
 in the paper from the runs we recorded. That is the fastest way to check that our tables follow
 from our data.
