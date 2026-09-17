@@ -13,7 +13,7 @@
 One row per function of the five analyses, the instrumentation pass and the
 runtime additions; one section per analysis comparing what the paper proves
 with what the code does. Line numbers are those of `b4bf8b8f4613` (the
-the audited tree (branch artifact/atc26)); fixes reference commits on `tsan-audit`.
+audited tree, branch `artifact/atc26`); fixes reference commits on `tsan-audit`.
 
 **Verdict legend.** `sound` — fail-closed as written, argued in its row.
 `fixed:<id>` — a fail-open shape was confirmed by running the pass and closed
@@ -767,7 +767,7 @@ eight audit steps and the LO-6 fix with this ledger.
 
 | frozen copy (old hash) | consolidated commit containing its code |
 |---|---|
-| `b4bf8b8f4613` tsan-dev-b4bf8b8f4613 (the audited tree (branch artifact/atc26)) | `8f6899f5c5ff` |
+| `b4bf8b8f4613` tsan-dev-b4bf8b8f4613 (the audited tree, branch `artifact/atc26`) | `8f6899f5c5ff` |
 | `def2cf34faeb` tsan-audit-def2cf34faeb (SWMR-1) | `ccde44118fce` |
 | `297881ddc1c5` tsan-audit-297881ddc1c5 (twelve shapes) | `53ff2c8868c8` |
 | `a08292850aee`, `ad0623610ef6` (eviction counters; thirteen shapes, EA-7/8, RT-2) | `fe1e4f609675` |

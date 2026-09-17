@@ -1,0 +1,84 @@
+#!/bin/bash
+# lib.sh — shared helpers of the P5 driver (sourced).
+P5_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+P5_DIR="$P5_ROOT/tools/perf"
+P5_BUILDS=/extra/alexey/builds
+P5_INSTALL_ROOT=/extra/alexey/tsan-experiments/installs      # MySQL / FFmpeg prefixes (HDD)
+P5_SCRATCH="$P5_ROOT/.scratch"                                # compile trees (SSD)
+P5_LOCK="${P5_LOCK:-/tmp/p5-bench.lock}"                     # one benchmark at a time; builds hold it shared
+P5_CPUSET_DEFAULT="4-27,60-83"                                # 24 cores + SMT siblings, out of the bench pool
+p5_log() { echo "[$(date '+%F %T')] $*"; }
+p5_die() { p5_log "ERROR: $*" >&2; exit 1; }
+# verify_compiler <hash>: prints the frozen root; dies if the stamp does not match
+p5_compiler_root() {  # <hash> -> /extra/alexey/builds/<lane>-<hash>; any lane prefix (tsan-dev-, tsan-audit-, tsan-perf-, tsan-yield-)
+  local hash=$1 root
+  # An explicit LLVM_TSAN_ROOT from the caller wins, provided it stamps the hash asked for. Two copies can
+  # share a hash — tsan-merge-<h> and tsan-merge-<h>-astats differ only by the counters option — and the glob
+  # below silently picks the alphabetically first, which cost four counter cells that ran counter-free.
+  if [ -n "${LLVM_TSAN_ROOT:-}" ] && [ -x "$LLVM_TSAN_ROOT/bin/clang" ]; then
+    if grep -q "$hash" "$LLVM_TSAN_ROOT/TSAN_AUDIT_HASH" 2>/dev/null; then echo "$LLVM_TSAN_ROOT"; return 0; fi
+    p5_die "LLVM_TSAN_ROOT=$LLVM_TSAN_ROOT does not stamp $hash"
+  fi
+  local cands; cands=$(ls -d "$P5_BUILDS"/*-"$hash" 2>/dev/null | grep -vE -- "-evictstats$" )   # the counters-ON twin is for tools/eviction-counters, never for perf
+  root=$(echo "$cands" | head -1)
+  [ -n "$root" ] && [ -x "$root/bin/clang" ] || p5_die "no frozen copy for $hash under $P5_BUILDS (expected <lane>-$hash/ with bin/clang)"
+  [ "$(echo "$cands" | wc -l)" -gt 1 ] && p5_log "note: several frozen copies match $hash, using $root"
+  [ -f "$root/TSAN_AUDIT_HASH" ] || p5_die "$root has no TSAN_AUDIT_HASH"
+  echo "$root"
+}
+p5_sha256() { sha256sum "$1" | cut -c1-64; }
+p5_stamp_of_dir() { grep -m1 "^compiler_version:" "$1/build_info.txt" 2>/dev/null | grep -oE '[0-9a-f]{40}' | cut -c1-12; }
+# foreign bench reservations (other users' or ours)
+p5_bench_active() { systemctl list-units 'bench-*' --no-legend 2>/dev/null | grep -q .; }
+# CPU accounting: total busy jiffies of the whole machine vs the jiffies our cpuset could have used
+p5_cpu_snapshot() { awk '/^cpu /{print $2+$3+$4+$6+$7+$8, $5}' /proc/stat; }   # busy idle
+p5_loadavg() { cut -d' ' -f1-3 /proc/loadavg; }
+p5_governor() { cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null; }
+p5_turbo() { cat /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null; }
+# Clock regime (lab benchmarking guide): with no bench session the node is in power saving mode, 0.8-4.3 GHz,
+# variable with load; with a bench session active it runs at a fixed 1.9 GHz with idle states disabled. The
+# regime is recorded per run so runs from the two regimes are never mixed in one table.
+p5_bench_session() { systemctl list-units 'bench-*' --no-legend 2>/dev/null | grep -q . && echo 1 || echo 0; }
+p5_regime() { [ "$(p5_bench_session)" = 1 ] && echo "bench-fixed" || echo "powersave-variable"; }
+p5_cpu_mhz() { local c=${1:-4}; awk '{printf "%.0f", $1/1000}' "/sys/devices/system/cpu/cpu$c/cpufreq/scaling_cur_freq" 2>/dev/null || echo 0; }
+# app -> dir of the app's scripts, binary path for a config, "kind"
+p5_app_dir() { case "$1" in memcached) echo "$P5_ROOT/nosql/memcached";; redis) echo "$P5_ROOT/nosql/redis";; sqlite) echo "$P5_ROOT/sql/sqlite";; mysql) echo "$P5_ROOT/sql/mysql";; ffmpeg) echo "$P5_ROOT/projects/ffmpeg";; *) p5_die "unknown app $1";; esac; }
+p5_binary() {  # app cfg -> binary of this configuration built by $P5_HASH (canonical dir, else old-builds/<dir>.<hash>)
+  local app=$1 cfg=$2 b t canon arch; b=$(p5_base "$cfg"); t=$(p5_tag "$cfg")
+  case "$app" in
+    memcached) canon="$(p5_app_dir memcached)/memcached-$b$t";                               arch="$(p5_app_dir memcached)/old-builds/memcached-$b$t";;
+    redis)     canon="$(p5_app_dir redis)/redis-polygon/redis-$(p5_redis_name "$cfg")$t";     arch="$(p5_app_dir redis)/redis-polygon/old-builds/redis-$(p5_redis_name "$cfg")$t";;
+    sqlite)    canon="$(p5_app_dir sqlite)/build/test-$b$t";                                 arch="$(p5_app_dir sqlite)/build/old-builds/test-$b$t";;
+    mysql)     canon="$(p5_app_dir mysql)/mysql-$b$t";                                       arch="$P5_INSTALL_ROOT/mysql/old-builds/mysql-$b$t";;
+    ffmpeg)    canon="$(p5_app_dir ffmpeg)/ffmpeg-$b$t";                                     arch="$P5_INSTALL_ROOT/ffmpeg/old-builds/ffmpeg-$b$t";;
+  esac
+  local dir="$canon"
+  # Several compilers' builds coexist: the canonical directory holds the most recent build, earlier ones are
+  # archived as <dir>.<stamp> (every build script does that since 2026-09-05). When the sweep names a hash,
+  # take whichever holds that stamp; the runner's gate re-checks the stamp of what we return.
+  if [ -n "${P5_HASH:-}" ]; then
+    local want=${P5_HASH:0:12} have
+    have=$(p5_dir_stamp "$app" "$canon")
+    if [ "$have" != "$want" ] && [ -d "$arch.$want" ]; then dir="$arch.$want"; fi
+  fi
+  case "$app" in
+    memcached) echo "$dir/memcached";; redis) echo "$dir/src/redis-server";; sqlite) echo "$dir/threadtest3";;
+    mysql) echo "$dir/bin/mysqld";; ffmpeg) echo "$dir/bin/ffmpeg";;
+  esac
+}
+# compiler stamp recorded in a build directory (redis keeps build_info.txt in src/)
+p5_dir_stamp() { local app=$1 dir=$2 f="$dir/build_info.txt"; [ "$app" = redis ] && f="$dir/src/build_info.txt"; grep -m1 "^compiler_head:" "$f" 2>/dev/null | awk '{print substr($2,1,12)}'; }
+# directory holding build_info.txt for a config (redis writes it in src/, next to the binary)
+p5_build_dir() { local bin; bin=$(p5_binary "$1" "$2"); case "$1" in mysql|ffmpeg) dirname "$(dirname "$bin")";; *) dirname "$bin";; esac; }
+
+# static instrumentation sites of a config's binary; FFmpeg's code lives in its shared libraries, so sum
+# ffmpeg + lib/lib*.so.* (real files). Prints "<memory-access sites> <total tsan calls>".
+p5_static_count() {  # app bin
+  local app=$1 bin=$2 files="$bin" s=0 t=0 f a b
+  [ "$app" = ffmpeg ] && files="$bin $(find "$(dirname "$(dirname "$bin")")/lib" -maxdepth 1 -name 'lib*.so.*' -type f 2>/dev/null)"
+  for f in $files; do
+    read -r a b <<< "$(python3 "$P5_ROOT/tools/static_count_tsan_instrumentation.py" "$f" 2>/dev/null | awk '/Memory accesses/{s=$NF} /GRAND TOTAL/{t=$NF} END{print s+0, t+0}')"
+    s=$((s + a)); t=$((t + b))
+  done
+  echo "$s $t"
+}

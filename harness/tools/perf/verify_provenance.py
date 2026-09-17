@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+"""verify_provenance.py <results-root> [...] — assert what every run RECORDED, not what it was told to do.
+
+tsan-paper's standard of 2026-09-16: the proof belongs in the log, not in the intention. A flag passed to a
+script, a clip named in an environment variable and a compiler chosen by a hash are all intentions; what a
+reviewer can check is the metadata the run wrote down. This checks the artefacts and nothing else, so it can
+be run on legs that finished hours ago and on scripts nobody may edit while they are running.
+
+Checks, each one a failure this campaign or its predecessors actually produced:
+
+  compiler_head == the sweep hash        a pre-audit binary was once measured as the current hash (1.48x,
+                                         withdrawn); the runner gates on this, so a violation here means
+                                         the gate itself was bypassed
+  one binary sha256 per configuration    a configuration whose binary changed mid-leg is two populations
+                                         reported as one
+  input_sha256 present and singular      FF_TEST_VIDEO as a relative path yields runs on the right clip
+    (ffmpeg only)                        with an EMPTY hash; two values means two inputs in one row
+  one cpuset and one mode per leg        pinned and unpinned runs are not comparable and must not be pooled
+  outside_busy_share within the gate     a run above the threshold should have been retired, not kept
+  N per configuration                    reports short cells rather than letting a thin row look complete
+
+Exit 0 only when every check passes on every root given.
+"""
+import json, glob, os, sys
+from collections import defaultdict
+
+GATE = 0.10
+
+def rows(root):
+    for m in sorted(glob.glob(f"{root}/*/*/run*/meta.json")):
+        b = os.path.basename(os.path.dirname(m))
+        if not b[3:].isdigit():          # run1.disturbed.*, run2.foreign-window-*, warmup*
+            continue
+        try: yield json.load(open(m)), m
+        except Exception as e: yield {"_broken": str(e)}, m
+
+def check(root, want_hash):
+    print(f"\n=== {root} ===")
+    runs = list(rows(root))
+    if not runs:
+        print("  no measured runs"); return True
+    ok = True
+    byapp = defaultdict(list)
+    for j, m in runs:
+        if "_broken" in j:
+            print(f"  UNREADABLE {m}: {j['_broken']}"); ok = False; continue
+        byapp[j.get("app", "?")].append((j, m))
+    for app, rs in sorted(byapp.items()):
+        heads   = {r[0].get("compiler_head", "")[:12] for r in rs}
+        cpusets = {r[0].get("cpuset") for r in rs}
+        modes   = {r[0].get("mode") for r in rs}
+        bycfg   = defaultdict(list)
+        for j, m in rs: bycfg[j.get("config")].append((j, m))
+        bad_hash = heads - {want_hash}
+        multi_bin = {c: {x[0].get("sha256") for x in v} for c, v in bycfg.items()}
+        multi_bin = {c: s for c, s in multi_bin.items() if len(s) > 1}
+        over = [(j.get("config"), os.path.basename(os.path.dirname(m)), j.get("outside_busy_share"))
+                for j, m in rs if isinstance(j.get("outside_busy_share"), (int, float))
+                and j["outside_busy_share"] > GATE]
+        short = {c: len(v) for c, v in bycfg.items() if len(v) < 5}
+        print(f"  {app:10s} {len(rs):3d} runs, {len(bycfg):2d} configurations")
+        print(f"             compiler_head {'|'.join(sorted(heads))}"
+              f"{'   <<< NOT THE SWEEP HASH ' + want_hash if bad_hash else ''}")
+        print(f"             cpuset {'|'.join(str(c) for c in sorted(cpusets, key=str))}   "
+              f"mode {'|'.join(str(x) for x in sorted(modes, key=str))}"
+              f"{'   <<< MIXED, not poolable' if len(cpusets) > 1 or len(modes) > 1 else ''}")
+        if app == "ffmpeg":
+            shas = {r[0].get("input_sha256", "") for r in rs}
+            empty = "" in shas
+            print(f"             input_sha256 {'|'.join(sorted(x[:12] or 'EMPTY' for x in shas))}"
+                  f"{'   <<< EMPTY: the relative-path trap' if empty else ''}"
+                  f"{'   <<< TWO INPUTS IN ONE ROW' if len(shas) > 1 else ''}")
+            if empty or len(shas) > 1: ok = False
+        # The mixed-cpuset/mode condition was printed but not counted, so a tree with pinned and unpinned
+        # runs pooled together reported its own warning and still exited 0 -- a check that reports without
+        # failing passes every automated caller. Found by injecting the fault rather than by reading.
+        mixed = len(cpusets) > 1 or len(modes) > 1
+        if bad_hash or multi_bin or over or short or mixed: ok = False
+        for c, s in multi_bin.items():
+            print(f"             <<< {c}: {len(s)} DIFFERENT BINARIES across its runs")
+        for c, r, v in over[:5]:
+            print(f"             <<< {c} {r}: outside_busy {v} > gate {GATE}, kept anyway")
+        if short:
+            print(f"             short of N=5: " + ", ".join(f"{c}={n}" for c, n in sorted(short.items())))
+    return ok
+
+def main():
+    roots = sys.argv[1:] or ["results/campaign-f3deebfbab60/primary"]
+    want = os.environ.get("P5_HASH", "f3deebfbab60")[:12]
+    allok = all([check(r, want) for r in roots])
+    print(f"\n{'PROVENANCE OK' if allok else 'PROVENANCE PROBLEMS ABOVE'} (sweep hash {want})")
+    return 0 if allok else 1
+
+sys.exit(main())
