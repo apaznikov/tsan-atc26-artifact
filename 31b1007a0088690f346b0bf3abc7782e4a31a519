@@ -1,0 +1,25 @@
+ATTRIBUTION CORRECTION.
+
+This commit message describes a two-phrase text repair in
+compiler/TSanAnalysesAudit.md. The commit in fact carries 135 files. The other
+134 are not that repair and are not the work of the commit author:
+
+  harness/tools/perf/            60 files
+  harness/projects/ffmpeg/       13
+  harness/nosql/memcached/       12
+  harness/tools/eviction-stress/ 11
+  harness/sql/sqlite/             9
+  harness/nosql/redis/            9
+  harness/tools/preservation/     8
+  harness/sql/mysql/              6
+  harness/tools/{write_build_info.sh, tsan_compiler.sh,
+                 static_count_tsan_instrumentation.py}
+  harness/config_definitions.sh
+  docker/run.sh
+
+That is the vendored-harness re-vendoring, tsan-exp's and tsan-paper's work, which
+was uncommitted in the shared working tree and was swept in by a `git add -A`.
+The content is correct and in use; only the attribution and the message are
+wrong. Anyone looking for when the harness was re-vendored should look here.
+
+Not corrected by rewriting: the commit is pushed and cloned.
