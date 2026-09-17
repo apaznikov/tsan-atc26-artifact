@@ -2,11 +2,21 @@
 # lib.sh — shared helpers of the P5 driver (sourced).
 P5_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 P5_DIR="$P5_ROOT/tools/perf"
-P5_BUILDS=/extra/alexey/builds
-P5_INSTALL_ROOT=/extra/alexey/tsan-experiments/installs      # MySQL / FFmpeg prefixes (HDD)
-P5_SCRATCH="$P5_ROOT/.scratch"                                # compile trees (SSD)
+# Lab defaults, every one overridable: these are paths and CPU numbers of ONE machine, and the artifact
+# runs on somebody else's. Hardcoding them made three separate "works in the lab, not outside it" failures
+# in a day, each of which a container run found and no amount of reading found.
+P5_BUILDS="${P5_BUILDS:-/extra/alexey/builds}"
+P5_INSTALL_ROOT="${P5_INSTALL_ROOT:-/extra/alexey/tsan-experiments/installs}"   # MySQL / FFmpeg prefixes (HDD)
+P5_SCRATCH="${P5_SCRATCH:-$P5_ROOT/.scratch}"                # compile trees (SSD)
 P5_LOCK="${P5_LOCK:-/tmp/p5-bench.lock}"                     # one benchmark at a time; builds hold it shared
-P5_CPUSET_DEFAULT="4-27,60-83"                                # 24 cores + SMT siblings, out of the bench pool
+# NOTE THE MISSING COLON. `${VAR-default}` leaves an explicitly EMPTY value empty, where `${VAR:-default}`
+# would replace it with the lab's CPU numbers. Empty means "do not pin", which is what an evaluator who has
+# not set ART_CPUSET must get — an invalid mask like `taskset -c 4-27,60-83` on a container limited to CPUs
+# 40-47 fails the build in 0 s with "Invalid argument", which is how this was found.
+P5_CPUSET_DEFAULT="${P5_CPUSET_DEFAULT-4-27,60-83}"          # 24 cores + SMT siblings, out of the bench pool
+# p5_taskset: the pinning prefix, or nothing when no cpuset is set. Use this rather than writing `taskset`
+# with a literal mask anywhere — a literal is correct on exactly one machine.
+p5_taskset() { [ -n "${P5_CPUSET_DEFAULT:-}" ] && echo "taskset -c $P5_CPUSET_DEFAULT" || true; }
 p5_log() { echo "[$(date '+%F %T')] $*"; }
 p5_die() { p5_log "ERROR: $*" >&2; exit 1; }
 # verify_compiler <hash>: prints the frozen root; dies if the stamp does not match
