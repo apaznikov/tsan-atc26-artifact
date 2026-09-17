@@ -127,11 +127,19 @@ elif [ -f "$BUILD_SUBDIR/build_info.txt" ]; then
 fi
 mkdir -p "$BUILD_SUBDIR"
 
-# Compile the test
+# Compile the test.
+# -I build/ COMES FIRST AND IS NOT OPTIONAL. threadtest3.c includes <sqlite3.h> with angle brackets, so it
+# is found only through an -I path. The amalgamation writes sqlite3.h into build/ beside sqlite3.c, and
+# without that -I the compile falls through to whatever /usr/include holds: on this host that is the
+# distribution's sqlite3.h at 3.45.1, compiled against the 3.50.2 amalgamation we actually link, and in a
+# container with no libsqlite3-dev it is nothing at all and the build fails (rehearsal of 2026-09-17).
+# Putting build/ first also means the header and the implementation are the same SQLite version everywhere,
+# which is what the pinned archive in tools/source_archives.sha256 is supposed to guarantee.
 $TARGET_CC $FINAL_CFLAGS -DSQLITE_THREADSAFE=1 \
     ./threadtest3.c \
     build/sqlite3.c \
     "$SQLITE_SRC_DIR/src/test_multiplex.c" \
+    -I build/ \
     -I "$SQLITE_SRC_DIR/test/" \
     -I "$SQLITE_SRC_DIR/src/" \
     -ldl -lpthread -lm \

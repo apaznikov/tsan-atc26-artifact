@@ -18,7 +18,39 @@ from collections import defaultdict
 
 EXPECTED = {"copy_passthrough", "h264_libx264", "h265_libx265", "mjpeg"}
 
+def load_parser():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "agg", os.path.join(os.path.dirname(os.path.abspath(__file__)), "aggregate.py"))
+    agg = importlib.util.module_from_spec(spec); sys.modules["agg"] = agg; spec.loader.exec_module(agg)
+    return agg.PARSERS["ffmpeg"][0]
+
+
+def check_one(rd):
+    """One run directory: 0 if it carries all four codecs, 2 with a reason if it does not.
+
+    The per-cell entry point, called from bench_one.sh while the run is still the thing being decided,
+    so that a cell missing a codec FAILS instead of entering the table as a smaller sample. The tree-wide
+    mode below stays as the after-the-fact audit; both read EXPECTED from here, so there is one list."""
+    try:
+        got = {k for k in load_parser()(rd) if not k.startswith("_")}
+    except Exception as e:
+        print(f"codec check: run output unparseable: {type(e).__name__}: {e}")
+        return 2
+    missing = EXPECTED - got
+    if missing:
+        print("missing codec(s): " + ", ".join(sorted(missing)) + "; got " + (", ".join(sorted(got)) or "none")
+              + ". A run with fewer codecs is a different test set, not a smaller sample."
+              + " Causes seen: /dev/shm too small for the output (copy_passthrough and mjpeg write the"
+              + " largest files; Docker's default is 64 MB), and FF_THREADS above 16 (libx265 refuses"
+              + " more than 16 frame threads and drops out silently).")
+        return 2
+    return 0
+
+
 def main():
+    if len(sys.argv) > 2 and sys.argv[1] == "--run":
+        return check_one(sys.argv[2])
     root = sys.argv[1] if len(sys.argv) > 1 else "results/campaign-f3deebfbab60/primary"
     import importlib.util
     spec = importlib.util.spec_from_file_location("agg", os.path.join(os.path.dirname(os.path.abspath(__file__)), "aggregate.py"))

@@ -45,7 +45,14 @@ INCLUDE_FILES=(
   tools/source_archives.sha256
 )
 APP_DIRS=(nosql/memcached nosql/redis sql/sqlite sql/mysql projects/ffmpeg)
-APP_GLOBS=('*.sh' '*.py' '*.md' '*.conf')
+# NOT ONLY SCRIPTS. An application directory holds inputs its scripts need, and a glob list of
+# executables ships the caller without the thing it reads. Two were missing: sql/sqlite/threadtest3.c, the
+# SQLite WORKLOAD ITSELF -- build_sqlite_test.sh:132 compiles ./threadtest3.c from the application
+# directory, and download_and_compile_sqlite.sh copies it over the unpacked tree's version, which it
+# differs from -- and nosql/redis/Makefile.patch, whose consumer make-redis-tsan-new.sh ships and begins
+# with `patch -p0 <Makefile.patch`. The find below is -maxdepth 1, so these globs cannot descend into an
+# unpacked source tree. (Rehearsal of 2026-09-17: the fourth vendoring omission, after fetch_archive.sh.)
+APP_GLOBS=('*.sh' '*.py' '*.md' '*.conf' '*.c' '*.patch')
 
 # LAB-ONLY ONE-OFF DRIVERS. Vendoring tools/perf wholesale swept in a dozen scripts that drove single
 # investigations on this machine: they hardcode /home/alexey and /extra/alexey, name compilers that are not
@@ -59,6 +66,8 @@ LAB_ONLY=(
   sqlite_cpuscale_probe.sh mysql_ea_bench2.sh report.py
   launch_paper_march6.sh launch_final_p2.sh launch_hash_tagged.sh queue_wp_memcached.sh
   bench_ffmpeg_all-ap.sh   # does not parse (bash -n: syntax error near `done', line 268); unreferenced
+  export_campaign.sh       # copies OUR campaign results into the artifact; an evaluator has no such tree
+  cmake-export-main-vars.sh  # dead code naming a /dev/shm build root; build_mysql.sh builds under BUILD_SCRATCH on disk
 )
 EXCLUDES=(
   --exclude='results/' --exclude='old-builds/' --exclude='.scratch/' --exclude='installs/'

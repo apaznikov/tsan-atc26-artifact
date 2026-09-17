@@ -50,14 +50,31 @@ build_one() {  # cfg
   wait_no_foreign_bench
   p5_log "build $APP $cfg (jobs $JOBS) -> $log"
   local t0=$SECONDS
+  # ONE WRITER, OR THE LOG LIES. Each branch below used `( ensure-step >> "$log"; build ) > "$log"`, which
+  # opens the same file twice: the outer redirect truncates and writes from offset 0 while the inner one
+  # appends at EOF, so the two streams overwrite each other and the log's ORDER is not the order of events.
+  # The SQLite log of 2026-09-17 showed a compile error above the download that had preceded it, which cost
+  # real time to read. Truncate once here and let every writer append.
+  : > "$log"
   case "$APP" in
     memcached) ( cd "$APPDIR" && ./build_memtier.sh >> "$log" 2>&1 || exit 1
-                 env "${env[@]}" $(build_scope memcached) $NICE ./build_memcached.sh "$base" ) > "$log" 2>&1; rc=$?;;
-    redis)     ( cd "$APPDIR" && env "${env[@]}" BUILD_OPTIONS="$(p5_redis_name "$cfg")" $(build_scope redis) $NICE $(p5_taskset) ./redis.sh --compile-only ) > "$log" 2>&1; rc=$?;;
-    sqlite)    ( cd "$APPDIR" && env "${env[@]}" $(build_scope sqlite) $NICE ./build_sqlite_test.sh "$base" ) > "$log" 2>&1; rc=$?;;
-    mysql)     ( cd "$APPDIR" && env "${env[@]}" INSTALL_ROOT="$P5_INSTALL_ROOT/mysql" $(build_scope mysql) $NICE ./build_mysql.sh "$base" ) > "$log" 2>&1; rc=$?;;
+                 env "${env[@]}" $(build_scope memcached) $NICE ./build_memcached.sh "$base" ) >> "$log" 2>&1; rc=$?;;
+    redis)     ( cd "$APPDIR" && env "${env[@]}" BUILD_OPTIONS="$(p5_redis_name "$cfg")" $(build_scope redis) $NICE $(p5_taskset) ./redis.sh --compile-only ) >> "$log" 2>&1; rc=$?;;
+    sqlite)    ( cd "$APPDIR" || exit 1
+                 # The SQLite source is not vendored; fetch and amalgamate it when absent, the same shape as
+                 # memcached's build_memtier.sh and ffmpeg's ensure_input_clip.sh above. These are exactly the
+                 # two paths build_sqlite_test.sh tests before it refuses with "You might need to run
+                 # 'download_and_compile_sqlite.sh' first" -- on the evaluator path nothing had ever run it, so
+                 # the leg died in one second having built nothing. The directory name must match
+                 # build_sqlite_test.sh's SQLITE_SRC_DIR.
+                 if [ ! -f build/sqlite3.c ] || [ ! -d sqlite-src-3500200 ]; then
+                   ./download_and_compile_sqlite.sh >> "$log" 2>&1 || exit 1
+                 fi
+                 env "${env[@]}" $(build_scope sqlite) $NICE ./build_sqlite_test.sh "$base" ) >> "$log" 2>&1; rc=$?;;
+    mysql)     ( cd "$APPDIR" && ./ensure_mysql_source.sh >> "$log" 2>&1 || exit 1
+                 env "${env[@]}" INSTALL_ROOT="$P5_INSTALL_ROOT/mysql" $(build_scope mysql) $NICE ./build_mysql.sh "$base" ) >> "$log" 2>&1; rc=$?;;
     ffmpeg)    ( cd "$APPDIR" && ./ensure_input_clip.sh >> "$log" 2>&1 || exit 1
-                 env "${env[@]}" INSTALL_ROOT="$P5_INSTALL_ROOT/ffmpeg" $(build_scope ffmpeg) $NICE ./build_ffmpeg.sh "$base" ) > "$log" 2>&1; rc=$?;;
+                 env "${env[@]}" INSTALL_ROOT="$P5_INSTALL_ROOT/ffmpeg" $(build_scope ffmpeg) $NICE ./build_ffmpeg.sh "$base" ) >> "$log" 2>&1; rc=$?;;
   esac
   local dt=$((SECONDS - t0))
   [ $rc = 0 ] && [ -x "$bin" ] || { p5_log "BUILD FAILED $APP $cfg rc=$rc (${dt}s) see $log"; echo "$APP,$cfg,FAILED,$rc,$dt" >> "$OUT/build/builds.csv"; return 1; }

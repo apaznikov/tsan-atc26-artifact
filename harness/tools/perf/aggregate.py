@@ -66,6 +66,11 @@ def geomean(xs):
     xs = [x for x in xs if x and x > 0]
     return math.exp(sum(math.log(x) for x in xs) / len(xs)) if xs else float("nan")
 def mean_sd(xs):
+    # Non-finite values are dropped rather than propagated: st.stdev over a list of NaN raises
+    # AttributeError ('float' object has no attribute 'numerator'), which reads as a bug in the
+    # aggregator rather than as missing data and killed the whole table for one dead application.
+    xs = [x for x in xs if isinstance(x, (int, float)) and math.isfinite(x)]
+    if not xs: return (float("nan"), float("nan"))
     return (st.mean(xs), st.stdev(xs) if len(xs) > 1 else 0.0)
 def ratio(num, den, hib):  # speed ratio "cfg vs base": >1 = cfg faster
     return (num / den) if hib else (den / num)
@@ -85,9 +90,13 @@ def stable_tests(per_cfg, tests, max_cv=0.05):
     """The subtests a run-to-run comparison can actually resolve. The set is derived from the pooled noise of
     each subtest, so it is a property of the workload rather than of any configuration, and it is then applied
     to every configuration alike. Returns None when fewer than half the subtests survive: at that point the
-    restricted mean is not a cleaner estimate of the same quantity, it is a different quantity. MySQL is the
-    case in point, where three of five sysbench scripts would go and the surviving pair moves the centre
-    without narrowing the interval."""
+    restricted mean is not a cleaner estimate of the same quantity, it is a different quantity.
+
+    That threshold does not fire anywhere in the f3deebfbab60 campaign, and the figure once quoted here —
+    "MySQL, three of five sysbench scripts" — was measured on an earlier compiler and had rotted. Measured
+    on this one: MySQL keeps 4 of 5 (only oltp_read_only goes, at 6.10 % pooled CV, against 1.82-3.79 % for
+    the rest), SQLite keeps 5 of 7, Redis 16 of 19, memcached has a single metric. A figure carried in a
+    code comment rots exactly as one in a document does, so this one names its population."""
     keep = [t for t in tests if (pooled_cv(per_cfg, t) or 0) <= max_cv]
     return keep if (len(keep) >= 2 and len(keep) * 2 >= len(tests) and len(keep) < len(tests)) else None
 
@@ -146,6 +155,15 @@ def collect(root, app, run_range=None):
             try: vals = parser(os.path.join(cdir, r))
             except Exception as e: print(f"  {app}/{cfg}/{r}: parse error {e}", file=sys.stderr); skipped += 1; continue
             if not vals: skipped += 1; continue
+            # A run whose real metrics are all zero or non-finite measured NOTHING, and is not a slow
+            # measurement. memtier prints "Totals 0.00 ops/sec" when the server never accepted a
+            # connection, and that cell used to reach the table and take the whole table down with it.
+            # Underscore metrics are excluded here as everywhere: a latency of 0.00 is not a run.
+            real = [v for t, v in vals.items() if not t.startswith("_")]
+            if not any(isinstance(v, (int, float)) and math.isfinite(v) and v > 0 for v in real):
+                print(f"  {app}/{cfg}/{r}: no throughput in any metric "
+                      f"({', '.join(f'{t}={v}' for t, v in vals.items())})", file=sys.stderr)
+                skipped += 1; continue
             used += 1; modes.add(m.get("mode"))
             for t, v in vals.items(): runs.setdefault(t, []).append(v)
         if used: per_cfg[cfg] = {"runs": runs, "n": used, "skipped": skipped, "modes": sorted(modes)}
@@ -185,6 +203,7 @@ def report_app(root, app, per_cfg, hib, statics, out_rows, suffix="", expect_n=5
         if short:
             lines.append("**Fewer repetitions than the leg's N=%d:** " % nmax
                          + "; ".join(f"`{c}` N={n}" + (f", {s} discarded" if s else "") for c, n, s in short) + "\n")
+    empty_out = list(empty)
     sess = os.path.join(root, app, "session.json"); s = json.load(open(sess)) if os.path.exists(sess) else {}
     lines.append(f"Session: mode={s.get('mode')} cpuset={s.get('cpuset')} governor={s.get('governor')} no_turbo={s.get('no_turbo')} host={s.get('host')} started={s.get('started')}\n")
     base_t = per_cfg.get("tsan"); base_o = per_cfg.get("orig")
@@ -290,14 +309,25 @@ def main():
         if not any(x.startswith("--expect-n") for x in sys.argv):
             a.expect_n = run_range[1] - run_range[0] + 1
     apps = a.app or [d for d in sorted(os.listdir(root)) if d in PARSERS and os.path.isdir(os.path.join(root, d))]
-    statics = static_counts(root); rows = []
+    statics = static_counts(root); rows = []; no_data = []
     for app in apps:
         per_cfg, hib = collect(root, app, run_range)
         if per_cfg: report_app(root, app, per_cfg, hib, statics, rows, suffix, a.expect_n)
-        else: print(f"{app}: no runs{' in range ' + a.runs if a.runs else ''}", file=sys.stderr)
+        else:
+            # No usable run at all: an empty tree, or every cell parsed to nothing. Say so in the
+            # table and in the exit status, because a summary that simply omits the application is
+            # indistinguishable from one where it was never asked for.
+            print(f"{app}: NO DATA — no usable run{' in range ' + a.runs if a.runs else ''}", file=sys.stderr)
+            rows.append({"app": app, "config": "—", "label": "—", "N": 0, "SU": "**no data**",
+                         "SU_stable": "—", "SD": "—", "static_sites": "—", "modes": "—"})
+            no_data.append(app)
     with open(os.path.join(root, f"perf_summary{suffix}.md"), "w") as fh:
         fh.write(f"# P5 summary — {os.path.basename(root)}\n\nSU = speedup vs stock TSan, SD = slowdown vs native; geometric mean over the app's tests on per-test medians of N undisturbed runs; [95 % bootstrap interval]. **SU stable** is the same speedup over the subtests whose stock-TSan baseline CV is at most 5 %, the set chosen once from the baseline and applied to every configuration alike; where there is no restricted column the cell says why in brackets, because the two reasons are opposite: all subtests being within the bound is the best case for a row, and too few being within it to restrict is the worst, and one unannotated mark for both invites reading the worst as the best. Read SU as the headline and SU stable as what the data can resolve; the per-app file names the excluded subtests and their baseline CV.\n\n")
         fh.write("| app | config | label | N | SU | SU stable | SD | static sites | modes |\n|---|---|---|---|---|---|---|---|---|\n")
         for r in rows: fh.write(f"| {r['app']} | {r['config']} | {r['label']} | {r['N']} | {r['SU']} | {r.get('SU_stable','—')} | {r['SD']} | {r['static_sites']} | {r['modes']} |\n")
     print(f"summary -> {os.path.join(root, f'perf_summary{suffix}.md')}")
+    if no_data:
+        print(f"NO DATA for {', '.join(no_data)}: the summary names them but they measured nothing.",
+              file=sys.stderr)
+        sys.exit(2)
 if __name__ == "__main__": main()

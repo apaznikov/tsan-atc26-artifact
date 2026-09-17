@@ -47,13 +47,17 @@ than letting them appear as differences.
 | `fork_atexit.cpp` | whether the report appears at all in a given run | about one run in five | about one run in five |
 
 One further test is not a report-level variation but a stall. `getline_nohang.cpp` either passes in
-seconds or hangs until the per-test timeout: observed 3 times in 21 repeats of the full 383-test
-suite, roughly one repeat in six or seven, under stock, EA and STC alike, so it is flaky and not
-configuration-specific, and under the counting rule it can never become a candidate lost race
-because it does not pass under stock every time. Its cost was the timeout: at 600 s one stall in six
-repeats turned a 25-minute suite into a two-hour one. The per-test timeout is therefore 120 s
-(`ART_LIT_TIMEOUT` to change it). If the suite appears to stop for a couple of minutes, it has not
-hung; one test is waiting out its timeout. In those 21 repeats nothing else failed.
+seconds or waits out the per-test timeout, under stock, EA and STC alike, so it is flaky and not
+configuration-specific, and under the counting rule it can never become a candidate lost race because
+it does not pass under stock every time. Its stall rate rises with machine load, which is why we give
+two figures rather than one: on an otherwise idle machine it stalled 3 times in 21 repeats of the full
+383-test suite, roughly one repeat in six or seven; on a machine under concurrent load (other builds
+and benchmarks running) it stalled far more often, so an evaluator on a busy or small machine should
+expect it frequently and should read a two-minute pause as this test, not as a hang. What we cannot say
+is whether a longer limit would let a stalled run finish: those runs were cut at the timeout, not
+observed to complete. The cost is the timeout itself: at 600 s a single stall turned a 25-minute suite
+into a two-hour one, so the per-test timeout is 120 s (`ART_LIT_TIMEOUT` to change it). Nothing else in
+the suite failed across these runs.
 
 Everything else in the suite is deterministic: it reports the same race with the same stacks
 (function, file, line) under every configuration, or reports nothing under every configuration.

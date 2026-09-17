@@ -21,7 +21,17 @@ tree survives from the campaign, and `091eeec3…` is the hash of a fresh downlo
 URL. It is almost certainly the same file, and we cannot demonstrate that the campaign compiled that
 archive, only that the tree it left behind is `sqlite-src-3500200`. The harness verifies every archive
 against this list before unpacking (`harness/tools/verify_archive.sh`, pinned values in
-`harness/tools/source_archives.sha256`) and refuses a missing, unpinned or mismatching one. The measurement harness (`harness/`, 122 files plus their sha256 manifest)
+`harness/tools/source_archives.sha256`) and refuses a missing, unpinned or mismatching one.
+
+One further SQLite provenance note, found by rebuilding in a container without the lab's system packages
+(17 Sep 2026). The campaign's SQLite test binaries were compiled against `/usr/include/sqlite3.h` from the
+host's `libsqlite3-dev`, which declares SQLite 3.45.1, while linking the amalgamation the pinned 3.50.2
+archive produces: the build script's include path did not carry the amalgamation's own header, so a system
+header was used when one was installed. We checked the two structures the SQLite test shim depends on,
+`sqlite3_vfs` and `sqlite3_io_methods`, and they are byte-for-byte identical between 3.45.1 and 3.50.2, so
+this is a provenance discrepancy and not a correctness one. The build script now puts the amalgamation's
+own header first (`-I build/`), so the container and the lab both compile against the version the archive
+pins, and a host with no `libsqlite3-dev` builds correctly. The measurement harness (`harness/`, 122 files plus their sha256 manifest)
 contains no third-party source; it is scripts and documentation of ours. Its vendoring script refuses
 any shipped file that carries a bare lab path outside an overridable default, and excludes by name
 the lab-only drivers that check found, among them one that deleted a lab directory.

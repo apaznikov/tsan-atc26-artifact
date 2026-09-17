@@ -18,6 +18,14 @@ def expand(s):
     return out
 
 inside = expand(sys.argv[1])
+# AN EMPTY CPUSET IS "UNPINNED", NOT "EVERY CPU IS FOREIGN". With no pinned set the benchmark runs
+# everywhere, so there is no region where nothing of ours can run and no foreign signal to read. Treating
+# the empty set literally put every CPU on the outside, and the outside busy share then measured OUR OWN
+# workload: on a machine small enough for the benchmark to fill it, every run exceeded the threshold, was
+# re-run once, failed again, and the leg produced no data after paying twice for it. Everything inside and
+# nothing outside is what docs/confounds.md already describes -- outside_busy_share null, gate_checked
+# false -- and it is what the downstream `if n_outside > 0` tests were written for.
+ALL_INSIDE = not sys.argv[1].strip()
 # CPUs deliberately given to our own background work (a long compile parked off the benchmark set) are
 # neither "ours" for this run nor foreign disturbance: excluded from both sides so the outside busy share
 # keeps measuring other people's load.  Source: $P5_IGNORE_CPUS, else the file "ignore_cpus" next to this
@@ -37,6 +45,6 @@ for line in open("/proc/stat"):
     n = int(f[0][3:]); v = [int(x) for x in f[1:]]
     busy = v[0] + v[1] + v[2] + sum(v[5:])          # user+nice+system+irq+softirq+steal+guest*; skip idle, iowait
     if n in ignored: continue
-    if n in inside: bi += busy; ni += 1
+    if ALL_INSIDE or n in inside: bi += busy; ni += 1
     else: bo += busy; no += 1
 print(bi, bo, ni, no)

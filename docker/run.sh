@@ -17,8 +17,17 @@ cpus_flag=()
 [ -n "${ART_CPUSET:-}" ] && cpus_flag=(--cpuset-cpus "$ART_CPUSET")
 tty_flag=()
 [ -t 0 ] && [ -t 1 ] && tty_flag=(-it)
+# --user: the container runs as the caller, not as root. As root, everything it wrote into results/ and
+# build/ was root-owned on the host (an evaluator could not delete a failed run without sudo, and a
+# second attempt could not clear the first's tree), and memcached refuses to start as root at all, so
+# its benchmark measured a client talking to nothing. HOME=/tmp because that uid has no home in the image.
+# --shm-size: Docker's default /dev/shm is 64 MB. The FFmpeg workload writes each codec's output there,
+# and two of the four outputs exceed 64 MB (measured on the 100 s clip: mjpeg 298 MB, stream copy 78 MB);
+# without this the script drops those codecs, reports success, and the row measures a different quantity.
 exec docker run --rm "${tty_flag[@]}" "${cpus_flag[@]}" \
   --security-opt seccomp=unconfined \
+  --user "$(id -u):$(id -g)" -e HOME=/tmp \
+  --shm-size=1g \
   -e ART_RUNS -e ART_WARMUP -e ART_SMOKE -e ART_CPUSET -e ART_JOBS -e ART_JOBS_WHY \
   -v "$here/results:/artifact/results" \
   -v "$here/build:/artifact/build" \

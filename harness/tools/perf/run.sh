@@ -1,7 +1,7 @@
 #!/bin/bash
 # run.sh — N repetitions of one application's workload over its P5 configurations (run-major order).
 # Usage: ./run.sh <app> <hash> [N] [--configs "c1 c2"] [--cpuset 4-27,60-83] [--in-bench] [--pair]
-#   env: P5_OUT (results root), MYSQL_SECONDS, NTESTS, P5_FOREIGN_MAX (disturbed threshold, default 0.15)
+#   env: P5_OUT (results root), MYSQL_SECONDS, NTESTS, P5_FOREIGN_MAX (disturbed threshold, default 0.10)
 # Pinned mode by default; if another user's bench-* unit is active and --in-bench is not set, defers to
 # bench_session.sh (a bench reservation driven through tmux). Resumable: existing run<k>/meta.json are kept.
 set -uo pipefail
@@ -23,20 +23,31 @@ fi
 # one benchmark at a time (two only when --pair is given after the interference pilot)
 exec 9>"$P5_LOCK"; flock -x 9 || p5_die "lock"      # exclusive: no builds, no other benchmark meanwhile
 export P5_MODE=$([ $INBENCH = 1 ] && echo bench || echo pinned)
+# Rejection threshold on the busy share of the CPUs outside our pinned set. 0.15 once rejected runs that
+# were merely normal (MySQL lost two of three native runs at 0.15-0.17 and reported N=1) and the default
+# was raised to 0.25; the campaign then tightened it to 0.10 and retired the cells above it, which is the
+# figure the documents quote. The DEFAULT had stayed at 0.25, so only the lab launchers that set the
+# variable ever ran the documented gate and every evaluator silently ran a looser one. The default is now
+# the campaign's, and the value in force is recorded per session below, so the two cannot drift unseen
+# again. (Found on the evaluator path, 2026-09-17, the same way as the other three defects of that day.)
+FMAX=${P5_FOREIGN_MAX:-0.10}
+# Inside/outside CPU counts from the same helper bench_one.sh uses, so the session and its cells cannot
+# disagree about whether the gate is checkable at all.
+read -r _ _ SNIN SNOUT <<< "$(python3 ./cpu_snapshot.py "$CPUSET")"
 python3 - "$OUT/$APP" <<PY
 import json, os, sys, subprocess, time
 d=sys.argv[1]; os.makedirs(d, exist_ok=True)
 json.dump({"app":"$APP","hash":"$HASH","N":$N,"configs":"$CFGS".split(),"cpuset":"$CPUSET","mode":os.environ["P5_MODE"],
   "started":time.strftime("%FT%T"),"host":os.uname().nodename,"nproc_machine":os.cpu_count(),
   "governor":open("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor").read().strip(),
-  "no_turbo":open("/sys/devices/system/cpu/intel_pstate/no_turbo").read().strip()}, open(os.path.join(d,"session.json"),"w"), indent=1)
+  "no_turbo":open("/sys/devices/system/cpu/intel_pstate/no_turbo").read().strip(),
+  # The gate, recorded where a reader looks for the session's parameters rather than inferred from the
+  # cells. gate_checked false means an unpinned session, where there are no outside CPUs to measure and
+  # a share of 0.0 would read as a quiet machine (docs/confounds.md, "An unpinned run is not gate-checked").
+  "n_inside":$SNIN,"n_outside":$SNOUT,"gate_checked":($SNOUT > 0),"foreign_max":$FMAX},
+  open(os.path.join(d,"session.json"),"w"), indent=1)
 PY
 for c in $CFGS; do [ -x "$(p5_binary "$APP" "$c")" ] || p5_die "missing binary for $APP $c (build first)"; done
-# Rejection threshold on the busy share of the CPUs outside our pinned set. This machine carries ~0.10 of
-# other people's load at rest (a dozen agent sessions), so 0.15 rejected runs that were merely normal: MySQL
-# lost two of three native runs at 0.15-0.17 and reported N=1. 0.25 keeps those and still rejects a real
-# second workload (the interference pilot's paired arm sat at ~0.5).
-FMAX=${P5_FOREIGN_MAX:-0.25}
 export P5_HASH="$HASH"   # bench_one.sh refuses binaries built by another compiler
 bench_and_mark() {  # cfg run [suffix]
   local c=$1 run=$2 d="$OUT/$APP/$1/${P5_RUN_PREFIX:-run}$2" line

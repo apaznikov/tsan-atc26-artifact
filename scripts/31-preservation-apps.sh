@@ -38,13 +38,20 @@ budget "preservation on $app, N=$n, configurations $configs" "3 h" "1.5 h" "5 GB
 smoke_banner
 
 out="$ART_RESULTS/preservation-$app-$(stamp)"
+
+# The binaries come from the same builds 40-perf.sh makes, in the same places (run_preservation.py looks in
+# the application trees under the harness working copy). Build them first, idempotently: tsan-sound is not
+# in the performance subset, so the build cannot be assumed to have happened as a side effect of 40-perf.sh.
+# The rehearsal of 17 Sep found this script pointing --build-root at a directory nothing ever wrote to, so
+# every invocation failed in one second with "missing binaries"; that flag was for A/B builds against
+# another compiler and is gone.
+"$here/scripts/40-perf.sh" "$app" --build-only --configs "$(printf '%s' "$configs" | tr ',' ' ')" || exit $?
 # --llvm-root defaults to OUR lab worktree (/home/alexey/dev/llvm-project-focs-lab/llvm/build), which does
 # not exist here and must never be measured from anyway -- it is a working build that is relinked without
 # notice. Pass the artifact's compiler explicitly; every run's manifest then records what it was built with.
 python3 "$harness/tools/preservation/run_preservation.py" \
   --app "$app" --configs "$configs" --runs "$n" --scale "$scale" \
   --llvm-root "$TSAN_LLVM_ROOT" \
-  --build-root "$ART_BUILD/preservation" \
   --workdir "${TMPDIR:-/tmp}/preservation-$app" \
   --no-ninja-check \
   --out "$out" || exit $?

@@ -128,6 +128,29 @@ awk '{c[$1]++; if($2+0>m[$1]) m[$1]=$2+0} END{for(k in c) printf "%s samples=%d 
 rm -f "$D/cpuset-intruders.raw"
 read -r ou os om <<< "$(tail -1 "$OURS" 2>/dev/null)"
 HZ=$(getconf CLK_TCK); machine_busy=$(( (busy1 - busy0) )); ours_ticks=$(python3 -c "print(int((${ou:-0}+${os:-0})*$HZ) + ${EXTRA_TICKS:-0})")
+# A cell whose workload produced no throughput is a FAILED cell, not a fast one. memtier prints
+# "Totals 0.00 ops/sec" when the server never accepted a connection, and this runner used to file that
+# as an ordinary success of 70 seconds; the aggregator then met a table of zeros and died in the one
+# place that had no idea what had gone wrong. The check reuses aggregate.py's own parsers, so this gate
+# and the table it guards cannot disagree about what the workload produced. Sibling of the meta-block
+# rule: a cell whose meta block did not build is not a cell, and neither is one whose workload did not run.
+# The reason travels through a FILE, never through this unquoted heredoc, where a parser's message
+# containing a backtick or a $ would be executed rather than recorded.
+# Two gates, two exit codes, one reason file. They are separate because their failures mean different
+# things: 65 says the workload produced nothing at all, 66 says it produced a DIFFERENT TEST SET from
+# every other cell, which is the more dangerous of the two because it still yields a plausible number.
+rm -f "$D/cell_error.txt"
+if [ "$rc" = 0 ]; then
+  if ! python3 ./throughput_check.py "$APP" "$D" > "$D/cell_error.txt" 2>&1; then
+    p5_log "NO THROUGHPUT $APP $CFG run$RUN: $(head -1 "$D/cell_error.txt")"
+    rc=65
+  elif [ "$APP" = ffmpeg ] && ! python3 ./check_ffmpeg_codecs.py --run "$D" > "$D/cell_error.txt" 2>&1; then
+    p5_log "MISSING CODEC $APP $CFG run$RUN: $(head -1 "$D/cell_error.txt")"
+    rc=66
+  else
+    rm -f "$D/cell_error.txt"
+  fi
+fi
 python3 - "$D" <<PY
 import json, hashlib, os, sys, time
 d = sys.argv[1]
@@ -157,6 +180,10 @@ meta = {
   "foreign_cpu_share": round(max(0, $machine_busy - $ours_ticks) / max(1.0, ($t1 - $t0) * $HZ * $(nproc)), 4),
   "tsan_options": "$TSAN_OPTIONS", "max_rss_kb": ${om:-0},
   "input_sha256": "${INPUT_SHA:-}",
+  # Read from a file rather than interpolated: aggregate.py already renders meta["error"] as the reason
+  # a configuration produced no usable run, so a failed cell explains itself in the table.
+  "error": (open(os.path.join(d, "cell_error.txt")).read().strip()
+            if os.path.exists(os.path.join(d, "cell_error.txt")) else None),
   # Python, not JSON: this dict is built by python3 and dumped with json.dump, so the absent case is
   # None. Writing null here (no backticks: this heredoc is UNQUOTED, so backticks would run the word as
   # a command) made every non-FFmpeg run die with NameError inside the meta block, and the runner then
