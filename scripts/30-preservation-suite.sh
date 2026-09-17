@@ -3,6 +3,14 @@
 # every configuration, K times each, and reports a test as a candidate loss only when it
 # reports under stock in every repeat and fails under that configuration in every repeat.
 # Usage: scripts/30-preservation-suite.sh [--self-test] [K] [config-name ...]   K defaults to $ART_RUNS
+#
+# Per-test timeout is 120 s (override with ART_LIT_TIMEOUT). Measured 2026-09-17: one test,
+# getline_nohang.cpp, stalls in roughly one repeat in six and then waits out the whole
+# timeout -- under stock as often as under any analysis, so it can never count as a lost
+# race here. At 600 s that single test was the difference between a 25-minute suite and a
+# two-hour one. It either passes in seconds or hangs, so a long timeout buys nothing.
+# IF THE SUITE APPEARS TO STOP FOR A COUPLE OF MINUTES, IT HAS NOT HUNG: one test is
+# waiting out its timeout.
 #   --self-test  runs stock against a deliberately blinded detector and requires this
 #                harness to REPORT the loss. A suite that reports nothing is what both a
 #                preserved race and a broken harness look like; this tells them apart.
@@ -89,7 +97,7 @@ while IFS='|' read -r cname cflags; do
     log="$outdir/lit-$cname-$rep.log"
     set +e
     with_lit_lock env TSAN_MLLVM_FLAGS="$cflags" ART_LIT_EXEC_ROOT="$er" \
-      "$TSAN_LLVM_ROOT/bin/llvm-lit" -q $(lit_timeout_flag 600) -j"${ART_JOBS}" "$suite" > "$log" 2>&1
+      "$TSAN_LLVM_ROOT/bin/llvm-lit" -q $(lit_timeout_flag "${ART_LIT_TIMEOUT:-120}") -j"${ART_JOBS}" "$suite" > "$log" 2>&1
     set -e
     nf=$(grep -c '^  ThreadSanitizer' "$log" || true)
     grep '^  ThreadSanitizer' "$log" | sed "s|^  ThreadSanitizer[^:]*:: *|$cname\t$rep\t|" >> "$outdir/failures.tsv" || true
