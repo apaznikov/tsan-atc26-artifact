@@ -4,8 +4,10 @@ Every claim the paper makes, the script that produces it, and what counts as a m
 the contract between the paper and this artifact: if a number is not here, the artifact does not
 claim it.
 
-Measurement provenance for every performance row: compiler `f3deebfbab60` (branch `artifact/atc26`,
-the one the image reproduces), five applications, one discarded warm-up then N = 5 runs per configuration (our campaign; the artifact's default for a reviewer is N = 2, see "What an evaluator actually has to run"), pinned to 48 processors (CPUs 4-27 and 60-83 on our machine), one
+Measurement provenance for every performance row: compiler `f3deebfbab60` (the commit the image reproduces and
+every run's `TSAN_AUDIT_HASH` names; it sits on branch `artifact/atc26`, whose tip has since moved past
+it by two documentation-only commits restoring and completing the audit ledger, so the stamp and not
+the branch identifies the measured compiler), five applications, one discarded warm-up then N = 5 runs per configuration (our campaign; the artifact's default for a reviewer is N = 2, see "What an evaluator actually has to run"), pinned to 48 processors (CPUs 4-27 and 60-83 on our machine), one
 measurement at a time in run-major order. The statistic is the geometric mean over an
 application's tests of per-test medians, with a 95% confidence interval from 2000 bootstrap
 resamples over runs (seed 1). Our machine: Intel Xeon w9-3495X, 56 cores / 112 threads, 250 GB
