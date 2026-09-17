@@ -84,11 +84,47 @@ def check(root, want_hash):
             print(f"             short of N=5: " + ", ".join(f"{c}={n}" for c, n in sorted(short.items())))
     return ok
 
+def self_hash(root):
+    """The compiler a tree's OWN runs say they were built with, if they agree.
+
+    A tree measured on an earlier compiler is not wrong for failing to be f3deebfbab60 — it is a tree from
+    a different campaign, and reporting it as "not the current hash" says nothing a reader can act on. The
+    question worth asking of such a tree is whether it is internally consistent: did every run in it use
+    one compiler? That is answerable from the tree itself and needs no expectation supplied from outside.
+    Returns (hash, True) when every run agrees, (None, False) when they do not or there are none."""
+    heads = set()
+    for j, _ in rows(root):
+        if "_broken" in j: continue
+        h = (j.get("compiler_head") or "")[:12]
+        if h: heads.add(h)
+    return (heads.pop(), True) if len(heads) == 1 else (None, False)
+
 def main():
-    roots = sys.argv[1:] or ["results/campaign-f3deebfbab60/primary"]
-    want = os.environ.get("P5_HASH", "f3deebfbab60")[:12]
-    allok = all([check(r, want) for r in roots])
-    print(f"\n{'PROVENANCE OK' if allok else 'PROVENANCE PROBLEMS ABOVE'} (sweep hash {want})")
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    flags = [a for a in sys.argv[1:] if a.startswith("--")]
+    expect = None
+    for f in flags:
+        if f.startswith("--expect="): expect = f.split("=", 1)[1][:12]
+        elif f == "--expect-self": expect = "self"
+        else: sys.exit(f"unknown option {f} (use --expect=<hash> or --expect-self)")
+    roots = args or ["results/campaign-f3deebfbab60/primary"]
+    if expect is None:
+        expect = os.environ.get("P5_HASH", "f3deebfbab60")[:12]
+    results = []
+    for r in roots:
+        if expect == "self":
+            h, agreed = self_hash(r)
+            if not agreed:
+                print(f"\n=== {r} ===\n  runs do not agree on one compiler, so the tree is not internally "
+                      f"consistent and no expectation can be derived from it.")
+                results.append(False); continue
+            print(f"\n[--expect-self] {r}: its own runs agree on {h}; checking the tree against itself.")
+            results.append(check(r, h))
+        else:
+            results.append(check(r, expect))
+    allok = all(results)
+    label = "each tree against its own compiler" if expect == "self" else f"sweep hash {expect}"
+    print(f"\n{'PROVENANCE OK' if allok else 'PROVENANCE PROBLEMS ABOVE'} ({label})")
     return 0 if allok else 1
 
 sys.exit(main())

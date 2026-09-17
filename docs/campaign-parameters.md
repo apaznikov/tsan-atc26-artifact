@@ -272,6 +272,15 @@ rows were built after the legs (17 Sep) and the differentials are non-zero (memc
 exclusive for its duration or builds are announced in advance so a leg can be paused; this is
 Alexey's decision and is recorded here as a condition either way.
 
+## The Stage B tree shipped beside the campaign
+
+`data/perf/stageB-d3bf9f8c39fe` supports no claim and ships as data. Checked against its own compiler
+it is internally consistent: 500 runs, one compiler head, one processor set, one mode. Two findings
+are stated so nobody infers them: its FFmpeg runs record an empty input hash (the relative-path trap,
+fixed in the campaign's harness), and five of its 500 runs sit above today's foreign-activity gate of
+0.10 (0.103 to 0.166); the gate in force when they were taken was 0.25, so they were legal then and
+are not retired retroactively, only scoped out of anything a claim rests on.
+
 ## Open, and blocking
 
 1. **Baseline drift.** Byte-identical Redis binaries give stock TSan 14% less throughput on

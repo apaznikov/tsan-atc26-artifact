@@ -43,6 +43,9 @@ echo "tree: $TREE branch=$(git -C "$TREE" branch --show-current) head=$HEAD"
 echo "ninja: $(ninja -n -C "$LLVM_TSAN_ROOT" 2>/dev/null | tail -1)"
 
 rm -rf "$WORK"; mkdir -p "$WORK"
+# refuse to unpack an archive whose sha256 is not the pinned one (tools/source_archives.sha256)
+VERIFY="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/../../tools/verify_archive.sh"
+"$VERIFY" "$ARCHIVE" || exit 1
 tar -xzf "$ARCHIVE" -C "$WORK" --strip-components=1
 cd "$WORK"
 CC="$CLANG" CFLAGS="-O2 -g" ./configure --prefix="$PWD" > configure.log 2>&1

@@ -32,13 +32,19 @@ for r in "${roots[@]}"; do case "$(basename "$r")" in campaign-*) strict+=("$r")
 
 budget "provenance of ${#strict[@]} campaign root(s), ${#legacy[@]} earlier tree(s) for information" "2 min" "1 min" "none"
 rc=0
+CAMPAIGN_HASH=f3deebfbab602f4e05289e0acbde0efd06b8058c
 for r in "${strict[@]}"; do
-  echo "== $r  (campaign root: checked strictly)"
-  python3 "$harness/tools/perf/verify_provenance.py" "$r" || rc=1
+  echo "== $r  (campaign root: checked strictly against $CAMPAIGN_HASH)"
+  python3 "$harness/tools/perf/verify_provenance.py" --expect="$CAMPAIGN_HASH" "$r" || rc=1
 done
+# An earlier tree is asked the question that applies to it: did every run in it use one compiler, one
+# processor set and one mode, and are its fields present -- not whether that compiler is today's.
+# Two known findings on the Stage B tree are stated rather than left to be inferred: its FFmpeg runs
+# carry an empty input hash (the relative-path trap, fixed since), and five of its 500 runs sit above
+# today's 0.10 foreign-activity gate; they were inside the 0.25 gate in force when they were taken.
 for r in "${legacy[@]}"; do
-  echo "== $r  (earlier tree: for information; not counted)"
-  python3 "$harness/tools/perf/verify_provenance.py" "$r" 2>&1 | grep -E "EMPTY|MISSING|PROBLEM|OK|runs," | sed 's/^/    /' || true
+  echo "== $r  (earlier tree: checked against its own compiler, for information; not counted)"
+  python3 "$harness/tools/perf/verify_provenance.py" --expect-self "$r" 2>&1 | grep -E "EMPTY|MISSING|PROBLEM|OK|runs,|agree|above" | sed 's/^/    /' || true
 done
 if [ ${#strict[@]} -eq 0 ]; then
   echo "No campaign root under $ART_DATA/perf: nothing that a claim rests on was verified." >&2

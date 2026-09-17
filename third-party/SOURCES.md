@@ -14,6 +14,12 @@ change what is built. A hash mismatch is a stop, not a warning.
 | MySQL 8.0.39 | `mysql-8.0.39.tar.gz` | https://github.com/mysql/mysql-server/archive/refs/tags/mysql-8.0.39.tar.gz (Boost 1.77 is fetched by its build) | 421 MB | `3a72e6af758236374764b7a1d682f7ab94c70ed0d00bf0cb0f7dd728352b6d96` |
 | FFmpeg input clip | `TearsOfSteel-1366x768-100s.mkv` | the artifact's Zenodo record; derivable from the Blender source by the command in `docs/ffmpeg-input.md` | 78 MB | `43b0fba97eb05a0e44d7518fe9d6993c140680531a17a240ea6d53582fbe9985` |
 
-The hashes were taken from the archives the campaign of 15-17 September 2026 was built from, on the
-machine that built it. The measurement harness (`harness/`, 132 files with their own sha256 manifest)
+Four of the five hashes were taken from the archives the campaign of 15-17 September 2026 was built
+from, on the machine that built it, and verified against them afterwards. The SQLite value is the
+exception and is stated as such: the build script deleted the zip after unpacking, so only the unpacked
+tree survives from the campaign, and `091eeec3…` is the hash of a fresh download of the same versioned
+URL. It is almost certainly the same file, and we cannot demonstrate that the campaign compiled that
+archive, only that the tree it left behind is `sqlite-src-3500200`. The harness verifies every archive
+against this list before unpacking (`harness/tools/verify_archive.sh`, pinned values in
+`harness/tools/source_archives.sha256`) and refuses a missing, unpinned or mismatching one. The measurement harness (`harness/`, 132 files with their own sha256 manifest)
 contains no third-party source; it is scripts and documentation of ours.

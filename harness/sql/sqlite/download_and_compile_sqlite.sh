@@ -10,6 +10,9 @@ if [ ! -f "sqlite-src-3500200.zip" ]; then
 fi
 # Check if the source directory exists to avoid re-unpacking
 if [ ! -d "sqlite-src-3500200" ]; then
+        # refuse to unpack an archive whose sha256 is not the pinned one (tools/source_archives.sha256)
+    VERIFY="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/../../tools/verify_archive.sh"
+    "$VERIFY" sqlite-src-3500200.zip || exit 1
     unzip sqlite-src-3500200.zip
 fi
 

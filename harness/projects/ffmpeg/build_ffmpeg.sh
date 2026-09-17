@@ -176,6 +176,9 @@ mkdir -p "$RESULT_DIR_NAME"
 mkdir -p "$BUILD_DIR_NAME"
 
 echo "Extracting $FFMPEG_ARCHIVE into $BUILD_DIR_NAME..."
+# refuse to unpack an archive whose sha256 is not the pinned one (tools/source_archives.sha256)
+VERIFY="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/../../tools/verify_archive.sh"
+"$VERIFY" "$FFMPEG_ARCHIVE" || exit 1
 tar -xzf "$FFMPEG_ARCHIVE" -C "$BUILD_DIR_NAME" --strip-components=1
 if [ $? -ne 0 ]; then
     echo "Error: Failed to extract $FFMPEG_ARCHIVE."
