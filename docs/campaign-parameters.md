@@ -126,6 +126,27 @@ workload's normal spread, and the value-dependent rule would have kept it. Prove
 unremarkable cell and does not claim it was bad; the price is one cell in seventy, refilled inside
 the same leg.
 
+## A reader-level relocation on memcached, classified (17 Sep)
+
+Preservation on the shipped compiler at N = 10 showed the pairing of the reader `conn_new:761` with the
+writer `clock_handler` on `current_time` reported 10 of 10 under stock and the sound bundle and 0 of 10
+under AllOpt with peeling, while the race itself stayed at 10 of 10 under every configuration through
+three other readers. Before anything was written the mechanism was established three ways: (1) on the
+campaign binaries, sha256-verified against the runs, per-function `__tsan_*` counts in `conn_new` are
+identical across stock, DE alone, DE with peeling and AllOpt with peeling (55 memory-access calls, 60
+with function entry and exit, 403 instructions), two of them attributed to line 761 in every build;
+(2) tsan-exp's independent count on the rebuilt trees, the same figures; (3) at the IR level from
+source with the campaign's own flags taken from `build_info.txt`: the multiset of `__tsan_*` calls in
+`conn_new` is identical (read8 11, write8 18, write4 10, read4 8, read2 1, write2 2, write1 5), the
+`__tsan_read4(@current_time)` call at line 761 is present, line 761 is the only reference to
+`current_time` in `conn_new` (lines 645-835), and the flags are demonstrably active in the same TU
+(20 of 69 functions change, e.g. `do_store_item` 62 to 57), so the identity is not an inert
+configuration. No access was elided. The module gains 171 sites under AllOpt with peeling (1 833 to
+2 004) and the binary 382, because peeling duplicates first iterations; that extra pressure on the
+four shadow slots of the granule changes which reader's record survives. The rule "no lost races" is
+not engaged; the relocation is stated in the contract beside the L3 verdict. A run of DE alone and DE
+with peeling alone at N = 10 follows, to show which transform moves the report.
+
 ## Outcome of the pre-registered peeling comparison: branch C
 
 Determined 16 September on three rows of four, when both AllOpt rows of the SQLite leg reached five clean runs. That is when the comparison became computable; the SQLite leg itself was still running, and the two are different facts:
