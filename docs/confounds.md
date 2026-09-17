@@ -136,6 +136,17 @@ processors, and re-run the leg on a quiet machine; a leg with retired cells is n
 interpret. Our own rehearsal of 17 Sep 2026 lost a SQLite leg this way to an unrelated LLVM build
 pinned to the processors outside the bench set, at `outside_busy_share` 0.50 for seventy minutes.
 
+The gate is demanding, by design, and it is worth knowing how demanding before starting a leg on a
+machine you do not control. With 48 processors pinned on a 112-thread host, 64 processors are watched,
+and 0.10 of them is about six cores of anything at all: a colleague's build, an IDE indexing, a backup.
+Pinning fewer processors does not help, it enlarges the watched set. A retired cell looks like this in
+the run log: the cell's line ends in `DISTURBED`, it is re-run once at the end of the leg, and if the load
+persists the re-run is retired too; the aggregate then reports the configuration with fewer runs than
+requested or with no data, and never with a number taken under the load. The threshold is the campaign's
+(`P5_FOREIGN_MAX`, 0.10) and every session records the value in force as `foreign_max` in `session.json`;
+if a shared machine leaves you no quiet window, you can run at a looser threshold knowingly, and the
+record then says so beside every cell, which is the condition under which such a row should be read.
+
 ## An unpinned run is not gate-checked
 
 The disturbance gate reads busy time on the CPUs outside `ART_CPUSET`. With `ART_CPUSET` empty, the
