@@ -49,6 +49,21 @@ paper-era default of 10 000 produced ~1 s iterations and meaningless throughput)
 `report_bugs=0` on both arms; provenance gate on every binary (`build_info.txt` compiler stamp must
 equal the campaign hash).
 
+Thread counts are fixed values, not a formula: the memcached server runs `-t 48`, sysbench
+`--threads=36`, FFmpeg `-threads 4` (absolute because libx265 refuses more than 16 frame threads), on
+every machine. They are the campaign's values on its 48-processor pinned set, and they stay the same
+elsewhere on purpose: the match criterion compares an evaluator's point with our interval and presumes the
+same workload, so a thread count that scaled with the machine would turn the comparison into two different
+workloads while looking sound, and a smaller machine would carry a second, invisible condition inside a
+formula on top of the documented one (32 or more processors, otherwise idle). On a smaller machine these
+values oversubscribe, deliberately. The variables `MC_THREADS`, `MYSQL_THREADS` and `FF_THREADS` override
+them for anyone measuring a different point, and every cell records the value it actually ran with
+(`threads_effective`, with `threads_from_env` saying whether it was overridden), so a different point is
+visible in the first `meta.json` opened. Defect found by the rehearsal of 17 Sep 2026: the shipped defaults
+were `NCPU/2` and `NCPU/2*3/4`, one erroneous `/2` visible twice, so the evaluator path ran memcached at 24
+threads and would have run sysbench at 18 on the same 48-processor set, while the campaign's 48 and 36
+lived only in a lab launcher that is not shipped.
+
 FFmpeg input (decision 4, default applied; cut 15 Sep 12:58): Tears of Steel (Blender Foundation,
 CC-BY 3.0), `TearsOfSteel-1366x768-100s.mkv`, sha256 `43b0fba97eb05a0e…`, 100 s from 06:00 at
 1366x768, 30 fps, yuv420p, 6.52 Mbit/s H.264 in Matroska with Vorbis audio, produced by the ffmpeg
