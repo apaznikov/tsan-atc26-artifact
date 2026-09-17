@@ -1,0 +1,13 @@
+ATTRIBUTION CORRECTION.
+
+The message describes the 8-processor guard in scripts/30-preservation-suite.sh.
+The commit also carries five scripts that are not that change and not the commit
+author's work, swept in from the shared working tree by `git add -A`:
+
+  scripts/21-compile-time.sh
+  scripts/31-preservation-apps.sh
+  scripts/40-perf.sh
+  scripts/50-eviction-stress.sh
+  scripts/vendor-harness.sh
+
+Content correct and in use; message and attribution wrong.
