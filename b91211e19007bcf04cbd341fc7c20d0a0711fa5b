@@ -1,0 +1,9 @@
+ATTRIBUTION CORRECTION.
+
+The message describes separating timeouts from failures in
+scripts/30-preservation-suite.sh. The commit also carries docker/Dockerfile --
+tsan-paper's dependency-list edit, uncommitted in the shared working tree and
+swept in by a `git add -A`. The image package list was not changed by the author
+of this commit.
+
+Content correct and in use; message and attribution wrong.
