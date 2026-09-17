@@ -44,6 +44,19 @@ INCLUDE_FILES=(
 APP_DIRS=(nosql/memcached nosql/redis sql/sqlite sql/mysql projects/ffmpeg)
 APP_GLOBS=('*.sh' '*.py' '*.md' '*.conf')
 
+# LAB-ONLY ONE-OFF DRIVERS. Vendoring tools/perf wholesale swept in a dozen scripts that drove single
+# investigations on this machine: they hardcode /home/alexey and /extra/alexey, name compilers that are not
+# shipped, and one of them (cleanup_archive.sh) ends in `rm -rf /extra/alexey/...`. None is reachable from
+# the artifact's eight scripts — checked, not assumed — and shipping them means a reviewer reads them as
+# part of the artifact and may run one. Excluded by name, with the reason, rather than by a pattern that
+# would also catch something needed.
+LAB_ONLY=(
+  chromium_bench_after.sh chromium_stock_first.sh cleanup_archive.sh sqlite_baseline_probe.sh
+  mysql_ea_builds.sh mysql_ea_bench_chain.sh smoke_memcached.sh pilot_interference.sh
+  sqlite_cpuscale_probe.sh mysql_ea_bench2.sh report.py
+  launch_paper_march6.sh launch_final_p2.sh launch_hash_tagged.sh queue_wp_memcached.sh
+  bench_ffmpeg_all-ap.sh   # does not parse (bash -n: syntax error near `done', line 268); unreferenced
+)
 EXCLUDES=(
   --exclude='results/' --exclude='old-builds/' --exclude='.scratch/' --exclude='installs/'
   --exclude='__pycache__/' --exclude='*.pyc'
@@ -52,6 +65,7 @@ EXCLUDES=(
   --exclude='build/' --exclude='bin/' --exclude='bin-*/'
   --exclude='.git/' --exclude='.gitignore'
 )
+for f in "${LAB_ONLY[@]}"; do EXCLUDES+=(--exclude="$f"); done
 
 # manifest_matches_source <src> <manifest>: 0 if every vendored path still hashes the same in the source.
 # Used by --check and by copy mode's guard, so the two can never disagree about what "differs" means.
@@ -131,8 +145,15 @@ done
 for d in "${APP_DIRS[@]}"; do
   [ -d "$SRC/$d" ] || { echo "missing in source: $d" >&2; exit 2; }
   mkdir -p "$DST/$d"
+  # LAB_ONLY has to be applied HERE too. The application directories are copied by this find/cp loop, not
+  # by the rsync above, so the --exclude flags do not reach them — which is how an unparseable lab script
+  # in projects/ffmpeg survived an exclusion that named it. The gate below caught it; this is the fix.
   for g in "${APP_GLOBS[@]}"; do
-    find "$SRC/$d" -maxdepth 1 -type f -name "$g" ! -name '*.log' -exec cp -p {} "$DST/$d/" \;
+    while IFS= read -r f; do
+      skip=0
+      for lo in "${LAB_ONLY[@]}"; do [ "$(basename "$f")" = "$lo" ] && skip=1 && break; done
+      [ "$skip" = 1 ] || cp -p "$f" "$DST/$d/"
+    done < <(find "$SRC/$d" -maxdepth 1 -type f -name "$g" ! -name '*.log')
   done
 done
 
@@ -143,12 +164,39 @@ done
       printf '%s\t%s\t%s\n' "$(sha256sum -- "$f" | cut -d' ' -f1)" "$(stat -c%s -- "$f")" "$f"; done )
 } > "$MAN"
 
+# A VENDORED FILE MUST NOT HARDCODE A LAB PATH. Three defects today were one machine's values written as
+# though they were everyone's; this is the rule that catches the next one at vendor time rather than when a
+# reviewer runs it. A path inside a ${VAR:-default} is fine — that is a default, not a fact.
+bare=$(grep -rn '/home/alexey\|/extra/alexey' "$DST" --include='*.sh' --include='*.py' 2>/dev/null \
+       | grep -vE '\$\{[A-Za-z0-9_]+:?-[^}]*(/home/alexey|/extra/alexey)' \
+       | grep -vE 'environ\.get\([^)]*(/home/alexey|/extra/alexey)' \
+       | grep -vE ':[0-9]+: *#' \
+       | grep -vE '#[^\"]*(/home/alexey|/extra/alexey)' || true)
+if [ -n "$bare" ]; then
+  echo "REFUSING: vendored files hardcode lab paths outside a \${VAR:-default}:" >&2
+  echo "$bare" | sed 's|^'"$DST"'/|  |' | head -20 >&2
+  echo "Make each one overridable, or add it to LAB_ONLY if it is a lab driver that should not ship." >&2
+  exit 1
+fi
+
+# EVERY SHIPPED SHELL SCRIPT MUST PARSE. A script that cannot be parsed is a defect whether or not
+# anything calls it: a reviewer reads it as part of the artifact, and "nothing references it" is an
+# argument for not shipping it rather than for shipping it broken.
+unparsed=""
+while IFS= read -r f; do bash -n "$f" 2>/dev/null || unparsed="$unparsed  $f"$'\n'; done < <(find "$DST" -name '*.sh')
+if [ -n "$unparsed" ]; then
+  echo "REFUSING: vendored shell scripts do not parse:" >&2
+  printf '%s' "$unparsed" | sed 's|^  '"$DST"'/|  |' >&2
+  echo "Fix them, or add them to LAB_ONLY if they should not ship." >&2
+  exit 1
+fi
+
 n=$(( $(wc -l < "$MAN") - 2 ))
 b=$(awk -F'\t' 'NR>2 {s+=$2} END {print s+0}' "$MAN")
 echo "vendored $n files, $(numfmt --to=iec "$b" 2>/dev/null || echo "$b bytes") -> $DST"
 echo "manifest: $MAN"
 echo
 echo "NOT vendored, and each needs its own decision:"
-echo "  - the five application SOURCES (tarballs and checkouts): see third-party/sources/SOURCES.md"
+echo "  - the five application SOURCES (tarballs and checkouts): see third-party/SOURCES.md"
 echo "  - projects/ffmpeg/input/TearsOfSteel-1366x768-100s.mkv (77.8 MB): the FFmpeg runs need it and it is"
 echo "    too large for git; it belongs beside the sources with its sha256, not in this tree."
