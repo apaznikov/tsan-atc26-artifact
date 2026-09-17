@@ -23,9 +23,14 @@ refuse_if_building() { # a compiler build on the host invalidates timing runs
 #
 # The running-lit detector matches on comm, never on the full command line. A
 # `pgrep -f lit` would match the pgrep process itself -- its own argv contains the
-# pattern -- so the guard would always fire. comm for llvm-lit is "llvm-lit" (Linux
-# sets comm from the script basename for a shebang script), and comm for the pgrep
-# we run is "pgrep", so there is nothing to self-match.
+# pattern -- so the guard would always fire. comm for the pgrep we run is "pgrep", so
+# there is nothing to self-match.
+#
+# comm for llvm-lit is "llvm-lit": MEASURED, not deduced. comm is not reliably a script's
+# own name -- it is the name of whatever the kernel actually exec'd, so a script with
+# `#!/usr/bin/env bash` reports "bash", and comm is capped at 15 characters besides. This
+# guard is therefore correct for the llvm-lit we ship and would NOT catch a differently
+# wrapped lit. Re-measure before trusting it against another driver.
 refuse_if_lit_running() {
   local pids; pids=$(pgrep -x llvm-lit 2>/dev/null || true)
   [ -z "$pids" ] && return 0
