@@ -29,6 +29,7 @@ exec docker run --rm "${tty_flag[@]}" "${cpus_flag[@]}" \
   --user "$(id -u):$(id -g)" -e HOME=/tmp \
   --shm-size=1g \
   -e ART_RUNS -e ART_WARMUP -e ART_SMOKE -e ART_CPUSET -e ART_JOBS -e ART_JOBS_WHY \
+  -e ART_FFMPEG_CLIP_URL -e ART_FFMPEG_SOURCE \
   -v "$here/results:/artifact/results" \
   -v "$here/build:/artifact/build" \
   -v "$here/data:/artifact/data:ro" \

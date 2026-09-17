@@ -287,6 +287,11 @@ than compared (`docs/campaign-parameters.md`). The rehearsal of 17 Sep found the
 one `/2` (24 and 18 on this set) while the campaign's values lived only in a lab launcher; a memcached row
 measured at 24 threads is reported as not comparable for that reason, not as a match.
 
+A disturbed leg costs about double: every cell the gate retires is run once more before it is dropped,
+so a two-hour leg on a machine with foreign load can take four hours and end with no data (our rehearsal of
+17 Sep: SQLite 97 minutes against the 58 estimated, 15 cells attempted for 8 slots, 14 retired). The
+estimates below are for a quiet machine.
+
 ### What an evaluator actually has to run
 
 Reproducing all five applications at fourteen configurations with five runs each is 43 hours; that is

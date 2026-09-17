@@ -66,5 +66,20 @@ echo
 python3 "$harness/tools/preservation/preservation_verdict.py" \
   --results-dir "$out/logs" --app "$app" --baseline tsan
 rc=$?
+# Two questions share this script and must not share one exit code. At the paper scale the question is
+# whether the baseline demonstrated detection and every configuration kept it, and the positive control
+# above (a run in which stock found nothing certifies nothing) decides the exit code. In smoke mode the
+# question is only whether the pipeline ran end to end: one short run cannot show a site that stock itself
+# reports in two or three of ten paper-scale runs (CLAIMS.md), so the verdict script's refusal is expected,
+# is printed above as information, and is not the step's result. The rehearsal of 17 Sep 2026 found the
+# smoke exiting 1 for every evaluator on exactly this refusal, the fourth case that day of an absent check
+# and a failed one sharing a channel.
+if [ "$ART_SMOKE" = 1 ]; then
+  echo
+  echo "VERDICT NOT ATTEMPTED: smoke scale, N=1. The pipeline ran end to end (builds, $n run per configuration,"
+  echo "the verdict script); a preservation verdict needs the paper scale and N=10 and is not a smoke question."
+  echo "-> $out"
+  exit 0
+fi
 echo "-> $out"
 exit $rc

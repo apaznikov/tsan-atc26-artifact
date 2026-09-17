@@ -30,9 +30,44 @@ fi
 # warm-up leaves its STATE behind (SQLite's database built, FFmpeg's input in page cache, MySQL's buffer pool
 # populated) while its numbers are never read.
 D="$OUTROOT/$APP/$CFG/${P5_RUN_PREFIX:-run}$RUN"; mkdir -p "$D"; LOG="$D/cmd.log"
-NCPU=$(taskset -c "$CPUSET" nproc)
+# TASKSET REFUSES AN EMPTY CPU LIST. `taskset -c "" cmd` is not an unpinned run, it is
+# "taskset: failed to parse CPU list:" and exit 1 -- so with ART_CPUSET unset, the artifact's DOCUMENTED
+# DEFAULT, every call here failed: NCPU came back empty, the meta block became `"ncpu": ,` and died with
+# `SyntaxError: expression expected after dictionary key and ':'`, and all eight cells of a leg failed in
+# six seconds. The lab always pins, so the default path had never once been executed (defect 14,
+# 2026-09-17, found by the unpinned leg that existed to look for exactly this).
+# lib.sh's p5_taskset already had the right shape; this is the same rule applied at the eight call sites.
+TSPIN=""; [ -n "${CPUSET:-}" ] && TSPIN="taskset -c $CPUSET"
+NCPU=$($TSPIN nproc)
+# THE EFFECTIVE THREAD COUNT, COMPUTED ONCE AND BOTH USED AND RECORDED. It used to be inlined at each call
+# site while meta.json recorded the OVERRIDE -- "${MC_THREADS:-}" -- so a run that took the default wrote an
+# EMPTY field, and an empty field reads as "nothing to see" rather than as a value. That hid a real
+# difference for a day: the campaign set MC_THREADS=48 from a lab launcher, the shipped path sets nothing
+# and falls to NCPU/2, so the artifact ran memcached with 24 server threads against the 48 the documents
+# describe -- and on this workload the thread count moves the result more than any compiler flag does.
+# One variable, used in the command and written to the record, so the two cannot disagree.
+case "${MC_THREADS:-}${MYSQL_THREADS:-}${FF_THREADS:-}" in "") THREADS_FROM_ENV=False;; *) THREADS_FROM_ENV=True;; esac
+# THE CAMPAIGN'S RULE, NOT A FIXED NUMBER AND NOT NCPU/2. The campaign's parameter was a RULE -- threads
+# equal to the PINNED PROCESSORS, three quarters of them for sysbench (campaign-parameters.md R1) -- and on
+# the 48-CPU bench set the rule yields exactly the 48 and 36 the cells record. The defaults here had an
+# erroneous extra /2 and produced 24 and 18 on that same set: documented figures the code could not produce
+# (defect 13, 2026-09-17).
+#
+# Proportional rather than fixed, deliberately. A fixed 48 on a 32-processor evaluator is oversubscription
+# the paper never measured, which is a different regime, not a smaller one; the rule puts that machine on
+# its own point of the SAME rule, which is what the paper's concurrency section describes and what
+# "comparable on comparable hardware" already qualifies. Neither choice makes a differently-sized machine
+# comparable to ours -- what the rule preserves is the regime, threads at parity with cores, rather than a
+# number. FFmpeg's 4 stays ABSOLUTE: libx265 refuses more than 16 frame threads and drops the codec
+# silently above it, so that one is a property of the encoder and not of the machine.
+case "$APP" in
+  memcached) THREADS_EFFECTIVE="${MC_THREADS:-$NCPU}";;
+  mysql)     THREADS_EFFECTIVE="${MYSQL_THREADS:-$((NCPU * 3 / 4))}";;
+  ffmpeg)    THREADS_EFFECTIVE="${FF_THREADS:-4}";;
+  *)         THREADS_EFFECTIVE="";;
+esac
 export TSAN_OPTIONS="${TSAN_OPTIONS:-report_bugs=0}"
-TS() { taskset -c "$CPUSET" "$@"; }
+TS() { $TSPIN "$@"; }
 # The machine lock, the sidecar and the 32G memory scope are taken by run.sh's machine-lock wrapper around this
 # script (one process per run); nothing here locks.
 read -r busy0 idle0 <<< "$(p5_cpu_snapshot)"; read -r in0 out0 nin nout <<< "$(python3 ./cpu_snapshot.py "$CPUSET")"
@@ -59,10 +94,10 @@ case "$APP" in
   memcached)
     # paper workload: server -c 4096 -t <cpus> -p 7777; memtier -t 10 -x 5 --pipeline 16 -P memcache_text --random-data
     (echo > /dev/tcp/127.0.0.1/7777) 2>/dev/null && p5_die "port 7777 busy"
-    taskset -c "$CPUSET" "$BIN" -c 4096 -t "${MC_THREADS:-$((NCPU / 2))}" -p 7777 -U 0 > "$D/server.out" 2>&1 &   # MC_THREADS: thread-policy pilot
+    $TSPIN "$BIN" -c 4096 -t "$THREADS_EFFECTIVE" -p 7777 -U 0 > "$D/server.out" 2>&1 &   # MC_THREADS: thread-policy pilot
     spid=$!
     for i in $(seq 1 60); do (echo > /dev/tcp/127.0.0.1/7777) 2>/dev/null && break; sleep 1; done; sleep 1
-    $TIMEF -f "%U %S %M" -o "$OURS" taskset -c "$CPUSET" "$APPDIR/memtier_benchmark-2.1.1/memtier_benchmark" --hide-histogram \
+    $TIMEF -f "%U %S %M" -o "$OURS" $TSPIN "$APPDIR/memtier_benchmark-2.1.1/memtier_benchmark" --hide-histogram \
       -t 10 -p 7777 -x "${NTESTS:-5}" --requests "${MC_REQUESTS:-100000}" --pipeline 16 -P memcache_text --random-data > "$D/memtier.txt" 2> "$LOG"; rc=$?
     # MC_REQUESTS: the paper's 10 000 requests per client (5 M per iteration) made an iteration last ~1 s on the
     # counters-off runtime (2 M ops/s) and ~1 s on native, and memtier's per-iteration ops/s is computed from
@@ -76,7 +111,7 @@ case "$APP" in
     for i in $(seq 1 30); do (echo > /dev/tcp/127.0.0.1/7777) 2>/dev/null || break; sleep 1; done
     ;;
   redis)
-    ( cd "$APPDIR" && REDIS_ORIG_MULT=1 BUILD_OPTIONS="$(p5_redis_name "$CFG")" BUILD_TAG="$TAG" $TIMEF -f "%U %S %M" -o "$OURS" taskset -c "$CPUSET" ./redis.sh --test-only ) > "$LOG" 2>&1; rc=$?
+    ( cd "$APPDIR" && REDIS_ORIG_MULT=1 BUILD_OPTIONS="$(p5_redis_name "$CFG")" BUILD_TAG="$TAG" $TIMEF -f "%U %S %M" -o "$OURS" $TSPIN ./redis.sh --test-only ) > "$LOG" 2>&1; rc=$?
     cp "$APPDIR/redis-polygon/__results_redis__/results.txt" "$D/results.txt" 2>/dev/null || rc=1
     ;;
   sqlite)
@@ -84,7 +119,7 @@ case "$APP" in
     # walthread1, one 20-second test, written to results/contention/<cfg>_<N>threads.log instead of the
     # seven-subtest log. The parser keys on "Running walthread1" either way, so the rest of the pipeline is
     # unchanged; only the artefact's path and the absence of a memory line differ.
-    ( cd "$APPDIR" && $TIMEF -f "%U %S %M" -o "$OURS" taskset -c "$CPUSET" ./run_sqlite_test.sh "$BASE$TAG" ${SQLITE_W1_THREADS:-} ) > "$LOG" 2>&1; rc=$?
+    ( cd "$APPDIR" && $TIMEF -f "%U %S %M" -o "$OURS" $TSPIN ./run_sqlite_test.sh "$BASE$TAG" ${SQLITE_W1_THREADS:-} ) > "$LOG" 2>&1; rc=$?
     if [ -n "${SQLITE_W1_THREADS:-}" ]; then
       cp "$APPDIR/results/contention/${BASE}${TAG}_${SQLITE_W1_THREADS}threads.log" "$D/threadtest3.log" 2>/dev/null || rc=1
     else
@@ -93,8 +128,8 @@ case "$APP" in
     fi
     ;;
   mysql)
-    ( cd "$APPDIR/benchmysql" && SYSBENCH_RUN_SECONDS="${MYSQL_SECONDS:-180}" SYSBENCH_RUN_THREADS="${MYSQL_THREADS:-$((NCPU / 2 * 3 / 4))}" \
-        $TIMEF -f "%U %S %M" -o "$OURS" taskset -c "$CPUSET" ./run-one.sh "mysql-$BASE$TAG" "$D" ) > "$LOG" 2>&1; rc=$?
+    ( cd "$APPDIR/benchmysql" && SYSBENCH_RUN_SECONDS="${MYSQL_SECONDS:-180}" SYSBENCH_RUN_THREADS="$THREADS_EFFECTIVE" \
+        $TIMEF -f "%U %S %M" -o "$OURS" $TSPIN ./run-one.sh "mysql-$BASE$TAG" "$D" ) > "$LOG" 2>&1; rc=$?
     ;;
   ffmpeg)
     # -threads goes straight to the encoder: libx265 maps it to frame threads and refuses anything above
@@ -111,9 +146,9 @@ case "$APP" in
     # Python literals, not shell ones: this value is interpolated into the python3 meta block below,
     # where `true` is as much a NameError as `null` was. Capitalised here so the dict builds.
     [ "${INPUT_SHA:-}" = "$FF_REFERENCE_SHA" ] && INPUT_IS_REF=True || INPUT_IS_REF=False
-    ( cd "$APPDIR" && RUNS_COUNT=1 FF_BUILD_LIST="ffmpeg-$BASE$TAG" FFMPEG_BENCH_NPROC_COUNT="${FF_THREADS:-4}" \
+    ( cd "$APPDIR" && RUNS_COUNT=1 FF_BUILD_LIST="ffmpeg-$BASE$TAG" FFMPEG_BENCH_NPROC_COUNT="$THREADS_EFFECTIVE" \
         SUMMARY_CSV="$D/summary.csv" SUMMARY_JSON="$D/summary.json" \
-        $TIMEF -f "%U %S %M" -o "$OURS" taskset -c "$CPUSET" ./bench_ffmpeg_all.sh ) > "$LOG" 2>&1; rc=$?
+        $TIMEF -f "%U %S %M" -o "$OURS" $TSPIN ./bench_ffmpeg_all.sh ) > "$LOG" 2>&1; rc=$?
     [ -s "$D/summary.csv" ] || rc=1
     ;;
 esac
@@ -191,7 +226,10 @@ meta = {
   # that happened badly. Twenty redis runs in 10 s is what that looks like from outside.
   "input_is_reference": ${INPUT_IS_REF:-None},
   "cpuset_intruders": ${INTRUDERS:-0}, "cpuset_intruder_peak_pcpu": ${INTRUDER_PEAK:-0},
-  "threads_setting": "${MC_THREADS:-}${MYSQL_THREADS:-}${FF_THREADS:-}",
+  # The EFFECTIVE value, never the override: an empty string here used to mean "defaulted", which is
+  # indistinguishable in the record from "not applicable", and both read as nothing worth checking.
+  "threads_setting": "${THREADS_EFFECTIVE:-}",
+  "threads_from_env": ${THREADS_FROM_ENV:-False},
 }
 json.dump(meta, open(os.path.join(d, "meta.json"), "w"), indent=1)
 print(f"{meta['app']} {meta['config']} run{meta['run']} rc={meta['rc']} {meta['seconds']}s "

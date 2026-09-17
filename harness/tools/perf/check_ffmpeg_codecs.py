@@ -12,6 +12,20 @@ bitten once by exactly that gap (a flag recorded in build_info.txt that had not 
 
 A missing codec is not a smaller sample. It changes the SET OF TESTS the geomean covers, so an FFmpeg row
 computed over three codecs cannot be compared with one computed over four -- including with the paper's.
+
+TWO MODES, AND THE DIFFERENCE IS DELIBERATE -- read this before reporting the tree-wide mode as broken.
+
+  --run <dir>   one cell. Reads summary.csv and NEVER consults meta.json, so it answers "did all four
+                codecs produce a number" for a cell that is disturbed, failed, or otherwise excluded from
+                the tables. Called from bench_one.sh while the run is still the thing being decided.
+  <root>        the whole tree, as an after-the-fact audit. SKIPS cells with rc != 0 or disturbed, because
+                its question is about the rows that will be REPORTED, and a retired cell is not one.
+
+So on a leg the disturbance gate has retired, the tree-wide mode legitimately checks nothing and returns 3
+(SKIP, not a pass) while --run still answers for every cell. That is not a contradiction: one asks about the
+table, the other about the workload. The evening of 2026-09-17 is the case in point -- a foreign build
+retired 14 of 15 cells, and the per-run mode still established that the 1 GB /dev/shm fix had restored
+copy_passthrough and mjpeg, which is a fact about the harness and not about the machine's load.
 """
 import json, glob, os, sys
 from collections import defaultdict

@@ -74,6 +74,29 @@ name="preservation-suite-$(stamp)"
 outdir="$ART_RESULTS/$name"; mkdir -p "$outdir"
 cp "$matrix" "$outdir/configurations.txt"
 
+# Every knob that could change a result, written next to the results. Two runs of this
+# suite were compared on 2026-09-17 as though only the machine had differed; they differed
+# in the per-test timeout, the job count AND the background load, all three recorded
+# nowhere. The point is not that a manifest is clever -- it is that comparing two datasets
+# becomes `diff manifest.txt manifest.txt` instead of an act of memory.
+{
+  echo "date: $(date -Iseconds)"
+  echo "host: $(uname -n)  kernel: $(uname -r)"
+  echo "compiler: $("$TSAN_LLVM_ROOT/bin/clang" --version 2>/dev/null | head -1)"
+  echo "compiler_stamp: $(head -1 "$TSAN_LLVM_ROOT/TSAN_AUDIT_HASH" 2>/dev/null || echo none)"
+  echo "suite: $suite"
+  echo "configurations: $ncfg  from $matrix"
+  echo "repeats_K: $k"
+  echo "lit_timeout_s: ${ART_LIT_TIMEOUT:-120}"
+  echo "ART_JOBS: ${ART_JOBS}"
+  echo "processors_visible: $(nproc)"
+  echo "cpuset: $(cat /proc/self/status 2>/dev/null | awk '/Cpus_allowed_list/{print $2}')"
+  echo "ART_RUNS: ${ART_RUNS}  ART_SMOKE: ${ART_SMOKE}"
+  echo "loadavg_at_start: $(cut -d' ' -f1-3 /proc/loadavg)"
+  echo "mem_available_gib_at_start: $(awk '/MemAvailable/{printf "%.0f", $2/1048576}' /proc/meminfo)"
+} > "$outdir/manifest.txt"
+echo "manifest : $outdir/manifest.txt"
+
 echo "compiler : $("$TSAN_LLVM_ROOT/bin/clang" --version | head -1)"
 echo "tests    : $(find "$suite" -name '*.c' -o -name '*.cpp' | wc -l) source files"
 echo "repeats  : K=$k"
@@ -109,6 +132,9 @@ while IFS='|' read -r cname cflags; do
       /^Timed Out Tests/   {blk="timeout";    next}
       /^Unresolved Tests/  {blk="unresolved"; next}
       /^Unexpectedly Passed/ {blk="xpass";    next}
+      /^Unsupported Tests/ {blk="unsupported"; next}
+      /^Expectedly Failed/ {blk="xfail";       next}
+      /^Passed Tests/      {blk="pass";        next}
       /^  ThreadSanitizer/ {
         if (blk != "") { t=$0; sub(/^  ThreadSanitizer[^:]*:: */,"",t); print c"\t"r"\t"blk"\t"t }
       }' "$log" >> "$outdir/failures.tsv"
@@ -120,6 +146,21 @@ while IFS='|' read -r cname cflags; do
 done < "$matrix"
 echo "  (numbers above are failing tests per repeat; 0 everywhere is the expected result)"
 echo
+
+# lit does not know these until it has run, so they are appended rather than written above.
+# "see the logs" would have sent a reader back to memory, which is the thing a manifest exists
+# to replace. Taken from the first log that reports them; every repeat runs the same suite.
+_first_log=$(ls "$outdir"/lit-*.log 2>/dev/null | head -1)
+if [ -n "$_first_log" ]; then
+  {
+    echo "tests_discovered: $(grep -m1 -oE 'Total Discovered Tests: [0-9]+' "$_first_log" | grep -oE '[0-9]+')"
+    # lit -q prints Unsupported only when non-zero, so an absent count is not zero and not a
+    # parse failure. Say which, rather than emit an empty field that a diff reads as either.
+    _unsup=$(grep -m1 -oE 'Unsupported: *[0-9]+' "$_first_log" | grep -oE '[0-9]+' | head -1)
+    echo "tests_unsupported: ${_unsup:-not reported by lit -q; run scripts/30-preservation-suite.sh with ART_LIT_SHOW_UNSUPPORTED=1 to record it}"
+    echo "loadavg_at_end: $(cut -d' ' -f1-3 /proc/loadavg)"
+  } >> "$outdir/manifest.txt"
+fi
 
 set +e
 python3 - "$outdir/failures.tsv" "$k" "$outdir/ran.txt" <<'PY' | tee "$outdir/report.txt"

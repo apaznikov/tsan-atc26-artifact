@@ -32,6 +32,15 @@ export ART_WARMUP="${ART_WARMUP:-1}"
 # Smoke mode: one run, short workloads, reduced test lists. Prints "not a measurement".
 export ART_SMOKE="${ART_SMOKE:-0}"
 
+# The FFmpeg input clip, by the first of three paths that applies (docs/ffmpeg-input.md): a prepared copy of
+# the reference clip at ART_FFMPEG_CLIP_URL (checked against the pinned sha256; the artifact's Zenodo record
+# once it exists, and this default will name it then), a local copy of the Blender source in
+# ART_FFMPEG_SOURCE (cut here with the recorded command), or, with both empty, the Blender source downloaded
+# and cut. docker/run.sh forwards both into the container; until 17 Sep 2026 it forwarded neither, so a
+# setting made by an evaluator was silently dropped at the container boundary (defect 11 of the rehearsal).
+export ART_FFMPEG_CLIP_URL="${ART_FFMPEG_CLIP_URL:-}"
+export ART_FFMPEG_SOURCE="${ART_FFMPEG_SOURCE:-}"
+
 # Ports used by the server benchmarks; change if they collide with something on your host.
 export ART_MEMCACHED_PORT="${ART_MEMCACHED_PORT:-7777}"
 export ART_REDIS_PORT="${ART_REDIS_PORT:-6379}"

@@ -86,6 +86,9 @@ def pooled_cv(per_cfg, t):
     cvs = [cv(i["runs"][t]) for i in per_cfg.values() if len(i["runs"].get(t, [])) >= 3]
     if len(cvs) < 3: return None
     return math.sqrt(sum(c * c for c in cvs) / len(cvs))
+def estimable_cv(per_cfg, t):
+    """pooled_cv, kept separate so callers cannot collapse None into 0.0 by accident."""
+    return pooled_cv(per_cfg, t)
 def stable_tests(per_cfg, tests, max_cv=0.05):
     """The subtests a run-to-run comparison can actually resolve. The set is derived from the pooled noise of
     each subtest, so it is a property of the workload rather than of any configuration, and it is then applied
@@ -97,7 +100,12 @@ def stable_tests(per_cfg, tests, max_cv=0.05):
     on this one: MySQL keeps 4 of 5 (only oltp_read_only goes, at 6.10 % pooled CV, against 1.82-3.79 % for
     the rest), SQLite keeps 5 of 7, Redis 16 of 19, memcached has a single metric. A figure carried in a
     code comment rots exactly as one in a document does, so this one names its population."""
-    keep = [t for t in tests if (pooled_cv(per_cfg, t) or 0) <= max_cv]
+    # `(pooled_cv(...) or 0) <= max_cv` TREATED "NOT ESTIMABLE" AS "PERFECTLY STABLE". pooled_cv returns
+    # None below three runs per configuration, so at the default N = 2 every subtest scored 0 % and the row
+    # read "all N subtests within 5%" — the unmeasured case rendered as the best case, which is the third
+    # reason this function can return None and the one the docstring above did not know about. A subtest
+    # whose noise cannot be estimated is not known to be stable; it is not known at all.
+    keep = [t for t in tests if estimable_cv(per_cfg, t) is not None and estimable_cv(per_cfg, t) <= max_cv]
     return keep if (len(keep) >= 2 and len(keep) * 2 >= len(tests) and len(keep) < len(tests)) else None
 
 def stable_reason(per_cfg, tests, max_cv=0.05):
@@ -106,10 +114,18 @@ def stable_reason(per_cfg, tests, max_cv=0.05):
     are the best and the worst case for a row, and one mark for both invites reading the worst as the best.
     Returns a short phrase, or None when a restricted column exists."""
     if stable_tests(per_cfg, tests, max_cv) is not None: return None
-    keep = [t for t in tests if (pooled_cv(per_cfg, t) or 0) <= max_cv]
+    cvs = [(t, estimable_cv(per_cfg, t)) for t in tests]
+    keep = [t for t, c in cvs if c is not None and c <= max_cv]
     pct = int(round(100 * max_cv))
+    # THE THIRD REASON, and it must be said before the others: nothing was measured. pooled_cv needs at
+    # least three runs in at least three configurations, so at N = 2 no subtest has an estimate and the
+    # honest statement is that the restricted column does not exist here, not that every subtest passed.
+    if all(c is None for _, c in cvs):
+        return 'pooled CV not estimable at this N (needs 3 runs per configuration) - NOT A STABILITY CLAIM'
     if len(tests) == 1:
-        return 'single metric, pooled CV {:.1f}%'.format(100 * (pooled_cv(per_cfg, tests[0]) or 0))
+        c = cvs[0][1]
+        return ('single metric, pooled CV {:.1f}%'.format(100 * c) if c is not None
+                else 'single metric, pooled CV not estimable at this N - NOT A STABILITY CLAIM')
     if len(keep) == len(tests):
         return 'all {} subtests within {}%'.format(len(tests), pct)
     if len(keep) < 2 or len(keep) * 2 < len(tests):
