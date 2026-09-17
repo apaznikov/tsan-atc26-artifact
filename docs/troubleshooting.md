@@ -23,9 +23,12 @@ counts are identical either way, only running the binaries needs the flag.
 
 ## "Instrumentation counts differ from CLAIMS.md by a few calls"
 
-The counts are of `__tsan_read*`/`__tsan_write*` calls in the whole binary and include libc glue
-that depends on the exact glibc headers; inside the container they match exactly. Outside it, a
-difference of a handful of calls on the stock side with the same *removed* column is expected.
+The counts are of `__tsan_read*`/`__tsan_write*` calls in the whole binary and include code that
+depends on the build environment's headers. Two builds in the same container match exactly; a build
+in the container against our host-built campaign binaries shows a small constant offset, measured on
+Redis at 19 sites fewer in every configuration, with the *removed* and *added* columns identical. The
+differences between configurations are the claim; an offset of that size on every row alike is the
+environment, not the compiler.
 
 ## "DE removed nothing from my own test program"
 
