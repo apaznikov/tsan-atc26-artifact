@@ -47,7 +47,7 @@ DynSTC.
 
 | Claim | Script | Match criterion |
 |---|---|---|
-| Every run in `data/perf/` records the compiler that built it, the hash of the binary it ran, the hash of its input, its processor set and mode, the foreign-activity share the gate saw, and its place in a full set of N | `scripts/91-verify-provenance.sh` | exact: six assertions, each of which fails on a fault we have actually produced (a pre-audit binary measured as current; a configuration whose binary changed mid-leg; an input path that satisfied the runner and recorded an empty hash; pinned and unpinned runs pooled; a run above the gate that was kept; a thin row that looked complete) |
+| Every run of the campaign (`data/perf/campaign-*`, the roots every performance claim rests on) records the compiler that built it, the hash of the binary it ran, the hash of its input, its processor set and mode, the foreign-activity share the gate saw, and its place in a full set of N. The earlier trees shipped beside them were recorded before the harness wrote every one of those fields and on earlier compilers; they support no claim and the script reports them for information only | `scripts/91-verify-provenance.sh` | exact: six assertions, each of which fails on a fault we have actually produced (a pre-audit binary measured as current; a configuration whose binary changed mid-leg; an input path that satisfied the runner and recorded an empty hash; pinned and unpinned runs pooled; a run above the gate that was kept; a thin row that looked complete) |
 
 This is the property the paper's setup section rests on. It does not check that a configuration's
 flags were the intended ones, which is the build guard's job at build time, and it says nothing

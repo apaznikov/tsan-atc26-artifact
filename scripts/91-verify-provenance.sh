@@ -15,22 +15,38 @@ for a in "$@"; do case "$a" in -*) echo "$(basename "$0") takes results roots, n
 . "$(dirname "$0")/_lib.sh"
 need_harness tools/perf
 
+# Two kinds of root. The campaign roots (data/perf/campaign-*) are the ones every performance claim in
+# CLAIMS.md rests on, and they are checked strictly: any problem fails this script. The earlier trees
+# shipped beside them (Stage B, the sweeps, the profiles) were recorded before the harness wrote every
+# field this checks -- their FFmpeg runs, for one, carry an empty input hash -- and were measured on
+# earlier compilers, so they are reported here for information and never counted as a pass or a
+# failure. No claim rests on them. With no campaign root present, nothing is verified and the script
+# says so with exit 2 rather than passing on the legacy trees.
 roots=("$@")
 if [ ${#roots[@]} -eq 0 ]; then
   mapfile -t roots < <(find "$ART_DATA/perf" -mindepth 1 -maxdepth 1 -type d | sort)
 fi
 [ ${#roots[@]} -gt 0 ] || { echo "no results roots found under $ART_DATA/perf"; exit 2; }
+strict=(); legacy=()
+for r in "${roots[@]}"; do case "$(basename "$r")" in campaign-*) strict+=("$r") ;; *) legacy+=("$r") ;; esac; done
 
-budget "provenance of ${#roots[@]} results root(s)" "2 min" "1 min" "none"
+budget "provenance of ${#strict[@]} campaign root(s), ${#legacy[@]} earlier tree(s) for information" "2 min" "1 min" "none"
 rc=0
-for r in "${roots[@]}"; do
-  echo "== $r"
+for r in "${strict[@]}"; do
+  echo "== $r  (campaign root: checked strictly)"
   python3 "$harness/tools/perf/verify_provenance.py" "$r" || rc=1
 done
-if [ "$rc" = 0 ]; then
-  echo "All runs are attributable: compiler stamp, binary hash, input hash, processor set and mode,"
-  echo "gate share and run count are present, singular per configuration, and consistent."
+for r in "${legacy[@]}"; do
+  echo "== $r  (earlier tree: for information; not counted)"
+  python3 "$harness/tools/perf/verify_provenance.py" "$r" 2>&1 | grep -E "EMPTY|MISSING|PROBLEM|OK|runs," | sed 's/^/    /' || true
+done
+if [ ${#strict[@]} -eq 0 ]; then
+  echo "No campaign root under $ART_DATA/perf: nothing that a claim rests on was verified." >&2
+  exit 2
+elif [ "$rc" = 0 ]; then
+  echo "Every campaign run is attributable: compiler stamp, binary hash, input hash, processor set and"
+  echo "mode, gate share and run count are present, singular per configuration, and consistent."
 else
-  echo "Provenance failed above. A table computed from that root carries conditions it cannot state." >&2
+  echo "Provenance failed on a campaign root above. A table computed from it carries conditions it cannot state." >&2
 fi
 exit "$rc"
