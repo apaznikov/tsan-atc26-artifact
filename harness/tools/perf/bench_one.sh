@@ -108,7 +108,9 @@ case "$APP" in
     # supported path (ensure_input_clip.sh cuts one from the Blender source) and such a run is valid but
     # NOT bit-comparable with ours, so the artefact says which it is rather than implying it.
     FF_REFERENCE_SHA=43b0fba97eb05a0e44d7518fe9d6993c140680531a17a240ea6d53582fbe9985
-    [ "${INPUT_SHA:-}" = "$FF_REFERENCE_SHA" ] && INPUT_IS_REF=true || INPUT_IS_REF=false
+    # Python literals, not shell ones: this value is interpolated into the python3 meta block below,
+    # where `true` is as much a NameError as `null` was. Capitalised here so the dict builds.
+    [ "${INPUT_SHA:-}" = "$FF_REFERENCE_SHA" ] && INPUT_IS_REF=True || INPUT_IS_REF=False
     ( cd "$APPDIR" && RUNS_COUNT=1 FF_BUILD_LIST="ffmpeg-$BASE$TAG" FFMPEG_BENCH_NPROC_COUNT="${FF_THREADS:-4}" \
         SUMMARY_CSV="$D/summary.csv" SUMMARY_JSON="$D/summary.json" \
         $TIMEF -f "%U %S %M" -o "$OURS" taskset -c "$CPUSET" ./bench_ffmpeg_all.sh ) > "$LOG" 2>&1; rc=$?
@@ -155,7 +157,12 @@ meta = {
   "foreign_cpu_share": round(max(0, $machine_busy - $ours_ticks) / max(1.0, ($t1 - $t0) * $HZ * $(nproc)), 4),
   "tsan_options": "$TSAN_OPTIONS", "max_rss_kb": ${om:-0},
   "input_sha256": "${INPUT_SHA:-}",
-  "input_is_reference": ${INPUT_IS_REF:-null},
+  # Python, not JSON: this dict is built by python3 and dumped with json.dump, so the absent case is
+  # None. Writing null here (no backticks: this heredoc is UNQUOTED, so backticks would run the word as
+  # a command) made every non-FFmpeg run die with NameError inside the meta block, and the runner then
+  # recorded each one as DISTURBED — a measurement that never happened, filed as one
+  # that happened badly. Twenty redis runs in 10 s is what that looks like from outside.
+  "input_is_reference": ${INPUT_IS_REF:-None},
   "cpuset_intruders": ${INTRUDERS:-0}, "cpuset_intruder_peak_pcpu": ${INTRUDER_PEAK:-0},
   "threads_setting": "${MC_THREADS:-}${MYSQL_THREADS:-}${FF_THREADS:-}",
 }

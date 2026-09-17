@@ -78,10 +78,20 @@ exec 9>"$P5_LOCK"; flock -s 9
 # this lane is (b) (jobs 8..56), so all builds are exclusive; measurements (bench_one.sh) are (c), per run.
 # A sidecar machine-memory.lock.holder names the holder so a waiter can see what it is queueing behind.
 # the agreed canonical path (not /tmp, which tmpfiles.d empties at boot)
-MEMLOCK="${MACHINE_MEMLOCK:-/home/alexey/bin/logs/machine-memory.lock}"; [ -e "$MEMLOCK" ] || { : > "$MEMLOCK"; chmod 666 "$MEMLOCK" 2>/dev/null; }
-exec 8>"$MEMLOCK"; p5_log "waiting for the machine job lock (exclusive: build $APP, jobs $JOBS)"; flock -x 8
-printf 'lane=tsan-exp\npid=%s\nmode=exclusive\nreason=build %s (%s), jobs %s >= 8 cores\nstart=%s\nexpected_minutes=%s\ncpus=%s\nwhy=P5 build\n' "$$" "$APP" "$HASH" "$JOBS" "$(date -Iseconds)" "$([ "$APP" = mysql ] && echo 120 || echo 20)" "4-$((3+JOBS))" > "$MEMLOCK.holder" 2>/dev/null; chmod 666 "$MEMLOCK.holder" 2>/dev/null
-trap 'rm -f "$MEMLOCK.holder" 2>/dev/null' EXIT
+# The whole-machine lock is this lab's. Outside it the path does not exist, and the previous version left
+# three errors in every evaluator's build log — "No such file or directory" twice and "flock: 8: Bad file
+# descriptor" — while silently taking no lock at all. P5_MACHINE_LOCK=true (the artifact's default) or a
+# missing directory means there is nothing to coordinate with, so the lock is skipped deliberately rather
+# than attempted and failed. This is the rehearsal whose log we keep; it starts clean.
+MEMLOCK="${MACHINE_MEMLOCK:-/home/alexey/bin/logs/machine-memory.lock}"
+if [ "${P5_MACHINE_LOCK:-}" = true ] || [ ! -d "$(dirname "$MEMLOCK")" ]; then
+  p5_log "no machine job lock here (P5_MACHINE_LOCK=${P5_MACHINE_LOCK:-unset}, $(dirname "$MEMLOCK") absent); building unlocked"
+else
+  [ -e "$MEMLOCK" ] || { : > "$MEMLOCK"; chmod 666 "$MEMLOCK" 2>/dev/null; }
+  exec 8>"$MEMLOCK"; p5_log "waiting for the machine job lock (exclusive: build $APP, jobs $JOBS)"; flock -x 8
+  printf 'lane=tsan-exp\npid=%s\nmode=exclusive\nreason=build %s (%s), jobs %s >= 8 cores\nstart=%s\nexpected_minutes=%s\ncpus=%s\nwhy=P5 build\n' "$$" "$APP" "$HASH" "$JOBS" "$(date -Iseconds)" "$([ "$APP" = mysql ] && echo 120 || echo 20)" "4-$((3+JOBS))" > "$MEMLOCK.holder" 2>/dev/null; chmod 666 "$MEMLOCK.holder" 2>/dev/null
+  trap 'rm -f "$MEMLOCK.holder" 2>/dev/null' EXIT
+fi
 [ -f "$OUT/static-counts.csv" ] || echo "app,config,hash,memory_access_sites,tsan_calls_total,sha256,build_seconds" > "$OUT/static-counts.csv"
 fail=0; for c in $CFGS; do build_one "$c" || fail=1; done
 p5_log "builds of $APP done (fail=$fail); static counts in $OUT/static-counts.csv"; exit $fail

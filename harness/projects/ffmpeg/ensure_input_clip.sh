@@ -30,7 +30,8 @@ fi
 
 if [ -n "${ART_FFMPEG_CLIP_URL:-}" ]; then
   say "fetching a prepared clip from ART_FFMPEG_CLIP_URL"
-  wget -q -O "$CLIP.part" "$ART_FFMPEG_CLIP_URL" || { rm -f "$CLIP.part"; say "download failed"; exit 1; }
+  [ -w "$(dirname "$CLIP")" ] || { say "cannot write to $(dirname "$CLIP") — is the harness mounted read-only? Nothing was downloaded."; exit 1; }
+  wget -q -O "$CLIP.part" "$ART_FFMPEG_CLIP_URL" || { rm -f "$CLIP.part"; say "download failed from $ART_FFMPEG_CLIP_URL"; exit 1; }
   mv "$CLIP.part" "$CLIP"
   got=$(sha256sum "$CLIP" | cut -d' ' -f1)
   [ "$got" = "$WANT" ] || { say "SHA256 MISMATCH: a prepared clip must be the reference one."; say "  pinned $WANT"; say "  actual $got"; rm -f "$CLIP"; exit 1; }
@@ -42,7 +43,11 @@ if [ -z "$SRC" ]; then
   Z=input/tears_of_steel_1080p.mov.zip
   if [ ! -f "$Z" ]; then
     say "no clip and no source: fetching the Blender source, 557 MB, CC-BY 3.0, from download.blender.org"
-    wget -q -O "$Z.part" "$SRC_URL" || { rm -f "$Z.part"; say "source download failed"; exit 1; }
+    # Say WHAT failed before blaming the network. On a read-only harness mount wget cannot create its
+    # output file, and reporting that as "source download failed" sends the reader to check their network
+    # when the problem is the mount. That misdirection cost a diagnosis during the 17 Sep dry run.
+    [ -w "$(dirname "$Z")" ] || { say "cannot write to $(dirname "$Z") — is the harness mounted read-only? Nothing was downloaded."; exit 1; }
+    wget -q -O "$Z.part" "$SRC_URL" || { rm -f "$Z.part"; say "source download failed from $SRC_URL (the directory is writable, so this is the network or the server)"; exit 1; }
     mv "$Z.part" "$Z"
   fi
   got=$(sha256sum "$Z" | cut -d' ' -f1)
