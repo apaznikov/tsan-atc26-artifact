@@ -39,6 +39,9 @@ for r in "${strict[@]}"; do
 done
 # An earlier tree is asked the question that applies to it: did every run in it use one compiler, one
 # processor set and one mode, and are its fields present -- not whether that compiler is today's.
+# A few earlier trees mix compilers BY DESIGN (the counter and profile trees compare two builds side
+# by side); for those the self-check reports that no single expectation can be derived, which is the
+# correct description of such a tree and not a defect.
 # Two known findings on the Stage B tree are stated rather than left to be inferred: its FFmpeg runs
 # carry an empty input hash (the relative-path trap, fixed since), and five of its 500 runs sit above
 # today's 0.10 foreign-activity gate; they were inside the 0.25 gate in force when they were taken.
