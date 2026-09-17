@@ -247,8 +247,18 @@ the tightest of the four at a resolution floor of 2.5%: 0.9941 [0.9753, 1.0125],
 the other three.
 
 Script: `scripts/40-perf.sh ffmpeg` (about 24 minutes at the default N = 2 and four configurations;
-2.4 hours at N = 5 and twelve). The clip is fetched from the artifact's archive by sha256; see
-`docs/ffmpeg-input.md` if you regenerate it instead. FFmpeg additionally carries a control leg on the
+2.4 hours at N = 5 and twelve). The input is produced before the build by one of three paths, in this
+order: a prepared copy of the reference clip from `ART_FFMPEG_CLIP_URL`, checked against the sha256 in
+`docs/ffmpeg-input.md`; a local copy of the Blender source in `ART_FFMPEG_SOURCE`, cut with the recorded
+command; or, with neither set, the 557 MB Blender source downloaded, verified and cut. The second and
+third paths re-encode, and a re-encode's sha256 differs from the reference by construction, so every
+run records `input_is_reference` beside the input's sha256. The point-in-interval comparison for this
+row is made only on the reference clip; on a regenerated clip the run is valid, its build and run times
+are what an evaluator pays, but its ratios are not compared with the intervals above and the script says
+so. The reference clip becomes downloadable with the artifact's Zenodo record at submission, and
+`env.sh` will then default `ART_FFMPEG_CLIP_URL` to it; until then the default path regenerates. Our
+own rehearsal of 17 Sep ran on a regenerated clip and reports the FFmpeg row as not comparable for that
+reason. FFmpeg additionally carries a control leg on the
 retired clip, so that the difference from the paper's FFmpeg column can be attributed to the
 compiler or to the input; see `docs/ffmpeg-input.md`. Until then the artifact claims no performance
 number for them; the recorded Stage B runs under `data/perf/stageB-d3bf9f8c39fe` are from an
@@ -312,8 +322,9 @@ overheads are not comparable across compiler trees even when ratios are.
 
 Expensive rather than unclaimed, and the distinction matters: **MySQL performance is claimed** in
 section 5 like every other application, from campaign runs that ship with the rest. What it is not is
-cheap to re-run: four configurations, about an hour of build each and seven hours of runs, and about
-100 GB of disk. An evaluator who does not spend that gets the table from the shipped runs with
+cheap to re-run: four configurations, four builds (their cost on the shipped compiler is measured by the
+rehearsal of 17 Sep and recorded in section 5), about 3.4 hours of runs at the default N = 2 and
+seven at N = 5, and about 100 GB of disk. An evaluator who does not spend that gets the table from the shipped runs with
 `scripts/90-tables.sh`, which regenerates it without running anything; one who does gets the same
 comparison we made. It is measured at four configurations rather than fourteen because a build with
 the escape analysis takes about 2.2 hours, and `docs/mysql.md` gives the reason in full.

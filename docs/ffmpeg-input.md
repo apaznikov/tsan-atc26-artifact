@@ -61,10 +61,19 @@ Why a real clip and not a synthetic pattern: the one substantial FFmpeg result i
 (DynSTC, about 1.12x) depends on the workload having genuinely single-threaded phases; a synthetic
 test source compresses trivially and does not exercise them.
 
-The clip is not in git or in the image. The primary path is the copy in the artifact's Zenodo record,
-fetched by `40-perf.sh ffmpeg` with the sha256 above pinned; every run records the input's sha256 in
-its `meta.json`, so a reviewer can check they measured the same file. The fallback is to regenerate it
-from the Blender source with the command above (set `ART_FFMPEG_SOURCE` to the unpacked `.mov`): a
-re-encode's sha256 may differ from ours while the shape matches, and a run on a regenerated clip is
-labelled as such in `meta.json` (`input_is_reference: false` beside `input_sha`; the run is valid, only not
-byte-for-byte comparable with ours). With `--smoke` a 10-second cut is used.
+The clip is not in git or in the image. `harness/projects/ffmpeg/ensure_input_clip.sh`, run by the
+FFmpeg build before anything is compiled, produces it by the first of three paths that applies:
+
+1. `ART_FFMPEG_CLIP_URL`: a prepared copy of the reference clip, fetched and checked against the sha256
+   above; a mismatch deletes the file and refuses. This is the copy in the artifact's Zenodo record,
+   which exists from the submission on; `env.sh` will default the variable to it then.
+2. `ART_FFMPEG_SOURCE`: a local copy of the unpacked Blender source (`.mov`), cut here with the command
+   above.
+3. Neither set: the 557 MB Blender source is downloaded, verified against its published sha256, unpacked
+   and cut. This is the default path today.
+
+Paths 2 and 3 re-encode, and a re-encode's sha256 differs from the reference even under an identical
+command, because encoder builds differ. Every run therefore records `input_is_reference: true|false`
+beside `input_sha256` in its `meta.json`. A run on a regenerated clip is valid, and its build and run
+times are what an evaluator pays; only the comparison of its ratios with the shipped intervals is not
+made, since those were measured on the reference clip. With `--smoke` a 10-second cut is used.

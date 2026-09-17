@@ -128,10 +128,14 @@ runs share `Output/` and fail for reasons that are not the compiler's):
 
 ## What this artifact does not contain
 
-Chromium and MySQL performance. Both are documented in `docs/`, with our recorded data, the exact
-configuration and the reasons: a Chromium checkout is over a terabyte and our only build predates
-the compiler shipped here, and a full MySQL run takes about seven hours on top of an hour of
-build. Neither is claimed in `CLAIMS.md`.
+Chromium performance. It is documented in `docs/chromium.md`, with our recorded data, the exact
+configuration and the reason: a Chromium checkout is over a terabyte and our only build predates the
+compiler shipped here. It is not claimed in `CLAIMS.md`.
+
+MySQL is claimed, and its table ships with the recorded runs, but it is the expensive row: about
+3.4 hours of runs at the default settings on top of four builds, which is why it is not part of the
+two-hour reviewer's subset and why `CLAIMS.md` says so beside the row rather than leaving it to be
+discovered.
 
 ## If something does not work
 
