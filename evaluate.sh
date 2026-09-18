@@ -137,7 +137,16 @@ done
 # the one to read first. A judged row outside its interval is reported as such, not as a failure of
 # the artifact's plumbing, and the exit status carries it.
 if [ "$tier" != functional ] && [ "$verdict" != FAIL ]; then
-  trees=$(find results -maxdepth 1 -name 'perf-*' -newermt "@$start_all" | sort | tr '\n' ' ')
+  trees=$(find "${ART_RESULTS:-results}" -maxdepth 1 -name 'perf-*' -newermt "@$start_all" 2>/dev/null | sort | tr '\n' ' ')
+  if [ -z "$trees" ]; then
+    # The comparison is why this tier exists. If the run produced no performance tree to compare, that
+    # is a failure of the tier and not a silent skip: without this the whole tier could report PASS
+    # having compared nothing at all (found 19 Sep 2026).
+    echo
+    echo "No performance results were produced by this run, so nothing could be compared with CLAIMS.md."
+    echo "Looked for directories named perf-* under ${ART_RESULTS:-results} created after the run began."
+    verdict=FAIL; failed="the performance tier produced no results to compare"
+  fi
   if [ -n "$trees" ]; then
     echo
     echo "Comparison with the intervals in CLAIMS.md (section 5):"
@@ -155,6 +164,6 @@ case "$verdict" in
   INCOMPLETE) echo "Nothing failed, but a check could not be made here (its prerequisite is absent); the log names it. A skipped check is neither a pass nor a failure." ;;
   FAIL) echo "Stopped at: $failed. docs/troubleshooting.md lists the failures we know; the log has the rest." ;;
 esac
-[ -n "${compared:-}" ] && echo "At least one judged performance row lies outside the shipped interval; CLAIMS.md section 5 says what such a row can and cannot mean."
+[ -n "${compared:-}" ] && echo "The comparison with CLAIMS.md did not come back clean: either a judged row lies outside its shipped interval, or no row could be judged at all. Its own output above says which, and CLAIMS.md section 5 says what each means."
 } | tee -a "$log"    # the verdict goes into the log too: a log that ends without it answers a different question
 [ "$verdict" = PASS ] && [ -z "${compared:-}" ]

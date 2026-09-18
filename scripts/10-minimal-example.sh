@@ -10,6 +10,10 @@ here="$(cd "$(dirname "$0")/.." && pwd)"
 CC="$TSAN_LLVM_ROOT/bin/clang"; OBJDUMP="$TSAN_LLVM_ROOT/bin/llvm-objdump"
 [ $# -eq 0 ] || { echo "$(basename "$0") takes no arguments (got: $*)"; exit 2; }
 [ -x "$CC" ] || { echo "no TSan clang at $CC (set TSAN_LLVM_ROOT or run inside the container)"; exit 2; }
+# The counter below greps llvm-objdump's output, so a missing or broken objdump yields 0 for every
+# column and a table in which every analysis appears to have removed nothing, while the script still
+# exits 0 on the race check alone. Refuse instead (found 19 Sep 2026).
+[ -x "$OBJDUMP" ] || { echo "no llvm-objdump at $OBJDUMP; the instrumentation counts below would all read 0"; exit 2; }
 out="$ART_RESULTS/minimal-example-$(date +%Y%m%d-%H%M%S)"; mkdir -p "$out"
 src="$here/scripts/minimal"
 
@@ -36,7 +40,13 @@ for c in "${CASES[@]}"; do
   "$CC" -O2 -g -fsanitize=thread $flags "$src/$file" -o "$out/$name-on" -lpthread
   s=$(count_instr "$out/$name-stock"); e=$(count_instr "$out/$name-on")
   printf '%-5s %-8s %-8s %8s %8s %8s\n' "$name" "$file" "$sec" "$s" "$e" "$((s-e))"
+  # The table is the step's headline claim, so it is asserted and not merely printed. A stock build
+  # with no instrumentation at all means the counter is not counting; an analysis that removed nothing
+  # means the claim this row makes is not true here. Either is a failure of this step.
+  [ "$s" -gt 0 ] || { echo "  $name: the stock build shows no instrumentation at all, so the counter is not counting" >&2; bad=1; }
+  [ "$((s-e))" -gt 0 ] || { echo "  $name: this analysis removed nothing, which is what this row claims it does" >&2; bad=1; }
 done
+[ "${bad:-0}" = 0 ] || { echo "the instrumentation table above does not support what this step claims" >&2; exit 1; }
 echo
 echo "Each row counts calls to __tsan_read*/__tsan_write* in the whole binary (the program's own"
 echo "accesses plus libc glue); 'removed' is what that analysis eliminated. Read the comment at the"

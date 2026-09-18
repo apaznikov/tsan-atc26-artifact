@@ -9,26 +9,32 @@
 set -uo pipefail
 here="$(cd "$(dirname "$0")/.." && pwd)"
 [ $# -eq 0 ] || { echo "$(basename "$0") takes no arguments (got: $*)"; exit 2; }
-a="$here/harness/tools"; b="$here/data/tools"
+# EVERY file that exists in both trees, not only the tools: aggregate.py loads the per-application
+# parsers from data/nosql, data/sql and data/projects, which are copies of the harness ones, and a check
+# that looked only at data/tools would have said "identical" while a parser drifted (found 19 Sep 2026
+# by auditing this very script, one hour after it was written to stop exactly that).
+a="$here/harness"; b="$here/data"
 [ -d "$a" ] && [ -d "$b" ] || { echo "one of $a, $b is absent; nothing to compare" >&2; exit 2; }
 diverged=0; compared=0
 while IFS= read -r f; do
   rel="${f#$b/}"
-  for cand in "$a/$rel" "$a/perf/$(basename "$f")" "$a/preservation/$(basename "$f")" "$a/$(basename "$f")"; do
+  cand="$a/$rel"
+  if [ ! -f "$cand" ]; then
+    # data/tools/perf/x.py corresponds to harness/tools/perf/x.py; the rest correspond by identical path.
+    cand="$a/$(echo "$rel" | sed 's|^tools/|tools/|')"
     [ -f "$cand" ] || continue
-    compared=$((compared+1))
-    if cmp -s "$f" "$cand"; then :; else
-      echo "  DIVERGED  ${f#$here/}  vs  ${cand#$here/}"; diverged=$((diverged+1))
-    fi
-    break
-  done
-done < <(find "$b" -name '*.py' | sort)
-if [ "$compared" -eq 0 ]; then
-  echo "no file exists in both trees, which is not the expected shape of this artifact" >&2; exit 2
+  fi
+  compared=$((compared+1))
+  cmp -s "$f" "$cand" || { echo "  DIVERGED  data/$rel  vs  harness/$rel"; diverged=$((diverged+1)); }
+done < <(cd "$b" && find . -name '*.py' | sed 's|^\./||' | sort | sed "s|^|$b/|")
+if [ "$compared" -lt 6 ]; then
+  echo "only $compared file(s) exist in both trees; this artifact ships the harness twice and should have more." >&2
+  echo "Either the layout changed or one tree is incomplete; neither is a state this check can pass." >&2
+  exit 1
 fi
 if [ "$diverged" -ne 0 ]; then
   echo "$diverged of $compared shared tool(s) differ between harness/tools and data/tools." >&2
   echo "The measurement path and the table-regeneration path would run different code." >&2
   exit 1
 fi
-echo "the $compared tools shipped in both harness/tools and data/tools are identical"
+echo "the $compared files shipped in both harness/ and data/ are identical"

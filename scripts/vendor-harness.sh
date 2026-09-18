@@ -215,11 +215,10 @@ echo "vendored $n files, $(numfmt --to=iec "$b" 2>/dev/null || echo "$b bytes") 
 # the documented table check ran an aggregator older than the one that produced the measurements. The
 # vendoring keeps them identical, and 01-functional refuses if they ever differ again.
 synced=0
-for f in aggregate.py meta_tool.py results_ledger.py write_readme_results.py; do
-  if [ -f "$DST/tools/perf/$f" ] && [ -f "$ROOT_DIR/data/tools/perf/$f" ]; then
-    cmp -s "$DST/tools/perf/$f" "$ROOT_DIR/data/tools/perf/$f" || { cp -a "$DST/tools/perf/$f" "$ROOT_DIR/data/tools/perf/$f"; synced=$((synced+1)); }
-  fi
-done
+while IFS= read -r rel; do
+  [ -f "$DST/$rel" ] || continue
+  cmp -s "$DST/$rel" "$ROOT_DIR/data/$rel" || { cp -a "$DST/$rel" "$ROOT_DIR/data/$rel"; synced=$((synced+1)); }
+done < <(cd "$ROOT_DIR/data" && find . -name '*.py' | sed 's|^\./||' | sort)
 [ "$synced" = 0 ] || echo "synced $synced tool(s) into data/tools/perf (they must not diverge from harness/tools/perf)"
 
 echo "manifest: $MAN"
