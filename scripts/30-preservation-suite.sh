@@ -40,7 +40,8 @@ suite="$here/tests/tsan"
 [ -f "$matrix" ] || { echo "missing $matrix"; exit 2; }
 [ -d "$suite" ]  || { echo "no vendored TSan tests at $suite"; exit 2; }
 
-ncfg=$(grep -vc '^#' "$matrix")
+ncfg=$(grep -vc '^#' "$matrix" || true)   # grep -c exits 1 on a count of zero; that is a refusal below, not a silent death here
+[ "${ncfg:-0}" -gt 0 ] || { echo "no configurations in $matrix (every line is a comment)" >&2; exit 2; }
 budget "the TSan suite, $ncfg configurations x K=$k repeats" "3 h" "45 min" "2 GB"
 smoke_banner
 refuse_if_lit_running
@@ -150,7 +151,7 @@ echo
 # lit does not know these until it has run, so they are appended rather than written above.
 # "see the logs" would have sent a reader back to memory, which is the thing a manifest exists
 # to replace. Taken from the first log that reports them; every repeat runs the same suite.
-_first_log=$(ls "$outdir"/lit-*.log 2>/dev/null | head -1)
+_first_log=$(ls "$outdir"/lit-*.log 2>/dev/null | head -1 || true)   # no log is the case the next line guards
 if [ -n "$_first_log" ]; then
   {
     # Under set -euo pipefail a grep that matches nothing is a non-zero pipeline, and an ASSIGNMENT

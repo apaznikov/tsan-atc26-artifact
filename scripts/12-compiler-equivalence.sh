@@ -35,7 +35,7 @@ tar -C "$ir" -xzf "$tarball"
 # 24-commit soundness series (aa8a6dd8a2e8 -> f3deebfbab60) changes ZERO of the 112 rows
 # below -- the lost-race shapes it fixes do not occur in these programs. So an identical
 # corpus proves the compiler instruments identically, NOT that it is the same commit.
-ref_stamp=$(grep -m1 '^#   stamp ' "$ART_DATA/equivalence/reference-histograms.tsv" | awk '{print $3}')
+ref_stamp=$(grep -m1 '^#   stamp ' "$ART_DATA/equivalence/reference-histograms.tsv" | awk '{print $3}' || true)   # no stamp line is the case handled below, not a reason to die
 got_stamp=$(head -1 "$TSAN_LLVM_ROOT/TSAN_AUDIT_HASH" 2>/dev/null || echo "")
 echo "compiler : $TSAN_LLVM_ROOT"
 echo "           $("$TSAN_LLVM_ROOT/bin/clang" --version | head -1)"

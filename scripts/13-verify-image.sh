@@ -33,7 +33,7 @@ docker image inspect "$IMG" >/dev/null 2>&1 || { echo "no such image: $IMG (buil
 echo "=== image ==="
 docker images --format '  {{.Repository}}:{{.Tag}} {{.ID}} {{.Size}}' "$IMG" | head -1
 
-v=$("${D[@]}" "$IMG" clang --version 2>/dev/null | head -1)
+v=$("${D[@]}" "$IMG" clang --version 2>/dev/null | head -1 || true)
 echo "  version line: ${v:-<none>}"
 # Positive control first: without it, an image with no clang at all answers every question below
 # with an empty string, and "the version line does not name the upstream base" passes vacuously.
@@ -48,7 +48,7 @@ case "$v" in
     chk "the image has a clang that runs" no "\`clang --version\` gave: ${v:-nothing}. Every check below it would pass on an empty answer, so they are not attempted." ;;
 esac
 
-s=$("${D[@]}" "$IMG" cat /opt/tsan-llvm/TSAN_AUDIT_HASH 2>/dev/null | head -1)
+s=$("${D[@]}" "$IMG" cat /opt/tsan-llvm/TSAN_AUDIT_HASH 2>/dev/null | head -1 || true)
 case "$s" in "$HASH") chk "TSAN_AUDIT_HASH present and correct" ok ;;
   "") chk "TSAN_AUDIT_HASH present" no "absent; the harness compiler gate refuses to start" ;;
   *) chk "TSAN_AUDIT_HASH correct" no "got: $s" ;; esac

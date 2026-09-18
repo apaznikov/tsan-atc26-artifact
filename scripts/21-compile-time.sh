@@ -16,9 +16,9 @@ case "$app" in sqlite|memcached|redis|ffmpeg|mysql) ;; *) echo "unknown app $app
 need_harness tools/perf; need_compiler
 
 if [ -r "$TSAN_LLVM_ROOT/TSAN_AUDIT_HASH" ]; then
-  hash=$(grep -oE '[0-9a-f]{40}' "$TSAN_LLVM_ROOT/TSAN_AUDIT_HASH" | head -1)
+  hash=$(grep -oE '[0-9a-f]{40}' "$TSAN_LLVM_ROOT/TSAN_AUDIT_HASH" | head -1 || true)
 else
-  hash=$("$TSAN_LLVM_ROOT/bin/clang" --version 2>/dev/null | grep -oE '[0-9a-f]{40}' | head -1)
+  hash=$("$TSAN_LLVM_ROOT/bin/clang" --version 2>/dev/null | grep -oE '[0-9a-f]{40}' | head -1 || true)
 fi
 [ -n "${hash:-}" ] || { echo "cannot determine the compiler's commit from $TSAN_LLVM_ROOT" >&2; exit 2; }
 hash=${hash:0:12}
