@@ -1,0 +1,40 @@
+jq found, will generate JSON output to /home/alexey/tsan-experiments/tools/perf/results/campaign-f3deebfbab60/primary/ffmpeg/tsan-stmt/run4/summary.json.
+--- FFmpeg Benchmark Start (using /usr/bin/time) ---
+Builds to test: ffmpeg-tsan-stmt
+Video file: ./input/TearsOfSteel-1366x768-100s.mkv
+Runs per test: 1
+
+--- Benchmarking: Codec [h264_libx264], Build [ffmpeg-tsan-stmt] ---
+
+[96;1mffmpeg-tsan-stmt/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 4 -y -c:v libx264 -preset medium -crf 23  -loglevel error /dev/shm/out.mp4[0m
+
+  Run 1/1... OK (Time: 45.09s, Mem: 583536KB)
+  Results: Time(avg±std): 45.0900s ± 0s | Mem(peak): 583536KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [copy_passthrough], Build [ffmpeg-tsan-stmt] ---
+
+[96;1mffmpeg-tsan-stmt/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 4 -y -c:v copy -c:a copy  -loglevel error /dev/shm/out.mkv[0m
+
+  Run 1/1... OK (Time: 0.52s, Mem: 75616KB)
+  Results: Time(avg±std): .5200s ± 0s | Mem(peak): 75616KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [mjpeg], Build [ffmpeg-tsan-stmt] ---
+
+[96;1mffmpeg-tsan-stmt/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 4 -y -c:v mjpeg -pix_fmt yuvj420p -q:v 2  -loglevel error /dev/shm/out.avi[0m
+
+  Run 1/1... OK (Time: 21.04s, Mem: 422352KB)
+  Results: Time(avg±std): 21.0400s ± 0s | Mem(peak): 422352KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [h265_libx265], Build [ffmpeg-tsan-stmt] ---
+
+[96;1mffmpeg-tsan-stmt/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 4 -y -c:v libx265 -preset medium -crf 28 -tag:v hvc1  -loglevel error /dev/shm/out.mp4[0m
+
+  Run 1/1... OK (Time: 42.94s, Mem: 1667508KB)
+  Results: Time(avg±std): 42.9400s ± 0s | Mem(peak): 1667508KB | Runs: 1/1
+--------------------------------------------------------
+
+JSON results have been finalized in /home/alexey/tsan-experiments/tools/perf/results/campaign-f3deebfbab60/primary/ffmpeg/tsan-stmt/run4/summary.json
+Benchmark finished. CSV results are in /home/alexey/tsan-experiments/tools/perf/results/campaign-f3deebfbab60/primary/ffmpeg/tsan-stmt/run4/summary.csv

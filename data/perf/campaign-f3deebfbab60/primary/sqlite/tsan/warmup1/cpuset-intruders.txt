@@ -1,0 +1,7 @@
+claude samples=869 peak_pcpu=5.6
+python3 samples=71 peak_pcpu=26.1
+sshd samples=60 peak_pcpu=0.8
+Variane_testhar samples=52 peak_pcpu=107.0
+Rider.Backend samples=33 peak_pcpu=5.5
+pgrep samples=1 peak_pcpu=200.0
+git samples=1 peak_pcpu=186.0

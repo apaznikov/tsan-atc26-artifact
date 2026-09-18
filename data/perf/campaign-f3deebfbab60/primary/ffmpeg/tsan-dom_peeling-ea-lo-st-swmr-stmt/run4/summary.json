@@ -1,0 +1,92 @@
+{
+  "benchmarks": [
+    {
+      "codec": "h264_libx264",
+      "build": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt",
+      "runs": {
+        "successful": 1,
+        "total": 1
+      },
+      "time": {
+        "mean_s": 45.4100,
+        "stddev_s": 0,
+        "min_s": 45.41,
+        "max_s": 45.41
+      },
+      "cpu": {
+        "mean_user_s": 229.0000,
+        "mean_system_s": 9.3000
+      },
+      "memory": {
+        "max_peak_kb": 582600
+      },
+      "command_template": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt/bin/ffmpeg -hide_banner -i \"./input/TearsOfSteel-1366x768-100s.mkv\" -threads 4 -y -c:v libx264 -preset medium -crf 23  -loglevel error /dev/shm/out.mp4"
+    },
+    {
+      "codec": "copy_passthrough",
+      "build": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt",
+      "runs": {
+        "successful": 1,
+        "total": 1
+      },
+      "time": {
+        "mean_s": 0.5100,
+        "stddev_s": 0,
+        "min_s": 0.51,
+        "max_s": 0.51
+      },
+      "cpu": {
+        "mean_user_s": 0.3900,
+        "mean_system_s": 0.1100
+      },
+      "memory": {
+        "max_peak_kb": 79056
+      },
+      "command_template": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt/bin/ffmpeg -hide_banner -i \"./input/TearsOfSteel-1366x768-100s.mkv\" -threads 4 -y -c:v copy -c:a copy  -loglevel error /dev/shm/out.mkv"
+    },
+    {
+      "codec": "mjpeg",
+      "build": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt",
+      "runs": {
+        "successful": 1,
+        "total": 1
+      },
+      "time": {
+        "mean_s": 20.8400,
+        "stddev_s": 0,
+        "min_s": 20.84,
+        "max_s": 20.84
+      },
+      "cpu": {
+        "mean_user_s": 179.3200,
+        "mean_system_s": 1.4100
+      },
+      "memory": {
+        "max_peak_kb": 420476
+      },
+      "command_template": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt/bin/ffmpeg -hide_banner -i \"./input/TearsOfSteel-1366x768-100s.mkv\" -threads 4 -y -c:v mjpeg -pix_fmt yuvj420p -q:v 2  -loglevel error /dev/shm/out.avi"
+    },
+    {
+      "codec": "h265_libx265",
+      "build": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt",
+      "runs": {
+        "successful": 1,
+        "total": 1
+      },
+      "time": {
+        "mean_s": 42.9700,
+        "stddev_s": 0,
+        "min_s": 42.97,
+        "max_s": 42.97
+      },
+      "cpu": {
+        "mean_user_s": 515.7700,
+        "mean_system_s": 7.2100
+      },
+      "memory": {
+        "max_peak_kb": 1662716
+      },
+      "command_template": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt/bin/ffmpeg -hide_banner -i \"./input/TearsOfSteel-1366x768-100s.mkv\" -threads 4 -y -c:v libx265 -preset medium -crf 28 -tag:v hvc1  -loglevel error /dev/shm/out.mp4"
+    }
+  ]
+}

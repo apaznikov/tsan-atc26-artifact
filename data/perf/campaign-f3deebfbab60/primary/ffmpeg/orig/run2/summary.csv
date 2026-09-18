@@ -1,0 +1,5 @@
+Codec,FFBUILD,runs_completed,mean_time_s,stddev_time_s,min_time_s,max_time_s,mean_user_s,mean_system_s,max_mem_kb,command_template
+"h264_libx264","ffmpeg-orig","1/1",36.3500,0.0000,36.3500,36.3500,138.4400,0.6300,335688,"ffmpeg-orig/bin/ffmpeg -hide_banner -i ""./input/TearsOfSteel-1366x768-100s.mkv"" -threads 4 -y -c:v libx264 -preset medium -crf 23  -loglevel error /dev/shm/out.mp4"
+"copy_passthrough","ffmpeg-orig","1/1",0.1500,0.0000,0.1500,0.1500,0.1100,0.0400,21628,"ffmpeg-orig/bin/ffmpeg -hide_banner -i ""./input/TearsOfSteel-1366x768-100s.mkv"" -threads 4 -y -c:v copy -c:a copy  -loglevel error /dev/shm/out.mkv"
+"mjpeg","ffmpeg-orig","1/1",3.5300,0.0000,3.5300,3.5300,32.0100,0.4200,125000,"ffmpeg-orig/bin/ffmpeg -hide_banner -i ""./input/TearsOfSteel-1366x768-100s.mkv"" -threads 4 -y -c:v mjpeg -pix_fmt yuvj420p -q:v 2  -loglevel error /dev/shm/out.avi"
+"h265_libx265","ffmpeg-orig","1/1",31.7300,0.0000,31.7300,31.7300,335.4700,2.8100,568188,"ffmpeg-orig/bin/ffmpeg -hide_banner -i ""./input/TearsOfSteel-1366x768-100s.mkv"" -threads 4 -y -c:v libx265 -preset medium -crf 28 -tag:v hvc1  -loglevel error /dev/shm/out.mp4"

@@ -1,0 +1,7 @@
+claude samples=93 peak_pcpu=5.6
+memtier_benchma samples=81 peak_pcpu=881.0
+sshd samples=3 peak_pcpu=0.9
+cc1plus samples=3 peak_pcpu=103.0
+Variane_testhar samples=2 peak_pcpu=100.0
+python3 samples=1 peak_pcpu=2.0
+ccache samples=1 peak_pcpu=2.0

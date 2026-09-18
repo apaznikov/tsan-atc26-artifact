@@ -1,0 +1,4 @@
+2026-09-16 07:28:49 +08 — tsan-dev-f window 4 start (one core, 111, nice 19)
+2026-09-16 07:28:49 -> 07:29:14  window 4, 25 s, KILLED by peer's task manager, nothing taken
+                                 overlapped mysql/orig/warmup1 only — a discarded cell
+2026-09-16 07:34:44 -> (open)    window 5, setsid-detached, one core 111, nice 19

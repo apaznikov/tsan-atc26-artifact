@@ -1,0 +1,25 @@
+CAMPAIGN-REBUILD start 2026-09-15T17:02:21+08:00  base /extra/alexey/builds/tsan-line-f3deebfbab60
+  TSAN_EXTRA_MLLVM=-mllvm -tsan-ea-report-abandoned
+  mysql rc=0 in 27 min  2026-09-15T17:30:14+08:00
+  redis rc=0 in 9 min  2026-09-15T17:39:47+08:00
+  ffmpeg rc=0 in 12 min  2026-09-15T17:52:37+08:00
+  memcached rc=0 in 2 min  2026-09-15T17:55:26+08:00
+  sqlite rc=0 in 22 min  2026-09-15T18:18:22+08:00
+CAMPAIGN-REBUILD BUILDS DONE 2026-09-15T18:18:22+08:00
+  GUARD FAIL: src lacks the flag (/home/alexey/tsan-experiments/nosql/redis/redis-polygon/redis-orig/src/build_info.txt)
+  GUARD FAIL: src lacks the flag (/home/alexey/tsan-experiments/nosql/redis/redis-polygon/redis-tsan/src/build_info.txt)
+GUARD FAILED (missing=2, checked=54): a negative count means the guard itself examined nothing.
+GUARD FAILED: instrumented configurations lack -tsan-ea-report-abandoned.
+A zero abandoned-function count from those is meaningless: the flag never reached them.
+abandoned-function counts (zero required per application):
+  mysql      0
+0
+  redis      0
+0
+  ffmpeg     0
+0
+  memcached  0
+0
+  sqlite     0
+0
+CAMPAIGN-REBUILD DONE 2026-09-15T18:18:23+08:00

@@ -1,0 +1,2 @@
+claude samples=716 peak_pcpu=5.5
+sshd samples=74 peak_pcpu=0.8

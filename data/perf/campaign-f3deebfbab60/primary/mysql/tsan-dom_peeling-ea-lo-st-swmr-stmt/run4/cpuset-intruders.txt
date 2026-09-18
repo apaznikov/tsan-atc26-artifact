@@ -1,0 +1,10 @@
+claude samples=1290 peak_pcpu=5.4
+Variane_testhar samples=67 peak_pcpu=101.0
+Rider.Backend samples=54 peak_pcpu=5.3
+MainThread samples=39 peak_pcpu=1.0
+sshd samples=35 peak_pcpu=0.8
+python3 samples=7 peak_pcpu=28.5
+mysqladmin samples=7 peak_pcpu=25.0
+clang samples=5 peak_pcpu=102.0
+git samples=2 peak_pcpu=104.0
+java samples=1 peak_pcpu=254.0

@@ -1,0 +1,11 @@
+claude samples=355 peak_pcpu=5.3
+remote-dev-serv samples=57 peak_pcpu=59.5
+cc1plus samples=18 peak_pcpu=125.0
+sshd samples=17 peak_pcpu=0.8
+Variane_testhar samples=16 peak_pcpu=105.0
+ccache samples=11 peak_pcpu=12.5
+python3 samples=9 peak_pcpu=37.5
+git-remote-http samples=5 peak_pcpu=37.5
+verilator_bin samples=2 peak_pcpu=100.0
+git samples=1 peak_pcpu=750.0
+Rider.Backend samples=1 peak_pcpu=5.2

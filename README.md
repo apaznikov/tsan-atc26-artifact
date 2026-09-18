@@ -51,8 +51,10 @@ each performance run writes `results/perf-<app>-<stamp>/perf_<app>.md` (the tabl
 application, one row per configuration, with the point estimate or the interval) and
 `perf_summary.md`; the correctness steps write their own directories under `results/` (the
 preservation suite's `report.txt` and `manifest.txt`, the soundness shapes' lit logs). The
-performance rows are compared with the intervals in `CLAIMS.md` section 5 by the criterion stated
-there. On a machine with 48 or more processors the performance tier pins the first 48 unless
+performance tiers end with `harness/tools/perf/compare_with_claims.py`, which prints one line per
+configuration row against the interval `CLAIMS.md` ships for it (inside or outside, not judged, not
+comparable) and a count of rows judged; read that count first, since a row it cannot judge is reported,
+never passed, and its silence is never a pass. On a machine with 48 or more processors the performance tier pins the first 48 unless
 `ART_CPUSET` says which; on a smaller one it runs unpinned and says so.
 
 `evaluate.sh` runs the scripts below in the documented order, prints one line per step with its time,

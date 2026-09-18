@@ -1,0 +1,6 @@
+claude samples=39 peak_pcpu=5.3
+remote-dev-serv samples=12 peak_pcpu=59.2
+sshd samples=5 peak_pcpu=0.8
+git-remote-http samples=3 peak_pcpu=3.7
+java samples=1 peak_pcpu=160.0
+bench_one.sh samples=1 peak_pcpu=6.6

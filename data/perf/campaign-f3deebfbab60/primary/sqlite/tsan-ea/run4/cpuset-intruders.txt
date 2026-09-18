@@ -1,0 +1,3 @@
+claude samples=725 peak_pcpu=5.5
+Rider.Backend samples=89 peak_pcpu=5.4
+sshd samples=66 peak_pcpu=0.8

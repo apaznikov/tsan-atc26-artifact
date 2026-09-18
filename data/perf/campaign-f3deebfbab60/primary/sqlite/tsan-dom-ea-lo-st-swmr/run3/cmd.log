@@ -1,0 +1,8 @@
+--- Running Benchmark for: tsan-dom-ea-lo-st-swmr ---
+Executable: build/test-tsan-dom-ea-lo-st-swmr/threadtest3
+Full Command: build/test-tsan-dom-ea-lo-st-swmr/threadtest3
+Output will be saved to: results/tsan-dom-ea-lo-st-swmr.log
+Memory usage will be saved to: results/memory.txt
+Running, please wait...
+--- Benchmark for [tsan-dom-ea-lo-st-swmr] completed successfully. ---
+

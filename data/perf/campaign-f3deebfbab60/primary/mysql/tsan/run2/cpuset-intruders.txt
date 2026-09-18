@@ -1,0 +1,5 @@
+claude samples=1192 peak_pcpu=5.4
+sshd samples=49 peak_pcpu=0.8
+Rider.Backend samples=33 peak_pcpu=5.3
+mysqladmin samples=9 peak_pcpu=33.3
+pgrep samples=2 peak_pcpu=200.0

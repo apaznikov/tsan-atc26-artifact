@@ -1,0 +1,5 @@
+claude samples=111 peak_pcpu=5.6
+memtier_benchma samples=83 peak_pcpu=889.0
+Variane_testhar samples=6 peak_pcpu=102.0
+python3 samples=2 peak_pcpu=133.0
+Rider.Backend samples=2 peak_pcpu=5.5

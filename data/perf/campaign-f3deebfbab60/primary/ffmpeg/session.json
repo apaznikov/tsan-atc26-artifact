@@ -1,0 +1,26 @@
+{
+ "app": "ffmpeg",
+ "hash": "f3deebfbab60",
+ "N": 5,
+ "configs": [
+  "orig",
+  "tsan",
+  "tsan-ea",
+  "tsan-lo",
+  "tsan-st",
+  "tsan-swmr",
+  "tsan-stmt",
+  "tsan-dom",
+  "tsan-dom_peeling",
+  "tsan-dom-ea-lo-st-swmr",
+  "tsan-dom_peeling-ea-lo-st-swmr",
+  "tsan-dom_peeling-ea-lo-st-swmr-stmt"
+ ],
+ "cpuset": "4-27,60-83",
+ "mode": "pinned",
+ "started": "2026-09-16T22:02:32",
+ "host": "focs-server",
+ "nproc_machine": 112,
+ "governor": "powersave",
+ "no_turbo": "0"
+}

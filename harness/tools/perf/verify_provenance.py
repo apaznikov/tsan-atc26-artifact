@@ -38,7 +38,15 @@ def check(root, want_hash):
     print(f"\n=== {root} ===")
     runs = list(rows(root))
     if not runs:
-        print("  no measured runs"); return True
+        # AN EMPTY ROOT IS NOT A VERIFIED ROOT. This returned True, so a root with nothing in it printed
+        # "no measured runs" and then "PROVENANCE OK", exit 0 -- and on 2026-09-18 that is exactly what
+        # the artifact's provenance gate said about the freshly exported campaign, because the export
+        # writes primary/ and r2/ below the root it was handed and this function looks exactly two levels
+        # down. The gate every performance claim rests on was passing on 400 cells it never opened.
+        print("  NO MEASURED RUNS UNDER THIS ROOT -- nothing was verified, which is not a pass.")
+        print(f"  (looked for {root}/<app>/<config>/run<N>/meta.json; if the runs are a level deeper,")
+        print("   name the subdirectories instead, e.g. <root>/primary <root>/r2)")
+        return False
     ok = True
     byapp = defaultdict(list)
     for j, m in runs:
@@ -110,6 +118,20 @@ def main():
     roots = args or ["results/campaign-f3deebfbab60/primary"]
     if expect is None:
         expect = os.environ.get("P5_HASH", "f3deebfbab60")[:12]
+    # A root that holds no runs of its own but has subdirectories that do (the exported layout, which is
+    # <root>/primary and <root>/r2) is expanded rather than refused: the caller named the campaign and the
+    # campaign is what gets checked. Expansion is only ever one level and only when the root itself is
+    # empty, so it cannot silently widen what a caller asked for.
+    expanded = []
+    for r in roots:
+        if not list(rows(r)):
+            subs = sorted(d for d in glob.glob(f"{r}/*") if os.path.isdir(d) and list(rows(d)))
+            if subs:
+                print(f"note: {r} holds no runs directly; checking its {len(subs)} sub-root(s): "
+                      + ", ".join(os.path.basename(d) for d in subs))
+                expanded.extend(subs); continue
+        expanded.append(r)
+    roots = expanded
     results = []
     for r in roots:
         if expect == "self":

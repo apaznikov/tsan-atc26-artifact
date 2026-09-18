@@ -1,0 +1,12 @@
+claude samples=207 peak_pcpu=5.3
+remote-dev-serv samples=68 peak_pcpu=59.0
+java samples=68 peak_pcpu=679.0
+compile samples=64 peak_pcpu=614.0
+crdb_nogo_actua samples=41 peak_pcpu=506.0
+sshd samples=24 peak_pcpu=0.8
+Rider.Backend samples=19 peak_pcpu=5.2
+MainThread samples=18 peak_pcpu=0.8
+kworker/u224:5-events_power_efficient samples=4 peak_pcpu=2.2
+builder samples=3 peak_pcpu=2.3
+kworker/u224:5-flush-259:0 samples=2 peak_pcpu=2.8
+kworker/u224:5-events_unbound samples=1 peak_pcpu=2.0

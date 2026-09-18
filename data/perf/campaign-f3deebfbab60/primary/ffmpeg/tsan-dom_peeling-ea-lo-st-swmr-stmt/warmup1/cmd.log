@@ -1,0 +1,40 @@
+jq found, will generate JSON output to /home/alexey/tsan-experiments/tools/perf/results/campaign-f3deebfbab60/primary/ffmpeg/tsan-dom_peeling-ea-lo-st-swmr-stmt/warmup1/summary.json.
+--- FFmpeg Benchmark Start (using /usr/bin/time) ---
+Builds to test: ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt
+Video file: ./input/TearsOfSteel-1366x768-100s.mkv
+Runs per test: 1
+
+--- Benchmarking: Codec [h264_libx264], Build [ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt] ---
+
+[96;1mffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 4 -y -c:v libx264 -preset medium -crf 23  -loglevel error /dev/shm/out.mp4[0m
+
+  Run 1/1... OK (Time: 46.29s, Mem: 584000KB)
+  Results: Time(avg±std): 46.2900s ± 0s | Mem(peak): 584000KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [copy_passthrough], Build [ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt] ---
+
+[96;1mffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 4 -y -c:v copy -c:a copy  -loglevel error /dev/shm/out.mkv[0m
+
+  Run 1/1... OK (Time: 0.52s, Mem: 78232KB)
+  Results: Time(avg±std): .5200s ± 0s | Mem(peak): 78232KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [mjpeg], Build [ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt] ---
+
+[96;1mffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 4 -y -c:v mjpeg -pix_fmt yuvj420p -q:v 2  -loglevel error /dev/shm/out.avi[0m
+
+  Run 1/1... OK (Time: 21.1s, Mem: 420524KB)
+  Results: Time(avg±std): 21.1000s ± 0s | Mem(peak): 420524KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [h265_libx265], Build [ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt] ---
+
+[96;1mffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 4 -y -c:v libx265 -preset medium -crf 28 -tag:v hvc1  -loglevel error /dev/shm/out.mp4[0m
+
+  Run 1/1... OK (Time: 43.16s, Mem: 1667336KB)
+  Results: Time(avg±std): 43.1600s ± 0s | Mem(peak): 1667336KB | Runs: 1/1
+--------------------------------------------------------
+
+JSON results have been finalized in /home/alexey/tsan-experiments/tools/perf/results/campaign-f3deebfbab60/primary/ffmpeg/tsan-dom_peeling-ea-lo-st-swmr-stmt/warmup1/summary.json
+Benchmark finished. CSV results are in /home/alexey/tsan-experiments/tools/perf/results/campaign-f3deebfbab60/primary/ffmpeg/tsan-dom_peeling-ea-lo-st-swmr-stmt/warmup1/summary.csv

@@ -1,0 +1,38 @@
+CAMPAIGN-LEGS start 2026-09-15T18:49:02+08:00
+LEG redis (primary) start 2026-09-15T18:49:02+08:00  cfgs=14
+  LEG redis (primary) complete, every configuration at N=5
+  redis (primary) 114 min  2026-09-15T20:43:14+08:00
+LEG ffmpeg (primary) start 2026-09-15T20:43:14+08:00  cfgs=14
+  LEG ffmpeg (primary) complete, every configuration at N=5
+  ffmpeg (primary) 0 min  2026-09-15T20:43:15+08:00
+LEG memcached (primary) start 2026-09-15T20:43:15+08:00  cfgs=14
+FFMPEG-RELEG waiting for campaign_legs.sh to finish  2026-09-15T22:55:15+08:00
+REDIS-C112 waiting for campaign_legs.sh and the FFmpeg re-leg  2026-09-15T23:00:13+08:00
+  LEG memcached (primary) complete, every configuration at N=5
+  memcached (primary) 227 min  2026-09-16T00:30:40+08:00
+LEG sqlite (primary) start 2026-09-16T00:30:40+08:00  cfgs=14
+FFMPEG-OLDCLIP waiting for every other driver  2026-09-16T07:02:35+08:00
+  LEG sqlite (primary) complete, every configuration at N=5
+  sqlite (primary) 416 min  2026-09-16T07:27:05+08:00
+LEG mysql (primary) start 2026-09-16T07:27:05+08:00  cfgs=4
+  LEG mysql (primary) complete, every configuration at N=5
+  mysql (primary) 397 min  2026-09-16T14:04:39+08:00
+LEG memcached (r2) start 2026-09-16T14:04:39+08:00  cfgs=4
+  LEG memcached (r2) complete, every configuration at N=5
+  memcached (r2) 82 min  2026-09-16T15:26:54+08:00
+LEG mysql (r2) start 2026-09-16T15:26:54+08:00  cfgs=4
+  LEG mysql (r2) complete, every configuration at N=5
+  mysql (r2) 395 min  2026-09-16T22:01:57+08:00
+CAMPAIGN-LEGS DONE 2026-09-16T22:01:57+08:00
+FFMPEG-RELEG start 2026-09-16T22:02:32+08:00  cfgs=12 (14 asked, 12 buildable)
+  FFMPEG-RELEG complete, all 12 configurations at N=5
+  ffmpeg (releg) 129 min  2026-09-17T00:11:53+08:00
+REDIS-C112 start 2026-09-17T00:12:44+08:00  cfgs=14  REDIS_BENCH_CLIENTS=112
+  REDIS-C112 complete, all 14 configurations at N=5
+  redis (c=112) 170 min  2026-09-17T03:03:13+08:00
+CAMPAIGN ALL LEGS DONE 2026-09-17T03:03:13+08:00
+FFMPEG-OLDCLIP start 2026-09-17T03:04:06+08:00  clip=/home/alexey/tsan-experiments/projects/ffmpeg/input/WatchingEyeTexture.mkv  cfgs=5
+  FFMPEG-OLDCLIP complete, all 5 configurations at N=5
+  input_sha256 across runs: 92eea6ec4bb6  (one value, non-empty, = the retired clip)
+  ffmpeg (old clip) 59 min  2026-09-17T04:03:12+08:00
+CAMPAIGN ALL LEGS DONE (incl. old-clip control) 2026-09-17T04:03:12+08:00

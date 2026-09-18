@@ -49,7 +49,7 @@ DynSTC.
 
 | Claim | Script | Match criterion |
 |---|---|---|
-| Every run of the campaign (`data/perf/campaign-*`, the roots every performance claim rests on) records the compiler that built it, the hash of the binary it ran, the hash of its input, its processor set and mode, the foreign-activity share the gate saw, and its place in a full set of N. The earlier trees shipped beside them were recorded before the harness wrote every one of those fields and on earlier compilers; they support no claim and the script reports them for information only | `scripts/91-verify-provenance.sh` | exact: six assertions, each of which fails on a fault we have actually produced (a pre-audit binary measured as current; a configuration whose binary changed mid-leg; an input path that satisfied the runner and recorded an empty hash; pinned and unpinned runs pooled; a run above the gate that was kept; a thin row that looked complete) |
+| Every run of the campaign (`data/perf/campaign-f3deebfbab60/{primary,r2}`, shipped since 18 Sep 2026: 290 and 110 measured cells, the roots every performance claim rests on) records the compiler that built it, the hash of the binary it ran, the hash of its input, its processor set and mode, the foreign-activity share the gate saw, and its place in a full set of N; `scripts/91-verify-provenance.sh` opens every one of them and exits 0 only when all are attributable, an empty root is a failure ("nothing was verified, which is not a pass": a first version passed vacuously on a root whose runs lay one level down), and a root that holds no runs directly is expanded to its sub-roots. The earlier trees shipped beside them were recorded before the harness wrote every one of those fields and on earlier compilers; they support no claim and the script reports them for information only | `scripts/91-verify-provenance.sh` | exact: six assertions, each of which fails on a fault we have actually produced (a pre-audit binary measured as current; a configuration whose binary changed mid-leg; an input path that satisfied the runner and recorded an empty hash; pinned and unpinned runs pooled; a run above the gate that was kept; a thin row that looked complete) |
 
 This is the property the paper's setup section rests on. It does not check that a configuration's
 flags were the intended ones, which is the build guard's job at build time, and it says nothing
@@ -233,6 +233,16 @@ size and the `-threads 4` cap in force together, carried all four, the two recov
 4 seconds of a 90-second run between them). Twelve configurations rather than fourteen: FFmpeg has no
 whole-program summary generator.
 
+The thread sweep on the same clip (18 Sep 2026, `-threads` 2, 4, 8 and 16, the four default configurations,
+N = 5, 20 cells per arm, none disturbed, pre-flight worst 0.016) says what the single `-threads 4` row cannot:
+DynSTC's speedup is a property of the transform and not of the concurrency, 1.113 [1.098, 1.131], 1.113
+[1.096, 1.128], 1.116 [1.087, 1.130] and 1.114 [1.102, 1.125] across an eightfold range, every interval
+excluding 1.0. AllOpt with peeling does depend on it: it crosses 1.0 at 2 and 4 threads (1.005 [0.998,
+1.021], 1.010 [0.999, 1.021]) and excludes it at 8 and 16 (1.063 [1.052, 1.069], 1.065 [1.055, 1.076]), a gain
+of about 6 per cent that is absent at the campaign's thread count. That is one sweep and is reported as an
+observation, not claimed; it is the first place in the campaign where peeling pays, and it says where to look.
+Stock ThreadSanitizer's overhead falls with threads, 2.94 to 2.66, the expected direction.
+
 **The paper's FFmpeg column is not comparable with this one in either direction**: it was measured on
 a clip that cannot be redistributed, and a difference between the two could be the input as much as
 the compiler. Within this table every configuration shares one input, so the rows compare with each
@@ -344,7 +354,22 @@ comparable one, also exists: AllOpt with peeling 1.004 [0.984, 1.032] against th
 shipped interval excludes 1.0 by 0.001 and the evaluator's contains it by 0.003, which by the letter of
 the N = 5 criterion is a mismatch and by the numbers is a knife-edge on a bound of 0.999 with identical
 points. Both numbers are given so a reader sees the 0.001. The table is generated from this
-file's own interval tables and each run's `perf_<app>.md`, not transcribed. The Redis rows are from the
+file's own interval tables and each run's `perf_<app>.md`, not transcribed, by
+`harness/tools/perf/compare_with_claims.py`, which ships and is the last step of `evaluate.sh reproduced`:
+one line per configuration row (the evaluator's point or interval, the shipped interval, inside or outside,
+the same-side test where the shipped interval excludes 1.0), "not judged" for the stock-against-native
+ratio and for a run that records no thread count, "not comparable" for a run on a non-reference clip or a
+different thread count, and a count of rows judged; its exit status is 0 only when every judged row is
+inside, and its silence is never a pass.
+
+On other hardware the criterion does not apply, and the first such run says what does travel. An AMD EPYC
+9115 host (64 threads, 48 pinned, N = 2, no cell disturbed, 18 Sep 2026) judged six rows: Redis AllOpt with
+peeling 1.014 inside; Redis DynSTC 0.983, outside the upper limit 0.970 by 0.013 and on the same side of 1.0,
+so the direction reproduces and the magnitude is smaller (1.7 against 5.6 per cent); memcached 1.003 and
+0.999 inside; SQLite 0.909 and 0.851 outside, on the heterogeneous headline column at N = 2, where this host's
+own N = 2 point was outside and its N = 5 interval inside; FFmpeg not comparable (regenerated clip), with
+DynSTC at 1.128 above 1.0 like ours. Both directional results of the campaign reproduce on the other vendor's
+processor; the magnitudes do not transfer, SQLite's least. The Redis rows are from the
 run of 17 Sep 14:15; memcached and FFmpeg from the run of 17 Sep 23:07, which followed the thread-count
 and shared-memory fixes and carried `input_is_reference: true`; SQLite from the run of 18 Sep 11:47.
 

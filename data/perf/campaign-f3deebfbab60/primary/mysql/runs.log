@@ -1,0 +1,25 @@
+mysql orig run1 rc=0 924.6s outside_busy=0.0114 inside_busy=0.518 foreign_cpu_share=0.5494 (warmup, discarded)
+mysql tsan run1 rc=0 1013.3s outside_busy=0.0088 inside_busy=0.1976 foreign_cpu_share=0.212 (warmup, discarded)
+mysql tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 1015.8s outside_busy=0.0078 inside_busy=0.2073 foreign_cpu_share=0.2207 (warmup, discarded)
+mysql tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 1012.8s outside_busy=0.0078 inside_busy=0.2028 foreign_cpu_share=0.2161 (warmup, discarded)
+mysql orig run1 rc=0 923.6s outside_busy=0.0087 inside_busy=0.534 foreign_cpu_share=0.5511
+mysql tsan run1 rc=0 1009.6s outside_busy=0.0082 inside_busy=0.2582 foreign_cpu_share=0.2719
+mysql tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 1011.8s outside_busy=0.008 inside_busy=0.2468 foreign_cpu_share=0.26
+mysql tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 1010.5s outside_busy=0.0078 inside_busy=0.2122 foreign_cpu_share=0.2253
+mysql orig run2 rc=0 924.7s outside_busy=0.0091 inside_busy=0.5259 foreign_cpu_share=0.5436
+mysql tsan run2 rc=0 1014.6s outside_busy=0.0085 inside_busy=0.2472 foreign_cpu_share=0.2615
+mysql tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 1010.2s outside_busy=0.0085 inside_busy=0.231 foreign_cpu_share=0.2451
+mysql tsan-dom_peeling-ea-lo-st-swmr-stmt run2 rc=0 1012.4s outside_busy=0.0078 inside_busy=0.1927 foreign_cpu_share=0.2057
+mysql orig run3 rc=0 923.8s outside_busy=0.0087 inside_busy=0.5256 foreign_cpu_share=0.5429
+mysql tsan run3 rc=0 1011.6s outside_busy=0.0084 inside_busy=0.2596 foreign_cpu_share=0.2738
+mysql tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 1013.5s outside_busy=0.0087 inside_busy=0.1832 foreign_cpu_share=0.1974
+mysql tsan-dom_peeling-ea-lo-st-swmr-stmt run3 rc=0 1018.2s outside_busy=0.0208 inside_busy=0.241 foreign_cpu_share=0.2743
+mysql orig run4 rc=0 922.6s outside_busy=0.0203 inside_busy=0.5302 foreign_cpu_share=0.565
+mysql tsan run4 rc=0 1030.3s outside_busy=0.0213 inside_busy=0.2163 foreign_cpu_share=0.2492
+mysql tsan-dom_peeling-ea-lo-st-swmr run4 rc=0 1015.7s outside_busy=0.0091 inside_busy=0.1877 foreign_cpu_share=0.2024
+mysql tsan-dom_peeling-ea-lo-st-swmr-stmt run4 rc=0 1014.9s outside_busy=0.0194 inside_busy=0.2412 foreign_cpu_share=0.2721
+mysql orig run5 rc=0 923.8s outside_busy=0.0118 inside_busy=0.5295 foreign_cpu_share=0.5508
+mysql tsan run5 rc=0 1013.3s outside_busy=0.0095 inside_busy=0.1823 foreign_cpu_share=0.1978
+mysql tsan-dom_peeling-ea-lo-st-swmr run5 rc=0 1011.8s outside_busy=0.0145 inside_busy=0.2475 foreign_cpu_share=0.2703
+mysql tsan-dom_peeling-ea-lo-st-swmr-stmt run5 rc=0 1015.3s outside_busy=0.0131 inside_busy=0.2183 foreign_cpu_share=0.2403
+DONE mysql

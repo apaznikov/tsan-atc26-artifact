@@ -98,7 +98,7 @@ fi
 mkdir -p results
 log="results/evaluate-$tier-$(date +%Y%m%d-%H%M%S).log"
 echo "log: $log"; echo
-start_all=$(date +%s); verdict=PASS; failed=""
+start_all=$(date +%s); verdict=PASS; failed=""; compared=""
 i=0
 for s in "${steps[@]}"; do
   i=$((i+1)); IFS='|' read -r label t cmd <<< "$s"
@@ -128,12 +128,29 @@ for s in "${steps[@]}"; do
   fi
   rm -f "$step_out"
 done
+# The performance tiers end with the comparison an evaluator came for: every row this run produced
+# against the interval CLAIMS.md ships for it. The script reads the intervals out of CLAIMS.md's own
+# tables and the expected thread counts out of the shipped campaign runs, so nothing is hardcoded; its
+# silence is never a pass, six of its nine output states are refusals, and its "rows judged" line is
+# the one to read first. A judged row outside its interval is reported as such, not as a failure of
+# the artifact's plumbing, and the exit status carries it.
+if [ "$tier" != functional ] && [ "$verdict" != FAIL ]; then
+  trees=$(find results -maxdepth 1 -name 'perf-*' -newermt "@$start_all" | sort | tr '\n' ' ')
+  if [ -n "$trees" ]; then
+    echo
+    echo "Comparison with the intervals in CLAIMS.md (section 5):"
+    ./docker/run.sh python3 harness/tools/perf/compare_with_claims.py CLAIMS.md $trees 2>&1 | tee -a "$log"
+    cmp_rc=${PIPESTATUS[0]}
+    [ "$cmp_rc" -eq 0 ] || compared=OUTSIDE
+  fi
+fi
 dt=$(( $(date +%s) - start_all ))
 echo
-echo "evaluate.sh: $verdict  (tier $tier, $((dt/3600))h$(( (dt%3600)/60 ))m; full log in $log)"
+echo "evaluate.sh: $verdict${compared:+, rows $compared their intervals}  (tier $tier, $((dt/3600))h$(( (dt%3600)/60 ))m; full log in $log)"
 case "$verdict" in
   PASS) echo "Every step ran and passed. For what each step established, read CLAIMS.md; the performance rows compare against its intervals." ;;
   INCOMPLETE) echo "Nothing failed, but a check could not be made here (its prerequisite is absent); the log names it. A skipped check is neither a pass nor a failure." ;;
   FAIL) echo "Stopped at: $failed. docs/troubleshooting.md lists the failures we know; the log has the rest." ;;
 esac
-[ "$verdict" = PASS ]
+[ -n "${compared:-}" ] && echo "At least one judged performance row lies outside the shipped interval; CLAIMS.md section 5 says what such a row can and cannot mean."
+[ "$verdict" = PASS ] && [ -z "${compared:-}" ]

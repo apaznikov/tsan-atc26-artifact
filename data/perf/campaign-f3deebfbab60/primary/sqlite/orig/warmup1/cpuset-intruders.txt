@@ -1,0 +1,14 @@
+claude samples=1930 peak_pcpu=5.6
+python3 samples=182 peak_pcpu=54.5
+sshd samples=146 peak_pcpu=0.8
+Rider.Backend samples=127 peak_pcpu=5.5
+Variane_testhar samples=48 peak_pcpu=105.0
+ccache samples=38 peak_pcpu=33.3
+cc1plus samples=27 peak_pcpu=150.0
+git-remote-http samples=7 peak_pcpu=7.4
+make samples=5 peak_pcpu=3.1
+verilator_bin samples=3 peak_pcpu=101.0
+perl samples=3 peak_pcpu=100.0
+git samples=3 peak_pcpu=1350.0
+runc:[2:INIT] samples=1 peak_pcpu=18.1
+pgrep samples=1 peak_pcpu=133.0

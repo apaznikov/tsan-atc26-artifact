@@ -1,0 +1,8 @@
+--- Running Benchmark for: tsan-ea ---
+Executable: build/test-tsan-ea/threadtest3
+Full Command: build/test-tsan-ea/threadtest3
+Output will be saved to: results/tsan-ea.log
+Memory usage will be saved to: results/memory.txt
+Running, please wait...
+--- Benchmark for [tsan-ea] completed successfully. ---
+

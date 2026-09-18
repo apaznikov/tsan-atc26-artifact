@@ -1,0 +1,92 @@
+{
+  "benchmarks": [
+    {
+      "codec": "h264_libx264",
+      "build": "ffmpeg-tsan-st",
+      "runs": {
+        "successful": 1,
+        "total": 1
+      },
+      "time": {
+        "mean_s": 45.6100,
+        "stddev_s": 0,
+        "min_s": 45.61,
+        "max_s": 45.61
+      },
+      "cpu": {
+        "mean_user_s": 225.4600,
+        "mean_system_s": 8.9200
+      },
+      "memory": {
+        "max_peak_kb": 581992
+      },
+      "command_template": "ffmpeg-tsan-st/bin/ffmpeg -hide_banner -i \"./input/TearsOfSteel-1366x768-100s.mkv\" -threads 4 -y -c:v libx264 -preset medium -crf 23  -loglevel error /dev/shm/out.mp4"
+    },
+    {
+      "codec": "copy_passthrough",
+      "build": "ffmpeg-tsan-st",
+      "runs": {
+        "successful": 1,
+        "total": 1
+      },
+      "time": {
+        "mean_s": 0.8100,
+        "stddev_s": 0,
+        "min_s": 0.81,
+        "max_s": 0.81
+      },
+      "cpu": {
+        "mean_user_s": 0.6900,
+        "mean_system_s": 0.1200
+      },
+      "memory": {
+        "max_peak_kb": 75088
+      },
+      "command_template": "ffmpeg-tsan-st/bin/ffmpeg -hide_banner -i \"./input/TearsOfSteel-1366x768-100s.mkv\" -threads 4 -y -c:v copy -c:a copy  -loglevel error /dev/shm/out.mkv"
+    },
+    {
+      "codec": "mjpeg",
+      "build": "ffmpeg-tsan-st",
+      "runs": {
+        "successful": 1,
+        "total": 1
+      },
+      "time": {
+        "mean_s": 20.6400,
+        "stddev_s": 0,
+        "min_s": 20.64,
+        "max_s": 20.64
+      },
+      "cpu": {
+        "mean_user_s": 177.6900,
+        "mean_system_s": 1.4200
+      },
+      "memory": {
+        "max_peak_kb": 416804
+      },
+      "command_template": "ffmpeg-tsan-st/bin/ffmpeg -hide_banner -i \"./input/TearsOfSteel-1366x768-100s.mkv\" -threads 4 -y -c:v mjpeg -pix_fmt yuvj420p -q:v 2  -loglevel error /dev/shm/out.avi"
+    },
+    {
+      "codec": "h265_libx265",
+      "build": "ffmpeg-tsan-st",
+      "runs": {
+        "successful": 1,
+        "total": 1
+      },
+      "time": {
+        "mean_s": 42.8100,
+        "stddev_s": 0,
+        "min_s": 42.81,
+        "max_s": 42.81
+      },
+      "cpu": {
+        "mean_user_s": 512.3400,
+        "mean_system_s": 7.2200
+      },
+      "memory": {
+        "max_peak_kb": 1660128
+      },
+      "command_template": "ffmpeg-tsan-st/bin/ffmpeg -hide_banner -i \"./input/TearsOfSteel-1366x768-100s.mkv\" -threads 4 -y -c:v libx265 -preset medium -crf 28 -tag:v hvc1  -loglevel error /dev/shm/out.mp4"
+    }
+  ]
+}
