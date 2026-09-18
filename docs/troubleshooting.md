@@ -12,6 +12,25 @@ configuration. The shipped example makes the worker sleep 100 ms before its writ
 reported in 20 of 20 runs under stock, under AllOpt and under upstream. If you edit the example and
 remove the sleep, expect intermittent reports; that is the runtime's detection, not an elision.
 
+## "permission denied while trying to connect to the docker API at unix:///var/run/docker.sock"
+
+Docker is installed but the daemon refuses your user. Add yourself to the `docker` group and start a new
+login session (or `newgrp docker` in the current shell), then run the command again:
+
+```
+sudo usermod -aG docker "$USER"
+newgrp docker
+./evaluate.sh --quick
+```
+
+Running the scripts with `sudo` also works but leaves `results/` and `build/` owned by root.
+`00-prereqs.sh` reports this as "docker daemon access" missing; a version before 18 Sep 2026 checked only
+that the `docker` command existed, and a run on a second server passed the check and failed the build.
+
+Two warnings from Docker itself are not failures: "DEPRECATED: The legacy builder is deprecated" means the
+BuildKit plugin (`docker-buildx`) is not installed, and the image builds with the legacy builder all the
+same; "seccomp" and "no_new_privileges" notices come from the flags `docker/run.sh` passes on purpose.
+
 ## "Segmentation fault" for every instrumented program inside Docker
 
 The log ends with `ThreadSanitizer: CHECK failed: tsan_platform_linux.cpp ... personality(old_personality
