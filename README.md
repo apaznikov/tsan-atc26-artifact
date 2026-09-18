@@ -38,10 +38,15 @@ any x86-64 Linux host. The performance experiments need at least 32 cores to be 
 ## Getting started: about twenty minutes
 
 ```
-./scripts/00-prereqs.sh          # says what is missing, changes nothing
+./scripts/00-prereqs.sh          # says what is missing, changes nothing; on the host only Docker matters
 ./docker/build.sh                # builds the image, including the compiler
 ./docker/run.sh scripts/10-minimal-example.sh
 ```
+
+On the host, Docker is the only requirement. `00-prereqs.sh` run on the host reports the compiler,
+`llvm-lit` and the benchmark clients as missing: that is expected, they live inside the container and
+`docker/build.sh` builds them, and nothing is to be installed for them. Run it again inside the container
+(`./docker/run.sh scripts/00-prereqs.sh`) and it passes.
 
 Start the container through `docker/run.sh`. It does two things a hand-written `docker run` will
 not: it passes `--security-opt seccomp=unconfined`, because the ThreadSanitizer runtime re-executes
