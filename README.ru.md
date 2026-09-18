@@ -97,7 +97,7 @@ seccomp в Docker этот вызов запрещает, и без флага �
 сутки на измерения:
 
 ```
-./docker/run.sh scripts/01-functional.sh            # около 1 ч 45 мин на 32 процессорах, дольше на 8
+./docker/run.sh scripts/01-functional.sh            # 31 мин на 64 процессорах, 1 ч 45 мин на 32, дольше на 8
 ./docker/run.sh scripts/01-functional.sh --quick    # около 5 минут, без регрессионного набора
 ```
 

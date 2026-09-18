@@ -87,7 +87,7 @@ For the Functional badge, and for anyone who wants to know the artifact does wha
 spending a day on measurements:
 
 ```
-./docker/run.sh scripts/01-functional.sh            # about 1 h 45 min on 32 processors, longer on 8
+./docker/run.sh scripts/01-functional.sh            # 31 min on 64 processors, 1 h 45 min on 32, longer on 8
 ./docker/run.sh scripts/01-functional.sh --quick    # about 5 minutes, without the regression suite
 ```
 

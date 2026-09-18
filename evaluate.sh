@@ -48,7 +48,7 @@ add "minimal example"                     "1 min"     "./docker/run.sh scripts/1
 if [ "$quick" = 1 ]; then
   add "correctness set, quick"            "5 min"     "./docker/run.sh scripts/01-functional.sh --quick"
 else
-  add "correctness set, full"             "1 h 45 min on 32 processors, longer on 8" "./docker/run.sh scripts/01-functional.sh"
+  add "correctness set, full"             "31 min on 64 processors, 1 h 45 min on 32, longer on 8" "./docker/run.sh scripts/01-functional.sh"
 fi
 add "tables from the shipped runs"        "1 min"     "./docker/run.sh scripts/90-tables.sh"
 if [ "$tier" != functional ]; then
@@ -99,13 +99,15 @@ for s in "${steps[@]}"; do
   cat "$step_out" >> "$log"
   dt=$(( $(date +%s) - t0 ))
   printf '    %-38s rc=%d  %dm%02ds\n' "$label" "$rc" $((dt/60)) $((dt%60))
-  if [ "$rc" -ne 0 ]; then
-    # 01-functional exits non-zero also when a step was SKIPPED: a check not made, neither a pass nor a
-    # failure, and the run goes on. Any other non-zero exit stops the run, because each later step
-    # assumes the earlier ones. The test is on THIS step's output, not on the whole log.
-    if /usr/bin/grep -q 'correctness set is INCOMPLETE' "$step_out"; then
-      verdict=INCOMPLETE; echo "    (a check of the correctness set could not be made here and was skipped; see $log)"; rm -f "$step_out"; continue
-    fi
+  # A skipped check is neither a pass nor a failure, and it must not be reported as a pass: 01-functional
+  # prints "the correctness set is INCOMPLETE" when a step's prerequisite is absent and exits 0, because
+  # nothing failed. The first version of this script tested the text only on a non-zero exit and reported
+  # PASS over an INCOMPLETE set (found on a second server, 18 Sep 2026). The test is on THIS step's output.
+  if /usr/bin/grep -q 'correctness set is INCOMPLETE' "$step_out"; then
+    [ "$verdict" = FAIL ] || verdict=INCOMPLETE
+    echo "    INCOMPLETE: a check could not be made here and was skipped (its prerequisite is absent); see $log"
+  fi
+  if [ "$rc" -ne 0 ] && ! /usr/bin/grep -q 'correctness set is INCOMPLETE' "$step_out"; then
     verdict=FAIL; failed="$label"; echo "    FAILED; the last lines of its output:"; tail -15 "$step_out" | sed 's/^/      /'; rm -f "$step_out"; break
   fi
   rm -f "$step_out"
