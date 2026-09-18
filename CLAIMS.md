@@ -49,7 +49,7 @@ DynSTC.
 
 | Claim | Script | Match criterion |
 |---|---|---|
-| Every run of the campaign (`data/perf/campaign-f3deebfbab60/{primary,r2}`, shipped since 18 Sep 2026: 291 and 110 measured runs beside their warm-ups, the roots every performance claim rests on) records the compiler that built it, the hash of the binary it ran, the hash of its input, its processor set and mode, the foreign-activity share the gate saw, and its place in a full set of N; `scripts/91-verify-provenance.sh` opens every one of them and exits 0 only when all are attributable, an empty root is a failure ("nothing was verified, which is not a pass": a first version passed vacuously on a root whose runs lay one level down), and a root that holds no runs directly is expanded to its sub-roots. The earlier trees shipped beside them were recorded before the harness wrote every one of those fields and on earlier compilers; they support no claim and the script reports them for information only | `scripts/91-verify-provenance.sh` | exact: six assertions, each of which fails on a fault we have actually produced (a pre-audit binary measured as current; a configuration whose binary changed mid-leg; an input path that satisfied the runner and recorded an empty hash; pinned and unpinned runs pooled; a run above the gate that was kept; a thin row that looked complete) |
+| Every run of the campaign (`data/perf/campaign-f3deebfbab60/{primary,r2}`, shipped since 18 Sep 2026: 290 and 110 measured runs beside their warm-ups, the roots every performance claim rests on) records the compiler that built it, the hash of the binary it ran, the hash of its input, its processor set and mode, the foreign-activity share the gate saw, and its place in a full set of N; `scripts/91-verify-provenance.sh` opens every one of them and exits 0 only when all are attributable, an empty root is a failure ("nothing was verified, which is not a pass": a first version passed vacuously on a root whose runs lay one level down), and a root that holds no runs directly is expanded to its sub-roots. The earlier trees shipped beside them were recorded before the harness wrote every one of those fields and on earlier compilers; they support no claim and the script reports them for information only | `scripts/91-verify-provenance.sh` | exact: six assertions, each of which fails on a fault we have actually produced (a pre-audit binary measured as current; a configuration whose binary changed mid-leg; an input path that satisfied the runner and recorded an empty hash; pinned and unpinned runs pooled; a run above the gate that was kept; a thin row that looked complete) |
 
 This is the property the paper's setup section rests on. It does not check that a configuration's
 flags were the intended ones, which is the build guard's job at build time, and it says nothing
@@ -64,8 +64,12 @@ and be unattributable.
 
 ## 5. Performance (machine-dependent)
 
-All five applications, from the campaign of 15-17 September on compiler `f3deebfbab60`: 401 measured runs,
-none retired by the disturbance gate, provenance verified on every root. **Of the 48 rows at the
+All five applications, from the campaign of 15-17 September on compiler `f3deebfbab60`: 400 measured
+runs (290 and 110) beside their warm-ups, provenance verified on every root. Three cells were retired
+by the disturbance gate and re-run to completion; both the retired cell and its replacement ship, so
+the sets the statistics are computed over are clean and the retirements stay visible
+(`primary/sqlite/tsan-lo/run2.foreign-window-030844`, `r2/redis/tsan-stmt/run1.disturbed.025858`,
+`r2/redis/tsan-dom/run1.disturbed.030107`). **Of the 48 rows at the
 primary concurrency, four separate from stock, and all four are DynSTC: a 5.6% cost on Redis and an
 11.3% gain on FFmpeg, alone and inside AllOpt.** Every other configuration of every application
 crosses 1.0. Every configuration of the paper's figure is
@@ -114,7 +118,7 @@ post-hoc rule's value, measured at the end of the campaign (session of 17 Sep, N
 the sign is a property of the application and not of the client count; every other row at 112
 clients crosses 1.0 (EA 0.986, LO 0.985, STC 0.989, SWMR 0.987, DE 1.000, DE+peeling 1.001, AllOpt
 without peeling 1.005, with peeling 1.006, whole-program 0.984 and 1.004, each within about two
-points of 1.0). Stock against native at 112 clients: 7.96x [7.83, 8.12]. The peeling pair on
+points of 1.0). Stock against native at 112 clients: 7.96x [7.83, 8.11]. The peeling pair on
 Redis, AllOpt with against without peeling on the stable subtests: 1.0105 [0.9905, 1.0326].
 
 Script: `scripts/40-perf.sh redis` (about 2 hours at N = 5 on 48 CPUs; `ART_SMOKE=1` in minutes, not a
@@ -241,7 +245,7 @@ excluding 1.0. AllOpt with peeling does depend on it: it crosses 1.0 at 2 and 4 
 1.021], 1.010 [0.999, 1.021]) and excludes it at 8 and 16 (1.063 [1.052, 1.069], 1.065 [1.055, 1.076]), a gain
 of about 6 per cent that is absent at the campaign's thread count. That is one sweep and is reported as an
 observation, not claimed; it is the first place in the campaign where peeling pays, and it says where to look.
-Stock ThreadSanitizer's overhead falls with threads, 2.94 to 2.66, the expected direction.
+Stock ThreadSanitizer's overhead falls over most of the range, and not monotonically: 2.94, 2.78, 2.66 and 2.70 at 2, 4, 8 and 16 threads.
 
 **The paper's FFmpeg column differs from this one because of the compiler, not the input, and that is
 measured rather than assumed.** The paper's column was taken on a clip that cannot be redistributed; a
@@ -290,8 +294,10 @@ Script: `scripts/40-perf.sh ffmpeg` (about 24 minutes at the default N = 2 and f
 order: a prepared copy of the reference clip from `ART_FFMPEG_CLIP_URL` (a URL or a local path), checked against
 the sha256 in `docs/ffmpeg-input.md` whichever way it arrived; a local copy of the Blender source in `ART_FFMPEG_SOURCE`, cut with the recorded
 command; or, with neither set, the 557 MB Blender source downloaded, verified and cut. The second and
-third paths re-encode, and a re-encode's sha256 differs from the reference by construction, so every
-run records `input_is_reference` beside the input's sha256. The point-in-interval comparison for this
+third paths re-encode, and a re-encode's sha256 differs from the reference by construction, so every run
+records the input's sha256, and every run taken since 17 September 2026 records `input_is_reference`
+beside it; the campaign's own FFmpeg runs predate the field and carry the sha256 alone, which equals
+the reference clip's, while the thread sweep carries both. The point-in-interval comparison for this
 row is made only on the reference clip; on a regenerated clip the run is valid, its build and run times
 are what an evaluator pays, but its ratios are not compared with the intervals above and the script says
 so. The reference clip becomes downloadable with the artifact's Zenodo record at submission, and
