@@ -35,7 +35,7 @@ machine: the container runs anywhere, and the deterministic experiments give ide
 any x86-64 Linux host. The performance experiments need at least 32 cores to be meaningful, and
 `docs/confounds.md` says what varies and why.
 
-## Getting started: ten minutes
+## Getting started: about twenty minutes
 
 ```
 ./scripts/00-prereqs.sh          # says what is missing, changes nothing
