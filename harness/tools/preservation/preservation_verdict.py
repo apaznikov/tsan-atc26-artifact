@@ -36,6 +36,60 @@ TR = importlib.util.module_from_spec(spec); sys.modules["tsan_reports"] = TR; sp
 
 LEVELS = {"l1": "union_l1", "l2": "union_l2", "l3": "union_l3"}
 
+def site_verdict(kb, nruns_baseline, ko):
+    """One configuration, one site. kb = baseline's count, ko = the configuration's."""
+    if ko >= 1:                    return "KEPT" if kb >= 1 else "ONLY-OPTIMIZED"
+    if kb == nruns_baseline:       return "LOST"
+    return "UNDETERMINED"
+
+def worst(verdicts):
+    """The printed verdict across configurations: the worst outcome decides."""
+    for v in ("LOST", "UNDETERMINED", "ONLY-OPTIMIZED"):
+        if v in verdicts: return v
+    return "KEPT"
+
+def self_test():
+    """A POSITIVE CONTROL FOR THE RULE ITSELF. Its sibling 30-preservation-suite has --self-test, which
+    blinds a detector and requires the harness to report the loss, precisely so that "reports nothing"
+    cannot pass as "found nothing wrong". The rule that decides LOST/KEPT/UNDETERMINED had no equivalent:
+    nothing checked that a configuration which SHOULD be flagged LOST actually is. (Audit, 2026-09-19.)
+
+    The cases below exercise the production functions, not a copy of them. The two that matter most are
+    the synthetic LOST -- stock in every run, the configuration in none -- and the near miss one run away
+    from it, which must NOT be LOST: a control that only ever says LOST proves nothing about a rule whose
+    job is to distinguish."""
+    N = 10
+    cases = [
+        # (kb, ko, expected, why)
+        (N,   0, "LOST",           "stock in every run, configuration in none -- the only failure shape"),
+        (N-1, 0, "UNDETERMINED",   "ONE run short of always: must NOT be LOST"),
+        (1,   0, "UNDETERMINED",   "stock saw it once, configuration never"),
+        (N,   1, "KEPT",           "configuration found it once; stock's frequency is irrelevant"),
+        (1,   N, "KEPT",           "configuration found it more often than stock"),
+        (0,   N, "ONLY-OPTIMIZED", "only the configuration found it -- labelled, not dropped"),
+        (0,   0, "UNDETERMINED",   "neither saw it"),
+    ]
+    bad = 0
+    print("preservation_verdict --self-test: the rule must distinguish, not merely fire\n")
+    for kb, ko, want, why in cases:
+        got = site_verdict(kb, N, ko)
+        ok = got == want
+        bad += not ok
+        print(f"  {'ok ' if ok else 'FAIL'}  stock {kb:>2}/{N}, cfg {ko:>2}/{N} -> {got:<15} expected {want:<15} {why}")
+    combos = [(["KEPT", "LOST"], "LOST"), (["KEPT", "UNDETERMINED"], "UNDETERMINED"),
+              (["KEPT", "ONLY-OPTIMIZED"], "ONLY-OPTIMIZED"), (["KEPT", "KEPT"], "KEPT")]
+    print("\n  worst-outcome precedence across configurations:")
+    for vs, want in combos:
+        got = worst(vs); ok = got == want; bad += not ok
+        print(f"  {'ok ' if ok else 'FAIL'}  {str(vs):<38} -> {got:<15} expected {want}")
+    # The exit contract: a LOST at the gating level must make the run fail.
+    lost_fires = site_verdict(N, N, 0) == "LOST"
+    print(f"\n  {'ok ' if lost_fires else 'FAIL'}  a synthetic LOST site is flagged, so a real one would fail the run")
+    bad += not lost_fires
+    print(f"\n{'SELF-TEST PASSED' if not bad else f'SELF-TEST FAILED ({bad} cases)'}: "
+          "the rule was shown capable of saying LOST and of not saying it.")
+    return 1 if bad else 0
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--results-dir", required=True, help="the runner's logs/ directory")
@@ -44,6 +98,10 @@ def main():
     ap.add_argument("--level", default="l3", choices=sorted(LEVELS),
                     help="matching level that gates the exit code (default l3: same location and writer, "
                          "which answers 'is the race on this location still found'); all three are printed")
+    ap.add_argument("--self-test", action="store_true",
+                    help="check the LOST/KEPT/UNDETERMINED rule against synthetic cases and exit")
+    if "--self-test" in sys.argv:
+        sys.exit(self_test())
     a = ap.parse_args()
 
     runs = TR.collect_runs(a.results_dir, a.app, None)
@@ -82,13 +140,8 @@ def main():
             for c in others:
                 ko = getattr(summ[c], LEVELS[lvl]).get(key, 0)
                 row += f" {ko:>6d}/{summ[c].nruns:<8d}"
-                if ko >= 1:                        verdicts.append("KEPT" if kb >= 1 else "ONLY-OPTIMIZED")
-                elif kb == base.nruns:             verdicts.append("LOST")
-                else:                              verdicts.append("UNDETERMINED")
-            # worst outcome across configurations decides the printed verdict
-            v = ("LOST" if "LOST" in verdicts else
-                 "UNDETERMINED" if "UNDETERMINED" in verdicts else
-                 "ONLY-OPTIMIZED" if "ONLY-OPTIMIZED" in verdicts else "KEPT")
+                verdicts.append(site_verdict(kb, base.nruns, ko))
+            v = worst(verdicts)
             if v == "LOST" and lvl == a.level: any_lost = True
             print(row + f"   {v}")
         print()

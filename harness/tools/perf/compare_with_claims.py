@@ -139,9 +139,16 @@ def main():
                    f"(looked in {os.path.join(root, 'data', 'perf')})")
         elif isref is False:
             why = "not comparable: not the reference clip"
+        # EVERY TREE MUST PRODUCE A LINE. If CLAIMS's column header or a row label drifts for ONE
+        # application while the others parse, this loop simply does not execute for it: nothing is
+        # printed, nothing is judged, and the summary still reports success on the other applications.
+        # Silence for a tree the caller explicitly named is the same failure as silence overall, and the
+        # all-or-nothing guard below does not catch it. (Audit, 2026-09-19.)
+        printed = 0
         for row, ours in sorted(claims.get(app, {}).items()):
             if row not in rows:
                 continue
+            printed += 1
             pt, iv = rows[row]
             yours = f"{pt:.3f} [{iv[0]:.3f}, {iv[1]:.3f}]" if iv else f"{pt:.3f} (N={n})"
             shipped = f"{ours[0]:.3f} [{ours[1]:.3f}, {ours[2]:.3f}]"
@@ -163,6 +170,14 @@ def main():
                     if not same and inside:
                         bad += 1
             print(f"{app:10} {row:24} {yours:>22}  {shipped:22} {v}")
+        if not printed:
+            cl = sorted(claims.get(app, {})) or ["(none parsed from CLAIMS.md)"]
+            rn = sorted(rows) or ["(none parsed from the run's table)"]
+            print(f"{app:10} {'-':24} {'':>22}  {'':22} TABLES COULD NOT BE MATCHED")
+            print(f"{'':10}   CLAIMS.md offers: {', '.join(cl)}")
+            print(f"{'':10}   the run offers:   {', '.join(rn)}")
+            print(f"{'':10}   no row name appears on both sides, so nothing could be compared.")
+            bad += 1
     print("-" * 100)
     if judged:
         print(f"{judged} rows judged, {bad} not inside.")

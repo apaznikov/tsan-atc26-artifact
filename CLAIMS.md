@@ -227,7 +227,10 @@ Script: `scripts/40-perf.sh mysql` (four configurations only; about 3.4 hours at
 
 Stock ThreadSanitizer against native: 2.76x [2.70, 2.80] (the paper: 2.9x, on a different clip).
 Every shipped FFmpeg run carries all four codecs, checked over the recorded runs with
-`check_ffmpeg_codecs.py`; the resolvable set is all four, so the headline column is the stable column.
+`check_ffmpeg_codecs.py`, which runs as a gate on every cell as it is produced: a cell whose workload
+did not emit all four codecs fails at that moment rather than being noticed in a later sweep, so a
+table cannot be assembled from incomplete cells. The resolvable set is all four, so the headline column
+is the stable column.
 On the evaluator path the same check runs per cell and a cell missing a codec is a failed cell, not a
 geomean over the survivors: the workload writes each codec's output to `/dev/shm`, a container's default
 `/dev/shm` is 64 MB, and the stream-copy and mjpeg outputs exceed it, so without the size `docker/run.sh`

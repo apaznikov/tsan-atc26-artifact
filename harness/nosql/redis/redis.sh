@@ -366,7 +366,13 @@ if [ "$COMPILE" = true ]; then
     log "Downloading Redis"
     cd "$BENCH_POLYGON_DIR" || exit 1
     mkdir -p "$RESULTS_DIR"
-    wget "$BENCH_ARCHIVE_URL" 2> /dev/null
+    # THE ONLY UNVERIFIED DOWNLOAD IN THE ARTIFACT, UNTIL NOW. This was a bare `wget` with stderr sent to
+    # /dev/null, so Redis alone among the five applications fetched its source with no sha256 check and no
+    # visible failure -- while third-party/SOURCES.md promises "the harness verifies every archive against
+    # this list before unpacking and refuses a missing, unpinned or mismatching one", and redis.sh
+    # --compile-only is on the reproduced tier's live path. fetch_archive.sh fetches if absent and always
+    # verifies against tools/source_archives.sha256 before returning. (Audit, 2026-09-19.)
+    "$SCRIPT_DIR/../../tools/fetch_archive.sh" "$BENCH_ARCHIVE_NAME" || exit 1
     BENCH_ARCHIVE_DIR=$(tar --list --file "$BENCH_ARCHIVE_NAME" | head -1)
 
     log "Unpacking redis-benchmark"
