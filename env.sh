@@ -41,6 +41,15 @@ export ART_SMOKE="${ART_SMOKE:-0}"
 export ART_FFMPEG_CLIP_URL="${ART_FFMPEG_CLIP_URL:-}"
 export ART_FFMPEG_SOURCE="${ART_FFMPEG_SOURCE:-}"
 
+# Workload thread counts. Empty means the campaign's rule (docs/campaign-parameters.md): one memcached server
+# thread per processor of the pinned set, three quarters of that for sysbench, FFmpeg at an absolute 4. Set
+# one to measure a different point; every cell records the value it ran with (threads_setting) and whether
+# it was overridden (threads_from_env). docker/run.sh forwards all three; until 18 Sep 2026 it forwarded none,
+# so the documented override could not reach the container (the same defect as the clip variables).
+export MC_THREADS="${MC_THREADS:-}"
+export MYSQL_THREADS="${MYSQL_THREADS:-}"
+export FF_THREADS="${FF_THREADS:-}"
+
 # Ports used by the server benchmarks; change if they collide with something on your host.
 export ART_MEMCACHED_PORT="${ART_MEMCACHED_PORT:-7777}"
 export ART_REDIS_PORT="${ART_REDIS_PORT:-6379}"

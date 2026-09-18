@@ -326,22 +326,24 @@ inside our interval, both rows whose interval excludes 1.0 on the same side, and
 | memcached | DynSTC | 0.983 | 0.986 [0.944, 1.063] | inside |
 | FFmpeg | AllOpt with peeling | 1.017 | 1.006 [0.990, 1.024] | inside |
 | FFmpeg | DynSTC | 1.127 | 1.113 [1.099, 1.129] | inside, above 1.0 like ours |
-| SQLite | AllOpt with peeling | 1.078 | 1.023 [0.942, 1.061] | **outside**, by 0.017 above the upper limit |
-| SQLite | DynSTC | 0.984 | 0.995 [0.928, 1.082] | inside |
+| SQLite | AllOpt with peeling | 1.078 | 1.023 [0.942, 1.061] | **outside** at N = 2, by 0.017; at N = 5, 1.041 [0.943, 1.129]: intervals overlap, inside |
+| SQLite | DynSTC | 0.984 | 0.995 [0.928, 1.082] | inside; at N = 5, 1.035 [0.912, 1.111], inside |
 
 The stock-against-native ratios of the same runs, reported and not judged, since the drift condition
 governs them: Redis 8.26 against 8.01 [7.83, 8.21]; memcached 3.66 against 3.20 [2.97, 3.40] (4.66 before
 the thread-count defect was fixed, so the fix closed three quarters of the gap and the rest is the size of
-the documented session drift); FFmpeg 2.99 against 2.76 [2.70, 2.80]. The SQLite row that fails the
-criterion is reported as a failure of the criterion, which was fixed before the run, and not explained
-away; what can be said about it is this. It is on SQLite's headline column, which this file describes
-above as heterogeneous, with three subtests carrying 16 to 20 per cent run-to-run variation, and in this
-very run `stress1` varied by 23 per cent between its two runs. The column that is comparable, the
-resolvable subtests (shipped 0.998 [0.975, 1.013] for this row), cannot be computed at N = 2, because the
-stability of a subtest needs three runs, and the artifact says so in that cell rather than claiming it.
-A point 1.7 points outside a 12-point interval at N = 2 on the noisiest column is the weakest kind of
-disagreement, and it is still a disagreement; the N = 5 run of the same leg, about 2.5 hours, is what
-decides it, and it is scheduled. The table is generated from this
+the documented session drift); FFmpeg 2.99 against 2.76 [2.70, 2.80]. The SQLite row that failed the
+criterion at N = 2 was reported as a failure of the criterion, which was fixed before the run, and then
+decided by the N = 5 run of the same leg (18 Sep, 20 cells, none disturbed): 1.041 [0.943, 1.129] against
+the shipped 1.023 [0.942, 1.061], intervals overlapping and both containing 1.0, so the N = 2 point was
+noise on SQLite's headline column, which this file describes above as heterogeneous (in the N = 2 run
+`stress1` varied by 23 per cent between its two runs). At N = 5 the resolvable-subtest column, the
+comparable one, also exists: AllOpt with peeling 1.004 [0.984, 1.032] against the shipped 0.998
+[0.975, 1.013], overlapping and both containing 1.0; DynSTC 0.980 [0.945, 1.003] against the shipped
+0.980 [0.966, 0.999], the same point estimate, with one nuance stated rather than rounded away: the
+shipped interval excludes 1.0 by 0.001 and the evaluator's contains it by 0.003, which by the letter of
+the N = 5 criterion is a mismatch and by the numbers is a knife-edge on a bound of 0.999 with identical
+points. Both numbers are given so a reader sees the 0.001. The table is generated from this
 file's own interval tables and each run's `perf_<app>.md`, not transcribed. The Redis rows are from the
 run of 17 Sep 14:15; memcached and FFmpeg from the run of 17 Sep 23:07, which followed the thread-count
 and shared-memory fixes and carried `input_is_reference: true`; SQLite from the run of 18 Sep 11:47.

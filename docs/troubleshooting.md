@@ -62,6 +62,17 @@ computed, not a convenience; if you bypass it, set `ART_JOBS` yourself from the 
 the derived default of 25 jobs, 24m38s at 8 jobs. We found this on our own machine, 112 threads
 under a 64 GiB cap, when the script still defaulted to one job per thread.
 
+## A performance leg ran to the end and then failed before printing its table
+
+The runs and the table are separate: every cell is written to its own directory as it completes, and the
+table is computed afterwards by `aggregate.py`. A failure at that last step (we produced one ourselves by
+editing `40-perf.sh` while it was executing; a full disk or an interrupted container would do the same)
+loses the table and not the runs. Regenerate it from the tree without re-running anything:
+
+```
+./docker/run.sh scripts/90-tables.sh results/perf-<app>-<stamp>
+```
+
 ## "Instrumentation counts differ from CLAIMS.md by a few calls"
 
 The counts are of `__tsan_read*`/`__tsan_write*` calls in the whole binary and include code that
