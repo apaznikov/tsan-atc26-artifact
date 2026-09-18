@@ -73,6 +73,15 @@ loses the table and not the runs. Regenerate it from the tree without re-running
 ./docker/run.sh scripts/90-tables.sh results/perf-<app>-<stamp>
 ```
 
+## "This host offers 4 usable processors; this suite needs at least 8" although you gave the container 8
+
+The processor set you pass is intersected with the set the Docker daemon itself is allowed to use, and
+a daemon confined by systemd (`AllowedCPUs=` on `docker.slice`) may not have every processor; on our
+host a request for 0-7 gives the container 4-7. `docker/run.sh` now asks the container what it got and
+prints a warning naming the daemon's set when it is less than asked; choose `ART_CPUSET` inside that
+set. The correctness set refuses below 8 processors for a reason stated in its message: below that,
+tests that pass by reporting nothing can pass for want of an interleaving.
+
 ## "Instrumentation counts differ from CLAIMS.md by a few calls"
 
 The counts are of `__tsan_read*`/`__tsan_write*` calls in the whole binary and include code that

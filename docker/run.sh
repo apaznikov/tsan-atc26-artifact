@@ -14,7 +14,20 @@ mkdir -p "$here/results" "$here/build"
 . "$here/env.sh"
 echo "docker/run.sh: ART_JOBS=$ART_JOBS ($ART_JOBS_WHY); set ART_JOBS to override" >&2
 cpus_flag=()
-[ -n "${ART_CPUSET:-}" ] && cpus_flag=(--cpuset-cpus "$ART_CPUSET")
+if [ -n "${ART_CPUSET:-}" ]; then
+  cpus_flag=(--cpuset-cpus "$ART_CPUSET")
+  # A requested set is silently intersected with the processors the Docker daemon itself may use, and
+  # a daemon confined by systemd (AllowedCPUs on docker.slice) may not have them all: on our host a
+  # request for 0-7 yields 4-7, and the correctness set then refuses with "4 usable processors" and no
+  # hint why. Ask the container what it actually got, and say so when it is less than asked.
+  want=$(printf '%s' "$ART_CPUSET" | tr ',' '\n' | awk -F- '{ n += ($2 == "" ? 1 : $2 - $1 + 1) } END { print n + 0 }')
+  got=$(docker run --rm --cpuset-cpus "$ART_CPUSET" "${ART_IMAGE:-tsan-atc26}" nproc 2>/dev/null || echo "$want")
+  if [ "${got:-0}" -lt "$want" ] 2>/dev/null; then
+    echo "docker/run.sh: ART_CPUSET=$ART_CPUSET names $want processors but the container gets only $got: the daemon's own" >&2
+    echo "  allowed set does not contain them all. Choose a set inside it; the daemon's set is what an unpinned" >&2
+    echo "  container reports as nproc ($(docker run --rm "${ART_IMAGE:-tsan-atc26}" bash -c 'grep Cpus_allowed_list /proc/self/status | cut -f2' 2>/dev/null))." >&2
+  fi
+fi
 # ART_MEMORY caps the container's memory (docker --memory, e.g. 16g): how we run the artifact at the
 # README's minimum, 8 processors and 16 GB, to know the minimum is true rather than assumed.
 [ -n "${ART_MEMORY:-}" ] && cpus_flag+=(--memory "$ART_MEMORY")

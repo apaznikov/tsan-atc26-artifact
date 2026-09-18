@@ -146,6 +146,7 @@ if [ "$tier" != functional ] && [ "$verdict" != FAIL ]; then
 fi
 dt=$(( $(date +%s) - start_all ))
 echo
+{
 echo "evaluate.sh: $verdict${compared:+, rows $compared their intervals}  (tier $tier, $((dt/3600))h$(( (dt%3600)/60 ))m; full log in $log)"
 case "$verdict" in
   PASS) echo "Every step ran and passed. For what each step established, read CLAIMS.md; the performance rows compare against its intervals." ;;
@@ -153,4 +154,5 @@ case "$verdict" in
   FAIL) echo "Stopped at: $failed. docs/troubleshooting.md lists the failures we know; the log has the rest." ;;
 esac
 [ -n "${compared:-}" ] && echo "At least one judged performance row lies outside the shipped interval; CLAIMS.md section 5 says what such a row can and cannot mean."
+} | tee -a "$log"    # the verdict goes into the log too: a log that ends without it answers a different question
 [ "$verdict" = PASS ] && [ -z "${compared:-}" ]

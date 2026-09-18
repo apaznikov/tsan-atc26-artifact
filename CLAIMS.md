@@ -327,7 +327,7 @@ N runs per configuration:
 
 | Mode | Runs | Configurations | Time on 48 processors | What a row yields |
 |---|---|---|---|---|
-| **default** | N = 2 | four: native, stock, AllOpt with peeling, DynSTC | Redis 17 min, memcached 34, FFmpeg 24, SQLite 58: **about 2 h** together; MySQL a further 3.4 h | a point estimate, no interval |
+| **default** | N = 2 | four: native, stock, AllOpt with peeling, DynSTC | measured on this host and on a 64-processor AMD host: Redis 13-15 min, memcached 28-36, FFmpeg 20-25, SQLite 65-68: **about 2 h 15 min** together; MySQL a further 3.4 h (estimated) | a point estimate, no interval |
 | everything at the default | N = 2 | all fourteen (MySQL four) | Redis 1.0 h, memcached 2.0, FFmpeg 1.2, SQLite 3.4, MySQL 3.4: **about 11 h**, 14 h with the builds | a point estimate, no interval |
 | our campaign | N = 5 | any of the above | 2.5 times the figures above; everything, 43 h | a 95% interval |
 
