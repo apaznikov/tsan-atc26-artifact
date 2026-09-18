@@ -71,9 +71,25 @@ i=0; for s in "${steps[@]}"; do i=$((i+1)); IFS='|' read -r label t cmd <<< "$s"
 if [ "$tier" != functional ]; then
   echo
   echo "The performance tier needs 32 or more processors and a machine on which nothing else runs: the"
-  echo "disturbance gate retires every cell measured under foreign load (docs/confounds.md). Pin a set"
-  echo "with ART_CPUSET (our runs: 48 processors) if the machine is shared."
-  [ -z "${ART_CPUSET:-}" ] && echo "ART_CPUSET is not set: the runs use every processor the container sees and are not gate-checked."
+  echo "disturbance gate retires every cell measured under foreign load (docs/confounds.md)."
+  # Our intervals describe a 48-processor pinned set, and the workload's thread counts follow from the
+  # set's size (docs/campaign-parameters.md). So, unless the caller chose a set, pin the first 48
+  # processors when the machine has them: the run is then gate-checked and its thread counts equal ours.
+  # A smaller machine runs unpinned, not gate-checked, and its rows are reported with their thread
+  # counts rather than compared. Topology (which 48, hyperthread siblings) is the caller's to refine.
+  if [ -z "${ART_CPUSET:-}" ]; then
+    ncpu_here=$(nproc 2>/dev/null || echo 0)
+    if [ "$ncpu_here" -ge 48 ]; then
+      export ART_CPUSET="0-47"
+      echo "ART_CPUSET not set: pinning the first 48 of $ncpu_here processors (ART_CPUSET=0-47) so the run is"
+      echo "gate-checked and its thread counts match ours; set ART_CPUSET yourself to choose which 48."
+    else
+      echo "ART_CPUSET not set and only $ncpu_here processors: the run uses every processor the container sees,"
+      echo "is not gate-checked, and its rows carry their own thread counts (not comparable with our 48-set intervals)."
+    fi
+  else
+    echo "ART_CPUSET=$ART_CPUSET (our runs used 48 processors)."
+  fi
   if [ "$yes" != 1 ]; then
     printf 'Start now? [y/N] '; read -r ans; case "$ans" in y|Y|yes) ;; *) echo "not started"; exit 0;; esac
   fi

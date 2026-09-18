@@ -46,6 +46,15 @@ any x86-64 Linux host. The performance experiments need at least 32 cores to be 
 ./evaluate.sh reproduced --plan  # print the steps and their expected times, run nothing
 ```
 
+Where the results are: `results/evaluate-<tier>-<stamp>.log` holds every step's full output;
+each performance run writes `results/perf-<app>-<stamp>/perf_<app>.md` (the table for that
+application, one row per configuration, with the point estimate or the interval) and
+`perf_summary.md`; the correctness steps write their own directories under `results/` (the
+preservation suite's `report.txt` and `manifest.txt`, the soundness shapes' lit logs). The
+performance rows are compared with the intervals in `CLAIMS.md` section 5 by the criterion stated
+there. On a machine with 48 or more processors the performance tier pins the first 48 unless
+`ART_CPUSET` says which; on a smaller one it runs unpinned and says so.
+
 `evaluate.sh` runs the scripts below in the documented order, prints one line per step with its time,
 writes the full log under `results/`, and ends with one verdict: PASS, INCOMPLETE (a check whose
 prerequisite is absent here was skipped, which is neither a pass nor a failure) or FAIL with the step
