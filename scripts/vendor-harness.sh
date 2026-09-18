@@ -17,6 +17,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 ART=$PWD
 SRC="${HARNESS_SRC:-$HOME/tsan-experiments}"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DST="$ART/harness"
 MAN="$DST/MANIFEST.tsv"
 MODE=copy; FORCE=0
@@ -207,6 +208,20 @@ fi
 n=$(( $(wc -l < "$MAN") - 2 ))
 b=$(awk -F'\t' 'NR>2 {s+=$2} END {print s+0}' "$MAN")
 echo "vendored $n files, $(numfmt --to=iec "$b" 2>/dev/null || echo "$b bytes") -> $DST"
+# data/tools/perf holds a second copy of the aggregation tools, because aggregate.py derives the harness
+# root from its own location and 90-tables.sh must therefore run it from inside a data tree. Two copies of
+# load-bearing code diverge, and on 19 Sep 2026 they had: the data copy predated both the --runs option and
+# the fix that stops the stability column claiming "all subtests within 5%" when nothing was measured, so
+# the documented table check ran an aggregator older than the one that produced the measurements. The
+# vendoring keeps them identical, and 01-functional refuses if they ever differ again.
+synced=0
+for f in aggregate.py meta_tool.py results_ledger.py write_readme_results.py; do
+  if [ -f "$DST/tools/perf/$f" ] && [ -f "$ROOT_DIR/data/tools/perf/$f" ]; then
+    cmp -s "$DST/tools/perf/$f" "$ROOT_DIR/data/tools/perf/$f" || { cp -a "$DST/tools/perf/$f" "$ROOT_DIR/data/tools/perf/$f"; synced=$((synced+1)); }
+  fi
+done
+[ "$synced" = 0 ] || echo "synced $synced tool(s) into data/tools/perf (they must not diverge from harness/tools/perf)"
+
 echo "manifest: $MAN"
 echo
 echo "NOT vendored, and each needs its own decision:"

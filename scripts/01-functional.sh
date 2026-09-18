@@ -23,6 +23,7 @@ steps=(
   "11-soundness-shapes.sh|the 23 lost-race shapes stay instrumented, and every claimed removal is one the test can detect"
   "12-compiler-equivalence.sh|this compiler emits what the measured compiler emitted, on 112 corpus rows"
   "91-verify-provenance.sh|every shipped run records the conditions it was taken under"
+  "14-tool-copies.sh|the table-regeneration path runs the same code as the measurement path"
 )
 [ "$quick" = 1 ] || steps+=(
   "30-preservation-suite.sh --self-test|the preservation harness can detect a lost race at all"
