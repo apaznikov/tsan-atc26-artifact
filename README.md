@@ -119,9 +119,10 @@ A step whose prerequisite is absent is reported as SKIP and the set is declared 
 check is one not made, and it counts as neither a pass nor a failure.
 
 The correctness tests themselves are 62 IR tests of our own (`tests/ir`, one per lost-race shape with
-its negative control) and 298 tests of ThreadSanitizer's own regression suite vendored from
-compiler-rt (278 in `tests/tsan` and 20 more in `tests/tsan/Linux`), run in each of 12 configurations.
-The suite discovers 383 and `lit` marks 85 unsupported on Linux before anything is compiled.
+its negative control) and ThreadSanitizer's own regression suite vendored from compiler-rt under
+`tests/tsan`, run in each of 12 configurations. `lit` discovers 383 tests there and marks 91
+unsupported on this platform before anything is compiled, so 292 execute; our own run of them ships as
+`data/suite/`, with the command to re-derive each count.
 
 ## Running the experiments
 

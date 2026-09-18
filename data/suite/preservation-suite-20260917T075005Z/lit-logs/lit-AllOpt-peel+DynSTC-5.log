@@ -1,0 +1,7 @@
+********************
+Timed Out Tests (1):
+  ThreadSanitizer-x86_64-linux :: getline_nohang.cpp
+
+
+Total Discovered Tests: 383
+  Timed Out: 1 (0.26%)

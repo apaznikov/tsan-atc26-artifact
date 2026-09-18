@@ -1,0 +1,22 @@
+  configurations RUN : 12   repeats: K=5
+  stock EA LO STC SWMR DE DE+peel sound AllOpt-peel AllOpt+peel AllOpt-peel+DynSTC AllOpt+peel+DynSTC
+  stock: fails always=0  fails at least once=0
+
+  TIMED OUT / UNRESOLVED -- neither a pass nor a lost race, excluded from the rule:
+    getline_nohang.cpp  48 time(s), under: AllOpt+peel AllOpt+peel+DynSTC AllOpt-peel AllOpt-peel+DynSTC DE DE+peel EA LO STC SWMR sound stock
+    A timeout is the machine being slow or a test hanging, not the compiler
+    declining to instrument. Raise ART_LIT_TIMEOUT if these are legitimate.
+
+  EA                     always-fail=  0 ever-fail=  0  clean
+  LO                     always-fail=  0 ever-fail=  0  clean
+  STC                    always-fail=  0 ever-fail=  0  clean
+  SWMR                   always-fail=  0 ever-fail=  0  clean
+  DE                     always-fail=  0 ever-fail=  0  clean
+  DE+peel                always-fail=  0 ever-fail=  0  clean
+  sound                  always-fail=  0 ever-fail=  0  clean
+  AllOpt-peel            always-fail=  0 ever-fail=  0  clean
+  AllOpt+peel            always-fail=  0 ever-fail=  0  clean
+  AllOpt-peel+DynSTC     always-fail=  0 ever-fail=  0  clean
+  AllOpt+peel+DynSTC     always-fail=  0 ever-fail=  0  clean
+
+RESULT: no configuration consistently failed a test that stock consistently passed.
