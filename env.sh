@@ -52,9 +52,11 @@ export MC_THREADS="${MC_THREADS:-}"
 export MYSQL_THREADS="${MYSQL_THREADS:-}"
 export FF_THREADS="${FF_THREADS:-}"
 
-# Ports used by the server benchmarks; change if they collide with something on your host.
+# The port memcached's benchmark uses; change it if 7777 is taken on your host. Redis's port is not a
+# knob: its benchmark reaches the server through redis.conf and the default 6379, and threading a port
+# through that path is a change to the workload script rather than a substitution, so the variable is
+# not offered rather than offered and ignored (19 Sep 2026; it had been declared here and read nowhere).
 export ART_MEMCACHED_PORT="${ART_MEMCACHED_PORT:-7777}"
-export ART_REDIS_PORT="${ART_REDIS_PORT:-6379}"
 
 # Parallelism for builds and test suites. The default is derived from what the machine can carry, not
 # from how many processors it has: 80% of the processors this run may use (the ART_CPUSET count when it

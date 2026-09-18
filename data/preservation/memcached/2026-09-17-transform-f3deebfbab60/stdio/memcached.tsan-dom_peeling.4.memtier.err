@@ -1,0 +1,101 @@
+Writing results to stdout
+[RUN #1] Preparing benchmark client...
+[RUN #1] Launching threads now...
+[RUN #1 26%,   0 secs] 10 threads:     1294106 ops, 1295397 (avg: 1295397) ops/sec, 36.93MB/sec (avg: 36.93MB/sec),  6.15 (avg:  6.15) msec latency[RUN #1 55%,   1 secs] 10 threads:     2738255 ops, 1443932 (avg: 1369707) ops/sec, 41.16MB/sec (avg: 39.05MB/sec),  5.55 (avg:  5.83) msec latency[RUN #1 84%,   2 secs] 10 threads:     4193585 ops, 1484061 (avg: 1407341) ops/sec, 42.30MB/sec (avg: 40.12MB/sec),  5.39 (avg:  5.68) msec latency[RUN #1 100%,   3 secs]  0 threads:     5000000 ops, 1484061 (avg: 1537777) ops/sec, 42.30MB/sec (avg: 43.84MB/sec),  5.39 (avg:  5.20) msec latency
+
+[RUN #2] Preparing benchmark client...
+[RUN #2] Launching threads now...
+[RUN #2 27%,   0 secs] 10 threads:     1373008 ops, 1374625 (avg: 1374625) ops/sec, 39.19MB/sec (avg: 39.19MB/sec),  5.80 (avg:  5.80) msec latency[RUN #2 59%,   1 secs] 10 threads:     2963779 ops, 1590513 (avg: 1482641) ops/sec, 45.34MB/sec (avg: 42.26MB/sec),  5.02 (avg:  5.38) msec latency[RUN #2 90%,   2 secs] 10 threads:     4503328 ops, 1620610 (avg: 1527087) ops/sec, 46.20MB/sec (avg: 43.53MB/sec),  4.95 (avg:  5.24) msec latency[RUN #2 100%,   3 secs]  0 threads:     5000000 ops, 1620610 (avg: 1626122) ops/sec, 46.20MB/sec (avg: 46.35MB/sec),  4.95 (avg:  4.92) msec latency
+
+[RUN #3] Preparing benchmark client...
+[RUN #3] Launching threads now...
+[RUN #3 28%,   0 secs] 10 threads:     1405345 ops, 1406805 (avg: 1406805) ops/sec, 40.10MB/sec (avg: 40.10MB/sec),  5.67 (avg:  5.67) msec latency[RUN #3 59%,   1 secs] 10 threads:     2950959 ops, 1545406 (avg: 1476146) ops/sec, 44.05MB/sec (avg: 42.08MB/sec),  5.18 (avg:  5.41) msec latency[RUN #3 91%,   2 secs] 10 threads:     4531182 ops, 1689917 (avg: 1544272) ops/sec, 48.17MB/sec (avg: 44.02MB/sec),  4.74 (avg:  5.18) msec latency[RUN #3 100%,   3 secs]  0 threads:     5000000 ops, 1689917 (avg: 1634746) ops/sec, 48.17MB/sec (avg: 46.60MB/sec),  4.74 (avg:  4.89) msec latency
+
+[RUN #4] Preparing benchmark client...
+[RUN #4] Launching threads now...
+[RUN #4 29%,   0 secs] 10 threads:     1434887 ops, 1436386 (avg: 1436386) ops/sec, 40.95MB/sec (avg: 40.95MB/sec),  5.56 (avg:  5.56) msec latency[RUN #4 60%,   1 secs] 10 threads:     2988458 ops, 1553365 (avg: 1494910) ops/sec, 44.28MB/sec (avg: 42.61MB/sec),  5.11 (avg:  5.32) msec latency[RUN #4 91%,   2 secs] 10 threads:     4568147 ops, 1696765 (avg: 1559047) ops/sec, 48.37MB/sec (avg: 44.44MB/sec),  4.76 (avg:  5.13) msec latency[RUN #4 100%,   3 secs]  0 threads:     5000000 ops, 1696765 (avg: 1642464) ops/sec, 48.37MB/sec (avg: 46.82MB/sec),  4.76 (avg:  4.87) msec latency
+
+[RUN #5] Preparing benchmark client...
+[RUN #5] Launching threads now...
+[RUN #5 29%,   0 secs] 10 threads:     1434260 ops, 1435914 (avg: 1435914) ops/sec, 40.93MB/sec (avg: 40.93MB/sec),  5.55 (avg:  5.55) msec latency[RUN #5 60%,   1 secs] 10 threads:     2998889 ops, 1564364 (avg: 1500181) ops/sec, 44.59MB/sec (avg: 42.76MB/sec),  5.12 (avg:  5.32) msec latency[RUN #5 91%,   2 secs] 10 threads:     4546796 ops, 1650713 (avg: 1548247) ops/sec, 47.05MB/sec (avg: 44.13MB/sec),  4.85 (avg:  5.16) msec latency[RUN #5 100%,   3 secs]  0 threads:     5000000 ops, 1650713 (avg: 1640758) ops/sec, 47.05MB/sec (avg: 46.77MB/sec),  4.85 (avg:  4.87) msec latency
+
+[RUN #6] Preparing benchmark client...
+[RUN #6] Launching threads now...
+[RUN #6 26%,   0 secs] 10 threads:     1310185 ops, 1311759 (avg: 1311759) ops/sec, 37.40MB/sec (avg: 37.40MB/sec),  6.08 (avg:  6.08) msec latency[RUN #6 58%,   1 secs] 10 threads:     2885549 ops, 1575121 (avg: 1443529) ops/sec, 44.90MB/sec (avg: 41.15MB/sec),  5.08 (avg:  5.53) msec latency[RUN #6 89%,   2 secs] 10 threads:     4450541 ops, 1640322 (avg: 1507109) ops/sec, 46.76MB/sec (avg: 42.96MB/sec),  4.88 (avg:  5.30) msec latency[RUN #6 100%,   3 secs]  0 threads:     5000000 ops, 1640322 (avg: 1617906) ops/sec, 46.76MB/sec (avg: 46.12MB/sec),  4.88 (avg:  4.94) msec latency
+
+[RUN #7] Preparing benchmark client...
+[RUN #7] Launching threads now...
+[RUN #7 26%,   0 secs] 10 threads:     1301508 ops, 1302909 (avg: 1302909) ops/sec, 37.14MB/sec (avg: 37.14MB/sec),  6.12 (avg:  6.12) msec latency[RUN #7 56%,   1 secs] 10 threads:     2805151 ops, 1503426 (avg: 1403229) ops/sec, 42.85MB/sec (avg: 40.00MB/sec),  5.32 (avg:  5.69) msec latency[RUN #7 86%,   2 secs] 10 threads:     4282827 ops, 1510780 (avg: 1438563) ops/sec, 43.06MB/sec (avg: 41.01MB/sec),  5.30 (avg:  5.56) msec latency[RUN #7 100%,   3 secs]  0 threads:     5000000 ops, 1510780 (avg: 1563083) ops/sec, 43.06MB/sec (avg: 44.56MB/sec),  5.30 (avg:  5.12) msec latency
+
+[RUN #8] Preparing benchmark client...
+[RUN #8] Launching threads now...
+[RUN #8 28%,   0 secs] 10 threads:     1380192 ops, 1381877 (avg: 1381877) ops/sec, 39.40MB/sec (avg: 39.40MB/sec),  5.77 (avg:  5.77) msec latency[RUN #8 57%,   1 secs] 10 threads:     2860816 ops, 1480416 (avg: 1431180) ops/sec, 42.20MB/sec (avg: 40.80MB/sec),  5.40 (avg:  5.58) msec latency[RUN #8 87%,   2 secs] 10 threads:     4368741 ops, 1558451 (avg: 1472692) ops/sec, 44.42MB/sec (avg: 41.98MB/sec),  5.14 (avg:  5.43) msec latency[RUN #8 100%,   3 secs]  0 threads:     5000000 ops, 1558451 (avg: 1589207) ops/sec, 44.42MB/sec (avg: 45.30MB/sec),  5.14 (avg:  5.03) msec latency
+
+[RUN #9] Preparing benchmark client...
+[RUN #9] Launching threads now...
+[RUN #9 27%,   0 secs] 10 threads:     1342163 ops, 1343736 (avg: 1343736) ops/sec, 38.31MB/sec (avg: 38.31MB/sec),  5.94 (avg:  5.94) msec latency[RUN #9 57%,   1 secs] 10 threads:     2825215 ops, 1482851 (avg: 1413339) ops/sec, 42.27MB/sec (avg: 40.29MB/sec),  5.39 (avg:  5.65) msec latency[RUN #9 87%,   2 secs] 10 threads:     4334125 ops, 1561015 (avg: 1461473) ops/sec, 44.50MB/sec (avg: 41.66MB/sec),  5.13 (avg:  5.47) msec latency[RUN #9 100%,   3 secs]  0 threads:     5000000 ops, 1561015 (avg: 1582535) ops/sec, 44.50MB/sec (avg: 45.11MB/sec),  5.13 (avg:  5.05) msec latency
+
+[RUN #10] Preparing benchmark client...
+[RUN #10] Launching threads now...
+[RUN #10 28%,   0 secs] 10 threads:     1390603 ops, 1391960 (avg: 1391960) ops/sec, 39.68MB/sec (avg: 39.68MB/sec),  5.73 (avg:  5.73) msec latency[RUN #10 57%,   1 secs] 10 threads:     2869040 ops, 1478227 (avg: 1435117) ops/sec, 42.14MB/sec (avg: 40.91MB/sec),  5.41 (avg:  5.56) msec latency[RUN #10 86%,   2 secs] 10 threads:     4311813 ops, 1483697 (avg: 1451015) ops/sec, 42.29MB/sec (avg: 41.36MB/sec),  5.40 (avg:  5.51) msec latency[RUN #10 100%,   3 secs]  0 threads:     5000000 ops, 1483697 (avg: 1571351) ops/sec, 42.29MB/sec (avg: 44.79MB/sec),  5.40 (avg:  5.09) msec latency
+
+[RUN #11] Preparing benchmark client...
+[RUN #11] Launching threads now...
+[RUN #11 27%,   0 secs] 10 threads:     1342706 ops, 1344257 (avg: 1344257) ops/sec, 38.32MB/sec (avg: 38.32MB/sec),  5.93 (avg:  5.93) msec latency[RUN #11 58%,   1 secs] 10 threads:     2885204 ops, 1542295 (avg: 1443340) ops/sec, 43.96MB/sec (avg: 41.14MB/sec),  5.15 (avg:  5.52) msec latency[RUN #11 88%,   2 secs] 10 threads:     4379589 ops, 1562579 (avg: 1481926) ops/sec, 44.54MB/sec (avg: 42.24MB/sec),  5.16 (avg:  5.39) msec latency[RUN #11 100%,   3 secs]  0 threads:     5000000 ops, 1562579 (avg: 1599097) ops/sec, 44.54MB/sec (avg: 45.58MB/sec),  5.16 (avg:  5.00) msec latency
+
+[RUN #12] Preparing benchmark client...
+[RUN #12] Launching threads now...
+[RUN #12 26%,   0 secs] 10 threads:     1302540 ops, 1303700 (avg: 1303700) ops/sec, 37.17MB/sec (avg: 37.17MB/sec),  6.11 (avg:  6.11) msec latency[RUN #12 57%,   1 secs] 10 threads:     2833028 ops, 1530272 (avg: 1417044) ops/sec, 43.62MB/sec (avg: 40.39MB/sec),  5.24 (avg:  5.64) msec latency[RUN #12 86%,   2 secs] 10 threads:     4314946 ops, 1537302 (avg: 1456165) ops/sec, 43.82MB/sec (avg: 41.51MB/sec),  5.20 (avg:  5.49) msec latency[RUN #12 100%,   3 secs]  0 threads:     5000000 ops, 1537302 (avg: 1574579) ops/sec, 43.82MB/sec (avg: 44.89MB/sec),  5.20 (avg:  5.08) msec latency
+
+[RUN #13] Preparing benchmark client...
+[RUN #13] Launching threads now...
+[RUN #13 26%,   0 secs] 10 threads:     1305137 ops, 1306413 (avg: 1306413) ops/sec, 37.24MB/sec (avg: 37.24MB/sec),  6.10 (avg:  6.10) msec latency[RUN #13 57%,   1 secs] 10 threads:     2833811 ops, 1528455 (avg: 1417496) ops/sec, 43.57MB/sec (avg: 40.41MB/sec),  5.23 (avg:  5.63) msec latency[RUN #13 87%,   2 secs] 10 threads:     4340698 ops, 1558461 (avg: 1463449) ops/sec, 44.42MB/sec (avg: 41.72MB/sec),  5.12 (avg:  5.46) msec latency[RUN #13 100%,   3 secs]  0 threads:     5000000 ops, 1558461 (avg: 1585227) ops/sec, 44.42MB/sec (avg: 45.19MB/sec),  5.12 (avg:  5.04) msec latency
+
+[RUN #14] Preparing benchmark client...
+[RUN #14] Launching threads now...
+[RUN #14 27%,   0 secs] 10 threads:     1333465 ops, 1335047 (avg: 1335047) ops/sec, 38.06MB/sec (avg: 38.06MB/sec),  5.97 (avg:  5.97) msec latency[RUN #14 57%,   1 secs] 10 threads:     2844581 ops, 1510901 (avg: 1423032) ops/sec, 43.07MB/sec (avg: 40.57MB/sec),  5.29 (avg:  5.61) msec latency[RUN #14 87%,   2 secs] 10 threads:     4334292 ops, 1545219 (avg: 1462788) ops/sec, 44.05MB/sec (avg: 41.70MB/sec),  5.18 (avg:  5.46) msec latency[RUN #14 100%,   3 secs]  0 threads:     5000000 ops, 1545219 (avg: 1581667) ops/sec, 44.05MB/sec (avg: 45.09MB/sec),  5.18 (avg:  5.06) msec latency
+
+[RUN #15] Preparing benchmark client...
+[RUN #15] Launching threads now...
+[RUN #15 27%,   0 secs] 10 threads:     1359334 ops, 1360886 (avg: 1360886) ops/sec, 38.80MB/sec (avg: 38.80MB/sec),  5.86 (avg:  5.86) msec latency[RUN #15 58%,   1 secs] 10 threads:     2907905 ops, 1548098 (avg: 1454560) ops/sec, 44.13MB/sec (avg: 41.46MB/sec),  5.16 (avg:  5.49) msec latency[RUN #15 89%,   2 secs] 10 threads:     4447172 ops, 1612902 (avg: 1505724) ops/sec, 45.98MB/sec (avg: 42.92MB/sec),  4.97 (avg:  5.31) msec latency[RUN #15 100%,   3 secs]  0 threads:     5000000 ops, 1612902 (avg: 1615869) ops/sec, 45.98MB/sec (avg: 46.06MB/sec),  4.97 (avg:  4.95) msec latency
+
+[RUN #16] Preparing benchmark client...
+[RUN #16] Launching threads now...
+[RUN #16 28%,   0 secs] 10 threads:     1411802 ops, 1413220 (avg: 1413220) ops/sec, 40.29MB/sec (avg: 40.29MB/sec),  5.64 (avg:  5.64) msec latency[RUN #16 58%,   1 secs] 10 threads:     2901426 ops, 1489370 (avg: 1451318) ops/sec, 42.45MB/sec (avg: 41.37MB/sec),  5.38 (avg:  5.50) msec latency[RUN #16 88%,   2 secs] 10 threads:     4397964 ops, 1551712 (avg: 1483989) ops/sec, 44.23MB/sec (avg: 42.30MB/sec),  5.16 (avg:  5.39) msec latency[RUN #16 100%,   3 secs]  0 threads:     5000000 ops, 1551712 (avg: 1595911) ops/sec, 44.23MB/sec (avg: 45.49MB/sec),  5.16 (avg:  5.01) msec latency
+
+[RUN #17] Preparing benchmark client...
+[RUN #17] Launching threads now...
+[RUN #17 26%,   0 secs] 10 threads:     1277281 ops, 1278624 (avg: 1278624) ops/sec, 36.45MB/sec (avg: 36.45MB/sec),  6.24 (avg:  6.24) msec latency[RUN #17 57%,   1 secs] 10 threads:     2866185 ops, 1588678 (avg: 1433744) ops/sec, 45.28MB/sec (avg: 40.87MB/sec),  5.03 (avg:  5.57) msec latency[RUN #17 88%,   2 secs] 10 threads:     4397517 ops, 1580286 (avg: 1481586) ops/sec, 45.05MB/sec (avg: 42.23MB/sec),  5.07 (avg:  5.40) msec latency[RUN #17 100%,   3 secs]  0 threads:     5000000 ops, 1580286 (avg: 1593821) ops/sec, 45.05MB/sec (avg: 45.43MB/sec),  5.07 (avg:  5.02) msec latency
+
+[RUN #18] Preparing benchmark client...
+[RUN #18] Launching threads now...
+[RUN #18 29%,   0 secs] 10 threads:     1448364 ops, 1450117 (avg: 1450117) ops/sec, 41.34MB/sec (avg: 41.34MB/sec),  5.50 (avg:  5.50) msec latency[RUN #18 60%,   1 secs] 10 threads:     3000253 ops, 1551611 (avg: 1500899) ops/sec, 44.23MB/sec (avg: 42.78MB/sec),  5.15 (avg:  5.32) msec latency[RUN #18 90%,   2 secs] 10 threads:     4499473 ops, 1587682 (avg: 1528742) ops/sec, 45.26MB/sec (avg: 43.58MB/sec),  5.05 (avg:  5.23) msec latency[RUN #18 100%,   3 secs]  0 threads:     5000000 ops, 1587682 (avg: 1631811) ops/sec, 45.26MB/sec (avg: 46.52MB/sec),  5.05 (avg:  4.90) msec latency
+
+[RUN #19] Preparing benchmark client...
+[RUN #19] Launching threads now...
+[RUN #19 27%,   0 secs] 10 threads:     1374773 ops, 1376215 (avg: 1376215) ops/sec, 39.23MB/sec (avg: 39.23MB/sec),  5.79 (avg:  5.79) msec latency[RUN #19 58%,   1 secs] 10 threads:     2915297 ops, 1540277 (avg: 1458295) ops/sec, 43.91MB/sec (avg: 41.57MB/sec),  5.19 (avg:  5.48) msec latency[RUN #19 90%,   2 secs] 10 threads:     4489156 ops, 1664684 (avg: 1524563) ops/sec, 47.45MB/sec (avg: 43.46MB/sec),  4.81 (avg:  5.24) msec latency[RUN #19 100%,   3 secs]  0 threads:     5000000 ops, 1664684 (avg: 1625536) ops/sec, 47.45MB/sec (avg: 46.34MB/sec),  4.81 (avg:  4.92) msec latency
+
+[RUN #20] Preparing benchmark client...
+[RUN #20] Launching threads now...
+[RUN #20 26%,   0 secs] 10 threads:     1322910 ops, 1324513 (avg: 1324513) ops/sec, 37.76MB/sec (avg: 37.76MB/sec),  6.01 (avg:  6.01) msec latency[RUN #20 56%,   1 secs] 10 threads:     2804181 ops, 1481069 (avg: 1402844) ops/sec, 42.22MB/sec (avg: 39.99MB/sec),  5.41 (avg:  5.69) msec latency[RUN #20 84%,   2 secs] 10 threads:     4211214 ops, 1435639 (avg: 1413633) ops/sec, 40.92MB/sec (avg: 40.30MB/sec),  5.57 (avg:  5.65) msec latency[RUN #20 100%,   3 secs]  0 threads:     5000000 ops, 1435639 (avg: 1539555) ops/sec, 40.92MB/sec (avg: 43.89MB/sec),  5.57 (avg:  5.19) msec latency
+
+[RUN #21] Preparing benchmark client...
+[RUN #21] Launching threads now...
+[RUN #21 26%,   0 secs] 10 threads:     1309679 ops, 1311181 (avg: 1311181) ops/sec, 37.38MB/sec (avg: 37.38MB/sec),  6.08 (avg:  6.08) msec latency[RUN #21 57%,   1 secs] 10 threads:     2846505 ops, 1536610 (avg: 1423968) ops/sec, 43.80MB/sec (avg: 40.59MB/sec),  5.21 (avg:  5.61) msec latency[RUN #21 87%,   2 secs] 10 threads:     4359157 ops, 1557920 (avg: 1467760) ops/sec, 44.41MB/sec (avg: 41.84MB/sec),  5.14 (avg:  5.45) msec latency[RUN #21 100%,   3 secs]  0 threads:     5000000 ops, 1557920 (avg: 1581657) ops/sec, 44.41MB/sec (avg: 45.09MB/sec),  5.14 (avg:  5.06) msec latency
+
+[RUN #22] Preparing benchmark client...
+[RUN #22] Launching threads now...
+[RUN #22 25%,   0 secs] 10 threads:     1252673 ops, 1253900 (avg: 1253900) ops/sec, 35.75MB/sec (avg: 35.75MB/sec),  6.36 (avg:  6.36) msec latency[RUN #22 55%,   1 secs] 10 threads:     2732524 ops, 1479707 (avg: 1366864) ops/sec, 42.18MB/sec (avg: 38.96MB/sec),  5.41 (avg:  5.84) msec latency[RUN #22 84%,   2 secs] 10 threads:     4191742 ops, 1480416 (avg: 1404363) ops/sec, 42.20MB/sec (avg: 40.03MB/sec),  5.41 (avg:  5.69) msec latency[RUN #22 100%,   3 secs]  0 threads:     5000000 ops, 1480416 (avg: 1541007) ops/sec, 42.20MB/sec (avg: 43.93MB/sec),  5.41 (avg:  5.19) msec latency
+
+[RUN #23] Preparing benchmark client...
+[RUN #23] Launching threads now...
+[RUN #23 28%,   0 secs] 10 threads:     1415429 ops, 1417054 (avg: 1417054) ops/sec, 40.40MB/sec (avg: 40.40MB/sec),  5.63 (avg:  5.63) msec latency[RUN #23 58%,   1 secs] 10 threads:     2913936 ops, 1498306 (avg: 1457706) ops/sec, 42.71MB/sec (avg: 41.55MB/sec),  5.34 (avg:  5.48) msec latency[RUN #23 89%,   2 secs] 10 threads:     4464654 ops, 1638266 (avg: 1515730) ops/sec, 46.70MB/sec (avg: 43.21MB/sec),  4.89 (avg:  5.27) msec latency[RUN #23 100%,   3 secs]  0 threads:     5000000 ops, 1638266 (avg: 1622608) ops/sec, 46.70MB/sec (avg: 46.25MB/sec),  4.89 (avg:  4.93) msec latency
+
+[RUN #24] Preparing benchmark client...
+[RUN #24] Launching threads now...
+[RUN #24 27%,   0 secs] 10 threads:     1374516 ops, 1376117 (avg: 1376117) ops/sec, 39.23MB/sec (avg: 39.23MB/sec),  5.80 (avg:  5.80) msec latency[RUN #24 58%,   1 secs] 10 threads:     2897697 ops, 1522806 (avg: 1449513) ops/sec, 43.41MB/sec (avg: 41.32MB/sec),  5.25 (avg:  5.51) msec latency[RUN #24 89%,   2 secs] 10 threads:     4429622 ops, 1597260 (avg: 1497416) ops/sec, 45.53MB/sec (avg: 42.68MB/sec),  5.01 (avg:  5.34) msec latency[RUN #24 100%,   3 secs]  0 threads:     5000000 ops, 1597260 (avg: 1602048) ops/sec, 45.53MB/sec (avg: 45.67MB/sec),  5.01 (avg:  4.99) msec latency
+
+[RUN #25] Preparing benchmark client...
+[RUN #25] Launching threads now...
+[RUN #25 27%,   0 secs] 10 threads:     1373070 ops, 1374904 (avg: 1374904) ops/sec, 39.20MB/sec (avg: 39.20MB/sec),  5.80 (avg:  5.80) msec latency[RUN #25 58%,   1 secs] 10 threads:     2890429 ops, 1517148 (avg: 1446078) ops/sec, 43.25MB/sec (avg: 41.22MB/sec),  5.27 (avg:  5.52) msec latency[RUN #25 87%,   2 secs] 10 threads:     4356923 ops, 1518754 (avg: 1469751) ops/sec, 43.29MB/sec (avg: 41.90MB/sec),  5.27 (avg:  5.44) msec latency[RUN #25 100%,   3 secs]  0 threads:     5000000 ops, 1518754 (avg: 1592186) ops/sec, 43.29MB/sec (avg: 45.39MB/sec),  5.27 (avg:  5.02) msec latency
+

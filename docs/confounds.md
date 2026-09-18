@@ -139,7 +139,12 @@ pinned to the processors outside the bench set, at `outside_busy_share` 0.50 for
 The gate is demanding, by design, and it is worth knowing how demanding before starting a leg on a
 machine you do not control. With 48 processors pinned on a 112-thread host, 64 processors are watched,
 and 0.10 of them is about six cores of anything at all: a colleague's build, an IDE indexing, a backup.
-Pinning fewer processors does not help, it enlarges the watched set. A retired cell looks like this in
+Pinning fewer processors does not help, it enlarges the watched set. Our own campaign watched 56 rather
+than 64: `harness/tools/perf/ignore_cpus` then excluded eight processors this lab reserves for other
+users, which is why every campaign cell records `n_outside: 56`. That file now excludes nothing by
+default, so an evaluator's gate watches every processor outside the set; the exclusion was recorded in
+each cell rather than hidden, and it is stated here because a gate that stops watching part of the
+machine is a condition of the measurement, not a detail of it. A retired cell looks like this in
 the run log: the cell's line ends in `DISTURBED`, it is re-run once at the end of the leg, and if the load
 persists the re-run is retired too; the aggregate then reports the configuration with fewer runs than
 requested or with no data, and never with a number taken under the load. The threshold is the campaign's

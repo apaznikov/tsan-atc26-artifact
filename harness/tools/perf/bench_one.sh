@@ -39,6 +39,11 @@ D="$OUTROOT/$APP/$CFG/${P5_RUN_PREFIX:-run}$RUN"; mkdir -p "$D"; LOG="$D/cmd.log
 # lib.sh's p5_taskset already had the right shape; this is the same rule applied at the eight call sites.
 TSPIN=""; [ -n "${CPUSET:-}" ] && TSPIN="taskset -c $CPUSET"
 NCPU=$($TSPIN nproc)
+# env.sh documents ART_MEMCACHED_PORT as "change if it collides with something on your host" -- and
+# nothing read it: the port was written 7777 at seven places here, so an evaluator whose 7777 was taken
+# had no recourse but to edit the harness. A documented knob that nothing reads is worse than an
+# undocumented constant, because it is advertised. (Audit, 2026-09-19.)
+MC_PORT="${ART_MEMCACHED_PORT:-7777}"
 # THE EFFECTIVE THREAD COUNT, COMPUTED ONCE AND BOTH USED AND RECORDED. It used to be inlined at each call
 # site while meta.json recorded the OVERRIDE -- "${MC_THREADS:-}" -- so a run that took the default wrote an
 # EMPTY field, and an empty field reads as "nothing to see" rather than as a value. That hid a real
@@ -92,13 +97,13 @@ TIMEF=/usr/bin/time; OURS="$D/ours.time"
 rc=0
 case "$APP" in
   memcached)
-    # paper workload: server -c 4096 -t <cpus> -p 7777; memtier -t 10 -x 5 --pipeline 16 -P memcache_text --random-data
-    (echo > /dev/tcp/127.0.0.1/7777) 2>/dev/null && p5_die "port 7777 busy"
-    $TSPIN "$BIN" -c 4096 -t "$THREADS_EFFECTIVE" -p 7777 -U 0 > "$D/server.out" 2>&1 &   # MC_THREADS: thread-policy pilot
+    # paper workload: server -c 4096 -t <cpus> -p $MC_PORT; memtier -t 10 -x 5 --pipeline 16 -P memcache_text --random-data
+    (echo > /dev/tcp/127.0.0.1/$MC_PORT) 2>/dev/null && p5_die "port $MC_PORT busy (set ART_MEMCACHED_PORT to use another)"
+    $TSPIN "$BIN" -c 4096 -t "$THREADS_EFFECTIVE" -p $MC_PORT -U 0 > "$D/server.out" 2>&1 &   # MC_THREADS: thread-policy pilot
     spid=$!
-    for i in $(seq 1 60); do (echo > /dev/tcp/127.0.0.1/7777) 2>/dev/null && break; sleep 1; done; sleep 1
+    for i in $(seq 1 60); do (echo > /dev/tcp/127.0.0.1/$MC_PORT) 2>/dev/null && break; sleep 1; done; sleep 1
     $TIMEF -f "%U %S %M" -o "$OURS" $TSPIN "$APPDIR/memtier_benchmark-2.1.1/memtier_benchmark" --hide-histogram \
-      -t 10 -p 7777 -x "${NTESTS:-5}" --requests "${MC_REQUESTS:-100000}" --pipeline 16 -P memcache_text --random-data > "$D/memtier.txt" 2> "$LOG"; rc=$?
+      -t 10 -p $MC_PORT -x "${NTESTS:-5}" --requests "${MC_REQUESTS:-100000}" --pipeline 16 -P memcache_text --random-data > "$D/memtier.txt" 2> "$LOG"; rc=$?
     # MC_REQUESTS: the paper's 10 000 requests per client (5 M per iteration) made an iteration last ~1 s on the
     # counters-off runtime (2 M ops/s) and ~1 s on native, and memtier's per-iteration ops/s is computed from
     # 1-second progress samples: single iterations reported 57 M ops/s on native and 3.5 M on tsan-dom, i.e.
@@ -108,7 +113,7 @@ case "$APP" in
     # the server runs outside the timed region: add its ticks to ours, else its 48 threads look like foreign load
     EXTRA_TICKS=$(awk '{print $14+$15+$16+$17}' /proc/$spid/stat 2>/dev/null || echo 0)
     kill -TERM "$spid" 2>/dev/null; wait "$spid" 2>/dev/null
-    for i in $(seq 1 30); do (echo > /dev/tcp/127.0.0.1/7777) 2>/dev/null || break; sleep 1; done
+    for i in $(seq 1 30); do (echo > /dev/tcp/127.0.0.1/$MC_PORT) 2>/dev/null || break; sleep 1; done
     ;;
   redis)
     ( cd "$APPDIR" && REDIS_ORIG_MULT=1 BUILD_OPTIONS="$(p5_redis_name "$CFG")" BUILD_TAG="$TAG" $TIMEF -f "%U %S %M" -o "$OURS" $TSPIN ./redis.sh --test-only ) > "$LOG" 2>&1; rc=$?

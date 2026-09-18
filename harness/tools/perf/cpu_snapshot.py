@@ -34,7 +34,13 @@ import os
 ig = os.environ.get("P5_IGNORE_CPUS")
 if ig is None:
     f = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ignore_cpus")
-    ig = open(f).read().strip() if os.path.exists(f) else ""
+    # Comments and blank lines are stripped, so the shipped file can explain itself and still default to
+    # EMPTY. It used to ship this lab's reserved processors (52-55,108-111) as the default, which on an
+    # evaluator's machine silently removed eight processors from the disturbance accounting -- the gate
+    # quietly not watching part of the machine it was asked to watch. (Audit, 2026-09-19.)
+    ig = ""
+    if os.path.exists(f):
+        ig = ",".join(l.split("#", 1)[0].strip() for l in open(f) if l.split("#", 1)[0].strip())
 ignored = expand(ig) if ig else set()
 inside -= ignored
 bi = bo = ni = no = 0

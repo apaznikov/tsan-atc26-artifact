@@ -1,0 +1,60 @@
+preservation verdict — baseline tsan, N=10 runs per configuration
+gating level: L3   (verdicts printed at all three)
+
+=== L1 ===
+  site                                                             tsan        tsan-dom  tsan-dom_peeli   verdict
+  data race | read:clock_handler@memcached.c:4009 | write:do_i   10/10      10/10           10/10         KEPT
+  data race | read:clock_handler@memcached.c:4009 | write:do_i   10/10      10/10           10/10         KEPT
+  data race | read:conn_new@memcached.c:761 | write:clock_hand   10/10      10/10           10/10         KEPT
+  data race | read:do_item_link@items.c:495 | write:clock_hand   10/10      10/10           10/10         KEPT
+  data race | read:item_crawler_thread@crawler.c:570 | write:d   10/10       9/10            9/10         KEPT
+  data race | read:item_remove@thread.c:921 | write:do_item_un   10/10      10/10           10/10         KEPT
+  data race | read:lru_maintainer_thread@items.c:1671 | write:   10/10      10/10           10/10         KEPT
+  data race | read:lru_pull_tail@items.c:1137 | write:do_item_   10/10      10/10           10/10         KEPT
+  data race | read:try_read_command_ascii@proto_text.c:493 | w   10/10      10/10           10/10         KEPT
+  data race | read:lru_maintainer_juggle@items.c:1426 | write:    2/10       1/10            0/10         UNDETERMINED
+  data race | read:lru_pull_tail@items.c:1207 | write:clock_ha    1/10       2/10            3/10         KEPT
+  data race | read:conn_new@memcached.c:753 | write:rbuf_relea    0/10       2/10            2/10         ONLY-OPTIMIZED
+  data race | read:conn_release_items@memcached.c:840 | write:    0/10       2/10            2/10         ONLY-OPTIMIZED
+  data race | read:drive_machine@memcached.c:3162 | write:conn    0/10       2/10            2/10         ONLY-OPTIMIZED
+  data race | read:try_read_network@memcached.c:2530 | write:c    0/10       2/10            2/10         ONLY-OPTIMIZED
+  data race | write:conn_close@memcached.c:933 | write:conn_ne    0/10       2/10            2/10         ONLY-OPTIMIZED
+  data race | write:conn_new@memcached.c:749 | write:conn_set_    0/10       2/10            2/10         ONLY-OPTIMIZED
+  data race | write:conn_new@memcached.c:753 | write:rbuf_rele    0/10       2/10            2/10         ONLY-OPTIMIZED
+
+=== L2 ===
+  site                                                             tsan        tsan-dom  tsan-dom_peeli   verdict
+  data race | read:clock_handler | write:do_item_link | global   10/10      10/10           10/10         KEPT
+  data race | read:clock_handler | write:do_item_unlink | glob   10/10      10/10           10/10         KEPT
+  data race | read:conn_new | write:clock_handler | global:cur   10/10      10/10           10/10         KEPT
+  data race | read:do_item_link | write:clock_handler | global   10/10      10/10           10/10         KEPT
+  data race | read:item_crawler_thread | write:do_item_unlink    10/10       9/10            9/10         KEPT
+  data race | read:item_remove | write:do_item_unlink | heap:m   10/10      10/10           10/10         KEPT
+  data race | read:lru_maintainer_thread | write:clock_handler   10/10      10/10           10/10         KEPT
+  data race | read:lru_pull_tail | write:do_item_unlink | heap   10/10      10/10           10/10         KEPT
+  data race | read:try_read_command_ascii | write:clock_handle   10/10      10/10           10/10         KEPT
+  data race | read:lru_maintainer_juggle | write:clock_handler    2/10       1/10            0/10         UNDETERMINED
+  data race | read:lru_pull_tail | write:clock_handler | globa    1/10       2/10            3/10         KEPT
+  data race | read:conn_new | write:rbuf_release | heap:conn_n    0/10       2/10            2/10         ONLY-OPTIMIZED
+  data race | read:conn_release_items | write:conn_new | heap:    0/10       2/10            2/10         ONLY-OPTIMIZED
+  data race | read:drive_machine | write:conn_new | heap:conn_    0/10       2/10            2/10         ONLY-OPTIMIZED
+  data race | read:try_read_network | write:conn_new | heap:co    0/10       2/10            2/10         ONLY-OPTIMIZED
+  data race | write:conn_close | write:conn_new | heap:conn_ne    0/10       2/10            2/10         ONLY-OPTIMIZED
+  data race | write:conn_new | write:conn_set_state | heap:con    0/10       2/10            2/10         ONLY-OPTIMIZED
+  data race | write:conn_new | write:rbuf_release | heap:conn_    0/10       2/10            2/10         ONLY-OPTIMIZED
+
+=== L3 ===
+  site                                                             tsan        tsan-dom  tsan-dom_peeli   verdict
+  data race | write:clock_handler@memcached.c | global:current   10/10      10/10           10/10         KEPT
+  data race | write:do_item_link@items.c:499 | global:stats_st   10/10      10/10           10/10         KEPT
+  data race | write:do_item_unlink@items.c:516 | heap:memory_a   10/10      10/10           10/10         KEPT
+  data race | write:do_item_unlink@items.c:519 | global:stats_   10/10      10/10           10/10         KEPT
+  data race | write:conn_close@memcached.c:933 | write:conn_ne    0/10       2/10            2/10         ONLY-OPTIMIZED
+  data race | write:conn_new@memcached.c:694 | heap:conn_new      0/10       2/10            2/10         ONLY-OPTIMIZED
+  data race | write:conn_new@memcached.c:749 | write:conn_set_    0/10       2/10            2/10         ONLY-OPTIMIZED
+  data race | write:conn_new@memcached.c:753 | write:rbuf_rele    0/10       2/10            2/10         ONLY-OPTIMIZED
+  data race | write:conn_new@memcached.c:766 | heap:conn_new      0/10       2/10            2/10         ONLY-OPTIMIZED
+  data race | write:conn_new@memcached.c:784 | heap:conn_new      0/10       2/10            2/10         ONLY-OPTIMIZED
+  data race | write:rbuf_release@memcached.c:417 | heap:conn_n    0/10       2/10            2/10         ONLY-OPTIMIZED
+
+RESULT: no site LOST.

@@ -1,0 +1,23 @@
+preservation verdict — baseline tsan, N=10 runs per configuration
+gating level: L3   (verdicts printed at all three)
+
+=== L1 ===
+  site                                                             tsan  tsan-dom_peeli      tsan-sound   verdict
+  data race | atomic read:walTryBeginRead@sqlite3.c:69040 | wr   10/10       9/10           10/10         KEPT
+  data race | atomic read:walTryBeginRead@sqlite3.c:69040 | wr   10/10       8/10            8/10         KEPT
+  data race | atomic read:walTryBeginRead@sqlite3.c:69040 | wr    7/10       2/10            1/10         KEPT
+  data race | atomic read:walTryBeginRead@sqlite3.c:69040 | wr    5/10       4/10            4/10         KEPT
+  data race | atomic read:walTryBeginRead@sqlite3.c:68991 | wr    2/10       2/10            3/10         KEPT
+
+=== L2 ===
+  site                                                             tsan  tsan-dom_peeli      tsan-sound   verdict
+  data race | atomic read:walTryBeginRead | write:walRestartHd   10/10       9/10           10/10         KEPT
+  data race | atomic read:walTryBeginRead | write:walIndexReco    2/10       2/10            3/10         KEPT
+
+=== L3 ===
+  site                                                             tsan  tsan-dom_peeli      tsan-sound   verdict
+  data race | write:walRestartHdr@sqlite3.c:68034 | mapped:tes   10/10       9/10           10/10         KEPT
+  data race | write:walRestartHdr@sqlite3.c:68035 | mapped:tes   10/10       8/10            8/10         KEPT
+  data race | write:walIndexRecover@sqlite3.c:67450 | mapped:t    2/10       2/10            3/10         KEPT
+
+RESULT: no site LOST.

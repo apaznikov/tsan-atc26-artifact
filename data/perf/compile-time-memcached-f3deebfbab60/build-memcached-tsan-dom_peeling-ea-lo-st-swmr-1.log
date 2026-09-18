@@ -1,0 +1,4 @@
+[2026-09-17 09:38:31] waiting for the machine job lock (exclusive: build memcached, jobs 8)
+[2026-09-17 09:38:31] build memcached tsan-dom_peeling-ea-lo-st-swmr (jobs 8) -> /home/alexey/tsan-experiments/tools/perf/results/campaign-f3deebfbab60/compile-time-memcached/build-tsan-dom_peeling-ea-lo-st-swmr-1/build/memcached-tsan-dom_peeling-ea-lo-st-swmr.log
+[2026-09-17 09:38:42] built memcached tsan-dom_peeling-ea-lo-st-swmr in 10s: 7130 memory-access sites (8103 tsan calls)
+[2026-09-17 09:38:42] builds of memcached done (fail=0); static counts in /home/alexey/tsan-experiments/tools/perf/results/campaign-f3deebfbab60/compile-time-memcached/build-tsan-dom_peeling-ea-lo-st-swmr-1/static-counts.csv

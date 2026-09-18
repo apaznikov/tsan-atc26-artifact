@@ -164,8 +164,17 @@ def main():
                         bad += 1
             print(f"{app:10} {row:24} {yours:>22}  {shipped:22} {v}")
     print("-" * 100)
-    print(f"{judged} rows judged, {bad} not inside." if judged else "no rows could be judged.")
-    return 1 if bad else 0
+    if judged:
+        print(f"{judged} rows judged, {bad} not inside.")
+    else:
+        # NOTHING JUDGED IS NOT A PASS, and this file said so in its own docstring while returning 0 for
+        # it: "0 judged, 0 not inside" and "all judged, none outside" shared an exit code, so a run in
+        # which every row was not-comparable reported PASS to evaluate.sh. The rule the file exists to
+        # enforce, broken by the file. (Found by the three-agent audit, 2026-09-19.)
+        print("NO ROWS COULD BE JUDGED — this is not a pass. Nothing above was compared with the shipped")
+        print("intervals; read the reasons on each line (not comparable, no table, no verdict below N=2,")
+        print("no shipped campaign data) and fix the cause before reading any number as reproduction.")
+    return 1 if (bad or not judged) else 0
 
 if __name__ == "__main__":
     sys.exit(main())

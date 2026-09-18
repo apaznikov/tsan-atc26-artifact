@@ -1,0 +1,23 @@
+[2026-09-17 09:37:29] compile time: memcached on f3deebfbab60, 2 repetitions of: orig tsan tsan-ea tsan-dom_peeling-ea-lo-st-swmr
+[2026-09-17 09:37:29] each repetition deletes the build directory first; this is a clean-build measurement
+[2026-09-17 09:37:29] NOTE: this deletes and rebuilds memcached's build directories, which existing results trees record by
+[2026-09-17 09:37:29]       sha256. The rebuilt binaries carry the same instrumentation and a different build stamp, so
+[2026-09-17 09:37:29]       those recorded hashes will no longer match the files on disk. Counts still reproduce.
+[2026-09-17 09:37:39]   memcached orig rep 1: 10s rc=0 (build dir removed: 1)
+[2026-09-17 09:37:50]   memcached orig rep 2: 10s rc=0 (build dir removed: 1)
+[2026-09-17 09:38:00]   memcached tsan rep 1: 10s rc=0 (build dir removed: 1)
+[2026-09-17 09:38:11]   memcached tsan rep 2: 11s rc=0 (build dir removed: 1)
+[2026-09-17 09:38:21]   memcached tsan-ea rep 1: 10s rc=0 (build dir removed: 1)
+[2026-09-17 09:38:31]   memcached tsan-ea rep 2: 10s rc=0 (build dir removed: 1)
+[2026-09-17 09:38:42]   memcached tsan-dom_peeling-ea-lo-st-swmr rep 1: 11s rc=0 (build dir removed: 1)
+[2026-09-17 09:38:52]   memcached tsan-dom_peeling-ea-lo-st-swmr rep 2: 10s rc=0 (build dir removed: 1)
+
+compile time, memcached (median of clean builds, n per row)
+  configuration                             median s  n         spread  x native
+  orig                                            10  2          10-10     1.00x
+  tsan                                            10  2          10-11     1.05x
+  tsan-dom_peeling-ea-lo-st-swmr                  10  2          10-11     1.05x
+  tsan-ea                                         10  2          10-10     1.00x
+  control: the uninstrumented build itself varied 0.0% across its 2 repetitions.
+           Any ratio closer to 1 than that is inside the noise of this session and says nothing.
+[2026-09-17 09:38:52] -> /home/alexey/tsan-experiments/tools/perf/results/campaign-f3deebfbab60/compile-time-memcached/compile-time.csv

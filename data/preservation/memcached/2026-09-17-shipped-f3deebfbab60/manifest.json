@@ -1,0 +1,90 @@
+{
+ "app": "memcached",
+ "created": "2026-09-17T07:59:20",
+ "host": "focs-server",
+ "cpus": 112,
+ "argv": [
+  "./run_preservation.py",
+  "--app",
+  "memcached",
+  "--configs",
+  "tsan,tsan-sound,tsan-dom_peeling-ea-lo-st-swmr",
+  "--runs",
+  "10",
+  "--llvm-root",
+  "/extra/alexey/builds/tsan-line-f3deebfbab60",
+  "--no-ninja-check",
+  "--out",
+  "/home/alexey/tsan-experiments/tools/preservation/results/memcached/2026-09-17-shipped-f3deebfbab60"
+ ],
+ "scale": "paper",
+ "out": "/home/alexey/tsan-experiments/tools/preservation/results/memcached/2026-09-17-shipped-f3deebfbab60",
+ "workload": {
+  "server_threads": 112,
+  "memtier_threads": 10,
+  "memtier_x": 25,
+  "memtier_extra": [],
+  "pipeline": 16,
+  "server_extra": "-U 0 (UDP off; not in run-memcached.sh, no effect on the memtier TCP workload)"
+ },
+ "tsan_options_template": "log_path=/home/alexey/tsan-experiments/tools/preservation/results/memcached/2026-09-17-shipped-f3deebfbab60/logs/memcached.<cfg>.0 exitcode=0 external_symbolizer_path=/extra/alexey/builds/tsan-line-f3deebfbab60/bin/llvm-symbolizer",
+ "compiler": {
+  "llvm_root": "/extra/alexey/builds/tsan-line-f3deebfbab60",
+  "tree": "/extra/alexey",
+  "clang_version": "clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)",
+  "clang_mtime": "2026-09-15T16:09:01.245307",
+  "tsan_rt_mtime": "2026-09-14T20:34:40.086162",
+  "git_head": "f3deebfbab602f4e05289e0acbde0efd06b8058c",
+  "compiler_head_source": "TSAN_AUDIT_HASH in the frozen copy"
+ },
+ "configs": {
+  "tsan": {
+   "artifacts": [
+    {
+     "path": "/home/alexey/tsan-experiments/nosql/memcached/memcached-tsan/memcached",
+     "mtime": "2026-09-15T17:52:54.912470",
+     "size": 3815952,
+     "sha256": "6b51792c4482a74fcd7cc54edb0e5f6ac70f78867239f39a1c9ee6d30c347a59",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 22.0.0git (https://github.com/project-starch/llvm-capstone b0c404321c0f77413b093c9cfaf0db0d204d9c8d)",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)"
+     ]
+    }
+   ],
+   "build_info": "date: 2026-09-15T17:52:55+08:00\nhost: focs-server\ncompiler: /extra/alexey/builds/tsan-line-f3deebfbab60/bin/clang-19\ncompiler_version: clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)\ncompiler_mtime: 2026-09-15T16:09:01+08:00\ncompiler_tree: /extra/alexey/builds/tsan-line-f3deebfbab60 (frozen copy)\ncompiler_head: f3deebfbab602f4e05289e0acbde0efd06b8058c\nflags: -fsanitize=thread -mllvm -tsan-ea-report-abandoned -g -O2\ncwd: /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan\ntsan-logs: <none>\nconfig: tsan\nsummaries: none\n"
+  },
+  "tsan-sound": {
+   "artifacts": [
+    {
+     "path": "/home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-sound/memcached",
+     "mtime": "2026-09-17T05:39:45.574736",
+     "size": 3810544,
+     "sha256": "5a077e8f86ca89bcc1bce6bafad72961fea03b9e0f36bbe94ff98b310a9dd24f",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 22.0.0git (https://github.com/project-starch/llvm-capstone b0c404321c0f77413b093c9cfaf0db0d204d9c8d)",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)"
+     ]
+    }
+   ],
+   "build_info": "date: 2026-09-17T05:39:45+08:00\nhost: focs-server\ncompiler: /extra/alexey/builds/tsan-line-f3deebfbab60/bin/clang-19\ncompiler_version: clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)\ncompiler_mtime: 2026-09-15T16:09:01+08:00\ncompiler_tree: /extra/alexey/builds/tsan-line-f3deebfbab60 (frozen copy)\ncompiler_head: f3deebfbab602f4e05289e0acbde0efd06b8058c\nflags: -fsanitize=thread -mllvm -tsan-ea-report-abandoned -g -O2 -mllvm -tsan-use-escape-analysis-global -mllvm -tsan-use-lock-ownership -mllvm -tsan-use-single-threaded -mllvm -tsan-use-swmr\ncwd: /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-sound\ntsan-logs: <none>\nconfig: tsan-sound\nsummaries: none\n"
+  },
+  "tsan-dom_peeling-ea-lo-st-swmr": {
+   "artifacts": [
+    {
+     "path": "/home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr/memcached",
+     "mtime": "2026-09-15T17:54:28.271508",
+     "size": 3863288,
+     "sha256": "544f11f142aff2a4f735c479f292a6d6b3e95fa26992565d3f7a84a2ac363bed",
+     "compilers": [
+      "GCC: (Ubuntu 13.2.0-23ubuntu4) 13.2.0",
+      "clang version 22.0.0git (https://github.com/project-starch/llvm-capstone b0c404321c0f77413b093c9cfaf0db0d204d9c8d)",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)"
+     ]
+    }
+   ],
+   "build_info": "date: 2026-09-15T17:54:28+08:00\nhost: focs-server\ncompiler: /extra/alexey/builds/tsan-line-f3deebfbab60/bin/clang-19\ncompiler_version: clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)\ncompiler_mtime: 2026-09-15T16:09:01+08:00\ncompiler_tree: /extra/alexey/builds/tsan-line-f3deebfbab60 (frozen copy)\ncompiler_head: f3deebfbab602f4e05289e0acbde0efd06b8058c\nflags: -fsanitize=thread -mllvm -tsan-ea-report-abandoned -g -O2 -mllvm -tsan-use-dominance-analysis -mllvm -tsan-use-loop-peeling=true -mllvm -tsan-use-escape-analysis-global -mllvm -tsan-use-lock-ownership -mllvm -tsan-use-single-threaded -mllvm -tsan-use-swmr\ncwd: /home/alexey/tsan-experiments/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr\ntsan-logs: <none>\nconfig: tsan-dom_peeling-ea-lo-st-swmr\nsummaries: none\n"
+  }
+ }
+}

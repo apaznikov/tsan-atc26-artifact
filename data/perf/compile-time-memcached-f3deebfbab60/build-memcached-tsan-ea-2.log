@@ -1,0 +1,4 @@
+[2026-09-17 09:38:21] waiting for the machine job lock (exclusive: build memcached, jobs 8)
+[2026-09-17 09:38:21] build memcached tsan-ea (jobs 8) -> /home/alexey/tsan-experiments/tools/perf/results/campaign-f3deebfbab60/compile-time-memcached/build-tsan-ea-2/build/memcached-tsan-ea.log
+[2026-09-17 09:38:31] built memcached tsan-ea in 10s: 6653 memory-access sites (7604 tsan calls)
+[2026-09-17 09:38:31] builds of memcached done (fail=0); static counts in /home/alexey/tsan-experiments/tools/perf/results/campaign-f3deebfbab60/compile-time-memcached/build-tsan-ea-2/static-counts.csv

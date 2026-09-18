@@ -68,6 +68,7 @@ LAB_ONLY=(
   bench_ffmpeg_all-ap.sh   # does not parse (bash -n: syntax error near `done', line 268); unreferenced
   export_campaign.sh       # copies OUR campaign results into the artifact; an evaluator has no such tree
   cmake-export-main-vars.sh  # dead code naming a /dev/shm build root; build_mysql.sh builds under BUILD_SCRATCH on disk
+  de_build.sh de_build2.sh   # one-off eviction drivers naming a frozen lab compiler; referenced by nothing
 )
 EXCLUDES=(
   --exclude='results/' --exclude='old-builds/' --exclude='.scratch/' --exclude='installs/'
