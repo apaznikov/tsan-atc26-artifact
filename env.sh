@@ -18,6 +18,8 @@ export ART_DATA="${ART_DATA:-$ART_ROOT/data}"
 # compare them with the pinned numbers in
 # CLAIMS.md as if the conditions matched.
 export ART_CPUSET="${ART_CPUSET:-}"
+# Memory cap for the container (docker --memory), empty for none; e.g. ART_MEMORY=16g for the README's minimum.
+export ART_MEMORY="${ART_MEMORY:-}"
 
 # Number of measured runs per configuration and whether a discarded warm-up run precedes them.
 # Three modes, and the tables say which one produced them:

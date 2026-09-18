@@ -15,6 +15,9 @@ mkdir -p "$here/results" "$here/build"
 echo "docker/run.sh: ART_JOBS=$ART_JOBS ($ART_JOBS_WHY); set ART_JOBS to override" >&2
 cpus_flag=()
 [ -n "${ART_CPUSET:-}" ] && cpus_flag=(--cpuset-cpus "$ART_CPUSET")
+# ART_MEMORY caps the container's memory (docker --memory, e.g. 16g): how we run the artifact at the
+# README's minimum, 8 processors and 16 GB, to know the minimum is true rather than assumed.
+[ -n "${ART_MEMORY:-}" ] && cpus_flag+=(--memory "$ART_MEMORY")
 tty_flag=()
 [ -t 0 ] && [ -t 1 ] && tty_flag=(-it)
 # --user: the container runs as the caller, not as root. As root, everything it wrote into results/ and
