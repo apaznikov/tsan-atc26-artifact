@@ -39,8 +39,8 @@ application builds and the test suites inside the container. `ART_JOBS=n` overri
 started by hand rather than through `docker/run.sh` cannot see the daemon's cap and derives a larger
 number from the host's memory: on our machine 78 jobs from 197 GiB available, against a 64 GiB
 ceiling, which is exactly the thrash described above. The wrapper is where the right number can be
-computed, not a convenience; if you bypass it, set `ART_JOBS` yourself from the daemon's cap. Twenty-four jobs build the compiler in
-about fifteen minutes; eight jobs in under an hour. We found this on our own machine, 112 threads
+computed, not a convenience; if you bypass it, set `ART_JOBS` yourself from the daemon's cap. Measured with `--no-cache` on our host: 14m52s at
+the derived default of 25 jobs, 24m38s at 8 jobs. We found this on our own machine, 112 threads
 under a 64 GiB cap, when the script still defaulted to one job per thread.
 
 ## "Instrumentation counts differ from CLAIMS.md by a few calls"

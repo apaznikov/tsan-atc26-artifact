@@ -37,8 +37,8 @@ our only build predates the shipped compiler), and any number from before the ca
 About 100 MB: the compiler is 29 patch files, and the recorded runs are text.
 
 Any x86-64 Linux host with Docker, 8 processors and 20 GB of disk runs everything deterministic. The
-container build fetches upstream LLVM with a shallow clone and compiles it; on 24 processors that is
-about fifteen minutes. The performance experiments need at least 32 processors and a machine doing
+container build fetches upstream LLVM with a shallow clone and compiles it: measured with `--no-cache`,
+14m52s at the derived default of 25 jobs on our host and 24m38s at 8 jobs. The performance experiments need at least 32 processors and a machine doing
 nothing else; ours was an Intel Xeon w9-3495X, 56 cores and 112 threads, 250 GB, Ubuntu 24.04, with
 benchmarks pinned to 48 processors.
 
@@ -53,8 +53,8 @@ git clone https://github.com/apaznikov/tsan-atc26-artifact.git && cd tsan-atc26-
 
 The basic test compiles one small program per analysis, prints how many instrumentation calls each
 analysis removed and why those accesses cannot race, then compiles and runs a program with a real
-race and shows that both the stock and the fully optimized build still report it. Ten minutes,
-including the container build.
+race and shows that both the stock and the fully optimized build still report it. About twenty minutes,
+including the container build at 25 jobs.
 
 ## Evaluation workflow
 

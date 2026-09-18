@@ -53,8 +53,9 @@ from inside the container and that an unbounded build does not fail against but 
 
 The minimal example compiles one small program per analysis, shows which instrumentation each
 analysis removes and why, then compiles and runs a program with a real race to show the race is
-still reported. It needs no special hardware and finishes in about ten minutes, most of which is
-the container build if you have not run it before.
+still reported. It needs no special hardware. The container build, if you have not run it before, takes about
+15 minutes at the default job count on a machine like ours and about 25 minutes at 8 jobs (both measured
+with `--no-cache` on 18 Sep 2026: 14m52s at 25 jobs, 24m38s at 8); the example itself is a few minutes.
 
 ## The correctness set: one command, no performance
 
