@@ -55,7 +55,10 @@ The minimal example compiles one small program per analysis, shows which instrum
 analysis removes and why, then compiles and runs a program with a real race to show the race is
 still reported. It needs no special hardware. The container build, if you have not run it before, takes about
 15 minutes at the default job count on a machine like ours and about 25 minutes at 8 jobs (both measured
-with `--no-cache` on 18 Sep 2026: 14m52s at 25 jobs, 24m38s at 8); the example itself is a few minutes.
+with `--no-cache` on 18 Sep 2026: 14m52s at 25 jobs, 24m38s at 8); the example itself is a few minutes. The two build times are
+not a scaling curve: three times fewer jobs cost 1.7 times the wall time, because the apt install, the
+shallow clone, the patch series, the CMake configure and the runtime stage are a fixed serial head that
+the job count does not touch.
 
 ## The correctness set: one command, no performance
 
