@@ -12,7 +12,7 @@ mkdir -p "$dst/perf" "$dst/preservation" "$dst/eviction-stress" "$dst/eviction-c
 
 # Stage A trees, the probes and the reach trees are not shipped: nothing in the ledger cites them.
 # The eight trees results_ledger.py reads, plus the sweep and the two Redis re-measurements.
-PERF_TREES=(stageB-d3bf9f8c39fe nofe-d3bf9f8c39fe merge-timing-afe47a2a75a5 yield-d98873cda906 profile-2026-09-09 profile-2026-09-09-counters combo-counters merge-counters contention-d3bf9f8c39fe redis-recheck-2026-09-14 redis-stageB-repeat-2026-09-14)
+PERF_TREES=(campaign-f3deebfbab60 ffmpeg-threadsweep-f3deebfbab60 compile-time-memcached-f3deebfbab60 stageB-d3bf9f8c39fe nofe-d3bf9f8c39fe merge-timing-afe47a2a75a5 yield-d98873cda906 profile-2026-09-09 profile-2026-09-09-counters combo-counters merge-counters contention-d3bf9f8c39fe redis-recheck-2026-09-14 redis-stageB-repeat-2026-09-14)
 EXCL=(--exclude 'perf.data*' --exclude 'test.db*' --exclude 'clock-samples.csv' --exclude '__pycache__' --exclude GO --exclude RESUME --exclude GAPDONE --exclude 'foreign-build-window.txt')
 for t in "${PERF_TREES[@]}"; do
   [ -d "$src/tools/perf/results/$t" ] && rsync -a --delete "${EXCL[@]}" "$src/tools/perf/results/$t/" "$dst/perf/$t/"

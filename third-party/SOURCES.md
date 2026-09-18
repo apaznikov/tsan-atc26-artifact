@@ -12,6 +12,7 @@ change what is built. A hash mismatch is a stop, not a warning.
 | SQLite 3.50.2 | `sqlite-src-3500200.zip` | https://sqlite.org/2025/sqlite-src-3500200.zip | 14 MB | `091eeec3ae2ccb91aac21d0e9a4a58944fb2cb112fa67bffc3e08c2eca2d85c8` |
 | FFmpeg 4.3.9 | `FFmpeg-n4.3.9.tar.gz` | https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n4.3.9.tar.gz | 13 MB | `43e77716cc5acd71775c92751859fb744332d152eb45f1db49be1b50533542a9` |
 | MySQL 8.0.39 | `mysql-8.0.39.tar.gz` | https://github.com/mysql/mysql-server/archive/refs/tags/mysql-8.0.39.tar.gz (Boost 1.77 is fetched by its build) | 421 MB | `3a72e6af758236374764b7a1d682f7ab94c70ed0d00bf0cb0f7dd728352b6d96` |
+| memtier_benchmark 2.1.1 | `memtier_benchmark-2.1.1.tar.gz` | https://github.com/RedisLabs/memtier_benchmark/archive/refs/tags/2.1.1.tar.gz | 0.3 MB | `6e52a4049ecf98928941661ccf98e01d1c97d161447ff5071c512a5afe32970e` |
 | FFmpeg input clip | `TearsOfSteel-1366x768-100s.mkv` | the artifact's Zenodo record; derivable from the Blender source by the command in `docs/ffmpeg-input.md` | 78 MB | `43b0fba97eb05a0e44d7518fe9d6993c140680531a17a240ea6d53582fbe9985` |
 
 Four of the five hashes were taken from the archives the campaign of 15-17 September 2026 was built
