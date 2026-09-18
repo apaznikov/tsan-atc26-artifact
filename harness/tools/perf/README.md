@@ -6,7 +6,7 @@
   (`clang --version` stamp = code; `TSAN_AUDIT_HASH`, `CONSOLIDATED_HASH`). Every binary's `build_info.txt`
   records the stamp, flags and summaries; `static-counts.csv` records its memory-access instrumentation sites.
 - **Configurations** (`configs.sh`): `orig` (native), `tsan` (stock TSan), `tsan-sound` (EA+LO+STC+SWMR),
-  `tsan-dom-ea-lo-st-swmr` (**AllOpt−peel**), `tsan-dom_peeling-ea-lo-st-swmr` (**AllOpt+peel**, the paper's AllOpt),
+  `tsan-dom-ea-lo-st-swmr` (**AllOpt−peel**), `tsan-dom_peeling-ea-lo-st-swmr` (**AllOpt+peel**; the paper does not say whether its AllOpt bar had peeling on, so CLAIMS.md compares the paper's bar with both),
   and `…-wp` = the same build with the sound whole-program summaries (memcached, Redis, SQLite). Per-unit
   analyses otherwise. Stage B adds the single analyses (`tsan-st`, `-stmt`, `-swmr`, `-lo`, `-ea`, `-dom`,
   `-dom_peeling`) and `tsan-sound-wp`.

@@ -43,7 +43,7 @@ DynSTC.
 | Static instrumentation sites per application and configuration | `scripts/20-static-counts.sh` | exact for the differences between configurations (what each analysis removes or adds), which are a property of the compiler; the absolute count of a binary may carry a small constant offset from the build environment: Redis built inside the container has 37 922 sites under stock and 43 272 under AllOpt with peeling against 37 941 and 43 291 for the campaign's host-built binaries, 19 fewer in each, the removed and added counts identical. Named, not guessed: Redis's Makefile auto-detects libsystemd and links it when present; the host had it, the image does not, so the container build compiles out `redisCommunicateSystemd` and the branches in its four callers. It is deterministic and every evaluator's image will show the same 19. Compare your differences with ours exactly and your absolute counts to within such an offset |
 | The compiler built from the shipped patch series behaves like the frozen compiler the performance numbers were measured on | `scripts/12-compiler-equivalence.sh` | exact: it recompiles 28 vendored LLVM IR modules under 4 configurations and requires all 112 `__tsan_*` symbol histograms to equal a reference table produced by the campaign compiler, checking the `TSAN_AUDIT_HASH` stamp separately. It says "behaves like", not "is": an identical corpus does not identify the commit, since the three compile-time commits change none of the 112 rows. A control asserts the reference table separates the configurations at all (24 of 28 modules do), so agreement is not free |
 | The three compile-time commits added to that compiler changed no instrumentation decision on any application | recorded in `data/equivalence/` and `docs/campaign-parameters.md`; not re-run by the evaluator | the same 112 corpus rows against the previous compiler, plus the 17 application configurations built on both compilers (MySQL 640 355 sites and 1 263 905 calls; all 14 Redis rows) and Redis's whole-program analysis summaries byte-identical between them |
-| Executed instrumentation per unit of work | `scripts/90-tables.sh --reach` | exact from the shipped data; within run-to-run noise when re-measured |
+| Executed instrumentation per unit of work | not measured on this compiler; the recorded counter runs are shipped under `data/perf/*-counters` and are from an earlier one | exact from the shipped data; within run-to-run noise when re-measured |
 
 ## 3b. Every shipped run is attributable (deterministic)
 
@@ -126,7 +126,7 @@ measurement).
 
 ### memcached 1.6.29 (`memtier_benchmark` 2.1.1, 10 threads x 5 clients, pipeline 16, 100 000 requests each, server at 48 threads; session of 15 Sep, pinned)
 
-Stock ThreadSanitizer against native: 3.20x [2.97, 3.40] (the paper: 2.83x). **No configuration is
+Stock ThreadSanitizer against native: 3.20x [2.97, 3.40] (the paper: 2.5x). **No configuration is
 resolved on memcached**: across the twelve instrumented configurations every speedup interval is between 11.9 and 15.7 points wide and contains 1.0 (the thirteenth row of that column, `orig`, is native against stock, a baseline ratio rather than a speedup, and is 42.8 points wide). The cause is the
 workload, not the analyses: memcached reports one metric, operations per second, so the geometric
 mean is over a single number and the whole interval is its run-to-run variance at N = 5. Only more
@@ -162,7 +162,7 @@ Script: `scripts/40-perf.sh memcached` (about 34 minutes at the default N = 2 an
 
 ### SQLite 3.50.2 (`threadtest3`, all seven subtests at their default thread counts; session of 16 Sep 00:30, pinned)
 
-Stock ThreadSanitizer against native: 2.96x [2.79, 3.28] (the paper: 3.18x). This is the campaign's
+Stock ThreadSanitizer against native: 2.96x [2.79, 3.28] (the paper: 2.4x). This is the campaign's
 widest slowdown column, because SQLite's uninstrumented build varies by 37.9% run to run; that is the
 workload, not the measurement. Resolvable subtests: 5 of 7 (`stress1` and `stress2` excluded).
 
@@ -430,6 +430,20 @@ overheads are not comparable across compiler trees even when ratios are.
 | Dominance elimination trades losses against gains rather than only losing. The program plants two races on one granule, A-B and C-B, and a third thread's burst evicts A's record in 236 of 1000 runs (the same 236 under every build, since the burst is the same). **In those 236 runs DE reports A-B in 0 and stock in 54**: stock's second, dominated store of A re-inserts the record, DE has removed that store. In the other 764 runs both report A-B in exactly 174, so DE's loss on A-B is confined to the evicted runs. Conversely that re-inserting store of stock's evicts C's record in 71 runs, all among the 236, and stock reports C-B in none of those 71 (165 of 236), while DE, which never executes it, reports C-B in 236 of 236. Overall 0.93 reports per run against stock's 0.91 | `scripts/50-eviction-stress.sh` (experiment b in its report) | the conditional counts, within their intervals: A-B given the eviction near 0 under DE and near a fifth under stock; C-B given the eviction all of them under DE and about two thirds under stock; outside the eviction the two builds equal |
 
 ## 7. Not claimed here
+
+Four things the paper reports that this artifact does not support, named here so that a reader
+following the paper does not look for them:
+
+- **Executed instrumentation per unit of work** (the paper's dynamic-reduction figures, 23 to 58 per
+  cent). Not re-measured on the shipped compiler. The counter runs under `data/perf/*-counters` are
+  from an earlier compiler and carry no stock baseline, so no comparison can be derived from them.
+- **Memory overhead** (the paper's shadow-memory reduction figures). Not measured in this campaign and
+  no data is shipped for it.
+- **The ReX comparison and the access-trace oracle** (the paper's appendix). The filter is research
+  code behind a build flag that is off by default, and the oracle is a tool on an internal branch;
+  neither is in this repository, and neither number can be reproduced from it.
+- **Chromium**, for the reason given below.
+
 
 - **Chromium.** No performance number. The only Chromium build we have is on an earlier compiler
   and corresponds to no measurement in the paper. `docs/chromium.md` records the revision
