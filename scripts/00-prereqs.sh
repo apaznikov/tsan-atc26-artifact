@@ -7,7 +7,7 @@ here="$(cd "$(dirname "$0")/.." && pwd)"
 
 [ $# -eq 0 ] || { echo "$(basename "$0") takes no arguments (got: $*)"; exit 2; }
 
-ok=0; miss=0
+ok=0; miss=0; docker_blocked=0
 need() { # need <what> <command> [tier]
   if command -v "$2" >/dev/null 2>&1; then printf '  ok       %-22s %s\n' "$1" "$(command -v "$2")"; ok=$((ok+1))
   else printf '  MISSING  %-22s (%s)\n' "$1" "${3:-required}"; miss=$((miss+1)); fi
@@ -17,6 +17,17 @@ echo "Host: $(uname -srm); CPUs: $(nproc); RAM: $(awk '/MemTotal/{printf "%d GB"
 echo
 echo "Container and compiler (Tier 0 and up):"
 need docker docker "to build or pull the image; skip if you run inside it"
+# Having the docker command is not having Docker: the daemon must accept this user. On 18 Sep 2026 a run on
+# a second server passed this check and then failed the image build with "permission denied while trying to
+# connect to the docker API at unix:///var/run/docker.sock", because the user was not in the docker group.
+if command -v docker >/dev/null 2>&1 && [ ! -x "${TSAN_LLVM_ROOT:-/opt/tsan-llvm}/bin/clang" ]; then
+  if docker info >/dev/null 2>&1; then
+    printf '  ok       %-22s %s\n' "docker daemon" "reachable as $(id -un)"
+  else
+    printf '  MISSING  %-22s (%s)\n' "docker daemon access" "the daemon refuses this user: add yourself to the docker group (sudo usermod -aG docker $(id -un), then log in again or run: newgrp docker), or run the scripts with sudo"
+    miss=$((miss+1)); docker_blocked=1
+  fi
+fi
 if [ -x "$TSAN_LLVM_ROOT/bin/clang" ]; then
   echo "  ok       TSan clang            $TSAN_LLVM_ROOT/bin/clang ($("$TSAN_LLVM_ROOT/bin/clang" --version | head -1))"
   if ldd "$TSAN_LLVM_ROOT/bin/clang" | grep -q 'libLLVM' && ldd "$TSAN_LLVM_ROOT/bin/clang" | grep 'libLLVM' | grep -qv "$TSAN_LLVM_ROOT"; then
@@ -58,14 +69,18 @@ echo
 if [ "$miss" -eq 0 ]; then
   echo "All prerequisites present."
 elif [ -z "${TSAN_LLVM_ROOT:-}" ] || [ ! -x "${TSAN_LLVM_ROOT:-/opt/tsan-llvm}/bin/clang" ]; then
-  if command -v docker >/dev/null 2>&1; then
+  if command -v docker >/dev/null 2>&1 && [ "${docker_blocked:-0}" != 1 ]; then
     echo "On this host: nothing to install beyond Docker. The $miss item(s) marked MISSING above are the compiler,"
     echo "llvm-lit and the benchmark clients, which live inside the container and are built by ./docker/build.sh"
     echo "(memtier and sysbench by the scripts that need them). Next step: ./docker/build.sh, then run every"
     echo "script through ./docker/run.sh, and this check passes inside the container."
     exit 0
   fi
-  echo "On this host: Docker is missing, and it is the one thing the host needs; install it and run this again."
+  if [ "${docker_blocked:-0}" = 1 ]; then
+    echo "On this host: Docker is installed but this user cannot use it (see the line above); fix that and run this again."
+  else
+    echo "On this host: Docker is missing, and it is the one thing the host needs; install it and run this again."
+  fi
   exit 1
 else
   echo "$miss item(s) missing inside the container; each line above says which script needs it."

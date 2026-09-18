@@ -153,10 +153,16 @@ echo
 _first_log=$(ls "$outdir"/lit-*.log 2>/dev/null | head -1)
 if [ -n "$_first_log" ]; then
   {
-    echo "tests_discovered: $(grep -m1 -oE 'Total Discovered Tests: [0-9]+' "$_first_log" | grep -oE '[0-9]+')"
+    # Under set -euo pipefail a grep that matches nothing is a non-zero pipeline, and an ASSIGNMENT
+    # from it ends the script silently. lit -q never prints an Unsupported line, so the first version
+    # of this block exited 1 here on every run, after the matrix and before the verdict, and the full
+    # correctness set failed at the self-test for every evaluator (found on a second server, 18 Sep
+    # 2026, on the first execution of this block; it had been reviewed and never run). Hence || true.
+    _disc=$(grep -m1 -oE 'Total Discovered Tests: [0-9]+' "$_first_log" | grep -oE '[0-9]+' || true)
+    echo "tests_discovered: ${_disc:-not found in $_first_log}"
     # lit -q prints Unsupported only when non-zero, so an absent count is not zero and not a
     # parse failure. Say which, rather than emit an empty field that a diff reads as either.
-    _unsup=$(grep -m1 -oE 'Unsupported: *[0-9]+' "$_first_log" | grep -oE '[0-9]+' | head -1)
+    _unsup=$(grep -m1 -oE 'Unsupported: *[0-9]+' "$_first_log" | grep -oE '[0-9]+' | head -1 || true)
     echo "tests_unsupported: ${_unsup:-not reported by lit -q; run scripts/30-preservation-suite.sh with ART_LIT_SHOW_UNSUPPORTED=1 to record it}"
     echo "loadavg_at_end: $(cut -d' ' -f1-3 /proc/loadavg)"
   } >> "$outdir/manifest.txt"
