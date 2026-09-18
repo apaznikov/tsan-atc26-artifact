@@ -48,5 +48,27 @@ need memtier_benchmark memtier_benchmark "built by scripts/40-perf.sh if absent"
 need sysbench sysbench "MySQL only; optional"
 need ffmpeg-dev-libs pkg-config "libx264/libx265 dev packages must be installed for FFmpeg"
 echo
-if [ "$miss" -eq 0 ]; then echo "All prerequisites present."; else echo "$miss item(s) missing. Each script above says which tier needs them."; fi
+# The verdict an evaluator needs is about THEIR next step, not a count. On a host, the compiler, llvm-lit,
+# memtier and sysbench are expected to be missing: they live inside the container, which docker/build.sh
+# builds, and nothing is to be installed for them. The first external run (18 Sep 2026) read "4 item(s)
+# missing" as a failure and asked what to install besides Docker; the answer is nothing.
+# Exit status: 0 when the next step can be taken here. On a host that is Docker present (the compiler,
+# llvm-lit and the benchmark clients are expected to be absent, they live inside the container); inside
+# the container it is every item present. 1 otherwise.
+if [ "$miss" -eq 0 ]; then
+  echo "All prerequisites present."
+elif [ -z "${TSAN_LLVM_ROOT:-}" ] || [ ! -x "${TSAN_LLVM_ROOT:-/opt/tsan-llvm}/bin/clang" ]; then
+  if command -v docker >/dev/null 2>&1; then
+    echo "On this host: nothing to install beyond Docker. The $miss item(s) marked MISSING above are the compiler,"
+    echo "llvm-lit and the benchmark clients, which live inside the container and are built by ./docker/build.sh"
+    echo "(memtier and sysbench by the scripts that need them). Next step: ./docker/build.sh, then run every"
+    echo "script through ./docker/run.sh, and this check passes inside the container."
+    exit 0
+  fi
+  echo "On this host: Docker is missing, and it is the one thing the host needs; install it and run this again."
+  exit 1
+else
+  echo "$miss item(s) missing inside the container; each line above says which script needs it."
+  exit 1
+fi
 [ "$miss" -eq 0 ]

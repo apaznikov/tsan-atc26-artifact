@@ -12,9 +12,16 @@ harness="$ART_BUILD/harness"
 need_harness() {
   [ -d "$harness_src/$1" ] || { echo "this script needs $harness_src/$1 (the vendored harness); not present in this checkout"; exit 2; }
   if [ ! -f "$harness/MANIFEST.tsv" ] || ! cmp -s "$harness_src/MANIFEST.tsv" "$harness/MANIFEST.tsv"; then
-    mkdir -p "$ART_BUILD" && rm -rf "$harness" && cp -a "$harness_src" "$harness" \
-      || { echo "cannot make a working copy of the harness under $ART_BUILD (is it writable?)"; exit 2; }
-    echo "harness: working copy refreshed at $harness (from $harness_src)"
+    # An OVERLAY, never a wipe. The working copy also holds every application's fetched source and build
+    # tree (they live beside the scripts that build them), so "rm -rf and copy again" on a manifest change
+    # threw away the MySQL tarball, the clip and every build, and made each re-vendor cost a full re-fetch
+    # from five upstream hosts: on 17 Sep 2026 that was 37 minutes and a SQLite leg lost to one transient
+    # SSL failure. Copying the vendored files over the working copy refreshes every shipped script and
+    # leaves everything else in place; a file that left the manifest lingers harmlessly, since every
+    # shipped script is invoked by name.
+    mkdir -p "$harness" && cp -a "$harness_src"/. "$harness"/ \
+      || { echo "cannot refresh the working copy of the harness under $ART_BUILD (is it writable?)"; exit 2; }
+    echo "harness: working copy refreshed at $harness (from $harness_src; sources and builds kept)"
   fi
 }
 need_compiler() { [ -x "$TSAN_LLVM_ROOT/bin/clang" ] || { echo "no TSan clang at $TSAN_LLVM_ROOT/bin/clang (set TSAN_LLVM_ROOT or run inside the container)"; exit 2; }; }

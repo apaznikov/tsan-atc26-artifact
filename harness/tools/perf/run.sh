@@ -22,7 +22,12 @@ if [ $INBENCH = 0 ] && p5_bench_active; then
 fi
 # one benchmark at a time (two only when --pair is given after the interference pilot)
 exec 9>"$P5_LOCK"; flock -x 9 || p5_die "lock"      # exclusive: no builds, no other benchmark meanwhile
-export P5_MODE=$([ $INBENCH = 1 ] && echo bench || echo pinned)
+# "pinned" was written whatever the cpuset held, so an UNPINNED session recorded mode "pinned" beside
+# cpuset "" -- a label contradicting the field next to it, and the one a reader trusts first. Three states,
+# named for what they are. (tsan-paper spotted it in the contract smoke, 2026-09-18.)
+if [ "$INBENCH" = 1 ]; then export P5_MODE=bench
+elif [ -n "${CPUSET:-}" ]; then export P5_MODE=pinned
+else export P5_MODE=unpinned; fi
 # Rejection threshold on the busy share of the CPUs outside our pinned set. 0.15 once rejected runs that
 # were merely normal (MySQL lost two of three native runs at 0.15-0.17 and reported N=1) and the default
 # was raised to 0.25; the campaign then tightened it to 0.10 and retired the cells above it, which is the

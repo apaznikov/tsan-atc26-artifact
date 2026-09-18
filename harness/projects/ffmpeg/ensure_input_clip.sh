@@ -29,9 +29,20 @@ if [ -f "$CLIP" ]; then
 fi
 
 if [ -n "${ART_FFMPEG_CLIP_URL:-}" ]; then
-  say "fetching a prepared clip from ART_FFMPEG_CLIP_URL"
-  [ -w "$(dirname "$CLIP")" ] || { say "cannot write to $(dirname "$CLIP") — is the harness mounted read-only? Nothing was downloaded."; exit 1; }
-  wget -q -O "$CLIP.part" "$ART_FFMPEG_CLIP_URL" || { rm -f "$CLIP.part"; say "download failed from $ART_FFMPEG_CLIP_URL"; exit 1; }
+  [ -w "$(dirname "$CLIP")" ] || { say "cannot write to $(dirname "$CLIP") — is the harness mounted read-only? Nothing was fetched."; exit 1; }
+  # A LOCAL PATH IS NOT A URL WGET CAN FETCH. GNU wget speaks http, https and ftp -- not file:// -- so an
+  # evaluator who has the clip on disk and points this variable at it gets "download failed" and falls
+  # through to regenerating 557 MB, which is the opposite of what they asked for. Accept a plain path or a
+  # file:// URL by copying, and verify the result the SAME way a download is verified: the check below is
+  # common to both branches, so a local copy is no more trusted than a remote one.
+  src="$ART_FFMPEG_CLIP_URL"; case "$src" in file://*) src="${src#file://}";; esac
+  if [ -f "$src" ]; then
+    say "copying a prepared clip from $src"
+    cp "$src" "$CLIP.part" || { rm -f "$CLIP.part"; say "copy failed from $src"; exit 1; }
+  else
+    say "fetching a prepared clip from $ART_FFMPEG_CLIP_URL"
+    wget -q -O "$CLIP.part" "$ART_FFMPEG_CLIP_URL" || { rm -f "$CLIP.part"; say "download failed from $ART_FFMPEG_CLIP_URL (a local path must exist; wget cannot fetch file://)"; exit 1; }
+  fi
   mv "$CLIP.part" "$CLIP"
   got=$(sha256sum "$CLIP" | cut -d' ' -f1)
   [ "$got" = "$WANT" ] || { say "SHA256 MISMATCH: a prepared clip must be the reference one."; say "  pinned $WANT"; say "  actual $got"; rm -f "$CLIP"; exit 1; }

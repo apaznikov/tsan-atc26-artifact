@@ -262,8 +262,8 @@ the other three.
 
 Script: `scripts/40-perf.sh ffmpeg` (about 24 minutes at the default N = 2 and four configurations;
 2.4 hours at N = 5 and twelve). The input is produced before the build by one of three paths, in this
-order: a prepared copy of the reference clip from `ART_FFMPEG_CLIP_URL`, checked against the sha256 in
-`docs/ffmpeg-input.md`; a local copy of the Blender source in `ART_FFMPEG_SOURCE`, cut with the recorded
+order: a prepared copy of the reference clip from `ART_FFMPEG_CLIP_URL` (a URL or a local path), checked against
+the sha256 in `docs/ffmpeg-input.md` whichever way it arrived; a local copy of the Blender source in `ART_FFMPEG_SOURCE`, cut with the recorded
 command; or, with neither set, the 557 MB Blender source downloaded, verified and cut. The second and
 third paths re-encode, and a re-encode's sha256 differs from the reference by construction, so every
 run records `input_is_reference` beside the input's sha256. The point-in-interval comparison for this
@@ -315,9 +315,8 @@ ART_RUNS=5 ./docker/run.sh scripts/40-perf.sh redis      # our setting: interval
 **What the default mode measured when we ran it as an evaluator would** (17-18 Sep 2026, the pushed
 checkout in the container, 48 pinned processors, N = 2, four configurations, nothing else on the machine):
 the functional check 52 s; Redis 15 min; memcached 28 min at the rule's 48 server threads; FFmpeg 25 min
-on the reference clip with all four codecs; SQLite's leg is pending (its first run was lost to a transient
-network failure fetching the source, see below). Every configuration row landed inside our interval, and
-the one row whose interval excludes 1.0 landed on the same side:
+on the reference clip with all four codecs; SQLite 68 min. Seven of the eight configuration rows landed
+inside our interval, both rows whose interval excludes 1.0 on the same side, and one row landed outside:
 
 | Application | Row | Evaluator's point (N = 2) | Shipped interval (N = 5) | Verdict |
 |---|---|---|---|---|
@@ -327,15 +326,25 @@ the one row whose interval excludes 1.0 landed on the same side:
 | memcached | DynSTC | 0.983 | 0.986 [0.944, 1.063] | inside |
 | FFmpeg | AllOpt with peeling | 1.017 | 1.006 [0.990, 1.024] | inside |
 | FFmpeg | DynSTC | 1.127 | 1.113 [1.099, 1.129] | inside, above 1.0 like ours |
-| SQLite | both | pending | | |
+| SQLite | AllOpt with peeling | 1.078 | 1.023 [0.942, 1.061] | **outside**, by 0.017 above the upper limit |
+| SQLite | DynSTC | 0.984 | 0.995 [0.928, 1.082] | inside |
 
 The stock-against-native ratios of the same runs, reported and not judged, since the drift condition
 governs them: Redis 8.26 against 8.01 [7.83, 8.21]; memcached 3.66 against 3.20 [2.97, 3.40] (4.66 before
 the thread-count defect was fixed, so the fix closed three quarters of the gap and the rest is the size of
-the documented session drift); FFmpeg 2.99 against 2.76 [2.70, 2.80]. The table is generated from this
+the documented session drift); FFmpeg 2.99 against 2.76 [2.70, 2.80]. The SQLite row that fails the
+criterion is reported as a failure of the criterion, which was fixed before the run, and not explained
+away; what can be said about it is this. It is on SQLite's headline column, which this file describes
+above as heterogeneous, with three subtests carrying 16 to 20 per cent run-to-run variation, and in this
+very run `stress1` varied by 23 per cent between its two runs. The column that is comparable, the
+resolvable subtests (shipped 0.998 [0.975, 1.013] for this row), cannot be computed at N = 2, because the
+stability of a subtest needs three runs, and the artifact says so in that cell rather than claiming it.
+A point 1.7 points outside a 12-point interval at N = 2 on the noisiest column is the weakest kind of
+disagreement, and it is still a disagreement; the N = 5 run of the same leg, about 2.5 hours, is what
+decides it, and it is scheduled. The table is generated from this
 file's own interval tables and each run's `perf_<app>.md`, not transcribed. The Redis rows are from the
 run of 17 Sep 14:15; memcached and FFmpeg from the run of 17 Sep 23:07, which followed the thread-count
-and shared-memory fixes and carried `input_is_reference: true`.
+and shared-memory fixes and carried `input_is_reference: true`; SQLite from the run of 18 Sep 11:47.
 
 The four configurations decide everything the paper's figure turns on, and Redis, memcached and
 FFmpeg together, about an hour and a quarter, cover the two things this campaign found: DynSTC's

@@ -17,7 +17,12 @@ if [ ! -f "$A" ]; then
   command -v wget >/dev/null || { echo "fetch_archive: $B is absent and wget is not installed" >&2; exit 1; }
   echo "fetch_archive: $B absent; fetching from $URL"
   # to a temporary name, so an interrupted download never looks like a complete archive on the next run
-  wget -q -O "$A.part" "$URL" || { rm -f "$A.part"; echo "fetch_archive: download failed for $URL" >&2; exit 1; }
+  # BOUNDED. wget's default is 20 tries with a long timeout, which on 2026-09-18 spent 901 seconds failing
+  # to reach sqlite.org over TLS before giving up -- fifteen minutes in which the leg was already lost and
+  # nobody watching could tell whether it was hung. Three tries, 30 s each, 5 s apart: about two minutes to
+  # a clear answer, and the message names the limit so the reader knows it was bounded and not abandoned.
+  wget -q --tries=3 --timeout=30 --waitretry=5 -O "$A.part" "$URL" \
+    || { rm -f "$A.part"; echo "fetch_archive: download failed for $URL (3 tries, 30 s each)" >&2; exit 1; }
   mv "$A.part" "$A"
 fi
 exec "$HERE/verify_archive.sh" "$A"

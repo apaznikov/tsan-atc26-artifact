@@ -35,7 +35,23 @@ machine: the container runs anywhere, and the deterministic experiments give ide
 any x86-64 Linux host. The performance experiments need at least 32 cores to be meaningful, and
 `docs/confounds.md` says what varies and why.
 
-## Getting started: about twenty minutes
+## Getting started: one command
+
+```
+./evaluate.sh --quick            # about 20 minutes: prerequisites, the image, the minimal example,
+                                 # the correctness set without the regression suite, the tables
+./evaluate.sh                    # the same with the full correctness set: about 2 hours (Functional)
+./evaluate.sh reproduced         # plus the performance subset: about 4 hours on 32+ idle processors
+./evaluate.sh everything         # plus MySQL and all fourteen configurations: about 14 hours
+./evaluate.sh reproduced --plan  # print the steps and their expected times, run nothing
+```
+
+`evaluate.sh` runs the scripts below in the documented order, prints one line per step with its time,
+writes the full log under `results/`, and ends with one verdict: PASS, INCOMPLETE (a check whose
+prerequisite is absent here was skipped, which is neither a pass nor a failure) or FAIL with the step
+that stopped it. The tiers are separate because the correctness set runs anywhere in two hours while
+the performance set needs a quiet 32-processor machine for four to fourteen hours, and the badges are
+awarded separately. The same steps, one at a time:
 
 ```
 ./scripts/00-prereqs.sh          # says what is missing, changes nothing; on the host only Docker matters

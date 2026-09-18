@@ -47,9 +47,7 @@ benchmarks pinned to 48 processors.
 
 ```
 git clone https://github.com/apaznikov/tsan-atc26-artifact.git && cd tsan-atc26-artifact
-./scripts/00-prereqs.sh
-./docker/build.sh
-./docker/run.sh scripts/10-minimal-example.sh
+./evaluate.sh --quick        # prerequisites, the image, the minimal example, the quick correctness set
 ```
 
 The basic test compiles one small program per analysis, prints how many instrumentation calls each
@@ -63,7 +61,7 @@ One command runs every deterministic check and prints a verdict per step, stoppi
 failure and reporting a step whose prerequisite is absent as a skip rather than a pass:
 
 ```
-./docker/run.sh scripts/01-functional.sh
+./evaluate.sh                # the full correctness set; ./evaluate.sh reproduced adds the performance subset
 ```
 
 It covers: the basic test; the 23 shapes against 62 IR tests with their vacuity control; the shipped

@@ -64,9 +64,12 @@ test source compresses trivially and does not exercise them.
 The clip is not in git or in the image. `harness/projects/ffmpeg/ensure_input_clip.sh`, run by the
 FFmpeg build before anything is compiled, produces it by the first of three paths that applies:
 
-1. `ART_FFMPEG_CLIP_URL`: a prepared copy of the reference clip, fetched and checked against the sha256
-   above; a mismatch deletes the file and refuses. This is the copy in the artifact's Zenodo record,
-   which exists from the submission on; `env.sh` will default the variable to it then.
+1. `ART_FFMPEG_CLIP_URL`: a prepared copy of the reference clip, either a URL or a local path (a plain
+   path or `file://`), fetched or copied and in both cases checked against the sha256 above; a mismatch
+   deletes the file and refuses, and a local copy is trusted no more for being local. The URL form is the
+   copy in the artifact's Zenodo record, which exists from the submission on; `env.sh` will default the
+   variable to it then. `docker/run.sh` forwards the variable into the container; until 17 Sep 2026 it
+   did not, and a local path could not be used because the image's `wget` does not speak `file://`.
 2. `ART_FFMPEG_SOURCE`: a local copy of the unpacked Blender source (`.mov`), cut here with the command
    above.
 3. Neither set: the 557 MB Blender source is downloaded, verified against its published sha256, unpacked
