@@ -325,6 +325,15 @@ def main():
         if not any(x.startswith("--expect-n") for x in sys.argv):
             a.expect_n = run_range[1] - run_range[0] + 1
     apps = a.app or [d for d in sorted(os.listdir(root)) if d in PARSERS and os.path.isdir(os.path.join(root, d))]
+    if not apps:
+        # A HEADERS-ONLY SUMMARY IS NOT A SUMMARY. With no --app and no recognised application directory
+        # under the root, this wrote a table with a header row and nothing beneath it and exited 0 -- the
+        # same "nothing found reads as nothing wrong" shape as everything else this week. Say which root
+        # was looked at and which names would have been recognised. (Audit, 2026-09-19.)
+        print(f"no application directories under {root}", file=sys.stderr)
+        print(f"  recognised names: {', '.join(sorted(PARSERS))}", file=sys.stderr)
+        print("  nothing was aggregated; no summary written.", file=sys.stderr)
+        sys.exit(2)
     statics = static_counts(root); rows = []; no_data = []
     for app in apps:
         per_cfg, hib = collect(root, app, run_range)

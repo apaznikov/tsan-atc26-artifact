@@ -17,4 +17,12 @@ if op == "mark":
     m["gate_applied"] = share is not None
     json.dump(m, open(p, "w"), indent=1); print("DISTURBED" if m["disturbed"] else "ok")
 elif op == "is-disturbed": sys.exit(0 if m.get("disturbed") else 1)
-elif op == "is-done": sys.exit(0 if m.get("rc") == 0 and not m.get("disturbed") else 1)
+elif op == "is-done":
+    # AN ABSENT "disturbed" KEY MEANS THE GATE NEVER RAN, NOT THAT THE RUN WAS CLEAN. `m.get("disturbed")`
+    # returned None for a meta.json that never reached `mark`, which is falsy, so such a cell counted as
+    # DONE and was skipped on the next pass -- a run whose disturbance was never assessed, treated as
+    # assessed and clean. Today run.sh always marks, so this was latent; requiring the key to be present
+    # makes a future path that forgets to mark redo the cell instead of inheriting a pass. (Audit,
+    # 2026-09-19.) is-disturbed keeps its meaning: it answers "was it marked disturbed", and an unmarked
+    # cell is not re-run at the end because is-done has already sent it back through the runner.
+    sys.exit(0 if (m.get("rc") == 0 and "disturbed" in m and not m["disturbed"]) else 1)

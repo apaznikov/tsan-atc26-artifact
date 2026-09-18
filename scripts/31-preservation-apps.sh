@@ -31,6 +31,11 @@ case ",$configs," in *,tsan,*) ;; *) configs="tsan,$configs";; esac
 case "$app" in sqlite|memcached|redis|ffmpeg|mysql) ;; *) echo "unknown app $app" >&2; exit 2;; esac
 
 need_harness tools/preservation; need_compiler
+# The rule that decides LOST/KEPT/UNDETERMINED, checked against synthetic cases before it is trusted on
+# real ones, and checked HERE rather than after the runs: a control that fires after three hours of
+# measurement tells you the rule was broken and that the afternoon is gone. It costs under a second.
+python3 "$harness/tools/preservation/preservation_verdict.py" --self-test || {
+  echo "the preservation verdict rule failed its own self-test; not running the suite" >&2; exit 1; }
 
 scale=paper
 [ "$ART_SMOKE" = 1 ] && { n=1; scale=smoke; }
