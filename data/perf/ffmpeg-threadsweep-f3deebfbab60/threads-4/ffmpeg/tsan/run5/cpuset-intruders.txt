@@ -1,0 +1,6 @@
+claude samples=295 peak_pcpu=4.9
+remote-dev-serv samples=55 peak_pcpu=53.6
+sshd samples=13 peak_pcpu=0.8
+python3 samples=4 peak_pcpu=100.0
+Rider.Backend samples=2 peak_pcpu=4.8
+codex-linux-san samples=1 peak_pcpu=100.0

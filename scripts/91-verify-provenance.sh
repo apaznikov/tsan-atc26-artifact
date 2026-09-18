@@ -28,7 +28,8 @@ if [ ${#roots[@]} -eq 0 ]; then
 fi
 [ ${#roots[@]} -gt 0 ] || { echo "no results roots found under $ART_DATA/perf"; exit 2; }
 strict=(); legacy=()
-for r in "${roots[@]}"; do case "$(basename "$r")" in campaign-*) strict+=("$r") ;; *) legacy+=("$r") ;; esac; done
+# Strict roots: the campaign and the thread sweep on the reference clip, both taken on the shipped compiler.
+for r in "${roots[@]}"; do case "$(basename "$r")" in campaign-*|ffmpeg-threadsweep-*) strict+=("$r") ;; *) legacy+=("$r") ;; esac; done
 
 budget "provenance of ${#strict[@]} campaign root(s), ${#legacy[@]} earlier tree(s) for information" "2 min" "1 min" "none"
 rc=0

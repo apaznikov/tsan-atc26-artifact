@@ -243,11 +243,26 @@ of about 6 per cent that is absent at the campaign's thread count. That is one s
 observation, not claimed; it is the first place in the campaign where peeling pays, and it says where to look.
 Stock ThreadSanitizer's overhead falls with threads, 2.94 to 2.66, the expected direction.
 
-**The paper's FFmpeg column is not comparable with this one in either direction**: it was measured on
-a clip that cannot be redistributed, and a difference between the two could be the input as much as
-the compiler. Within this table every configuration shares one input, so the rows compare with each
-other exactly. A control leg on the retired clip, five configurations on this compiler, separates the
-two contributions for the paper's text; its numbers are not shipped (`docs/ffmpeg-input.md`).
+**The paper's FFmpeg column differs from this one because of the compiler, not the input, and that is
+measured rather than assumed.** The paper's column was taken on a clip that cannot be redistributed; a
+control leg on that retired clip, on this compiler, at the same `-threads 4` and N = 5, gives the same
+ratios as the reference clip (ratios only; absolute times differ between the clips and are not compared;
+the retired clip's runs predate the `input_is_reference` field and are identified by the clip's sha256,
+`92eea6ec…`; the control's root is not shipped, as decided, and the numbers are these):
+
+| Configuration | Retired clip, N = 5 | Reference clip, N = 5 |
+|---|---|---|
+| stock ThreadSanitizer against native | 2.833 [2.768, 2.867] | 2.759 [2.700, 2.803] |
+| AllOpt without peeling | 1.005 [0.934, 1.016] | 1.012 [0.996, 1.029] |
+| AllOpt with peeling | 1.009 [1.001, 1.018] | 1.006 [0.990, 1.024] |
+| DynSTC | 1.126 [1.114, 1.140] | 1.113 [1.099, 1.129] |
+
+Every row overlaps, DynSTC excludes 1.0 on both clips, so the input changes none of the ratios, and the
+paper's FFmpeg column (EA 1.05, DE 1.30, DE with peeling 1.42, AllOpt 1.57) differs from this table's
+(about 1.0) because of the compiler. Within this table every configuration shares one input, so the rows
+compare with each other exactly. The thread sweep's runs ship as
+`data/perf/ffmpeg-threadsweep-f3deebfbab60` (80 cells, four arms, their tables beside them), checked
+strictly against the shipped compiler like the campaign roots.
 
 | Configuration | Paper (retired clip) | All five runs [95%] | Runs 2-5, point | Verdict |
 |---|---|---|---|---|
