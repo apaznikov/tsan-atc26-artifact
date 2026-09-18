@@ -5,8 +5,8 @@ from the originals so the difference is visible.
 
 | Component | Version | License | How it enters the artifact | Modification |
 |---|---|---|---|---|
-| LLVM / clang / compiler-rt | trunk commit `c609043dd009` (19.0.0git, 6 May 2024) | Apache-2.0 with LLVM Exceptions | fetched by the container build; our changes are the patch series in `compiler/patches/` | our patches only |
-| ThreadSanitizer's regression suite, from the same commit | as above | Apache-2.0 with LLVM Exceptions | **vendored** in `tests/tsan`, `tests/sanitizer_common`, `tests/compiler-rt-src` and the two `lit.common.*` files, 507 files, so the preservation suite runs without a compiler-rt checkout | none; our own tests are in `tests/ir` and are not third-party |
+| LLVM / clang / compiler-rt | trunk commit `c609043dd009` (19.0.0git, 6 May 2024) | Apache-2.0 with LLVM Exceptions | fetched by the container build; our changes are the patch series in `compiler/patches/` | our patches only The licence text travels with the tests, at `tests/LICENSE.TXT`. |
+| ThreadSanitizer's regression suite, from the same commit | as above | Apache-2.0 with LLVM Exceptions | **vendored** in `tests/tsan`, `tests/sanitizer_common`, `tests/compiler-rt-src` and the two `lit.common.*` files, 508 files including the upstream licence text at `tests/LICENSE.TXT`, so the preservation suite runs without a compiler-rt checkout and the licence travels with the code it covers | none; our own tests are in `tests/ir` and are not third-party |
 | memcached | 1.6.29 | BSD-3-Clause | fetched at build time, sha256 pinned in `third-party/SOURCES.md` | none |
 | memtier_benchmark | 2.1.1 | GPL-2.0 | fetched and built by `scripts/40-perf.sh memcached` if absent | none |
 | Redis | 7.0.15 | BSD-3-Clause | fetched at build time, sha256 pinned in `third-party/SOURCES.md` | build flags only, to inject the TSan compiler, applied by `harness/nosql/redis/Makefile.patch` |
