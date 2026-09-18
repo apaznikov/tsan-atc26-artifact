@@ -79,4 +79,4 @@ Paths 2 and 3 re-encode, and a re-encode's sha256 differs from the reference eve
 command, because encoder builds differ. Every run therefore records `input_is_reference: true|false`
 beside `input_sha256` in its `meta.json`. A run on a regenerated clip is valid, and its build and run
 times are what an evaluator pays; only the comparison of its ratios with the shipped intervals is not
-made, since those were measured on the reference clip. With `--smoke` a 10-second cut is used.
+made, since those were measured on the reference clip. With `ART_SMOKE=1` a 10-second cut is used.

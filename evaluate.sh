@@ -3,8 +3,10 @@
 #
 #   ./evaluate.sh                      Functional: prerequisites, the image, the minimal example, the full
 #                                      correctness set, the tables. About 2 hours on any x86-64 Linux host
-#                                      with Docker (15 minutes of it the image build the first time).
-#   ./evaluate.sh --quick              The same in about 20 minutes, without the regression suite.
+#                                      with Docker, plus the image build the first time (15 min at the
+#                                      derived job count, 25 min at 8 jobs).
+#   ./evaluate.sh --quick              The same in about 5 minutes, without the regression suite, plus the
+#                                      image build the first time.
 #   ./evaluate.sh reproduced           Functional, then the performance subset: Redis, memcached, FFmpeg and
 #                                      SQLite at the defaults (four configurations, two runs). About 4 hours.
 #                                      Needs 32 or more processors and a machine that is otherwise idle.

@@ -317,6 +317,6 @@ are not retired retroactively, only scoped out of anything a claim rests on.
 
 ## Smoke mode
 
-The artifact's `--smoke` mode (N = 1, reduced test lists, short durations, for laptop-class
+The artifact's `ART_SMOKE=1` mode (N = 1, reduced test lists, short durations, for laptop-class
 evaluators) prints its numbers with an explicit "not a measurement" marker: a single run has no
 interval and cannot have one, and a bare figure would be quoted.

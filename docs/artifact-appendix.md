@@ -69,7 +69,7 @@ compiler's equivalence to the one the measurements were taken on, over 112 corpu
 control showing the comparison can separate configurations; the provenance of every shipped run; the
 regression suite in 12 configurations, preceded by a self-test that requires the harness to detect
 deliberately lost races; and the regeneration of every table in the paper from the recorded runs.
-Measured on two other machines on 18 Sep 2026: 31 minutes on 64 processors and 103 minutes on 32,
+Measured on two other machines on 18 Sep 2026: 31 minutes on 64 processors and 1 h 45 min on 32,
 most of it the regression suite in 12 configurations; longer on eight.
 
 Performance is separate and needs the hardware above. At the defaults (four configurations, two

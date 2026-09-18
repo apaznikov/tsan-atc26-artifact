@@ -36,6 +36,12 @@ regen_perf() { # regen_perf <results tree>
 
 if [ $# -eq 0 ]; then
   echo "Regenerating the performance tables from the shipped runs:"
+  # The campaign roots first: they are what every performance claim rests on. Until 19 Sep 2026 this
+  # regenerated only the two Stage B trees, which are shipped as data and support no claim, so the
+  # documented one-command check re-derived the retired numbers and not the paper's.
+  for r in "$ART_DATA"/perf/campaign-*/*/ "$ART_DATA"/perf/ffmpeg-threadsweep-*/*/; do
+    [ -d "$r" ] && regen_perf "${r%/}"
+  done
   regen_perf "$ART_DATA/perf/stageB-d3bf9f8c39fe"
   regen_perf "$ART_DATA/perf/redis-stageB-repeat-2026-09-14"
   echo

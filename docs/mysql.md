@@ -14,6 +14,6 @@ applications. Reasons and costs:
   case; the paper's MySQL rows are reported as nulls where the interval contains 1.0.
 
 `40-perf.sh mysql` runs the four configurations if you have the time and the disk (about 100 GB
-for the installs); `--smoke` builds stock only and runs one script for 60 s to show the pipeline
+for the installs); `ART_SMOKE=1` builds stock only and runs one script for 60 s to show the pipeline
 works. Our recorded runs are under `data/perf/`, and `90-tables.sh` regenerates the MySQL table
 from them.

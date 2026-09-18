@@ -27,6 +27,14 @@ what counts as a match. Nothing outside that file is claimed here.
 Third-party code is unmodified except where noted in `THIRD-PARTY.md`, which also records the
 licence of every vendored component.
 
+## Why the repository is small
+
+The compiler is not here as a binary and there is no copy of LLVM. There are 29 patches over the
+upstream LLVM commit `c609043dd009`, which is text. The container fetches upstream itself with a
+shallow clone, applies the patches, checks that the reconstructed source tree hashes to ours, and
+builds the compiler inside itself. The recorded runs are text too, logs and JSON, so 112 MB of data
+packs into a few megabytes of git history.
+
 ## The environment we used
 
 Intel Xeon w9-3495X, 56 cores and 112 threads, 250 GB RAM, Ubuntu 24.04, kernel 6.8.0-40-generic.
@@ -111,8 +119,9 @@ A step whose prerequisite is absent is reported as SKIP and the set is declared 
 check is one not made, and it counts as neither a pass nor a failure.
 
 The correctness tests themselves are 62 IR tests of our own (`tests/ir`, one per lost-race shape with
-its negative control) and 278 tests of ThreadSanitizer's own regression suite vendored from
-compiler-rt (`tests/tsan`), run in each of 12 configurations.
+its negative control) and 298 tests of ThreadSanitizer's own regression suite vendored from
+compiler-rt (278 in `tests/tsan` and 20 more in `tests/tsan/Linux`), run in each of 12 configurations.
+The suite discovers 383 and `lit` marks 85 unsupported on Linux before anything is compiled.
 
 ## Running the experiments
 
@@ -131,6 +140,7 @@ regenerated from whichever runs you point them at.
 | `31-preservation-apps.sh` | races reported on the applications, against stock | 3 h | 16 cores |
 | `40-perf.sh` | the performance table, one application at a time | default (4 configurations, N = 2), measured: Redis 13-15 min, memcached 28-36, FFmpeg 20-25, SQLite 65-68; MySQL about 3.4 h; everything at N = 2 about 14 h with builds; `ART_RUNS=5` for intervals, 2.5x longer | 32 cores |
 | `50-eviction-stress.sh` | the bounded-shadow experiments | 1 h | 4 cores |
+| `13-verify-image.sh` | the image an evaluator built is the compiler we measured: version, stamp, self-containedness, and the reconstructed tree hash from the build log | 10 min | any |
 | `90-tables.sh` | regenerates every table, from your runs or from ours | 1 min | any |
 
 The whole artifact, every script at its defaults, is about 14 hours on 48 processors; the reviewer's
@@ -159,7 +169,7 @@ runs share `Output/` and fail for reasons that are not the compiler's):
 
 | Script | What it answers | The control that makes it evidence |
 |---|---|---|
-| `scripts/11-soundness-shapes.sh` | Does the compiler still instrument every access the audit says it must? | Re-runs each test with its `-tsan-*` flags stripped. A test claiming a removal must then fail; one asserting instrumentation stays is expected to pass either way. Currently 50 removal tests, 11 controls, 0 vacuous. |
+| `scripts/11-soundness-shapes.sh` | Does the compiler still instrument every access the audit says it must? | Re-runs each test with its `-tsan-*` flags stripped. A test claiming a removal must then fail; one asserting instrumentation stays is expected to pass either way. Currently 50 removal tests, 11 controls, 0 vacuous; the 62nd, `ipa-summary-external.ll`, is a multi-step test with no FileCheck pipe, which the vacuity tool reports as skipped because it cannot strip a flag from it. |
 | `scripts/12-compiler-equivalence.sh` | Does this compiler instrument the IR corpus exactly as the campaign compiler did? | Checks the reference table can separate the configurations at all (24 of 28 modules do), and reports the provenance stamp separately -- the corpus alone cannot identify the commit. |
 | `scripts/30-preservation-suite.sh` | Does any configuration lose a race stock reports? | `--self-test` runs a detector with load/store instrumentation switched off and requires the harness to report the losses. A suite that reports nothing looks identical whether races are preserved or the harness is blind. |
 

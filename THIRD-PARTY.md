@@ -14,7 +14,7 @@ from the originals so the difference is visible.
 | MySQL | 8.0.39 | GPL-2.0 | fetched from GitHub, sha256 pinned in `third-party/SOURCES.md`; Boost 1.77 fetched by its build | none |
 | FFmpeg | n4.3.9, built with `--enable-gpl` (libx264, libx265) | GPL-2.0 (with those options) | fetched at build time, sha256 pinned in `third-party/SOURCES.md` | none |
 | FFmpeg input clip | Blender Foundation open movie cut, see `docs/ffmpeg-input.md` | CC-BY | not redistributed: the artifact ships the source URL and the exact ffmpeg command that produces the cut | derived cut, produced by the script |
-| Chromium | revision `bdef6783a05f0b3f885591e7d2c7b2aec1a89dea` | BSD-3-Clause | not included (documented only, `docs/chromium.md`) | four Telemetry files with raised timeouts, and `harness/chromium/patches/tsan_extra_cflags.patch`; neither is exercised here, since Chromium is documented rather than run |
+| Chromium | revision `bdef6783a05f0b3f885591e7d2c7b2aec1a89dea` | BSD-3-Clause | not included (documented only, `docs/chromium.md`) | four Telemetry files with raised timeouts, and the build-flag change quoted in `docs/chromium.md` (the Chromium material is documented, not shipped); neither is exercised here, since Chromium is documented rather than run |
 
 Paths beginning `harness/` are in the measurement harness, which `scripts/vendor-harness.sh` places
 there; until that has been run they are absent, and the scripts that need them say so.

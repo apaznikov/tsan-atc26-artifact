@@ -48,10 +48,25 @@ done
 # Two known findings on the Stage B tree are stated rather than left to be inferred: its FFmpeg runs
 # carry an empty input hash (the relative-path trap, fixed since), and five of its 500 runs sit above
 # today's 0.10 foreign-activity gate; they were inside the 0.25 gate in force when they were taken.
+# One line per earlier tree, not a page. These trees are shipped as data and are claimed by nothing, and
+# their findings are the ones described above: an absent compiler field in the counter and profile trees,
+# an empty input hash in Stage B's FFmpeg runs, five of its 500 runs above today's gate. Printing each
+# tree's full self-check made the step that establishes provenance look as though it had found eleven
+# problems, in a wall of text ending in "PROVENANCE PROBLEMS", directly above the line saying every
+# campaign run is attributable. The detail is one command away and is named here rather than dropped.
+echo "Earlier trees, shipped as data and claimed by nothing (their known findings are described in"
+echo "docs/campaign-parameters.md; each is checked against its own compiler, none against today's):"
 for r in "${legacy[@]}"; do
-  echo "== $r  (earlier tree: checked against its own compiler, for information; not counted)"
-  python3 "$harness/tools/perf/verify_provenance.py" --expect-self "$r" 2>&1 | grep -E "EMPTY|MISSING|PROBLEM|OK|runs,|agree|above" | sed 's/^/    /' || true
+  out=$(python3 "$harness/tools/perf/verify_provenance.py" --expect-self "$r" 2>&1 || true)
+  runs=$(printf '%s' "$out" | awk '/runs,/ { n += $2 } END { print n + 0 }')
+  if printf '%s' "$out" | grep -q 'no expectation can be derived'; then note="no compiler field per run (an earlier harness); its compiler is in the build logs"
+  elif printf '%s' "$out" | grep -q 'EMPTY'; then note="self-consistent; an empty input hash on some runs (the relative-path trap, fixed since)"
+  elif printf '%s' "$out" | grep -q 'above'; then note="self-consistent; some runs above today's 0.10 gate, inside the 0.25 gate then in force"
+  elif printf '%s' "$out" | grep -q 'PROVENANCE OK'; then note="self-consistent"
+  else note="see the detail below"; fi
+  printf '  %-46s %5s runs  %s\n' "$(basename "$r")" "$runs" "$note"
 done
+echo "  detail: python3 harness/tools/perf/verify_provenance.py --expect-self data/perf/<tree>"
 if [ ${#strict[@]} -eq 0 ]; then
   echo "No campaign root under $ART_DATA/perf: nothing that a claim rests on was verified." >&2
   exit 2

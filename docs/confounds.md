@@ -175,6 +175,6 @@ exercise this contract, and its table is quoted nowhere.
 ## Lower N is not a smaller interval
 
 At N = 3 the percentile bootstrap interval is 6-14% *narrower* than at N = 5 while the point
-estimate moves by about 4 points depending on which three runs are kept. `--smoke` mode (N = 1)
+estimate moves by about 4 points depending on which three runs are kept. `ART_SMOKE=1` mode (N = 1)
 therefore prints its numbers with an explicit "not a measurement" marker, and no result from fewer
 than five runs should be compared with `CLAIMS.md`.
