@@ -73,11 +73,11 @@ if [ -n "$logs" ] && grep -qh "reconstructed tree $TREE (expected $TREE)" $logs 
   if [ -z "$(git -C "$here" status --porcelain compiler/patches 2>/dev/null)" ]; then
     chk "patch series reproduced tree $TREE (from a build log; patches unmodified since)" ok
   else
-    chk "patch series reproduced tree $TREE" no "patches modified since that log -- rebuild with --no-cache"
+    chk "patch series reproduced tree $TREE" no "patches modified since that log -- rebuild with ./docker/build.sh --no-cache"
   fi
 else
   chk "patch series reproduced tree $TREE" skip \
-    "no build log here contains the assertion. To produce it: DOCKER_BUILDKIT=0 docker build --no-cache -f docker/Dockerfile . 2>&1 | tee \$ART_RESULTS/image-build.log"
+    "no build log here contains the assertion (a cached build prints none). To produce it: ./docker/build.sh --no-cache, which keeps its log as results/image-build-<stamp>.log; or ./evaluate.sh --rebuild"
 fi
 
 echo

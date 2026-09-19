@@ -71,7 +71,7 @@ control showing the comparison can separate configurations; the provenance of ev
 regression suite in 12 configurations, preceded by a self-test that requires the harness to detect
 deliberately lost races; and the regeneration of every table in the paper from the recorded runs.
 Measured on two other machines on 18 Sep 2026: 31 minutes on 64 processors and 1 h 45 min on 32,
-most of it the regression suite in 12 configurations; longer on eight.
+most of it the regression suite in 12 configurations; 1 h 57 min on eight processors with 16 GB.
 
 Performance is separate and needs the hardware above. At the defaults (four configurations, two
 runs each, a point estimate per row) it is about two hours for Redis, memcached, FFmpeg and SQLite

@@ -12,7 +12,7 @@ recorded, and one script per experiment.
 ```
 git clone https://github.com/apaznikov/tsan-atc26-artifact.git && cd tsan-atc26-artifact
 ./evaluate.sh --quick            # 5 minutes, plus the image build the first time (15-25 min): is everything in place?
-./evaluate.sh                    # Functional: the full correctness set, about 2 hours (31 min on 64 processors, 1 h 45 min on 32)
+./evaluate.sh                    # Functional: the full correctness set, about 2 hours (31 min on 64 processors, 1 h 45 min on 32, 2 h on 8)
 ./evaluate.sh reproduced         # Reproduced: Functional plus the performance subset, about 4 hours on 48 idle processors
 ./evaluate.sh reproduced --plan  # print the steps and their expected times, run nothing
 ```
@@ -20,7 +20,8 @@ git clone https://github.com/apaznikov/tsan-atc26-artifact.git && cd tsan-atc26-
 Docker is the only thing to install. Each command prints one line per step with its time, shows what the
 step said, and ends with one verdict line and a sentence saying what it established:
 
-- **PASS** on the Functional tier means: the container built our compiler from the patch series and it emits
+- **PASS** on the Functional tier means: the container built our compiler from the patch series (the build log
+  shows the reconstructed source tree hashing to ours, and the image's clang carries our commit) and it emits
   the same instrumentation as the compiler we measured on; every analysis removes what it claims and a real
   race is still reported; the 23 lost-race shapes stay instrumented; ThreadSanitizer's regression suite loses
   no race in any of the 12 configurations; every shipped run carries its provenance; and every table follows
@@ -95,7 +96,9 @@ fewer), 16 GB of memory (`ART_MEMORY=16g` caps the container so that the derived
 `reproduced` and `everything` include the Functional tier; on a checkout where `./evaluate.sh` already ended
 in PASS, `./evaluate.sh reproduced --performance-only` runs the performance subset alone (about 2 h 15 min).
 Every multi-hour tier asks for confirmation first; `--yes` skips the question and is required when stdin is
-not a terminal (under `nohup`, for instance).
+not a terminal (under `nohup`, for instance). `--rebuild` builds the image again without Docker's layer cache
+(15-25 min), the only build that re-runs the assertion that the patch series reproduces our source tree; an
+image built before this checkout kept build logs makes the tier INCOMPLETE until then.
 
 Where the results are: `results/evaluate-<tier>-<stamp>.log` holds every step's full output;
 each performance run writes `results/perf-<app>-<stamp>/perf_<app>.md` (the table for that
@@ -158,13 +161,13 @@ For the Functional badge, and for anyone who wants to know the artifact does wha
 spending a day on measurements:
 
 ```
-./docker/run.sh scripts/01-functional.sh            # 31 min on 64 processors, 1 h 45 min on 32, longer on 8
+./docker/run.sh scripts/01-functional.sh            # 31 min on 64 processors, 1 h 45 min on 32, 2 h on 8
 ./docker/run.sh scripts/01-functional.sh --quick    # about 5 minutes, without the regression suite
 ```
 
 It runs the deterministic checks in order and prints one verdict per step: the minimal example, the
 23 lost-race shapes with their vacuity control, the compiler's equivalence to the one we measured on,
-the provenance of the shipped runs, the identity of the two copies of the table code, the self-test of the
+the provenance of the shipped runs, the image's identity (`13-verify-image.sh`, on the host, from the build log), the identity of the two copies of the table code, the self-test of the
 rule that decides a lost race, the ThreadSanitizer regression suite in 12 configurations preceded by its
 self-test, and the regeneration of every table from the shipped data (`--quick` omits the two
 regression-suite steps and its verdict says so). It stops at the

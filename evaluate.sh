@@ -3,7 +3,7 @@
 #
 #   ./evaluate.sh                      Functional: prerequisites, the image, the minimal example, the full
 #                                      correctness set, the tables. About 2 hours on any x86-64 Linux host
-#                                      with Docker (31 min on 64 processors, 1 h 45 min on 32), plus the
+#                                      with Docker (31 min on 64 processors, 1 h 45 min on 32, 2 h on 8), plus the
 #                                      image build the first time (15 min at the derived job count, 25 min
 #                                      at 8 jobs).
 #   ./evaluate.sh --quick              The same in about 5 minutes, without the regression suite, plus the
@@ -27,7 +27,8 @@
 #
 # Options: --quick (Functional without the regression suite), --plan (print and exit), --yes (no
 # confirmation before the multi-hour tiers; required when stdin is not a terminal), --rebuild (build the
-# image even if one exists), --performance-only (see above).
+# image again from nothing, without Docker's layer cache, which is the only build that re-runs the
+# reconstructed-tree assertion; 15-25 min), --performance-only (see above).
 # Environment: ART_CPUSET (pin the performance runs; our runs used 48 processors; unset, the script pins
 # 48 of the processors the Docker daemon grants when there are that many), ART_RUNS (2 by default, 5 for
 # intervals), ART_FFMPEG_CLIP_URL (the reference clip; without it FFmpeg's rows are timed but not compared),
@@ -58,11 +59,16 @@ add() { steps+=("$1|$2|$3"); }
 add "prerequisites on the host"           "1 min"     "./scripts/00-prereqs.sh"
 add "container image (compiler inside)"   "15-25 min" "IMAGE"
 if [ "$perf_only" != 1 ]; then
+  # On the host, since it starts its own container: the image's clang is our commit, self-contained, and the
+  # patch series reproduced our source tree (read from the build log that docker/build.sh keeps).
+  add "image verification (host)"         "1 min"     "./scripts/13-verify-image.sh --static"
+fi
+if [ "$perf_only" != 1 ]; then
   add "minimal example"                   "under a minute" "./docker/run.sh scripts/10-minimal-example.sh"
   if [ "$quick" = 1 ]; then
     add "correctness set, quick"          "2-5 min"   "./docker/run.sh scripts/01-functional.sh --quick"
   else
-    add "correctness set, full"           "31 min on 64 processors, 1 h 45 min on 32, longer on 8" "./docker/run.sh scripts/01-functional.sh"
+    add "correctness set, full"           "31 min on 64 processors, 1 h 45 min on 32, 2 h on 8" "./docker/run.sh scripts/01-functional.sh"
   fi
   add "tables from the shipped runs"      "1 min"     "./docker/run.sh scripts/90-tables.sh"
 fi
@@ -161,7 +167,7 @@ for s in "${steps[@]}"; do
     if [ "$rebuild" != 1 ] && docker image inspect tsan-atc26 >/dev/null 2>&1; then
       printf '%2d. %-38s skipped: image tsan-atc26 exists (use --rebuild to build it again)\n' "$i" "$label"; continue
     fi
-    cmd="./docker/build.sh"
+    cmd="./docker/build.sh"; [ "$rebuild" = 1 ] && cmd="./docker/build.sh --no-cache"
   fi
   if [ "$autopin" = 1 ] && [ -z "${ART_CPUSET:-}" ] && [[ "$cmd" == *40-perf.sh* ]]; then
     set48=$(resolve_autopin)
@@ -187,6 +193,13 @@ for s in "${steps[@]}"; do
   if /usr/bin/grep -q 'correctness set is INCOMPLETE' "$step_out"; then
     [ "$verdict" = FAIL ] || verdict=INCOMPLETE
     echo "    INCOMPLETE: a check could not be made here and was skipped (its prerequisite is absent); see $log"
+  fi
+  # The tree assertion is printed only by an uncached image build, so an image built before this checkout
+  # kept build logs (or with a warm layer cache) leaves that check unmade: neither a pass nor a failure.
+  if /usr/bin/grep -q 'SKIP  patch series reproduced tree' "$step_out"; then
+    [ "$verdict" = FAIL ] || verdict=INCOMPLETE
+    echo "    INCOMPLETE: no build log here shows the patch series reproducing our source tree; ./evaluate.sh --rebuild"
+    echo "    builds the image again without the layer cache (15-25 min) and records it."
   fi
   if [ "$rc" -ne 0 ]; then
     verdict=FAIL; failed="$label"; echo "    FAILED; the last lines of its output:"; tail -15 "$step_out" | sed 's/^/      /'; rm -f "$step_out"; break
@@ -242,7 +255,7 @@ else
   echo "evaluate.sh: $verdict  $where"
   case "$verdict" in
     PASS) if [ "$tier" = functional ]; then
-            echo "Every step ran and passed: the compiler, the analyses, the regression suite and the shipped tables (what"
+            echo "Every step ran and passed: the image is our compiler built from the patch series, the analyses, the regression suite and the shipped tables (what"
             echo "each step established is CLAIMS.md sections 1 to 4). This tier says nothing about speed."
           else
             echo "Every step ran and passed, and every judged performance row lies inside its shipped interval (the table above)."
