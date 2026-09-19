@@ -420,7 +420,7 @@ inside, and its silence is never a pass.
 
 On other hardware the criterion does not apply, and a full run there says what travels. An AMD EPYC
 9115 host (64 threads, 48 pinned, N = 2, no cell disturbed, the whole `evaluate.sh reproduced` tier
-from this commit, 19 Sep 2026; its runs are not shipped) judged six rows and put four inside:
+from this commit, 19 Sep 2026; its runs are not shipped, and they carry no session record because the harness's session writer read an Intel-only sysfs file and failed silently on that host, fixed 19 Sep; the processor set 0-47 and the pinned mode come from every cell's own `meta.json`) judged six rows and put four inside:
 
 | Application | Row | That host (N = 2) | Shipped interval (N = 5) | Verdict |
 |---|---|---|---|---|
