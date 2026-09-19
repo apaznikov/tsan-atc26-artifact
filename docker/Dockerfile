@@ -1,8 +1,8 @@
 # Builds the TSan-enabled compiler from a pinned upstream LLVM commit plus this artifact's
 # patch series, installs it to /opt/tsan-llvm, and checks that the install is self-contained.
 #
-# Build:  docker build --build-arg JOBS=$(nproc) -t tsan-atc26 -f docker/Dockerfile .
-# The image is also published prebuilt; see README.md. This file is the recipe either way.
+# Build:  ./docker/build.sh   (derives JOBS from the daemon's memory; one job per processor thrashes
+#         under a memory cap, docker/build.sh says why). This file is the recipe.
 
 FROM ubuntu:24.04 AS build
 ARG DEBIAN_FRONTEND=noninteractive

@@ -3,8 +3,8 @@
 # one verdict at the end. This is the path for the Functional badge; nothing here depends on the
 # machine, and the results are identical on any x86-64 Linux host.
 #
-#   scripts/01-functional.sh            all of it, about 40 minutes on 8 processors
-#   scripts/01-functional.sh --quick    the first four, about 5 minutes (skips the regression suite)
+#   scripts/01-functional.sh            all of it: 31 min on 64 processors, 1 h 45 min on 32 (measured 18 Sep 2026), longer on 8
+#   scripts/01-functional.sh --quick    everything except the regression suite, about 2 to 5 minutes
 #
 # Run it inside the container: docker/run.sh scripts/01-functional.sh
 # It stops at the first failure, because every later step assumes the compiler is the one it claims.
@@ -32,7 +32,8 @@ steps=(
 )
 steps+=( "90-tables.sh|every table in the paper follows from the shipped runs" )
 
-budget "the correctness set (${#steps[@]} steps)" "40 min" "20 min" "2 GB"
+if [ "$quick" = 1 ]; then budget "the quick correctness set (${#steps[@]} steps, no regression suite)" "2 min" "1 min" "2 GB"
+else budget "the correctness set (${#steps[@]} steps)" "a few hours" "1 h 45 min (31 min on 64)" "2 GB"; fi
 printf '\n'
 declare -a verdict; skipped=0
 for spec in "${steps[@]}"; do
@@ -58,6 +59,7 @@ if [ "$skipped" -gt 0 ]; then
   printf '\nNothing failed, but %d step(s) could not run here, so the correctness set is INCOMPLETE.\n' "$skipped"
   printf 'A skipped step is a check not made. Satisfy its prerequisite and run this again.\n'
 else
-  printf '\nThe correctness set passed, in full.\n'
+  if [ "$quick" = 1 ]; then printf '\nThe quick correctness set passed: every step above, without the regression suite (the Functional tier is the full set).\n'
+  else printf '\nThe correctness set passed, in full.\n'; fi
 fi
 printf 'What it does NOT cover: performance (scripts/40-perf.sh and CLAIMS.md section 5), which needs\n32 processors and a quiet machine.\n'

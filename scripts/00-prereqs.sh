@@ -16,7 +16,7 @@ need() { # need <what> <command> [tier]
 echo "Host: $(uname -srm); CPUs: $(nproc); RAM: $(awk '/MemTotal/{printf "%d GB", $2/1024/1024}' /proc/meminfo); free disk here: $(df -h "$here" | awk 'NR==2{print $4}')"
 echo
 echo "Container and compiler (Tier 0 and up):"
-need docker docker "to build or pull the image; skip if you run inside it"
+need docker docker "to build the image; skip if you run inside it"
 # Having the docker command is not having Docker: the daemon must accept this user. On 18 Sep 2026 a run on
 # a second server passed this check and then failed the image build with "permission denied while trying to
 # connect to the docker API at unix:///var/run/docker.sock", because the user was not in the docker group.
@@ -68,7 +68,7 @@ echo
 # the container it is every item present. 1 otherwise.
 if [ "$miss" -eq 0 ]; then
   echo "All prerequisites present."
-elif [ -z "${TSAN_LLVM_ROOT:-}" ] || [ ! -x "${TSAN_LLVM_ROOT:-/opt/tsan-llvm}/bin/clang" ]; then
+elif [ ! -f /.dockerenv ] && [ ! -r "${TSAN_LLVM_ROOT:-/opt/tsan-llvm}/TSAN_AUDIT_HASH" ]; then
   if command -v docker >/dev/null 2>&1 && [ "${docker_blocked:-0}" != 1 ]; then
     echo "On this host: nothing to install beyond Docker. The $miss item(s) marked MISSING above are the compiler,"
     echo "llvm-lit and the benchmark clients, which live inside the container and are built by ./docker/build.sh"

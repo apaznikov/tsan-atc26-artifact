@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# The two synthetic bounded-shadow experiments: (a) one fully occupied granule, a planted race, a burst of
-# elidable accesses before the evicting access; (b) two races on one granule exercising both DE effects.
+# The synthetic bounded-shadow experiment (a): one fully occupied granule, a planted race, a burst of
+# elidable accesses before the evicting access. Experiment (b), two races on one granule exercising both
+# DE effects, is recorded in data/eviction-stress/de2-2026-09-03-f80e80b1dbe6/report.md and not re-run here.
 # 1000 runs per build and burst type (ART_SMOKE=1: 20).  Usage: scripts/50-eviction-stress.sh
 #
 # The planted race is the control and it is built in: the `tsan` build must report it. A configuration that

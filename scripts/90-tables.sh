@@ -3,7 +3,7 @@
 # the results ledger (results_ledger.py), and the preservation and eviction tables. Works on the
 # data we shipped (default) or on a results tree you produced with 40-perf.sh.
 #
-#   scripts/90-tables.sh                     # from data/perf/stageB-d3bf9f8c39fe and the ledger trees
+#   scripts/90-tables.sh                     # from the shipped campaign roots and sweep under data/perf, plus the ledger trees
 #   scripts/90-tables.sh results/perf-XXXX   # from your own run
 #
 # Nothing is written into data/: the trees are copied to results/tables/<name>/ and regenerated there,

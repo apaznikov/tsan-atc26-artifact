@@ -113,6 +113,10 @@ def main():
     summ = {cfg: TR.summarize_cfg(cfg, rs, None) for cfg, rs in by_cfg.items()}
     base = summ[a.baseline]
     others = [c for c in sorted(summ) if c != a.baseline]
+    if not others:
+        # With nothing to compare against, worst([]) would read KEPT for every site and the tool would
+        # print "no site LOST" over an empty comparison (found by the script audit, 19 Sep 2026).
+        sys.exit(f"no configuration other than the baseline {a.baseline!r} in {a.results_dir}: nothing to compare")
 
     print(f"preservation verdict — baseline {a.baseline}, N={base.nruns} runs per configuration")
     print(f"gating level: {a.level.upper()}   (verdicts printed at all three)\n")

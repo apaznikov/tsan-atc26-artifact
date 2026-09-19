@@ -42,7 +42,7 @@ suite="$here/tests/tsan"
 
 ncfg=$(grep -vc '^#' "$matrix" || true)   # grep -c exits 1 on a count of zero; that is a refusal below, not a silent death here
 [ "${ncfg:-0}" -gt 0 ] || { echo "no configurations in $matrix (every line is a comment)" >&2; exit 2; }
-budget "the TSan suite, $ncfg configurations x K=$k repeats" "3 h" "45 min" "2 GB"
+budget "the TSan suite, $ncfg configurations x K=$k repeats" "3 h" "1 h 30 min (25 min on 64)" "2 GB"
 smoke_banner
 refuse_if_lit_running
 need_lit
@@ -164,7 +164,7 @@ if [ -n "$_first_log" ]; then
     # lit -q prints Unsupported only when non-zero, so an absent count is not zero and not a
     # parse failure. Say which, rather than emit an empty field that a diff reads as either.
     _unsup=$(grep -m1 -oE 'Unsupported: *[0-9]+' "$_first_log" | grep -oE '[0-9]+' | head -1 || true)
-    echo "tests_unsupported: ${_unsup:-not reported by lit -q; run scripts/30-preservation-suite.sh with ART_LIT_SHOW_UNSUPPORTED=1 to record it}"
+    echo "tests_unsupported: ${_unsup:-not reported by lit -q; established separately, see data/suite/unsupported/README.md (91 on this platform)}"
     echo "loadavg_at_end: $(cut -d' ' -f1-3 /proc/loadavg)"
   } >> "$outdir/manifest.txt"
 fi

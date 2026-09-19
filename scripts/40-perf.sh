@@ -9,8 +9,8 @@
 #   --configs        a SPACE-separated list (tools/perf's own convention; preservation uses commas)
 #
 # THE DEFAULT IS A SUBSET BECAUSE THE FULL TABLE IS NOT A REVIEWER-SIZED JOB. At ART_RUNS=2 plus a warm-up,
-# from this campaign's measured per-cell medians: Redis 17 min, memcached 34 min, FFmpeg 24 min, SQLite
-# 58 min, MySQL 3.4 h for the four; all fourteen at N=2 is about 11 h. The four carry the paper's claims --
+# measured on two hosts: Redis 13-15 min, memcached 28-36 min, FFmpeg 20-25 min, SQLite 65-68 min,
+# MySQL about 3.4 h for the four; all fourteen at N=2 is about 11 h. The four carry the paper's claims --
 # the overhead over native, the sound bundle with peeling, and the one analysis that moves a number.
 #   ART_SMOKE=1  -> one run, short workloads, output marked NOT A MEASUREMENT
 #   ART_CPUSET   -> taskset pinning (we used 4-27,60-83); leave empty to use every CPU the container has
@@ -21,7 +21,7 @@ set -euo pipefail
 # harness should be told about the flag, not about the harness: diagnosing the setup first sends them off
 # to fix something unrelated, after which they hit the typo again. Usage errors are cheaper to report and
 # are the reader's own doing; environment errors are ours.
-app="${1:?usage: 40-perf.sh <app> [--build-only] [--configs \"c1 c2\"]}"; shift
+app="${1:?usage: 40-perf.sh <app> [--build-only] [--all-configs] [--configs \"c1 c2\"]}"; shift
 build_only=0; configs=""; all_configs=0
 SUBSET="orig tsan tsan-dom_peeling-ea-lo-st-swmr tsan-stmt"
 while [ $# -gt 0 ]; do
@@ -36,6 +36,18 @@ done
 # An explicit --configs wins; otherwise the subset, unless --all-configs asked for the fourteen. Passing
 # nothing to the harness means ITS default set, which is not the same thing, so the subset is named here.
 [ -n "$configs" ] || { [ "$all_configs" = 1 ] || configs="$SUBSET"; }
+# --all-configs means the campaign's fourteen (twelve for FFmpeg, which has no whole-program rows; four for
+# MySQL), named here. An EMPTY list would mean the harness's own default set, which is the six of its Stage A
+# and has no DynSTC row at all, so `evaluate.sh everything` measured six configurations and never the one
+# whose interval excludes 1.0 (found by the script audit, 19 Sep 2026).
+ALL14="orig tsan tsan-st tsan-swmr tsan-lo tsan-ea tsan-dom tsan-dom_peeling tsan-dom-ea-lo-st-swmr tsan-dom_peeling-ea-lo-st-swmr tsan-dom_peeling-ea-lo-st-swmr-stmt tsan-stmt tsan-dom_peeling-ea-lo-st-swmr-wp tsan-sound-wp"
+if [ "$all_configs" = 1 ]; then
+  case "$app" in
+    ffmpeg) configs=$(printf '%s\n' $ALL14 | grep -v -- '-wp$' | tr '\n' ' ');;
+    mysql)  configs="orig tsan tsan-dom_peeling-ea-lo-st-swmr tsan-dom_peeling-ea-lo-st-swmr-stmt";;
+    *)      configs="$ALL14";;
+  esac
+fi
 case "$app" in sqlite|memcached|redis|ffmpeg|mysql) ;; *) echo "unknown app $app" >&2; exit 2;; esac
 
 need_harness tools/perf; need_compiler
@@ -53,10 +65,11 @@ fi
 [ -n "${hash:-}" ] || { echo "cannot determine the compiler's commit: $TSAN_LLVM_ROOT has no TSAN_AUDIT_HASH and clang --version prints no 40-hex string" >&2; exit 2; }
 hash=${hash:0:12}
 
+# Measured at the defaults (four configurations, N = 2) on 48 pinned processors, 17-19 Sep 2026, on two hosts;
+# --all-configs multiplies by about 3.4 and ART_RUNS=5 by about 2 (one warm-up plus N runs; the campaign's per-cell costs).
 case "$app" in
-  sqlite)    t8="1 day"; t32="6 h";;   memcached) t8="18 h"; t32="5 h";;
-  ffmpeg)    t8="5 h";   t32="2 h";;   redis)     t8="3 h";  t32="1 h";;
-  mysql)     t8="see docs/mysql.md"; t32="~12 h";;
+  sqlite)    t="1 h";;      memcached) t="30 min";;   ffmpeg) t="25 min plus the clip's first download";;
+  redis)     t="15 min";;   mysql)     t="3.5 h plus a build of about 10 min per configuration";;
 esac
 runs="$ART_RUNS"; warmup="$ART_WARMUP"
 if [ "$ART_SMOKE" = 1 ]; then
@@ -65,7 +78,7 @@ if [ "$ART_SMOKE" = 1 ]; then
   # hours on some applications, and a reader checking that the plumbing works should not pay for that.
   export MYSQL_SECONDS=20 MC_REQUESTS=2000 SQLITE_TESTS=walthread1 FF_THREADS="${FF_THREADS:-4}"
 fi
-budget "performance for $app, $warmup warm-up + $runs runs per configuration" "$t8" "$t32" "20-100 GB"
+printf 'Expected: performance for %s, %s warm-up + %s runs per configuration -- about %s at the defaults on 48 pinned processors (--all-configs about 3.4x, ART_RUNS=5 about 2x, smoke mode a few minutes), 20-100 GB of disk.\n' "$app" "$warmup" "$runs" "$t"
 smoke_banner
 [ "$ART_SMOKE" = 1 ] || refuse_if_building
 

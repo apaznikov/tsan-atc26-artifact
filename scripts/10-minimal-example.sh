@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tier 0, about ten minutes: one small program per analysis, compiled with stock ThreadSanitizer and
+# Tier 0, under a minute once the image exists (measured 7 to 11 s): one small program per analysis, compiled with stock ThreadSanitizer and
 # with that analysis enabled, showing how many memory-access instrumentation calls each analysis
 # removes and why; then a program with a real race, run under every configuration, showing the race
 # is still reported. Needs only the compiler; no benchmark applications.

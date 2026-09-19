@@ -44,8 +44,10 @@ import json, os, sys, subprocess, time
 d=sys.argv[1]; os.makedirs(d, exist_ok=True)
 json.dump({"app":"$APP","hash":"$HASH","N":$N,"configs":"$CFGS".split(),"cpuset":"$CPUSET","mode":os.environ["P5_MODE"],
   "started":time.strftime("%FT%T"),"host":os.uname().nodename,"nproc_machine":os.cpu_count(),
-  "governor":open("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor").read().strip(),
-  "no_turbo":open("/sys/devices/system/cpu/intel_pstate/no_turbo").read().strip(),
+  # Through the shell helpers, which return empty where the file is absent (no intel_pstate on AMD hosts
+  # and most VMs): an unguarded open() here raised FileNotFoundError and no session.json was written on
+  # exactly the hosts evaluators have (found on the AMD run of 19 Sep 2026).
+  "governor":"$(p5_governor)","no_turbo":"$(p5_turbo)",
   # The gate, recorded where a reader looks for the session's parameters rather than inferred from the
   # cells. gate_checked false means an unpinned session, where there are no outside CPUs to measure and
   # a share of 0.0 would read as a quiet machine (docs/confounds.md, "An unpinned run is not gate-checked").

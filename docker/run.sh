@@ -52,7 +52,7 @@ exec docker run --rm "${tty_flag[@]}" "${cpus_flag[@]}" \
   -e ART_FFMPEG_CLIP_URL -e ART_FFMPEG_SOURCE \
   -e MC_THREADS -e MYSQL_THREADS -e FF_THREADS \
   -e ART_LIT_TIMEOUT -e ART_ALLOW_FEW_CPUS -e ART_LIT_FORCE -e ART_LIT_PACKAGE -e ART_LIT_SHOW_UNSUPPORTED \
-  -e CT_REPS -e P5_IGNORE_CPUS \
+  -e CT_REPS -e P5_IGNORE_CPUS -e ART_MEMCACHED_PORT \
   -v "$here/results:/artifact/results" \
   -v "$here/build:/artifact/build" \
   -v "$here/data:/artifact/data:ro" \

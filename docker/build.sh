@@ -10,6 +10,11 @@
 set -euo pipefail
 here="$(cd "$(dirname "$0")/.." && pwd)"
 . "$here/env.sh"
-echo "docker/build.sh: ${ART_JOBS} compile jobs (${ART_JOBS_WHY}); set ART_JOBS to override"
+mkdir -p "$here/results"
+log="$here/results/image-build-$(date -u +%Y%m%d-%H%M%S).log"
+echo "docker/build.sh: ${ART_JOBS} compile jobs (${ART_JOBS_WHY}); set ART_JOBS to override; log: results/$(basename "$log")"
 # Anything on the command line goes to docker build unchanged, e.g. ./docker/build.sh --no-cache
-exec docker build "$@" --build-arg JOBS="$ART_JOBS" -t tsan-atc26 -f "$here/docker/Dockerfile" "$here"
+# The log is kept because scripts/13-verify-image.sh reads the reconstructed-tree assertion out of it (an
+# uncached build prints it once; a cached rebuild prints nothing), and results/ is outside the build context.
+docker build "$@" --build-arg JOBS="$ART_JOBS" -t tsan-atc26 -f "$here/docker/Dockerfile" "$here" 2>&1 | tee "$log"
+exit "${PIPESTATUS[0]}"

@@ -31,9 +31,9 @@ ir="$outdir/ir"; mkdir -p "$ir"
 tar -C "$ir" -xzf "$tarball"
 
 # Provenance and behaviour are two different questions and this script answers both
-# separately, because the corpus cannot answer the first. Measured 2026-09-15: the whole
-# 24-commit soundness series (aa8a6dd8a2e8 -> f3deebfbab60) changes ZERO of the 112 rows
-# below -- the lost-race shapes it fixes do not occur in these programs. So an identical
+# separately, because the corpus cannot answer the first. Measured 2026-09-15: the three
+# compile-time commits (aa8a6dd8a2e8 -> f3deebfbab60) change ZERO of the 112 rows below, and
+# the soundness series before them fixes lost-race shapes that do not occur in these programs. So an identical
 # corpus proves the compiler instruments identically, NOT that it is the same commit.
 ref_stamp=$(grep -m1 '^#   stamp ' "$ART_DATA/equivalence/reference-histograms.tsv" | awk '{print $3}' || true)   # no stamp line is the case handled below, not a reason to die
 got_stamp=$(head -1 "$TSAN_LLVM_ROOT/TSAN_AUDIT_HASH" 2>/dev/null || echo "")
@@ -68,7 +68,7 @@ while IFS='|' read -r cname cflags; do
     m=$(basename "$f" .ll)
     h=$("$TSAN_LLVM_ROOT/bin/opt" -passes='module(tsan-module),function(tsan)' \
           $cflags -S -o - "$f" 2>/dev/null \
-        | grep -oE "@__tsan_[a-z0-9_]+" | sort | uniq -c | md5sum | cut -c1-12)
+        | grep -oE "@__tsan_[a-z0-9_]+" | sort | uniq -c | md5sum | cut -c1-12 || true)
     printf "%s\t%s\t%s\n" "$m" "$cname" "$h" >> "$outdir/measured.tsv"
   done
 done < "$cfgs"
