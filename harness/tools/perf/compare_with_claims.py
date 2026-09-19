@@ -4,7 +4,7 @@
     compare_with_claims.py CLAIMS.md results/perf-redis-20260918-120000 [more trees...]
 
 For every configuration row the artifact claims, prints your value, our shipped interval, and a verdict.
-Exits 0 when every JUDGED row is inside, 1 otherwise, 2 on a usage error.
+Exits 0 when every JUDGED row is inside and every tree could be compared, 1 otherwise, 2 on a usage error.
 
 WHAT IS AND IS NOT JUDGED, because a verdict on a row that cannot be compared is worse than no verdict:
 
@@ -46,7 +46,11 @@ def claims_rows(path):
 
 LABEL = {"tsan-dom_peeling-ea-lo-st-swmr": "AllOpt with peeling", "tsan-stmt": "DynSTC",
          "tsan-dom-ea-lo-st-swmr": "AllOpt without peeling", "tsan-ea": "EA", "tsan-lo": "LO",
-         "tsan-st": "STC", "tsan-swmr": "SWMR", "tsan-dom": "DE", "tsan-dom_peeling": "DE + peeling"}
+         "tsan-st": "STC", "tsan-swmr": "SWMR", "tsan-dom": "DE", "tsan-dom_peeling": "DE + peeling",
+         # The three rows that were silently never judged until 19 Sep 2026 (no label, so `continue`).
+         "tsan-dom_peeling-ea-lo-st-swmr-stmt": "AllOpt with peeling and DynSTC",
+         "tsan-dom_peeling-ea-lo-st-swmr-wp": "AllOpt with peeling, whole-program summaries",
+         "tsan-sound-wp": "four sound analyses, whole-program summaries"}
 
 def expected_threads(root, app):
     """Our campaign's thread count for this application, from the shipped data. None if not shipped."""
@@ -59,8 +63,21 @@ def expected_threads(root, app):
             return str(v)
     return None
 
-def run_facts(tree, app):
-    """N, the effective thread count, and whether FFmpeg ran on the reference clip."""
+def reference_input_sha(root, app):
+    """The input hash our shipped campaign cells record for this application, from the data, never a constant."""
+    for m in sorted(glob.glob(os.path.join(root, "data", "perf", "campaign-*", "primary", app, "*", "run*", "meta.json"))):
+        try:
+            v = json.load(open(m)).get("input_sha256")
+        except Exception:
+            continue
+        if v:
+            return v
+    return None
+
+def run_facts(tree, app, ref_sha=None):
+    """N, the effective thread count, and whether FFmpeg ran on the reference clip: the recorded flag, or,
+    where a run predates the flag (our own campaign's FFmpeg cells), its recorded input hash equal to the
+    hash the shipped campaign records."""
     n, threads, isref = 0, None, None
     for m in sorted(glob.glob(os.path.join(tree, app, "*", "run*", "meta.json"))):
         try:
@@ -74,12 +91,16 @@ def run_facts(tree, app):
             threads = str(j["threads_setting"])
         if isref is None and j.get("input_is_reference") is not None:
             isref = bool(j["input_is_reference"])
+        elif isref is None and ref_sha and j.get("input_sha256"):
+            isref = (j["input_sha256"] == ref_sha)
     per_cfg = len({os.path.basename(os.path.dirname(os.path.dirname(m)))
                    for m in glob.glob(os.path.join(tree, app, "*", "run*", "meta.json"))}) or 1
     return max(1, n // per_cfg), threads, isref
 
 def parse_table(tree, app):
-    """{row_label: (point, lo, hi or None)} from the run's own perf_<app>.md summary table."""
+    """{row_label: (point, interval or None, N of that row or None)} from the run's own perf_<app>.md summary table.
+    N is the row's own (column 3): a tree-wide N derived from clean runs over configurations read one
+    disturbed cell in one configuration as N = 1 for every row of the application (found 19 Sep 2026)."""
     p = os.path.join(tree, f"perf_{app}.md")
     if not os.path.exists(p):
         return None
@@ -96,10 +117,12 @@ def parse_table(tree, app):
             continue
         pt = float(m.group(1))
         iv = (float(m.group(2)), float(m.group(3))) if m.group(2) else None
+        mn = re.match(r"(\d+)$", c[2])
+        nrow = int(mn.group(1)) if mn else None
         if cfg == "orig":
-            out["stock vs native"] = (pt, iv)
+            out["stock vs native"] = (pt, iv, nrow)
         elif cfg in LABEL:
-            out[LABEL[cfg]] = (pt, iv)
+            out[LABEL[cfg]] = (pt, iv, nrow)
     return out
 
 def main():
@@ -108,17 +131,17 @@ def main():
     claims_path, trees = sys.argv[1], sys.argv[2:]
     root = os.path.dirname(os.path.abspath(claims_path))
     claims = claims_rows(claims_path)
-    bad = judged = 0
+    outside = judged = unjudged = 0
     print(f"{'app':10} {'row':24} {'yours':>22}  {'ours (N=5)':22} verdict")
     print("-" * 100)
     for tree in trees:
         app = next((a for a in claims if f"perf-{a}-" in os.path.basename(tree.rstrip("/"))), None)
         if app is None:
-            print(f"{os.path.basename(tree):10} {'-':24} {'':>22}  {'':22} cannot tell which application"); bad += 1; continue
+            print(f"{os.path.basename(tree):10} {'-':24} {'':>22}  {'':22} cannot tell which application"); unjudged += 1; continue
         rows = parse_table(tree, app)
         if not rows:
-            print(f"{app:10} {'-':24} {'':>22}  {'':22} NO TABLE (the leg produced none)"); bad += 1; continue
-        n, threads, isref = run_facts(tree, app)
+            print(f"{app:10} {'-':24} {'':>22}  {'':22} NO TABLE (the leg produced none)"); unjudged += 1; continue
+        n, threads, isref = run_facts(tree, app, reference_input_sha(root, app))
         want = expected_threads(root, app)
         # A MISSING THREAD COUNT IS NOT A MATCHING ONE. Runs made before the harness recorded the
         # EFFECTIVE thread count wrote an empty field, and reading that as "comparable" is the same
@@ -137,8 +160,10 @@ def main():
         elif threads and not want:
             why = ("not judged: no shipped campaign data to compare the thread count with "
                    f"(looked in {os.path.join(root, 'data', 'perf')})")
-        elif isref is False:
-            why = "not comparable: not the reference clip"
+        elif app == "ffmpeg" and isref is not True:
+            # An absent flag is not the reference clip: the same absence-as-a-match shape as above.
+            why = ("not comparable: not the reference clip" if isref is False
+                   else "not judged: the run does not record whether its clip is the reference")
         # EVERY TREE MUST PRODUCE A LINE. If CLAIMS's column header or a row label drifts for ONE
         # application while the others parse, this loop simply does not execute for it: nothing is
         # printed, nothing is judged, and the summary still reports success on the other applications.
@@ -149,27 +174,50 @@ def main():
             if row not in rows:
                 continue
             printed += 1
-            pt, iv = rows[row]
-            yours = f"{pt:.3f} [{iv[0]:.3f}, {iv[1]:.3f}]" if iv else f"{pt:.3f} (N={n})"
+            pt, iv, nrow = rows[row]
+            n_here = nrow or n
+            yours = f"{pt:.3f} [{iv[0]:.3f}, {iv[1]:.3f}]" if iv else f"{pt:.3f} (N={n_here})"
             shipped = f"{ours[0]:.3f} [{ours[1]:.3f}, {ours[2]:.3f}]"
             if row == "stock vs native":
                 v = "not judged (session drift is wider than this interval)"
-            elif n < 2:
+            elif n_here < 2:
                 v = "no verdict (N<2 is not a measurement)"
             elif why:
                 v = why
             else:
                 judged += 1
-                inside = ours[1] <= pt <= ours[2]
-                v = "IN " if inside else "OUT"
+                if iv:
+                    # The N = 5 rule of CLAIMS.md section 5: the intervals overlap, and both contain 1.0 or
+                    # neither does. Until 19 Sep 2026 the point-in-interval rule was applied at every N, which
+                    # failed an overlapping N = 5 interval whose point lay outside ours.
+                    overlap = iv[0] <= ours[2] and ours[1] <= iv[1]
+                    agree = (iv[0] <= 1.0 <= iv[1]) == (ours[1] <= 1.0 <= ours[2])
+                    inside = overlap and agree
+                    if inside:
+                        v = "IN (intervals overlap)"
+                    elif not overlap:
+                        v = f"OUT: intervals do not overlap (gap {max(iv[0] - ours[2], ours[1] - iv[1]):.3f})"
+                    else:
+                        v = "OUT: one interval contains 1.0 and the other does not"
+                else:
+                    inside = ours[1] <= pt <= ours[2]
+                    if inside:
+                        v = "IN "
+                    else:
+                        # The distance, so a reader sees a thousandth for what it is without computing it.
+                        v = f"OUT by {ours[1] - pt:.3f} below" if pt < ours[1] else f"OUT by {pt - ours[2]:.3f} above"
                 if not inside:
-                    bad += 1
+                    outside += 1
                 if ours[1] > 1.0 or ours[2] < 1.0:
                     same = (pt > 1.0) == (ours[0] > 1.0)
                     v += ", same side of 1.0" if same else ", WRONG SIDE OF 1.0"
                     if not same and inside:
-                        bad += 1
+                        outside += 1
             print(f"{app:10} {row:24} {yours:>22}  {shipped:22} {v}")
+        missing = [r for r in claims.get(app, {}) if r not in rows]
+        if printed and missing:
+            print(f"{app:10} {len(missing)} of {len(claims[app])} rows CLAIMS.md ships for this application were not produced by this run"
+                  + (" (the default four-configuration subset)" if len(rows) <= 3 else "") + "; nothing is judged for them.")
         if not printed:
             cl = sorted(claims.get(app, {})) or ["(none parsed from CLAIMS.md)"]
             rn = sorted(rows) or ["(none parsed from the run's table)"]
@@ -177,10 +225,14 @@ def main():
             print(f"{'':10}   CLAIMS.md offers: {', '.join(cl)}")
             print(f"{'':10}   the run offers:   {', '.join(rn)}")
             print(f"{'':10}   no row name appears on both sides, so nothing could be compared.")
-            bad += 1
+            unjudged += 1
     print("-" * 100)
     if judged:
-        print(f"{judged} rows judged, {bad} not inside.")
+        # Two counts, not one: a judged row outside its interval and a tree that could not be compared at
+        # all are different failures, and "2 not inside" once counted both (found by the reviewer
+        # walkthrough, 19 Sep 2026).
+        print(f"{judged} rows judged, {outside} outside their intervals"
+              + (f"; {unjudged} tree(s) could not be compared at all (see above)." if unjudged else "."))
     else:
         # NOTHING JUDGED IS NOT A PASS, and this file said so in its own docstring while returning 0 for
         # it: "0 judged, 0 not inside" and "all judged, none outside" shared an exit code, so a run in
@@ -189,7 +241,7 @@ def main():
         print("NO ROWS COULD BE JUDGED — this is not a pass. Nothing above was compared with the shipped")
         print("intervals; read the reasons on each line (not comparable, no table, no verdict below N=2,")
         print("no shipped campaign data) and fix the cause before reading any number as reproduction.")
-    return 1 if (bad or not judged) else 0
+    return 1 if (outside or unjudged or not judged) else 0
 
 if __name__ == "__main__":
     sys.exit(main())
