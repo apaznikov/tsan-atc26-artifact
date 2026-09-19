@@ -108,8 +108,28 @@ if [ "$MODE" = check ]; then
   # (An earlier draft re-invoked this script here to "re-derive with the same rules"; with no arguments
   # that is copy mode, which begins with `rm -rf "$DST"` -- a check that destroys what it is checking.)
   echo "compare: $SRC  ->  $MAN"
+  # DRIFT HAS TWO DIRECTIONS AND THIS CHECKED ONE. Re-hashing the manifest's paths in the SOURCE answers
+  # "has the live harness moved under us?" and is silent about "has the VENDORED tree been edited since it
+  # was vendored?" -- which is what happened on 19 Sep 2026: three files were fixed in place under harness/,
+  # the manifest still matched the source, --check printed "matches", and the next copy pass would have
+  # erased all three without a word. Reported apart because the remedies are opposite: source drift is
+  # taken with --force; in-place edits must be carried back to the source first or they are lost.
+  vendored_rc=0
+  while IFS="$(printf '\t')" read -r want path; do
+    [ -n "${path:-}" ] || continue
+    if [ ! -f "$DST/$path" ]; then echo "  MISSING FROM harness/: $path"; vendored_rc=1; continue; fi
+    if [ "$(sha256sum "$DST/$path" | cut -d' ' -f1)" != "$want" ]; then
+      echo "  EDITED IN PLACE since vendoring: $path"; vendored_rc=1
+    fi
+  done < <(awk -F'\t' 'NR>2 {print $1"\t"$3}' "$MAN")
+  if [ "$vendored_rc" != 0 ]; then
+    echo
+    echo "harness/ has been edited in place. Those edits exist ONLY there: carry them back into $SRC first,"
+    echo "or the next copy pass will overwrite them. --force would erase them now."
+    exit 1
+  fi
   if manifest_matches_source "$SRC" "$MAN"; then
-    echo "harness/ matches the live harness at $SRC ($(( $(wc -l < "$MAN") - 2 )) files)"
+    echo "harness/ matches the live harness at $SRC ($(( $(wc -l < "$MAN") - 2 )) files), and no vendored file has been edited in place"
   else
     echo
     echo "re-run scripts/vendor-harness.sh --force to take the live version, and commit the diff."
