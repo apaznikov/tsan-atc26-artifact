@@ -47,7 +47,7 @@ benchmarks pinned to 48 processors.
 
 ```
 git clone https://github.com/apaznikov/tsan-atc26-artifact.git && cd tsan-atc26-artifact
-./evaluate.sh --quick        # prerequisites, the image, the minimal example, the quick correctness set
+./evaluate.sh check          # prerequisites, the image, the minimal example, the quick correctness set
 ```
 
 The basic test compiles one small program per analysis, prints how many instrumentation calls each
@@ -61,7 +61,7 @@ One command runs every deterministic check and prints a verdict per step, stoppi
 failure and reporting a step whose prerequisite is absent as a skip rather than a pass:
 
 ```
-./evaluate.sh                # the full correctness set; ./evaluate.sh reproduced adds the performance subset
+./evaluate.sh functional     # the full correctness set; ./evaluate.sh reproduced runs it and then the performance subset
                              # (--performance-only skips the correctness set on a checkout where it already passed)
 ```
 

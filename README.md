@@ -11,13 +11,14 @@ recorded, and one script per experiment.
 
 ```
 git clone https://github.com/apaznikov/tsan-atc26-artifact.git && cd tsan-atc26-artifact
-./evaluate.sh --quick            # 5 minutes, plus the image build the first time (15-25 min): is everything in place?
-./evaluate.sh                    # Functional: the full correctness set, about 2 hours (31 min on 64 processors, 1 h 45 min on 32, 2 h on 8)
-./evaluate.sh reproduced         # Reproduced: Functional plus the performance subset, about 4 hours on 48 idle processors
-./evaluate.sh reproduced --plan  # print the steps and their expected times, run nothing
+./evaluate.sh check          # does it all run here? 5 minutes, plus the image build the first time (15-25 min). Not a badge.
+./evaluate.sh functional     # the Functional badge: the full correctness set, about 2 hours (31 min on 64 processors, 1 h 45 min on 32, 2 h on 8)
+./evaluate.sh reproduced     # the Reproduced badge: the whole functional tier, then the performance subset; about 4 hours on 48 idle processors
+./evaluate.sh                # prints the tiers and their steps, runs nothing
 ```
 
-Docker is the only thing to install. Each command prints one line per step with its time, shows what the
+Each tier contains the one before it: `reproduced` runs the whole `functional` tier first, so one command per
+badge is the whole job. Docker is the only thing to install. Each command prints one line per step with its time, shows what the
 step said, and ends with one verdict line and a sentence saying what it established:
 
 - **PASS** on the Functional tier means: the container built our compiler from the patch series (the build log
@@ -92,9 +93,10 @@ fewer), 16 GB of memory (`ART_MEMORY=16g` caps the container so that the derived
 
 ## Getting started, in detail
 
-`./evaluate.sh everything` adds MySQL and all fourteen configurations to the Reproduced tier (about 14 hours).
-`reproduced` and `everything` include the Functional tier; on a checkout where `./evaluate.sh` already ended
-in PASS, `./evaluate.sh reproduced --performance-only` runs the performance subset alone (about 2 h 15 min).
+`./evaluate.sh everything` is `reproduced` at all fourteen configurations, plus MySQL (about 14 hours). On a
+checkout where `./evaluate.sh functional` already ended in PASS, `./evaluate.sh reproduced --performance-only`
+runs the performance subset alone (about 2 h 15 min); `./evaluate.sh <tier> --plan` prints a tier's steps and
+their expected times without running anything.
 Every multi-hour tier asks for confirmation first; `--yes` skips the question and is required when stdin is
 not a terminal (under `nohup`, for instance). `--rebuild` builds the image again without Docker's layer cache
 (15-25 min), the only build that re-runs the assertion that the patch series reproduces our source tree; an

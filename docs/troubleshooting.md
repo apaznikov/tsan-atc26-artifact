@@ -20,7 +20,7 @@ login session (or `newgrp docker` in the current shell), then run the command ag
 ```
 sudo usermod -aG docker "$USER"
 newgrp docker
-./evaluate.sh --quick
+./evaluate.sh check
 ```
 
 Running the scripts with `sudo` also works but leaves `results/` and `build/` owned by root.

@@ -1,57 +1,65 @@
 #!/bin/bash
-# evaluate.sh -- the artifact in one command, one tier per badge.
+# evaluate.sh -- the artifact in one command per badge. Name the tier:
 #
-#   ./evaluate.sh                      Functional: prerequisites, the image, the minimal example, the full
-#                                      correctness set, the tables. About 2 hours on any x86-64 Linux host
-#                                      with Docker (31 min on 64 processors, 1 h 45 min on 32, 2 h on 8), plus the
-#                                      image build the first time (15 min at the derived job count, 25 min
-#                                      at 8 jobs).
-#   ./evaluate.sh --quick              The same in about 5 minutes, without the regression suite, plus the
-#                                      image build the first time.
-#   ./evaluate.sh reproduced           Functional, then the performance subset: Redis, memcached, FFmpeg and
-#                                      SQLite at the defaults (four configurations, two runs). About 4 hours.
-#                                      Needs 32 or more processors and a machine that is otherwise idle; every
-#                                      row is comparable with ours only with 48 processors pinned.
-#   ./evaluate.sh everything           Reproduced, plus MySQL and all fourteen configurations. About 14 hours.
-#   ./evaluate.sh <tier> --plan        Print the steps and the expected time, run nothing.
-#   ./evaluate.sh <tier> --performance-only
-#                                      reproduced or everything without repeating the correctness set, for a
-#                                      checkout on which ./evaluate.sh already ended in PASS (about 2 h 15 min
-#                                      for reproduced).
+#   ./evaluate.sh check          Does it all run here? Prerequisites, the image (built the first time, 15-25 min),
+#                                the image's identity, the minimal example, the correctness set without the
+#                                regression suite, the tables. About 5 minutes. Not a badge: the kick-the-tires check.
+#   ./evaluate.sh functional     The Functional badge: everything in check, plus the regression suite in 12
+#                                configurations. About 2 hours on any x86-64 Linux host with Docker (31 min on
+#                                64 processors, 1 h 45 min on 32, 2 h on 8).
+#   ./evaluate.sh reproduced     The Reproduced badge: the whole functional tier first, then the performance
+#                                subset, Redis, memcached, FFmpeg and SQLite at the defaults (four configurations,
+#                                two runs), compared with the intervals CLAIMS.md ships. About 4 hours. Needs 32
+#                                or more processors and a machine that is otherwise idle; every row is comparable
+#                                with ours only with 48 processors pinned.
+#   ./evaluate.sh everything     reproduced at all fourteen configurations, plus MySQL. About 14 hours.
 #
-# Why three tiers and not one command for all of it: the correctness set runs anywhere in two hours; the
-# performance set runs only on a quiet, large machine and takes four to fourteen hours, which is a decision
-# a person makes; the badges are awarded separately; and a fourteen-hour command that fails in its ninth
-# hour is worse than steps that can be repeated one at a time. Every step below is one of the scripts the
-# README documents, called in the documented order; this file adds nothing else.
+# Each tier contains the one before it, so one command per badge is the whole job. Without a tier name this
+# script prints this text and runs nothing.
 #
-# Options: --quick (Functional without the regression suite), --plan (print and exit), --yes (no
-# confirmation before the multi-hour tiers; required when stdin is not a terminal), --rebuild (build the
-# image again from nothing, without Docker's layer cache, which is the only build that re-runs the
-# reconstructed-tree assertion; 15-25 min), --performance-only (see above).
-# Environment: ART_CPUSET (pin the performance runs; our runs used 48 processors; unset, the script pins
-# 48 of the processors the Docker daemon grants when there are that many), ART_RUNS (2 by default, 5 for
-# intervals), ART_FFMPEG_CLIP_URL (the reference clip; without it FFmpeg's rows are timed but not compared),
-# ART_JOBS (derived by env.sh); see env.sh for the rest.
+# Options: --plan (print the tier's steps and expected times, run nothing), --yes (no confirmation before the
+# multi-hour tiers; required when stdin is not a terminal), --rebuild (build the image again from nothing,
+# without Docker's layer cache, which is the only build that re-runs the reconstructed-tree assertion; 15-25 min),
+# --performance-only (reproduced or everything without repeating the functional tier, for a checkout on which
+# ./evaluate.sh functional already ended in PASS; about 2 h 15 min for reproduced). --quick is the old name of check.
+#
+# Why tiers and not one command for all of it: the correctness set runs anywhere in two hours; the performance
+# set runs only on a quiet, large machine and takes four to fourteen hours, which is a decision a person makes;
+# the badges are awarded separately; and a fourteen-hour command that fails in its ninth hour is worse than
+# steps that can be repeated one at a time. Every step is one of the scripts the README documents, called in
+# the documented order; this file adds nothing else.
+# Environment: ART_CPUSET (pin the performance runs; our runs used 48 processors; unset, the script pins 48 of
+# the processors the Docker daemon grants when there are that many), ART_RUNS (2 by default, 5 for intervals),
+# ART_FFMPEG_CLIP_URL (the reference clip; without it FFmpeg's rows are timed but not compared), ART_JOBS
+# (derived by env.sh); see env.sh for the rest.
 set -uo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 cd "$here" || exit 2
 
-tier=functional; quick=0; plan=0; yes=0; rebuild=0; perf_only=0
+tier=""; quick=0; plan=0; yes=0; rebuild=0; perf_only=0
+usage() { awk 'NR == 1 { next } /^set -uo pipefail/ { exit } { sub(/^# ?/, ""); print }' "$here/evaluate.sh"; }
 for a in "$@"; do
   case "$a" in
-    functional|reproduced|everything) tier="$a" ;;
-    --quick)   quick=1 ;;
+    check|functional|reproduced|everything) tier="$a" ;;
+    --quick)   quick=1 ;;   # the old name of check
     --plan)    plan=1 ;;
     --yes)     yes=1 ;;
     --rebuild) rebuild=1 ;;
     --performance-only) perf_only=1 ;;
-    -h|--help) awk 'NR == 1 { next } /^set -uo pipefail/ { exit } { sub(/^# ?/, ""); print }' "$here/evaluate.sh"; exit 0 ;;
-    *) echo "evaluate.sh: unknown argument '$a' (tiers: functional, reproduced, everything; options: --quick --plan --yes --rebuild --performance-only)" >&2; exit 2 ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "evaluate.sh: unknown argument '$a' (tiers: check, functional, reproduced, everything; options: --plan --yes --rebuild --performance-only)" >&2; exit 2 ;;
   esac
 done
-[ "$quick" = 1 ] && [ "$tier" != functional ] && { echo "evaluate.sh: --quick applies to the functional tier only" >&2; exit 2; }
-[ "$perf_only" = 1 ] && [ "$tier" = functional ] && { echo "evaluate.sh: --performance-only applies to the reproduced and everything tiers" >&2; exit 2; }
+if [ "$quick" = 1 ]; then
+  case "$tier" in ""|check|functional) tier=check ;; *) echo "evaluate.sh: --quick is the old name of the check tier and does not combine with $tier" >&2; exit 2 ;; esac
+fi
+if [ -z "$tier" ]; then
+  # No silent default: a bare ./evaluate.sh used to run the functional tier, and a reader could not tell
+  # from the command what it was or that reproduced contained it (19 Sep 2026).
+  usage; echo; echo "evaluate.sh: name the tier: check | functional | reproduced | everything. Nothing was run." >&2; exit 2
+fi
+perf_tier=0; case "$tier" in reproduced|everything) perf_tier=1 ;; esac
+[ "$perf_only" = 1 ] && [ "$perf_tier" != 1 ] && { echo "evaluate.sh: --performance-only applies to the reproduced and everything tiers" >&2; exit 2; }
 
 # The plan: <label>|<expected time>|<command>. Times are this artifact's own measurements (README).
 steps=()
@@ -65,14 +73,14 @@ if [ "$perf_only" != 1 ]; then
 fi
 if [ "$perf_only" != 1 ]; then
   add "minimal example"                   "under a minute" "./docker/run.sh scripts/10-minimal-example.sh"
-  if [ "$quick" = 1 ]; then
+  if [ "$tier" = check ]; then
     add "correctness set, quick"          "2-5 min"   "./docker/run.sh scripts/01-functional.sh --quick"
   else
     add "correctness set, full"           "31 min on 64 processors, 1 h 45 min on 32, 2 h on 8" "./docker/run.sh scripts/01-functional.sh"
   fi
   add "tables from the shipped runs"      "1 min"     "./docker/run.sh scripts/90-tables.sh"
 fi
-if [ "$tier" != functional ]; then
+if [ "$perf_tier" = 1 ]; then
   all=""; [ "$tier" = everything ] && all=" --all-configs"
   add "performance: Redis"     "15 min${all:+ (all configurations: 1 h)}"        "./docker/run.sh scripts/40-perf.sh redis$all"
   add "performance: memcached" "30 min${all:+ (all configurations: 2 h)}"        "./docker/run.sh scripts/40-perf.sh memcached$all"
@@ -81,19 +89,24 @@ if [ "$tier" != functional ]; then
   [ "$tier" = everything ] && add "performance: MySQL" "3.5 h plus a 10-minute build per configuration" "./docker/run.sh scripts/40-perf.sh mysql"
 fi
 
-total=$(case "$tier:$quick:$perf_only" in
-  functional:1:*) echo "about 5 minutes, plus the image build the first time (15-25 min)";;
-  functional:0:*) echo "about 2 hours, plus the image build the first time";;
-  reproduced:*:1) echo "about 2 h 15 min, plus the image build the first time";;
-  reproduced:*:*) echo "about 4 hours, plus the image build the first time";;
-  everything:*:1) echo "about 12 hours, plus the image build the first time";;
-  everything:*:*) echo "about 14 hours, plus the image build the first time";; esac)
-echo "evaluate.sh: tier '$tier'$( [ "$quick" = 1 ] && echo ' (--quick)')$( [ "$perf_only" = 1 ] && echo ' (--performance-only)'), $total"
+total=$(case "$tier:$perf_only" in
+  check:*)      echo "about 5 minutes, plus the image build the first time (15-25 min)";;
+  functional:*) echo "about 2 hours, plus the image build the first time";;
+  reproduced:1) echo "about 2 h 15 min, plus the image build the first time";;
+  reproduced:*) echo "about 4 hours, plus the image build the first time";;
+  everything:1) echo "about 12 hours, plus the image build the first time";;
+  everything:*) echo "about 14 hours, plus the image build the first time";; esac)
+describe=$(case "$tier" in
+  check)      echo "check (not a badge): does it all run here";;
+  functional) echo "the Functional tier: the correctness set";;
+  reproduced) echo "the Reproduced tier = the whole Functional tier, then the performance subset";;
+  everything) echo "everything = the Reproduced tier at all fourteen configurations, plus MySQL";; esac)
+echo "evaluate.sh: $describe$( [ "$perf_only" = 1 ] && echo ' (--performance-only: the Functional tier not repeated)'); $total"
 i=0; for s in "${steps[@]}"; do i=$((i+1)); IFS='|' read -r label t cmd <<< "$s"; printf '  %2d. %-38s %-44s %s\n' "$i" "$label" "($t)" "${cmd/IMAGE/./docker\/build.sh (skipped if the image exists)}"; done
 [ "$plan" = 1 ] && exit 0
 
 autopin=0
-if [ "$tier" != functional ]; then
+if [ "$perf_tier" = 1 ]; then
   echo
   echo "Four things to know before starting the performance tier:"
   echo "  1. Machine. It needs 32 or more processors and a machine on which nothing else runs: the disturbance"
@@ -198,7 +211,7 @@ for s in "${steps[@]}"; do
   # kept build logs (or with a warm layer cache) leaves that check unmade: neither a pass nor a failure.
   if /usr/bin/grep -q 'SKIP  patch series reproduced tree' "$step_out"; then
     [ "$verdict" = FAIL ] || verdict=INCOMPLETE
-    echo "    INCOMPLETE: no build log here shows the patch series reproducing our source tree; ./evaluate.sh --rebuild"
+    echo "    INCOMPLETE: no build log here shows the patch series reproducing our source tree; ./evaluate.sh $tier --rebuild"
     echo "    builds the image again without the layer cache (15-25 min) and records it."
   fi
   if [ "$rc" -ne 0 ]; then
@@ -219,7 +232,7 @@ done
 # silence is never a pass, six of its nine output states are refusals, and its "rows judged" line is
 # the one to read first. A judged row outside its interval is reported as such, not as a failure of
 # the artifact's plumbing, and the exit status carries it.
-if [ "$tier" != functional ] && [ "$verdict" != FAIL ]; then
+if [ "$perf_tier" = 1 ] && [ "$verdict" != FAIL ]; then
   # results/ literally, with a trailing slash: docker/run.sh always mounts ./results (ART_RESULTS does not cross
   # the container boundary), and a symlinked results/ pointing at a larger disk is followed only with the slash.
   trees=$(find results/ -maxdepth 1 -name 'perf-*' -newermt "@$start_all" 2>/dev/null | sort | tr '\n' ' ')
@@ -254,12 +267,17 @@ if [ "$verdict" = PASS ] && [ -n "${compared:-}" ]; then
 else
   echo "evaluate.sh: $verdict  $where"
   case "$verdict" in
-    PASS) if [ "$tier" = functional ]; then
-            echo "Every step ran and passed: the image is our compiler built from the patch series, the analyses, the regression suite and the shipped tables (what"
-            echo "each step established is CLAIMS.md sections 1 to 4). This tier says nothing about speed."
-          else
-            echo "Every step ran and passed, and every judged performance row lies inside its shipped interval (the table above)."
-          fi ;;
+    PASS) case "$tier" in
+      check)
+        echo "Every step ran and passed: the image is our compiler built from the patch series, each analysis removes what it"
+        echo "claims and the race is still reported, and the shipped tables follow from the shipped runs. This is the check,"
+        echo "not the Functional badge: the regression suite (no configuration loses a race) runs in ./evaluate.sh functional." ;;
+      functional)
+        echo "Every step ran and passed: the image is our compiler built from the patch series, the analyses, the regression suite and the shipped tables (what"
+        echo "each step established is CLAIMS.md sections 1 to 4). This tier says nothing about speed." ;;
+      *)
+        echo "Every step ran and passed, and every judged performance row lies inside its shipped interval (the table above)." ;;
+    esac ;;
     INCOMPLETE) echo "Nothing failed, but a check could not be made here (its prerequisite is absent); the log names it. A skipped check is neither a pass nor a failure." ;;
     FAIL) echo "Stopped at: $failed. docs/troubleshooting.md lists the failures we know; the log has the rest." ;;
   esac
