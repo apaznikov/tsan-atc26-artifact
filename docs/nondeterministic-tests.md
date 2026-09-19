@@ -49,9 +49,16 @@ compiler; they are named here so that a reader of the replay does not take them 
 
 One further test is not a report-level variation but a stall. `getline_nohang.cpp` exists to check that
 ThreadSanitizer does not deadlock on a stdio stream lock at exit while a detached thread blocks in
-`getline()` (its own comment; google/sanitizers issues 454 and 1733). Upstream marks it unsupported on
-glibc 2.38, where that deadlock came back; the image's Ubuntu 24.04 carries glibc 2.39, where it still
-occurs in some runs, and a run in which it occurs waits out the per-test timeout. So a stall is the
+`getline()` (its own comment; google/sanitizers issues 454 and 1733). Upstream marks it unsupported from
+glibc 2.38 on, where that deadlock came back, and the image's Ubuntu 24.04 carries glibc 2.39: the test
+should be skipped there and is not, because the vendored lit configuration detects the glibc version through
+`distutils`, which Python 3.12 no longer has, and swallows the failure (`tests/lit.common.cfg.py`, the bare
+`except` around `add_glibc_versions`), so no `glibc-*` feature is ever added; two tests that require glibc
+2.30 are skipped for the same reason. Found 20 Sep 2026; the one-line fix, a tuple comparison in place of
+`LooseVersion`, changes which tests run and goes in after the submission together with a re-run of the
+suite (the executed count and the zero failures are unaffected either way: the test never produced a
+failure, and the two newly running tests are not race tests). Until then a run in which the deadlock occurs
+waits out the per-test timeout. So a stall is the
 deadlock the test looks for, under stock ThreadSanitizer as under every configuration: the test either
 passes in seconds or times out, under stock, EA and STC alike, it is flaky and not configuration-specific,
 and under the counting rule it can never become a candidate lost race because it does not pass under stock

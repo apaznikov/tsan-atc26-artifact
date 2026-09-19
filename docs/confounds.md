@@ -169,7 +169,7 @@ in each session as `ncpu`; it is a property of the host's Docker configuration, 
 The disturbance gate reads busy time on the CPUs outside `ART_CPUSET`. With `ART_CPUSET` empty, the
 artifact's default on a machine that is not ours, there are no CPUs outside the set and nothing to
 measure; the harness records `outside_busy_share` as null with `gate_checked: false` beside it and prints
-"not gate-checked" rather than a zero that would read as a quiet machine. Pin a set of at least 32 CPUs and leave the rest idle if
+"not gate-checked" rather than a zero that would read as a quiet machine. Pin 48 CPUs, the size of our set (which also fixes memcached's thread count), and leave the rest idle if
 you want a run that can be compared with ours.
 
 The absence of a check and a passed check must not take the same channel. A cell for which no gate was
