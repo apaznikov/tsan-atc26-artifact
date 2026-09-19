@@ -2,17 +2,59 @@
 
 *Русская версия: [README.ru.md](README.ru.md).*
 
-This artifact accompanies the USENIX ATC '26 paper *Instrumentation Optimization for Practical
+This artifact accompanies the ATC '26 paper *Instrumentation Optimization for Practical
 Dynamic Race Detection*. It contains the modified LLVM/ThreadSanitizer compiler the paper
 describes, the analyses' test suites and audit ledger, the benchmark harness, the data we
 recorded, and one script per experiment.
 
-Start with `CLAIMS.md`. It lists every claim the paper makes, the script that produces it, and
-what counts as a match. Nothing outside that file is claimed here.
+## Start here
 
-> Status: this artifact is being prepared for submission on 22 September 2026. The performance rows
-> of `CLAIMS.md` are filled per application as the measurement campaign completes; an application
-> not listed there is not yet claimed. The deterministic part is complete.
+```
+git clone https://github.com/apaznikov/tsan-atc26-artifact.git && cd tsan-atc26-artifact
+./evaluate.sh --quick            # 5 minutes, plus the image build the first time (15-25 min): is everything in place?
+./evaluate.sh                    # Functional: the full correctness set, about 2 hours (31 min on 64 processors, 1 h 45 min on 32)
+./evaluate.sh reproduced         # Reproduced: Functional plus the performance subset, about 4 hours on 48 idle processors
+./evaluate.sh reproduced --plan  # print the steps and their expected times, run nothing
+```
+
+Docker is the only thing to install. Each command prints one line per step with its time, shows what the
+step said, and ends with one verdict line and a sentence saying what it established:
+
+- **PASS** on the Functional tier means: the container built our compiler from the patch series and it emits
+  the same instrumentation as the compiler we measured on; every analysis removes what it claims and a real
+  race is still reported; the 23 lost-race shapes stay instrumented; ThreadSanitizer's regression suite loses
+  no race in any of the 12 configurations; every shipped run carries its provenance; and every table follows
+  from the shipped runs. It says nothing about speed.
+- **INCOMPLETE** means nothing failed but a check could not be made here (its prerequisite is absent) and
+  the log names it. Neither a pass nor a failure.
+- **FAIL** names the step that stopped it; `docs/troubleshooting.md` lists the failures we know.
+- The **Reproduced** tier ends with a table: one line per configuration row of your run against the
+  interval `CLAIMS.md` ships for it, marked IN, OUT (with the distance), not judged, or not comparable,
+  then "N rows judged". What counts as reproduced, what an OUT row can mean, and the five-run re-check for
+  it are in `CLAIMS.md`, section 5, under "Match criterion". FFmpeg's two rows come back "not comparable"
+  unless `ART_FFMPEG_CLIP_URL` names the reference clip (`docs/ffmpeg-input.md`); the run itself is valid.
+
+The tables name configurations as the harness does:
+
+| Name | Meaning |
+|---|---|
+| `orig` | native build, no ThreadSanitizer |
+| `tsan` | stock ThreadSanitizer; every configuration row is a ratio against it, above 1.0 = faster than stock |
+| `tsan-st`, `tsan-swmr`, `tsan-lo`, `tsan-ea`, `tsan-dom` | one analysis each: single-threaded context (STC), single-writer multiple-reader (SWMR), lock ownership (LO), escape analysis (EA), dominance-based elimination (DE) |
+| `tsan-dom_peeling` | DE with loop peeling |
+| `tsan-dom-ea-lo-st-swmr` | AllOpt without peeling: all five analyses |
+| `tsan-dom_peeling-ea-lo-st-swmr` | **AllOpt with peeling**, the paper's AllOpt |
+| `tsan-stmt` | **DynSTC**, the dynamic single-threaded-context transformation |
+| `tsan-dom_peeling-ea-lo-st-swmr-stmt` | AllOpt with peeling plus DynSTC |
+| `tsan-sound-wp`, `tsan-dom_peeling-ea-lo-st-swmr-wp` | the four analyses STC, SWMR, LO and EA (without DE), and AllOpt with peeling, each with whole-program summaries |
+
+`CLAIMS.md` is the contract: every claim the paper makes, the script that produces it, and what counts
+as a match. Nothing outside that file is claimed here. Read it once the quick tier has passed.
+
+> Status: prepared for the artifact submission of 22 September 2026. Every claim in `CLAIMS.md` is measured
+> on the shipped compiler, all five applications included; nothing is pending. The "Paper" column of each
+> performance table is the submitted manuscript's figure, kept so that the change is visible; the
+> camera-ready reports the numbers in `CLAIMS.md`.
 
 ## What is in here
 
@@ -22,7 +64,7 @@ what counts as a match. Nothing outside that file is claimed here.
 | `docker/` | The container recipe that builds and installs that compiler | Section 8.1 |
 | `scripts/` | One script per experiment, numbered in the order a reader would run them | Section 8 |
 | `data/` | Every run we recorded: per-run metadata with compiler stamp, binary hash, processor set, governor and load, plus the aggregates | Section 8 |
-| `docs/` | The method document, the known confounds, and the two experiments that are documented rather than runnable here | Section 8, appendices |
+| `docs/` | The method document, the known confounds, and the one experiment (Chromium) that is documented rather than runnable here | Section 8, appendices |
 
 Third-party code is unmodified except where noted in `THIRD-PARTY.md`, which also records the
 licence of every vendored component.
@@ -32,7 +74,7 @@ licence of every vendored component.
 The compiler is not here as a binary and there is no copy of LLVM. There are 29 patches over the
 upstream LLVM commit `c609043dd009`, which is text. The container fetches upstream itself with a
 shallow clone, applies the patches, checks that the reconstructed source tree hashes to ours, and
-builds the compiler inside itself. The recorded runs are text too, logs and JSON, so 112 MB of data
+builds the compiler inside itself. The recorded runs are text too, logs and JSON, so about 140 MB of data
 packs into a few megabytes of git history.
 
 ## The environment we used
@@ -40,19 +82,20 @@ packs into a few megabytes of git history.
 Intel Xeon w9-3495X, 56 cores and 112 threads, 250 GB RAM, Ubuntu 24.04, kernel 6.8.0-40-generic.
 Performance runs are pinned to 48 processors, one measurement at a time. Nothing here needs that
 machine: the container runs anywhere, and the deterministic experiments give identical results on
-any x86-64 Linux host. The performance experiments need at least 32 cores to be meaningful, and
-`docs/confounds.md` says what varies and why.
+any x86-64 Linux host. The performance experiments need at least 32 processors to be meaningful and 48
+pinned for every row to be comparable with ours: between 32 and 47 the run is unpinned and memcached's
+rows, whose thread count follows the processor count, are reported but not compared. `docs/confounds.md`
+says what varies and why. The minimum for the correctness set is 8 processors (the regression suite refuses
+fewer), 16 GB of memory (`ART_MEMORY=16g` caps the container so that the derived job count respects it) and
+20 GB of disk; the performance set needs up to 100 GB of disk with MySQL.
 
-## Getting started: one command
+## Getting started, in detail
 
-```
-./evaluate.sh --quick            # about 20 minutes: prerequisites, the image, the minimal example,
-                                 # the correctness set without the regression suite, the tables
-./evaluate.sh                    # the same with the full correctness set: about 2 hours (Functional)
-./evaluate.sh reproduced         # plus the performance subset: about 4 hours on 32+ idle processors
-./evaluate.sh everything         # plus MySQL and all fourteen configurations: about 14 hours
-./evaluate.sh reproduced --plan  # print the steps and their expected times, run nothing
-```
+`./evaluate.sh everything` adds MySQL and all fourteen configurations to the Reproduced tier (about 14 hours).
+`reproduced` and `everything` include the Functional tier; on a checkout where `./evaluate.sh` already ended
+in PASS, `./evaluate.sh reproduced --performance-only` runs the performance subset alone (about 2 h 15 min).
+Every multi-hour tier asks for confirmation first; `--yes` skips the question and is required when stdin is
+not a terminal (under `nohup`, for instance).
 
 Where the results are: `results/evaluate-<tier>-<stamp>.log` holds every step's full output;
 each performance run writes `results/perf-<app>-<stamp>/perf_<app>.md` (the table for that
@@ -62,8 +105,9 @@ preservation suite's `report.txt` and `manifest.txt`, the soundness shapes' lit 
 performance tiers end with `harness/tools/perf/compare_with_claims.py`, which prints one line per
 configuration row against the interval `CLAIMS.md` ships for it (inside or outside, not judged, not
 comparable) and a count of rows judged; read that count first, since a row it cannot judge is reported,
-never passed, and its silence is never a pass. On a machine with 48 or more processors the performance tier pins the first 48 unless
-`ART_CPUSET` says which; on a smaller one it runs unpinned and says so.
+never passed, and its silence is never a pass. On a machine with 48 or more processors the performance tier pins 48 of the processors the Docker daemon
+grants to containers (0-47 when it grants them all) unless `ART_CPUSET` says which; on a smaller one it
+runs unpinned and says so.
 
 `evaluate.sh` runs the scripts below in the documented order, prints one line per step with its time,
 writes the full log under `results/`, and ends with one verdict: PASS, INCOMPLETE (a check whose
@@ -83,17 +127,25 @@ On the host, Docker is the only requirement. `00-prereqs.sh` run on the host rep
 `docker/build.sh` builds them, and nothing is to be installed for them. Run it again inside the container
 (`./docker/run.sh scripts/00-prereqs.sh`) and it passes.
 
-Start the container through `docker/run.sh`. It does two things a hand-written `docker run` will
+Start the container through `docker/run.sh`. It does four things a hand-written `docker run` will
 not: it passes `--security-opt seccomp=unconfined`, because the ThreadSanitizer runtime re-executes
 programs with address-space randomization off and Docker's default seccomp profile refuses that call,
-so without the flag every instrumented program dies with a segmentation fault; and it computes the
-build parallelism on the host from the memory the Docker daemon actually has, a cap that is invisible
-from inside the container and that an unbounded build does not fail against but thrashes
-(`docs/troubleshooting.md`).
+so without the flag every instrumented program dies with a segmentation fault; it runs the container as
+your own user, because memcached refuses to start as root and its benchmark then measures a client
+talking to nothing (and root-owned results cannot be deleted without sudo); it gives `/dev/shm` 1 GB,
+because two of FFmpeg's four codecs write outputs larger than Docker's 64 MB default and the row would
+silently measure two codecs instead of four; and it computes the build parallelism on the host from the
+memory the Docker daemon actually has, a cap that is invisible from inside the container and that an
+unbounded build does not fail against but thrashes (`docs/troubleshooting.md`). It also forwards every
+knob in `env.sh` into the container.
 
 The minimal example compiles one small program per analysis, shows which instrumentation each
 analysis removes and why, then compiles and runs a program with a real race to show the race is
-still reported. It needs no special hardware. The container build, if you have not run it before, takes about
+still reported. It needs no special hardware. On our image it prints, per analysis, stock/enabled/removed
+counts of 8/6/2 (STC), 56/8/48 (SWMR), 6/4/2 (LO), 21/1/20 (EA) and 9/8/1 (DE), then `data race reported`
+under stock and under AllOpt; the step fails if stock shows no instrumentation, if any analysis removed
+nothing, or if the race goes unreported (the exact counts include a little libc glue and are what our image
+prints, not the criterion). The container build, if you have not run it before, takes about
 15 minutes at the default job count on a machine like ours and about 25 minutes at 8 jobs (both measured
 with `--no-cache` on 18 Sep 2026: 14m52s at 25 jobs, 24m38s at 8); the example itself is a few minutes. The two build times are
 not a scaling curve: three times fewer jobs cost 1.7 times the wall time, because the apt install, the
@@ -112,42 +164,48 @@ spending a day on measurements:
 
 It runs the deterministic checks in order and prints one verdict per step: the minimal example, the
 23 lost-race shapes with their vacuity control, the compiler's equivalence to the one we measured on,
-the provenance of the shipped runs, the ThreadSanitizer regression suite in 12 configurations
-preceded by its self-test, and the regeneration of every table from the shipped data. It stops at the
+the provenance of the shipped runs, the identity of the two copies of the table code, the self-test of the
+rule that decides a lost race, the ThreadSanitizer regression suite in 12 configurations preceded by its
+self-test, and the regeneration of every table from the shipped data (`--quick` omits the two
+regression-suite steps and its verdict says so). It stops at the
 first failure, because each later step assumes the compiler is the one the earlier steps identified.
 A step whose prerequisite is absent is reported as SKIP and the set is declared incomplete: a skipped
 check is one not made, and it counts as neither a pass nor a failure.
 
-The correctness tests themselves are 62 IR tests of our own (`tests/ir`, one per lost-race shape with
-its negative control) and ThreadSanitizer's own regression suite vendored from compiler-rt under
+The correctness tests themselves are 62 IR tests of our own (`tests/ir`: 50 removal tests and 11 negative
+controls covering the 23 lost-race shapes, plus one multi-step summary test) and ThreadSanitizer's own regression suite vendored from compiler-rt under
 `tests/tsan`, run in each of 12 configurations. `lit` discovers 383 tests there and marks 91
 unsupported on this platform before anything is compiled, so 292 execute; our own run of them ships as
-`data/suite/`, with the command to re-derive each count.
+`data/suite/`, with the command to re-derive each count. One test, `getline_nohang.cpp`, stalls to its
+two-minute timeout in many repeats under stock as well as under every configuration; a pause of a couple of
+minutes during the suite is that test, not a hang (`docs/nondeterministic-tests.md`).
 
 ## Running the experiments
 
-Each script prints what it will do, how long it takes and how much disk it needs, then does it.
+Each measurement script prints what it will do, roughly how long it takes and how much disk it needs, then
+does it; the quick checks print only their verdicts.
 Running one twice is safe: results are written to a new directory per run and the tables are
 regenerated from whichever runs you point them at.
 
 | Script | What it checks | Time | Hardware |
 |---|---|---|---|
-| `10-minimal-example.sh` | the analyses do what Sections 4 to 6 say | 10 min | any |
-| `11-soundness-shapes.sh` | 23 fixed lost-race shapes, each against its negative test | 20 min | any |
-| `12-compiler-equivalence.sh` | the shipped compiler emits the instrumentation our measurements were taken on | 30 min | any |
-| `20-static-counts.sh` | static instrumentation per application and configuration | 2 h | 8 cores |
-| `21-compile-time.sh` | compile-time overhead | 1 h | 8 cores |
-| `30-preservation-suite.sh` | 12 configurations over ThreadSanitizer's regression suite, with a report-level diff | 2 h | 8 cores |
-| `31-preservation-apps.sh` | races reported on the applications, against stock | 3 h | 16 cores |
-| `40-perf.sh` | the performance table, one application at a time | default (4 configurations, N = 2), measured: Redis 13-15 min, memcached 28-36, FFmpeg 20-25, SQLite 65-68; MySQL about 3.4 h; everything at N = 2 about 14 h with builds; `ART_RUNS=5` for intervals, 2.5x longer | 32 cores |
-| `50-eviction-stress.sh` | the bounded-shadow experiments | 1 h | 4 cores |
-| `13-verify-image.sh` | the image an evaluator built is the compiler we measured: version, stamp, self-containedness, and the reconstructed tree hash from the build log | 10 min | any |
+| `10-minimal-example.sh` | the analyses do what Sections 4 to 6 say | under a minute | any |
+| `11-soundness-shapes.sh` | 23 fixed lost-race shapes, each against its negative test | 2 min | any |
+| `12-compiler-equivalence.sh` | the shipped compiler emits the instrumentation our measurements were taken on | 3 min | any |
+| `20-static-counts.sh` | static instrumentation per application and configuration, counted on the binaries `40-perf.sh` built | 5 min | any |
+| `21-compile-time.sh <app>` | compile-time overhead, three clean builds per configuration | 20 min to 3 h per application (MySQL 5 to 10 h) | 8 cores |
+| `30-preservation-suite.sh` | 12 configurations over ThreadSanitizer's regression suite, pass or fail per test (the report-level comparison is recorded, not re-run; `CLAIMS.md` section 1) | 1 h 40 min on 32 processors, 25 min on 64, about 3 h on 8 | 8 cores |
+| `31-preservation-apps.sh <app> 10` | races reported on the applications, against stock; N = 10 runs for a verdict (the default N = 2 prints the per-site frequencies without one) | 1.5 to 3 h per application | 16 cores |
+| `40-perf.sh <app>` | the performance table, one application at a time | default (4 configurations, N = 2), measured: Redis 13-15 min, memcached 28-36, FFmpeg 20-25, SQLite 65-68; MySQL about 3.4 h; everything at N = 2 about 14 h with builds; `ART_RUNS=5` for intervals, twice as long | 32 cores |
+| `50-eviction-stress.sh` | the bounded-shadow experiments | 15 min to 1 h | any |
+| `13-verify-image.sh` | the image an evaluator built is the compiler we measured: version, stamp, self-containedness, and the reconstructed tree hash from the build log | about 35 min (a minute with `--static`); runs on the host, it starts its own container | any |
 | `90-tables.sh` | regenerates every table, from your runs or from ours | 1 min | any |
 
-The whole artifact, every script at its defaults, is about 14 hours on 48 processors; the reviewer's
+Everything, every application at all fourteen configurations, is about 14 hours on 48 processors; the reviewer's
 subset of the performance table, four configurations on the four cheaper applications, is about two
-hours. Our own campaign used five runs per configuration and took 43 hours; that setting is one
-variable away (`ART_RUNS=5`) and `CLAIMS.md` says what each mode can and cannot conclude.
+hours. Our own campaign used five runs per configuration and took 32 hours of measurement after about 7 hours
+of builds; that setting is one variable away (`ART_RUNS=5`, twice the default's time) and `CLAIMS.md` says
+what each mode can and cannot conclude.
 
 Every performance-side script also has a smoke mode, `ART_SMOKE=1`: one run, short workloads, reduced
 test lists, output marked NOT A MEASUREMENT. It answers one question, whether the pipeline runs end to end
@@ -157,7 +215,7 @@ two or three of ten paper-scale runs, so the script prints that no verdict was a
 plumbing alone; the positive control that refuses to certify a run in which stock found nothing applies
 unchanged at the paper scale.
 
-`90-tables.sh` works without running anything else: pointed at `data/`, it re-derives every table
+`90-tables.sh` works without running anything else: run with no argument, it re-derives every table
 in the paper from the runs we recorded. That is the fastest way to check that our tables follow
 from our data.
 
@@ -180,6 +238,9 @@ runs share `Output/` and fail for reasons that are not the compiler's):
 ./docker/run.sh scripts/30-preservation-suite.sh --self-test    # first, always
 ./docker/run.sh scripts/30-preservation-suite.sh 5              # then the real matrix
 ```
+
+These are the invocations `evaluate.sh` runs inside the correctness set; after a PASS there is nothing to
+repeat.
 
 ## What this artifact does not contain
 

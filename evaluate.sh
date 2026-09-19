@@ -3,15 +3,21 @@
 #
 #   ./evaluate.sh                      Functional: prerequisites, the image, the minimal example, the full
 #                                      correctness set, the tables. About 2 hours on any x86-64 Linux host
-#                                      with Docker, plus the image build the first time (15 min at the
-#                                      derived job count, 25 min at 8 jobs).
+#                                      with Docker (31 min on 64 processors, 1 h 45 min on 32), plus the
+#                                      image build the first time (15 min at the derived job count, 25 min
+#                                      at 8 jobs).
 #   ./evaluate.sh --quick              The same in about 5 minutes, without the regression suite, plus the
 #                                      image build the first time.
 #   ./evaluate.sh reproduced           Functional, then the performance subset: Redis, memcached, FFmpeg and
 #                                      SQLite at the defaults (four configurations, two runs). About 4 hours.
-#                                      Needs 32 or more processors and a machine that is otherwise idle.
+#                                      Needs 32 or more processors and a machine that is otherwise idle; every
+#                                      row is comparable with ours only with 48 processors pinned.
 #   ./evaluate.sh everything           Reproduced, plus MySQL and all fourteen configurations. About 14 hours.
 #   ./evaluate.sh <tier> --plan        Print the steps and the expected time, run nothing.
+#   ./evaluate.sh <tier> --performance-only
+#                                      reproduced or everything without repeating the correctness set, for a
+#                                      checkout on which ./evaluate.sh already ended in PASS (about 2 h 15 min
+#                                      for reproduced).
 #
 # Why three tiers and not one command for all of it: the correctness set runs anywhere in two hours; the
 # performance set runs only on a quiet, large machine and takes four to fourteen hours, which is a decision
@@ -20,14 +26,17 @@
 # README documents, called in the documented order; this file adds nothing else.
 #
 # Options: --quick (Functional without the regression suite), --plan (print and exit), --yes (no
-# confirmation before the multi-hour tiers), --rebuild (build the image even if one exists).
-# Environment: ART_CPUSET (pin the performance runs; our runs used 48 processors), ART_RUNS (2 by default,
-# 5 for intervals), ART_JOBS (derived by env.sh); see env.sh for the rest.
+# confirmation before the multi-hour tiers; required when stdin is not a terminal), --rebuild (build the
+# image even if one exists), --performance-only (see above).
+# Environment: ART_CPUSET (pin the performance runs; our runs used 48 processors; unset, the script pins
+# 48 of the processors the Docker daemon grants when there are that many), ART_RUNS (2 by default, 5 for
+# intervals), ART_FFMPEG_CLIP_URL (the reference clip; without it FFmpeg's rows are timed but not compared),
+# ART_JOBS (derived by env.sh); see env.sh for the rest.
 set -uo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 cd "$here" || exit 2
 
-tier=functional; quick=0; plan=0; yes=0; rebuild=0
+tier=functional; quick=0; plan=0; yes=0; rebuild=0; perf_only=0
 for a in "$@"; do
   case "$a" in
     functional|reproduced|everything) tier="$a" ;;
@@ -35,24 +44,28 @@ for a in "$@"; do
     --plan)    plan=1 ;;
     --yes)     yes=1 ;;
     --rebuild) rebuild=1 ;;
-    -h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-    *) echo "evaluate.sh: unknown argument '$a' (tiers: functional, reproduced, everything; options: --quick --plan --yes --rebuild)" >&2; exit 2 ;;
+    --performance-only) perf_only=1 ;;
+    -h|--help) awk 'NR == 1 { next } /^set -uo pipefail/ { exit } { sub(/^# ?/, ""); print }' "$here/evaluate.sh"; exit 0 ;;
+    *) echo "evaluate.sh: unknown argument '$a' (tiers: functional, reproduced, everything; options: --quick --plan --yes --rebuild --performance-only)" >&2; exit 2 ;;
   esac
 done
 [ "$quick" = 1 ] && [ "$tier" != functional ] && { echo "evaluate.sh: --quick applies to the functional tier only" >&2; exit 2; }
+[ "$perf_only" = 1 ] && [ "$tier" = functional ] && { echo "evaluate.sh: --performance-only applies to the reproduced and everything tiers" >&2; exit 2; }
 
 # The plan: <label>|<expected time>|<command>. Times are this artifact's own measurements (README).
 steps=()
 add() { steps+=("$1|$2|$3"); }
 add "prerequisites on the host"           "1 min"     "./scripts/00-prereqs.sh"
 add "container image (compiler inside)"   "15-25 min" "IMAGE"
-add "minimal example"                     "1 min"     "./docker/run.sh scripts/10-minimal-example.sh"
-if [ "$quick" = 1 ]; then
-  add "correctness set, quick"            "5 min"     "./docker/run.sh scripts/01-functional.sh --quick"
-else
-  add "correctness set, full"             "31 min on 64 processors, 1 h 45 min on 32, longer on 8" "./docker/run.sh scripts/01-functional.sh"
+if [ "$perf_only" != 1 ]; then
+  add "minimal example"                   "under a minute" "./docker/run.sh scripts/10-minimal-example.sh"
+  if [ "$quick" = 1 ]; then
+    add "correctness set, quick"          "2-5 min"   "./docker/run.sh scripts/01-functional.sh --quick"
+  else
+    add "correctness set, full"           "31 min on 64 processors, 1 h 45 min on 32, longer on 8" "./docker/run.sh scripts/01-functional.sh"
+  fi
+  add "tables from the shipped runs"      "1 min"     "./docker/run.sh scripts/90-tables.sh"
 fi
-add "tables from the shipped runs"        "1 min"     "./docker/run.sh scripts/90-tables.sh"
 if [ "$tier" != functional ]; then
   all=""; [ "$tier" = everything ] && all=" --all-configs"
   add "performance: Redis"     "15 min${all:+ (all configurations: 1 h)}"        "./docker/run.sh scripts/40-perf.sh redis$all"
@@ -62,44 +75,84 @@ if [ "$tier" != functional ]; then
   [ "$tier" = everything ] && add "performance: MySQL" "3.5 h plus a 10-minute build per configuration" "./docker/run.sh scripts/40-perf.sh mysql"
 fi
 
-total=$(case "$tier:$quick" in functional:1) echo "about 20 minutes, plus the image build the first time";;
-  functional:0) echo "about 2 hours, plus the image build the first time";;
-  reproduced:*) echo "about 4 hours, plus the image build";;
-  everything:*) echo "about 14 hours, plus the image build";; esac)
-echo "evaluate.sh: tier '$tier'$( [ "$quick" = 1 ] && echo ' (--quick)'), $total"
+total=$(case "$tier:$quick:$perf_only" in
+  functional:1:*) echo "about 5 minutes, plus the image build the first time (15-25 min)";;
+  functional:0:*) echo "about 2 hours, plus the image build the first time";;
+  reproduced:*:1) echo "about 2 h 15 min, plus the image build the first time";;
+  reproduced:*:*) echo "about 4 hours, plus the image build the first time";;
+  everything:*:1) echo "about 12 hours, plus the image build the first time";;
+  everything:*:*) echo "about 14 hours, plus the image build the first time";; esac)
+echo "evaluate.sh: tier '$tier'$( [ "$quick" = 1 ] && echo ' (--quick)')$( [ "$perf_only" = 1 ] && echo ' (--performance-only)'), $total"
 i=0; for s in "${steps[@]}"; do i=$((i+1)); IFS='|' read -r label t cmd <<< "$s"; printf '  %2d. %-38s %-44s %s\n' "$i" "$label" "($t)" "${cmd/IMAGE/./docker\/build.sh (skipped if the image exists)}"; done
 [ "$plan" = 1 ] && exit 0
 
+autopin=0
 if [ "$tier" != functional ]; then
   echo
-  echo "The performance tier needs 32 or more processors and a machine on which nothing else runs: the"
-  echo "disturbance gate retires every cell measured under foreign load (docs/confounds.md)."
+  echo "Four things to know before starting the performance tier:"
+  echo "  1. Machine. It needs 32 or more processors and a machine on which nothing else runs: the disturbance"
+  echo "     gate retires every cell measured under foreign load (docs/confounds.md)."
   # Our intervals describe a 48-processor pinned set, and the workload's thread counts follow from the
-  # set's size (docs/campaign-parameters.md). So, unless the caller chose a set, pin the first 48
-  # processors when the machine has them: the run is then gate-checked and its thread counts equal ours.
-  # A smaller machine runs unpinned, not gate-checked, and its rows are reported with their thread
-  # counts rather than compared. Topology (which 48, hyperthread siblings) is the caller's to refine.
+  # set's size (docs/campaign-parameters.md). So, unless the caller chose a set, pin 48 processors when
+  # the machine has them: the run is then gate-checked and its thread counts equal ours. Which 48: the
+  # first 48 the Docker daemon actually grants to containers, asked of the image once it exists, because
+  # a daemon confined by systemd (AllowedCPUs on docker.slice) grants fewer than the host has and a request
+  # for 0-47 would be clipped to whatever of it the daemon may use (44 of 48 on our own host). A smaller
+  # machine runs unpinned, not gate-checked, and its memcached rows are reported with their thread count
+  # rather than compared. Topology (which 48, hyperthread siblings) is the caller's to refine.
   if [ -z "${ART_CPUSET:-}" ]; then
     ncpu_here=$(nproc 2>/dev/null || echo 0)
     if [ "$ncpu_here" -ge 48 ]; then
-      export ART_CPUSET="0-47"
-      echo "ART_CPUSET not set: pinning the first 48 of $ncpu_here processors (ART_CPUSET=0-47) so the run is"
-      echo "gate-checked and its thread counts match ours; set ART_CPUSET yourself to choose which 48."
+      autopin=1
+      echo "     ART_CPUSET not set: the run pins 48 of the processors the Docker daemon grants to containers (0-47"
+      echo "     when it grants them all; chosen once the image exists and printed then), so it is gate-checked and"
+      echo "     its thread counts match ours. Set ART_CPUSET to choose which 48 yourself (topology, siblings)."
     else
-      echo "ART_CPUSET not set and only $ncpu_here processors: the run uses every processor the container sees,"
-      echo "is not gate-checked, and its rows carry their own thread counts (not comparable with our 48-set intervals)."
+      echo "     ART_CPUSET not set and only $ncpu_here processors here: the run uses every processor the container"
+      echo "     sees and is not gate-checked; memcached's rows, whose thread count follows the processor count,"
+      echo "     are reported but not compared with our 48-processor intervals."
     fi
   else
-    echo "ART_CPUSET=$ART_CPUSET (our runs used 48 processors)."
+    echo "     ART_CPUSET=$ART_CPUSET (our runs used 48 processors, 4-27 and 60-83 on our host)."
   fi
+  echo "  2. Names. The tables use the harness's configuration names: orig = native, no ThreadSanitizer; tsan ="
+  echo "     stock ThreadSanitizer; tsan-dom_peeling-ea-lo-st-swmr = AllOpt with peeling, the paper's AllOpt;"
+  echo "     tsan-stmt = DynSTC. Each configuration row is a ratio against tsan: above 1.0 is faster than stock."
+  if [ -n "${ART_FFMPEG_CLIP_URL:-}" ]; then
+    echo "  3. FFmpeg. ART_FFMPEG_CLIP_URL is set; its rows are compared once the clip's sha256 matches the reference."
+  else
+    echo "  3. FFmpeg. Its rows are compared with ours only on the reference clip, and ART_FFMPEG_CLIP_URL is not"
+    echo "     set: the run regenerates the input from the Blender source (a 557 MB download), its timings are"
+    echo "     valid, and the comparison prints 'not comparable' for FFmpeg's two rows by design (docs/ffmpeg-input.md)."
+  fi
+  echo "  4. The end. The tier ends with one line per configuration row of this run against the interval CLAIMS.md"
+  echo "     ships for it (IN; OUT with the distance; not judged; not comparable) and 'N rows judged'. What an OUT"
+  echo "     row can mean, and the five-run re-check for it, is CLAIMS.md section 5, 'Match criterion'."
   if [ "$yes" != 1 ]; then
-    printf 'Start now? [y/N] '; read -r ans; case "$ans" in y|Y|yes) ;; *) echo "not started"; exit 0;; esac
+    if [ ! -t 0 ]; then
+      echo "evaluate.sh: stdin is not a terminal, so the confirmation cannot be asked; add --yes to start. Nothing was started." >&2
+      exit 2
+    fi
+    printf 'Start now? [y/N] '; read -r ans; case "$ans" in y|Y|yes) ;; *) echo "not started"; exit 1;; esac
   fi
 fi
 
+# 48 of the processors the daemon grants to containers, as a range list; nothing if it grants fewer.
+resolve_autopin() {
+  local granted
+  granted=$(docker run --rm "${ART_IMAGE:-tsan-atc26}" bash -c 'grep Cpus_allowed_list /proc/self/status | cut -f2' 2>/dev/null || true)
+  [ -n "$granted" ] || granted="0-$(( $(nproc 2>/dev/null || echo 1) - 1 ))"
+  printf '%s' "$granted" | tr ',' '\n' | awk -F- '{ if ($2 == "") print $1; else for (i = $1; i <= $2; i++) print i }' \
+    | sort -n | head -48 \
+    | awk 'NR == 1 { s = $1; p = $1; next }
+           $1 == p + 1 { p = $1; next }
+           { out = out (out == "" ? "" : ",") (s == p ? s : s "-" p); s = $1; p = $1 }
+           END { if (NR < 48) exit; print out (out == "" ? "" : ",") (s == p ? s : s "-" p) }'
+}
+
 mkdir -p results
-log="results/evaluate-$tier-$(date +%Y%m%d-%H%M%S).log"
-echo "log: $log"; echo
+log="results/evaluate-$tier-$(date -u +%Y%m%d-%H%M%S).log"
+echo "log: $log  (the stamp is UTC, like the results directories written inside the container)"; echo
 start_all=$(date +%s); verdict=PASS; failed=""; compared=""
 i=0
 for s in "${steps[@]}"; do
@@ -109,6 +162,16 @@ for s in "${steps[@]}"; do
       printf '%2d. %-38s skipped: image tsan-atc26 exists (use --rebuild to build it again)\n' "$i" "$label"; continue
     fi
     cmd="./docker/build.sh"
+  fi
+  if [ "$autopin" = 1 ] && [ -z "${ART_CPUSET:-}" ] && [[ "$cmd" == *40-perf.sh* ]]; then
+    set48=$(resolve_autopin)
+    if [ -n "$set48" ]; then
+      export ART_CPUSET="$set48"
+      echo "    pinning ART_CPUSET=$set48: 48 of the processors the Docker daemon grants to containers"
+    else
+      autopin=0
+      echo "    the Docker daemon grants fewer than 48 processors to containers: running unpinned, not gate-checked"
+    fi
   fi
   printf '%2d. %-38s started %s, expected %s\n' "$i" "$label" "$(date +%H:%M:%S)" "$t"
   t0=$(date +%s)
@@ -125,9 +188,16 @@ for s in "${steps[@]}"; do
     [ "$verdict" = FAIL ] || verdict=INCOMPLETE
     echo "    INCOMPLETE: a check could not be made here and was skipped (its prerequisite is absent); see $log"
   fi
-  if [ "$rc" -ne 0 ] && ! /usr/bin/grep -q 'correctness set is INCOMPLETE' "$step_out"; then
+  if [ "$rc" -ne 0 ]; then
     verdict=FAIL; failed="$label"; echo "    FAILED; the last lines of its output:"; tail -15 "$step_out" | sed 's/^/      /'; rm -f "$step_out"; break
   fi
+  # A clipped or refused processor set is the one warning a reviewer must see at once, not after hours.
+  /usr/bin/grep -h 'docker/run.sh: ART_CPUSET' "$step_out" | sed 's/^/    /' || true
+  # What the step said, on the console as well as in the log: a short output in full (the minimal
+  # example's table, the correctness set's per-step verdicts), a long one by its last lines.
+  n=$(wc -l < "$step_out")
+  if [ "$n" -le 30 ]; then sed 's/^/      /' "$step_out"
+  else echo "      ... last 12 of $n lines (all of them in the log):"; tail -12 "$step_out" | sed 's/^/      /'; fi
   rm -f "$step_out"
 done
 # The performance tiers end with the comparison an evaluator came for: every row this run produced
@@ -137,14 +207,16 @@ done
 # the one to read first. A judged row outside its interval is reported as such, not as a failure of
 # the artifact's plumbing, and the exit status carries it.
 if [ "$tier" != functional ] && [ "$verdict" != FAIL ]; then
-  trees=$(find "${ART_RESULTS:-results}" -maxdepth 1 -name 'perf-*' -newermt "@$start_all" 2>/dev/null | sort | tr '\n' ' ')
+  # results/ literally, with a trailing slash: docker/run.sh always mounts ./results (ART_RESULTS does not cross
+  # the container boundary), and a symlinked results/ pointing at a larger disk is followed only with the slash.
+  trees=$(find results/ -maxdepth 1 -name 'perf-*' -newermt "@$start_all" 2>/dev/null | sort | tr '\n' ' ')
   if [ -z "$trees" ]; then
     # The comparison is why this tier exists. If the run produced no performance tree to compare, that
     # is a failure of the tier and not a silent skip: without this the whole tier could report PASS
     # having compared nothing at all (found 19 Sep 2026).
     echo
     echo "No performance results were produced by this run, so nothing could be compared with CLAIMS.md."
-    echo "Looked for directories named perf-* under ${ART_RESULTS:-results} created after the run began."
+    echo "Looked for directories named perf-* under results/ created after the run began."
     verdict=FAIL; failed="the performance tier produced no results to compare"
   fi
   if [ -n "$trees" ]; then
@@ -158,12 +230,26 @@ fi
 dt=$(( $(date +%s) - start_all ))
 echo
 {
-echo "evaluate.sh: $verdict${compared:+, rows $compared their intervals}  (tier $tier, $((dt/3600))h$(( (dt%3600)/60 ))m; full log in $log)"
-case "$verdict" in
-  PASS) echo "Every step ran and passed. For what each step established, read CLAIMS.md; the performance rows compare against its intervals." ;;
-  INCOMPLETE) echo "Nothing failed, but a check could not be made here (its prerequisite is absent); the log names it. A skipped check is neither a pass nor a failure." ;;
-  FAIL) echo "Stopped at: $failed. docs/troubleshooting.md lists the failures we know; the log has the rest." ;;
-esac
-[ -n "${compared:-}" ] && echo "The comparison with CLAIMS.md did not come back clean: either a judged row lies outside its shipped interval, or no row could be judged at all. Its own output above says which, and CLAIMS.md section 5 says what each means."
+where="(tier $tier, $((dt/3600))h$(( (dt%3600)/60 ))m; full log in $log)"
+if [ "$verdict" = PASS ] && [ -n "${compared:-}" ]; then
+  # Not "PASS, rows outside": every step ran, and the comparison is the tier's question, so the line
+  # must say the comparison did not come back clean. The exit status says the same.
+  echo "evaluate.sh: PASS on every step, COMPARISON NOT CLEAN  $where"
+  echo "Every step ran and passed, and the comparison above did not come back clean: a judged row lies outside"
+  echo "its shipped interval, or no row could be judged at all. Its own output says which. CLAIMS.md section 5"
+  echo "('Match criterion') says what an outside row can mean and gives the five-run re-check for it."
+else
+  echo "evaluate.sh: $verdict  $where"
+  case "$verdict" in
+    PASS) if [ "$tier" = functional ]; then
+            echo "Every step ran and passed: the compiler, the analyses, the regression suite and the shipped tables (what"
+            echo "each step established is CLAIMS.md sections 1 to 4). This tier says nothing about speed."
+          else
+            echo "Every step ran and passed, and every judged performance row lies inside its shipped interval (the table above)."
+          fi ;;
+    INCOMPLETE) echo "Nothing failed, but a check could not be made here (its prerequisite is absent); the log names it. A skipped check is neither a pass nor a failure." ;;
+    FAIL) echo "Stopped at: $failed. docs/troubleshooting.md lists the failures we know; the log has the rest." ;;
+  esac
+fi
 } | tee -a "$log"    # the verdict goes into the log too: a log that ends without it answers a different question
 [ "$verdict" = PASS ] && [ -z "${compared:-}" ]

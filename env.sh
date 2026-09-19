@@ -11,7 +11,8 @@ export ART_RESULTS="${ART_RESULTS:-$ART_ROOT/results}"
 export ART_DATA="${ART_DATA:-$ART_ROOT/data}"
 
 # Processor set for performance runs. Our machine used 4-27,60-83 (48 logical CPUs).
-# Leave empty to use every CPU the container was given.
+# Leave empty to use every CPU the container was given (evaluate.sh's performance tiers then pin 48 of the
+# processors the Docker daemon grants to containers, when there are that many).
 # Empty means "every CPU" and also means "not gate-checked": the disturbance gate measures busy time on
 # the CPUs OUTSIDE the set, and with no set there is nothing to measure. Unpinned runs record
 # outside_busy_share = null with gate_checked = false in session.json and print "not gate-checked"; do not
@@ -20,6 +21,8 @@ export ART_DATA="${ART_DATA:-$ART_ROOT/data}"
 export ART_CPUSET="${ART_CPUSET:-}"
 # Memory cap for the container (docker --memory), empty for none; e.g. ART_MEMORY=16g for the README's minimum.
 export ART_MEMORY="${ART_MEMORY:-}"
+# The image docker/run.sh starts; docker/build.sh builds it under this name.
+export ART_IMAGE="${ART_IMAGE:-tsan-atc26}"
 
 # Number of measured runs per configuration and whether a discarded warm-up run precedes them.
 # Three modes, and the tables say which one produced them:

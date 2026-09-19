@@ -34,9 +34,9 @@ our only build predates the shipped compiler), and any number from before the ca
 ## Contents, hosting and requirements
 
 `https://github.com/apaznikov/tsan-atc26-artifact`, and archived with a DOI for the final version.
-About 100 MB: the compiler is 29 patch files, and the recorded runs are text.
+About 140 MB of data: the compiler is 29 patch files, and the recorded runs are text.
 
-Any x86-64 Linux host with Docker, 8 processors and 20 GB of disk runs everything deterministic. The
+Any x86-64 Linux host with Docker, 8 processors, 16 GB of memory and 20 GB of disk runs everything deterministic. The
 container build fetches upstream LLVM with a shallow clone and compiles it: measured with `--no-cache`,
 14m52s at the derived default of 25 jobs on our host and 24m38s at 8 jobs (mostly a fixed serial head:
 clone, patches, configure and the runtime stage do not scale with jobs). The performance experiments need at least 32 processors and a machine doing
@@ -62,6 +62,7 @@ failure and reporting a step whose prerequisite is absent as a skip rather than 
 
 ```
 ./evaluate.sh                # the full correctness set; ./evaluate.sh reproduced adds the performance subset
+                             # (--performance-only skips the correctness set on a checkout where it already passed)
 ```
 
 It covers: the basic test; the 23 shapes against 62 IR tests with their vacuity control; the shipped
@@ -75,7 +76,7 @@ most of it the regression suite in 12 configurations; longer on eight.
 Performance is separate and needs the hardware above. At the defaults (four configurations, two
 runs each, a point estimate per row) it is about two hours for Redis, memcached, FFmpeg and SQLite
 together; everything at fourteen configurations is about 14 hours; our own five-run setting, which
-produces the confidence intervals in `CLAIMS.md`, is a variable away and 2.5 times longer:
+produces the confidence intervals in `CLAIMS.md`, is a variable away and twice as long:
 
 ```
 ./docker/run.sh scripts/40-perf.sh <redis|memcached|sqlite|ffmpeg|mysql>
