@@ -1,0 +1,52 @@
+=== K=5 replay on aa8a6dd8a2e8 ===
+replayed 293 tests x 5 for stock
+replayed 293 tests x 5 for EA
+replayed 293 tests x 5 for LO
+replayed 293 tests x 5 for STC
+replayed 293 tests x 5 for SWMR
+replayed 293 tests x 5 for DE
+replayed 293 tests x 5 for DE+peel
+replayed 293 tests x 5 for sound-only
+replayed 293 tests x 5 for AllOpt-peel
+replayed 293 tests x 5 for AllOpt-peel+DynSTC
+replayed 293 tests x 5 for AllOpt+peel
+replayed 293 tests x 5 for AllOpt+peel+DynSTC
+=== diffreports vs stock ===
+stock: 293 tests replayed; 137 reported something, 156 reported nothing
+
+== EA ==  racy tests: L1=137 L2=0 other=0 | no-report tests: L1=155 L2=0 other(new report)=1
+   ('noreport', 'other:new'): fork_atexit.cpp
+
+== LO ==  racy tests: L1=137 L2=0 other=0 | no-report tests: L1=155 L2=0 other(new report)=1
+   ('noreport', 'other:new'): fork_atexit.cpp
+
+== STC ==  racy tests: L1=134 L2=0 other=3 | no-report tests: L1=155 L2=0 other(new report)=1
+   ('noreport', 'other:new'): fork_atexit.cpp
+   ('racy', 'other:lost'): pthread_atfork_deadlock2.c
+   ('racy', 'other:new'): fd_location_closed.cpp, race_on_barrier2.c
+
+== SWMR ==  racy tests: L1=137 L2=0 other=0 | no-report tests: L1=155 L2=0 other(new report)=1
+   ('noreport', 'other:new'): fork_atexit.cpp
+
+== DE ==  racy tests: L1=136 L2=0 other=1 | no-report tests: L1=156 L2=0 other(new report)=0
+   ('racy', 'other:new'): race_on_barrier2.c
+
+== DE+peel ==  racy tests: L1=137 L2=0 other=0 | no-report tests: L1=156 L2=0 other(new report)=0
+
+== sound-only ==  racy tests: L1=137 L2=0 other=0 | no-report tests: L1=155 L2=0 other(new report)=1
+   ('noreport', 'other:new'): fork_atexit.cpp
+
+== AllOpt-peel ==  racy tests: L1=137 L2=0 other=0 | no-report tests: L1=156 L2=0 other(new report)=0
+
+== AllOpt-peel+DynSTC ==  racy tests: L1=137 L2=0 other=0 | no-report tests: L1=155 L2=0 other(new report)=1
+   ('noreport', 'other:new'): fork_atexit.cpp
+
+== AllOpt+peel ==  racy tests: L1=136 L2=0 other=1 | no-report tests: L1=155 L2=0 other(new report)=1
+   ('noreport', 'other:new'): fork_atexit.cpp
+   ('racy', 'other:new'): fd_location_closed.cpp
+
+== AllOpt+peel+DynSTC ==  racy tests: L1=137 L2=0 other=0 | no-report tests: L1=155 L2=0 other(new report)=1
+   ('noreport', 'other:new'): fork_atexit.cpp
+REPLAY_DONE
+
+[exited with code 0]

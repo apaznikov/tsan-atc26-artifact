@@ -2,7 +2,7 @@
 
 Every parameter of the point-plot campaign (fixed thread count, all configurations), written down
 before the campaign runs so that any run can be repeated exactly. The pre-registration note with
-the selection rules is `tsan-experiments/tools/notes/paper-setup-campaign-2026-09-13.md` and
+the selection rules is `data/notes/paper-setup-campaign-2026-09-13.md` and
 `preregistration-2026-09-13.md`; this file is the values those rules produced, plus the sweep
 evidence behind each thread count.
 
@@ -106,7 +106,7 @@ headline configuration, never yet measured on a corrected compiler) and the two 
 summaries variants: fourteen for memcached, Redis and SQLite. FFmpeg runs twelve (the whole-program
 variants need a summary generator FFmpeg does not have; handing it a `-wp` row made the build exit
 without its completion marker on 5 Sep). MySQL runs four. Flag sets are in
-`tsan-experiments/config_definitions.sh`. The campaign is 58 builds, started 15 Sep 12:55 in the
+`harness/config_definitions.sh`. The campaign is 58 builds, started 15 Sep 12:55 in the
 order MySQL, Redis, FFmpeg, memcached, SQLite, serialised on the machine memory lock.
 
 ## Static counts of the campaign binaries (15 Sep, `static-counts.csv`)
@@ -301,7 +301,11 @@ fixed in the campaign's harness), and five of its 500 runs sit above today's for
 0.10 (0.103 to 0.166); the gate in force when they were taken was 0.25, so they were legal then and
 are not retired retroactively, only scoped out of anything a claim rests on.
 
-## Open, and blocking
+## Open and blocking on 13 September, as written then; each item was closed by the campaign
+
+Kept as written, because the plan was pre-registered. How each closed: the drift is a stated condition
+beside the Redis rows in `CLAIMS.md` (not resolved, disclosed); the headline configuration was measured
+(the `-stmt` rows); and the clean re-measurement is the campaign itself (`campaign-f3deebfbab60`).
 
 1. **Baseline drift.** Byte-identical Redis binaries give stock TSan 14% less throughput on
    14 Sep than on 8 Sep, native 5% less; eight of thirteen Redis rows change verdict between the two

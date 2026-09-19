@@ -31,5 +31,5 @@ The run CLAIMS row 22 cites. Exported so its numbers can be checked rather than 
 Every one of the 48 is getline_nohang.cpp and every one is kind=timeout, so none reaches
 the lost-race rule, which requires kind=fail. See docs/nondeterministic-tests.md.
 
-The executed count (298 = 383 - 85 unsupported) is NOT derivable from these logs: lit -q
+The executed count (292 = 383 - 91 unsupported) is NOT derivable from these logs: lit -q
 does not print an Unsupported line. It is established separately in ../unsupported/.

@@ -35,21 +35,26 @@ we measured:
 
 ## Concurrency
 
-The sweep in `data/perf/contention-d3bf9f8c39fe` shows the speedup flat from 2 to 112 threads on
-SQLite's walthread1 and flat from 50 to 512 clients on Redis, and rising on FFmpeg's AllOpt+peel
-from 1.007 at 2 threads to 1.055 at 16 (libx265's ceiling). The point plots use the paper's own
-thread counts; the curves are shipped so no point is hidden.
+The sweep in `data/perf/contention-d3bf9f8c39fe`, taken with the submitted compiler (`d3bf9f8c39fe`,
+not the shipped one), shows the speedup flat from 2 to 112 threads on SQLite's walthread1 and flat from
+50 to 512 clients on Redis, and rising on FFmpeg's AllOpt+peel from 1.007 at 2 threads to 1.055 at 16
+(libx265's ceiling). The FFmpeg arm re-measured on the shipped compiler
+(`data/perf/ffmpeg-threadsweep-f3deebfbab60`) is in `CLAIMS.md`'s FFmpeg section: AllOpt with peeling
+1.005 and 1.010 at 2 and 4 threads, 1.063 and 1.065 at 8 and 16, DynSTC about 1.11 at every count. The
+point plots use the paper's own thread counts; the curves are shipped so no point is hidden.
 
 ## Application-specific noise
 
-- **memcached**: wall time is bimodal (two modes about 20% apart, sticky for tens of minutes), so
-  its coefficient of variation is 10-12% at N = 5 and the speedup intervals of its twelve
-  instrumented configurations are 11.9 to 15.7 points wide, measured on the campaign. Rows
-  inside that interval are nulls, not zeros.
-- **MySQL**: intervals of the same order, about 14 points wide on the earlier campaign; the current figures replace this line when its leg completes. Same reading. Its EA-bearing configurations take about
-  2.2 hours each to build with this compiler.
-The provenance rule
-cannot be used that way, and it buys a statement a reviewer can check instead of an argument: no
+- **memcached**: on the earlier campaign its wall time was bimodal (two modes about 20% apart, sticky
+  for tens of minutes); on the shipped campaign the per-configuration variation is 1 to 3% at N = 5,
+  and the speedup intervals of its twelve instrumented configurations are still 11.9 to 15.7 points
+  wide (a ratio's bootstrap over five runs). Rows inside that interval are nulls, not zeros.
+- **MySQL**: intervals 7 to 8 points wide on the campaign (AllOpt with peeling 1.042 [0.985, 1.062], with
+  DynSTC 1.018 [0.967, 1.037]). Same reading. Its EA-bearing configurations took about 2.2 hours each to
+  build with the previous compiler and about half an hour with the shipped one.
+
+A rule that drops a cell for its value, an outlier filter, can always be accused of choosing its data. The
+provenance rule cannot be used that way, and it buys a statement a reviewer can check instead of an argument: no
 cell in the dataset overlapped a known foreign-work window.
 
 What the provenance rule is not: an outlier filter. The retired cell turned out to be an ordinary
@@ -181,5 +186,6 @@ exercise this contract, and its table is quoted nowhere.
 
 At N = 3 the percentile bootstrap interval is 6-14% *narrower* than at N = 5 while the point
 estimate moves by about 4 points depending on which three runs are kept. `ART_SMOKE=1` mode (N = 1)
-therefore prints its numbers with an explicit "not a measurement" marker, and no result from fewer
-than five runs should be compared with `CLAIMS.md`.
+therefore prints its numbers with an explicit "not a measurement" marker. A result from two to four runs
+is compared with `CLAIMS.md` as a point against the shipped interval, never as an interval of its own
+(the N = 2 criterion in `CLAIMS.md` section 5).

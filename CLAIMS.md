@@ -13,17 +13,43 @@ application's tests of per-test medians, with a 95% confidence interval from 200
 resamples over runs (seed 1). Our machine: Intel Xeon w9-3495X, 56 cores / 112 threads, 250 GB
 RAM, Ubuntu 24.04, kernel 6.8.
 
+## Terms used below
+
+- **Configuration**: one compiler setting per build. The tables name them as the harness does: `orig`
+  native, `tsan` stock ThreadSanitizer, `tsan-dom_peeling-ea-lo-st-swmr` AllOpt with peeling (the paper's
+  AllOpt), `tsan-stmt` DynSTC; the full legend is in `README.md`. Every configuration row is a ratio
+  against `tsan` on the same machine in the same session; above 1.0 is faster than stock.
+- **Cell, leg, root**: a cell is one application, one configuration, one run; a leg is one application's
+  sequence of cells in run-major order; a root is a directory of legs recorded under one compiler
+  (`data/perf/campaign-f3deebfbab60/primary`).
+- **Disturbed, retired, the gate**: every pinned cell records the busy share of the processors outside its
+  set. Above 0.10 the cell is disturbed, retired from the statistics and re-run; the retired cell ships
+  beside its replacement (`docs/confounds.md`).
+- **Headline column, resolvable column**: the headline is the geometric mean over all of an application's
+  subtests; the resolvable column is the same over the subtests whose run-to-run variation under stock
+  (the pooled coefficient of variation, with the threshold stated per application) is small enough to
+  resolve a change of a few per cent.
+- **Point estimate, interval, same side**: at N = 5 a row carries a 95% bootstrap interval; at N = 2 a
+  point only, compared against the shipped interval. For a row whose shipped interval excludes 1.0, "same
+  side" is whether the evaluator's value lies on the same side of 1.0 as ours.
+- **L1, L2, L3**: how closely two race reports must agree to count as the same race: kind and both stacks
+  with file and line (L1), the functions alone (L2), the location and its writer (L3).
+- **input_is_reference**: FFmpeg's input clip has the reference sha256; a regenerated clip is valid but its
+  rows are not compared.
+- **Session drift**: byte-identical binaries measured days apart on one host differed by 14%; the
+  stock-against-native ratio is reported and not judged for that reason.
+
 ---
 
 ## 1. Race detection is preserved (deterministic)
 
 | Claim | Script | Match criterion |
 |---|---|---|
-| No configuration loses a race that stock ThreadSanitizer reports, over ThreadSanitizer's own regression suite | `scripts/30-preservation-suite.sh` | exact: no candidate lost race. The vendored suite discovers 383 tests, of which 85 are unsupported on Linux before anything is compiled (47 Darwin, 37 libdispatch, 1 libcxx); the rest run in each of 12 configurations, K repeats each, and a test counts as a candidate lost race only when it fails every repeat under a configuration and never fails under stock. Shipped-compiler run of 17 Sep 2026 (`f3deebfbab60`, K = 5, 12 configurations, 60 repeats, 64 lit jobs on 64 processors disjoint from a concurrent benchmark build; the run ships as `data/suite/preservation-suite-20260917T075005Z`, stamped in UTC): the suite discovers 383 tests, `lit` marks 91 unsupported on this platform before anything is compiled (47 Darwin, 37 libdispatch, 1 libcxx and 6 more behind their own feature gates, each named in `data/suite/unsupported/`), so 292 execute: 291 pass, 1 is expectedly failed, and 0 fail, in every one of the 60 repeats, every configuration always-fail = 0 and ever-fail = 0, so no candidate lost race. `getline_nohang.cpp` timed out in 48 of the 60 repeats under all twelve configurations including stock (5 of 5 under stock, EA and SWMR, 4 of 5 under STC, 3 of 5 under LO), which the rule excludes as a timeout, not a failure; the same test stalled 3 times in 21 repeats on an idle machine, so the rate follows the machine, not the configuration. Every number here is re-derivable from the shipped run: its README gives the command for each |
+| No configuration loses a race that stock ThreadSanitizer reports, over ThreadSanitizer's own regression suite | `scripts/30-preservation-suite.sh` | exact: no candidate lost race. The vendored suite discovers 383 tests, of which 91 are unsupported on this platform before anything is compiled (47 Darwin, 37 libdispatch, 1 libcxx, and 6 behind their own feature gates); the remaining 292 run in each of 12 configurations, K repeats each, and a test counts as a candidate lost race only when it fails every repeat under a configuration and never fails under stock. Shipped-compiler run of 17 Sep 2026 (`f3deebfbab60`, K = 5, 12 configurations, 60 repeats, 64 lit jobs on 64 processors disjoint from a concurrent benchmark build; the run ships as `data/suite/preservation-suite-20260917T075005Z`, stamped in UTC): the suite discovers 383 tests, `lit` marks 91 unsupported on this platform before anything is compiled (47 Darwin, 37 libdispatch, 1 libcxx and 6 more behind their own feature gates, each named in `data/suite/unsupported/`), so 292 execute; 0 fail in every one of the 60 repeats (in the 48 repeats where `getline_nohang.cpp` times out, 290 pass and 1 is expectedly failed; in the other 12, 291 and 1; the 291/1 split is established by the run in `data/suite/unsupported/`, since `lit -q` prints no pass count), every configuration always-fail = 0 and ever-fail = 0, so no candidate lost race. `getline_nohang.cpp` timed out in 48 of the 60 repeats under all twelve configurations including stock (5 of 5 under stock, EA and SWMR, 4 of 5 under STC, 3 of 5 under LO), which the rule excludes as a timeout, not a failure; the same test stalled 3 times in 21 repeats on an idle machine, so the rate follows the machine, not the configuration. Every number here is re-derivable from the shipped run: its README gives the command for each |
 | The harness can detect a loss at all | `scripts/30-preservation-suite.sh --self-test` | required first: it runs a detector with load and store instrumentation switched off and requires the harness to report the losses. A suite reporting nothing looks the same whether races are preserved or the harness is blind |
-| Every race test's report is identical to stock ThreadSanitizer's: same kind, both stacks with file and line | `scripts/30-preservation-suite.sh` (the report-level diff is part of the matrix run; there is no separate flag) | exact, except the three tests listed in `docs/nondeterministic-tests.md`, which are non-deterministic under stock as well (verified at K = 20) |
+| Every race test reports the same race as under stock ThreadSanitizer (report keys at L1, kind and both stacks with file and line, and at L2, functions) | recorded, not re-run by the evaluator: a K = 5 replay of the executable tests (293 in that run) under the 12 configurations, keyed by `harness/tools/preservation/tsan_reports.py`, made on compiler `aa8a6dd8a2e8` during the gate of 15 Sep 2026 and carried to the shipped `f3deebfbab60` on the verdict-identity evidence (the three commits between them change none of the 112 corpus rows, none of the 17 application configurations' site counts, and leave Redis's whole-program summaries byte-identical); the replay's output ships as `data/suite/replay-aa8a6dd8a2e8/` | on that run no L1 or L2 key differs on any test. Four tests land in the other bucket: `pthread_atfork_deadlock2.c` lost a report under STC alone (the only lost entry; a thread-leak diagnostic, not a data race), and `fd_location_closed.cpp` (under STC and AllOpt with peeling), `race_on_barrier2.c` (STC and DE) and `fork_atexit.cpp` (9 of the 11 compared configurations) gained one; the last three are the tests `docs/nondeterministic-tests.md` names as non-deterministic under stock itself. The 293 is that run's test set, the source tree's suite in its September state, not the vendored suite's 292. `scripts/30-preservation-suite.sh` compares pass and fail per test, not report text: `lit -q` does not capture the reports, so the shipped logs carry none |
 | No test that expects no report produces one | `scripts/30-preservation-suite.sh` | exact |
-| On the applications, no race site that stock ThreadSanitizer reports in every run is absent from an optimized configuration in every run | `scripts/31-preservation-apps.sh <app>` | comparative, on your own runs, never against a fixed set: detection is schedule-dependent, so the script prints the per-site frequency (k of N) under stock and under each configuration and classifies each site by the configuration's count first: KEPT if the configuration reports it in at least one run, whatever stock's frequency; LOST if the configuration never reports it and stock reports it in every run; UNDETERMINED at this N if the configuration never reports it and stock reports it only in some runs, so an unlucky schedule cannot be told from a loss without more runs; and ONLY-OPTIMIZED if the configuration reports a site stock never does, which is labelled rather than dropped because the shadow-eviction effect can produce exactly that. It exits non-zero only on LOST. Measured on the shipped compiler `f3deebfbab60` on 17 Sep, N = 10, configurations stock, the sound bundle and AllOpt with peeling, gating at L3 (`data/preservation/*/2026-09-17-shipped-f3deebfbab60/verdict-L3.txt`, all three levels printed). **SQLite: no site lost at any level**; at L3 three sites (`walRestartHdr` 68034 and 68035, `walIndexRecover` 67450), KEPT under every configuration, the weakest at 2 / 2 / 3 of 10. **memcached: no site lost at L3**; four sites at 10 of 10 under all three configurations (`clock_handler` on `current_time`, `do_item_link` and `do_item_unlink` on `stats_state` and `memory_allocated`), seven sites stock itself saw once in ten and no configuration saw, UNDETERMINED, and one site reported only by the optimized builds (`lru_maintainer_juggle` reading `current_time`, 0 / 2 / 2 of 10). **One relocation, reported rather than suppressed**: at L1 and L2 the pairing of the reader `conn_new@memcached.c:761` with the writer `clock_handler` on `current_time` is 10 of 10 under stock and under the sound bundle and 0 of 10 under AllOpt with peeling, while the same race on the same location is reported 10 of 10 under AllOpt with peeling by `do_item_link`, `lru_maintainer_thread` and `try_read_command_ascii`. The read at line 761 is instrumented under AllOpt with peeling exactly as under stock, checked three ways, twice on the campaign binaries and once at the IR level from source with the campaign's own flags (the call multiset in `conn_new` identical, the `__tsan_read4` of `current_time` at line 761 present, and that line the only reference to `current_time` in the function): `conn_new` carries 20 reads, 35 writes, 60 `__tsan_*` calls and 403 instructions in all three builds, with two calls attributed to line 761 in each, and `clock_handler` 15 calls in each. Nothing was elided; which reader's record survives the four shadow slots on that granule is eviction arithmetic, and AllOpt with peeling carries 382 more instrumented sites than stock (peeling duplicates first iterations), which is enough to change it; and no single transform does it alone: under the sound bundle, under DE alone and under DE with peeling the pairing stays at 10 of 10, and only the full combination relocates it. The paper's stated criterion is the location and writer (L3), and the relocation is visible to any evaluator at N = 10, so it is stated here. The earlier trees under `data/preservation/` are from earlier compilers of the same lineage and are shipped as data |
+| On the applications, no race site that stock ThreadSanitizer reports in every run is absent from an optimized configuration in every run | `scripts/31-preservation-apps.sh <app> 10` (N = 10 as we ran it; at the default N = 2 the script prints the frequencies and no verdict) | comparative, on your own runs, never against a fixed set: detection is schedule-dependent, so the script prints the per-site frequency (k of N) under stock and under each configuration and classifies each site by the configuration's count first: KEPT if the configuration reports it in at least one run, whatever stock's frequency; LOST if the configuration never reports it and stock reports it in every run; UNDETERMINED at this N if the configuration never reports it and stock reports it only in some runs, so an unlucky schedule cannot be told from a loss without more runs; and ONLY-OPTIMIZED if the configuration reports a site stock never does, which is labelled rather than dropped because the shadow-eviction effect can produce exactly that. It exits non-zero only on LOST. Measured on the shipped compiler `f3deebfbab60` on 17 Sep, N = 10, configurations stock, the sound bundle and AllOpt with peeling, gating at L3 (`data/preservation/*/2026-09-17-shipped-f3deebfbab60/verdict-L3.txt`, all three levels printed). **SQLite: no site lost at any level**; at L3 three sites (`walRestartHdr` 68034 and 68035, `walIndexRecover` 67450), KEPT under every configuration, the weakest at 2 / 2 / 3 of 10. **memcached: no site lost at L3**; four sites at 10 of 10 under all three configurations (`clock_handler` on `current_time`, `do_item_link` and `do_item_unlink` on `stats_state` and `memory_allocated`), seven sites that stock and the sound bundle each saw once in ten and AllOpt with peeling never saw, UNDETERMINED, and one site reported only by the optimized builds (`lru_maintainer_juggle` reading `current_time`, 0 / 2 / 2 of 10). **One relocation, reported rather than suppressed**: at L1 and L2 the pairing of the reader `conn_new@memcached.c:761` with the writer `clock_handler` on `current_time` is 10 of 10 under stock and under the sound bundle and 0 of 10 under AllOpt with peeling, while the same race on the same location is reported 10 of 10 under AllOpt with peeling by `do_item_link`, `lru_maintainer_thread` and `try_read_command_ascii`. The read at line 761 is instrumented under AllOpt with peeling exactly as under stock, checked three ways, twice on the campaign binaries and once at the IR level from source with the campaign's own flags (the call multiset in `conn_new` identical, the `__tsan_read4` of `current_time` at line 761 present, and that line the only reference to `current_time` in the function): `conn_new` carries 20 reads, 35 writes, 60 `__tsan_*` calls and 403 instructions in all three builds, with two calls attributed to line 761 in each, and `clock_handler` 15 calls in each. Nothing was elided; which reader's record survives the four shadow slots on that granule is eviction arithmetic, and AllOpt with peeling carries 382 more instrumented sites than stock (peeling duplicates first iterations), which is enough to change it; and no single transform does it alone: under the sound bundle, under DE alone and under DE with peeling the pairing stays at 10 of 10, and only the full combination relocates it. The paper's stated criterion is the location and writer (L3), and the relocation is visible to any evaluator at N = 10, so it is stated here. The earlier trees under `data/preservation/` are from earlier compilers of the same lineage and are shipped as data |
 
 The 12 configurations: stock, each analysis alone (STC, SWMR, LO, EA, DE), DE with peeling, the
 four sound analyses combined, AllOpt with and without peeling, and each of the last two with
@@ -40,7 +66,7 @@ DynSTC.
 
 | Claim | Script | Match criterion |
 |---|---|---|
-| Static instrumentation sites per application and configuration | `scripts/20-static-counts.sh` | exact for the differences between configurations (what each analysis removes or adds), which are a property of the compiler; the absolute count of a binary may carry a small constant offset from the build environment: Redis built inside the container has 37 922 sites under stock and 43 272 under AllOpt with peeling against 37 941 and 43 291 for the campaign's host-built binaries, 19 fewer in each, the removed and added counts identical. Named, not guessed: Redis's Makefile auto-detects libsystemd and links it when present; the host had it, the image does not, so the container build compiles out `redisCommunicateSystemd` and the branches in its four callers. It is deterministic and every evaluator's image will show the same 19. Compare your differences with ours exactly and your absolute counts to within such an offset |
+| Static instrumentation sites per application and configuration | `scripts/20-static-counts.sh` | exact for the differences between configurations (what each analysis removes or adds), which are a property of the compiler; the absolute count of a binary may carry a small constant offset from the build environment: Redis built inside the container has 37 922 sites under stock and 43 272 under AllOpt with peeling against 37 941 and 43 291 for the campaign's host-built binaries, 19 fewer in each, the removed and added counts identical. (The campaign's Redis binaries record a sha256 that matches no row of `static-counts.csv`: Redis stamps each build, and Redis was rebuilt on 15 Sep after the count was taken, `docs/campaign-parameters.md`; so for Redis the counts are linked to the measured binaries by sources and flags, not by hash. The other four applications' binaries hash-match their rows.) Named, not guessed: Redis's Makefile auto-detects libsystemd and links it when present; the host had it, the image does not, so the container build compiles out `redisCommunicateSystemd` and the branches in its four callers. It is deterministic and every evaluator's image will show the same 19. Compare your differences with ours exactly and your absolute counts to within such an offset |
 | The compiler built from the shipped patch series behaves like the frozen compiler the performance numbers were measured on | `scripts/12-compiler-equivalence.sh` | exact: it recompiles 28 vendored LLVM IR modules under 4 configurations and requires all 112 `__tsan_*` symbol histograms to equal a reference table produced by the campaign compiler, checking the `TSAN_AUDIT_HASH` stamp separately. It says "behaves like", not "is": an identical corpus does not identify the commit, since the three compile-time commits change none of the 112 rows. A control asserts the reference table separates the configurations at all (24 of 28 modules do), so agreement is not free |
 | The three compile-time commits added to that compiler changed no instrumentation decision on any application | recorded in `data/equivalence/` and `docs/campaign-parameters.md`; not re-run by the evaluator | the same 112 corpus rows against the previous compiler, plus the 17 application configurations built on both compilers (MySQL 640 355 sites and 1 263 905 calls; all 14 Redis rows) and Redis's whole-program analysis summaries byte-identical between them |
 | Executed instrumentation per unit of work | not measured on this compiler; the recorded counter runs are shipped under `data/perf/*-counters` and are from an earlier one | exact from the shipped data; within run-to-run noise when re-measured |
@@ -49,7 +75,7 @@ DynSTC.
 
 | Claim | Script | Match criterion |
 |---|---|---|
-| Every run of the campaign (`data/perf/campaign-f3deebfbab60/{primary,r2}`, shipped since 18 Sep 2026: 290 and 110 measured runs beside their warm-ups, the roots every performance claim rests on) records the compiler that built it, the hash of the binary it ran, the hash of its input, its processor set and mode, the foreign-activity share the gate saw and the size of the set it watched (56 of the 64 processors outside the pinned set: eight are reserved for other users of this machine and were excluded, which the shipped default no longer does), and its place in a full set of N; `scripts/91-verify-provenance.sh` opens every one of them and exits 0 only when all are attributable, an empty root is a failure ("nothing was verified, which is not a pass": a first version passed vacuously on a root whose runs lay one level down), and a root that holds no runs directly is expanded to its sub-roots. The earlier trees shipped beside them were recorded before the harness wrote every one of those fields and on earlier compilers; they support no claim and the script reports them for information only | `scripts/91-verify-provenance.sh` | exact: six assertions, each of which fails on a fault we have actually produced (a pre-audit binary measured as current; a configuration whose binary changed mid-leg; an input path that satisfied the runner and recorded an empty hash; pinned and unpinned runs pooled; a run above the gate that was kept; a thin row that looked complete) |
+| Every run of the campaign (`data/perf/campaign-f3deebfbab60/{primary,r2}`, shipped since 18 Sep 2026: 290 and 110 measured runs beside their warm-ups, the roots every performance claim rests on) records the compiler that built it, the hash of the binary it ran, the hash of its input where the workload reads one (FFmpeg), its processor set and mode, the foreign-activity share the gate saw and the size of the set it watched (56 of the 64 processors outside the pinned set: eight are reserved for other users of this machine and were excluded, which the shipped default no longer does), and its place in a full set of N; `scripts/91-verify-provenance.sh` opens every one of them and exits 0 only when all are attributable, an empty root is a failure ("nothing was verified, which is not a pass": a first version passed vacuously on a root whose runs lay one level down), and a root that holds no runs directly is expanded to its sub-roots. The earlier trees shipped beside them were recorded before the harness wrote every one of those fields and on earlier compilers; they support no claim and the script reports them for information only | `scripts/91-verify-provenance.sh` | exact: six assertions, each of which fails on a fault we have actually produced (a pre-audit binary measured as current; a configuration whose binary changed mid-leg; an input path that satisfied the runner and recorded an empty hash; pinned and unpinned runs pooled; a run above the gate that was kept; a thin row that looked complete) |
 
 This is the property the paper's setup section rests on. It does not check that a configuration's
 flags were the intended ones, which is the build guard's job at build time, and it says nothing
@@ -64,9 +90,14 @@ and be unattributable.
 
 ## 5. Performance (machine-dependent)
 
+The "Paper" column of each table is the submitted manuscript's figure, kept so that the change is visible;
+the camera-ready reports the numbers in this file.
+
 All five applications, from the campaign of 15-17 September on compiler `f3deebfbab60`: 400 measured
 runs (290 and 110) beside their warm-ups, provenance verified on every root. Three cells were retired
-by the disturbance gate and re-run to completion; both the retired cell and its replacement ship, so
+and re-run to completion, two by the disturbance gate and one (`primary/sqlite/tsan-lo/run2.foreign-window-030844`,
+gate reading 0.0072) by the provenance rule, because it overlapped a foreign-work window recorded in the lab
+log at 03:08:44 on 16 Sep (that log is not shipped); both the retired cell and its replacement ship, so
 the sets the statistics are computed over are clean and the retirements stay visible
 (`primary/sqlite/tsan-lo/run2.foreign-window-030844`, `r2/redis/tsan-stmt/run1.disturbed.025858`,
 `r2/redis/tsan-dom/run1.disturbed.030107`). **Of the 48 rows at the
@@ -124,7 +155,7 @@ Redis, AllOpt with against without peeling on the stable subtests: 1.0105 [0.990
 Script: `scripts/40-perf.sh redis` (about 2 hours at N = 5 on 48 CPUs; `ART_SMOKE=1` in minutes, not a
 measurement).
 
-### memcached 1.6.29 (`memtier_benchmark` 2.1.1, 10 threads x 5 clients, pipeline 16, 100 000 requests each, server at 48 threads; session of 15 Sep, pinned)
+### memcached 1.6.29 (`memtier_benchmark` 2.1.1, 10 threads x 50 clients, pipeline 16, 100 000 requests per client, averaged over 5 iterations, server at 48 threads; session of 15 Sep, pinned)
 
 Stock ThreadSanitizer against native: 3.20x [2.97, 3.40] (the paper: 2.5x). **No configuration is
 resolved on memcached**: across the twelve instrumented configurations every speedup interval is between 11.9 and 15.7 points wide and contains 1.0 (the thirteenth row of that column, `orig`, is native against stock, a baseline ratio rather than a speedup, and is 42.8 points wide). The cause is the
@@ -155,7 +186,7 @@ The peeling pair on memcached, AllOpt with against without peeling: 1.0332 [0.95
 
 Second concurrency row, the server at 112 threads (the paper's `nproc` value; N = 5): AllOpt with
 peeling 1.006 [0.890, 1.161], with DynSTC 1.089 [0.875, 1.129]; both cross 1.0 with intervals of 25
-to 27 points, wider still than at 48 threads. Stock against native at 112 threads: 5.11x [4.49, 5.22].
+to 27 points, wider still than at 48 threads. Stock against native at 112 threads: 5.11x [4.48, 5.22].
 
 Script: `scripts/40-perf.sh memcached` (about 34 minutes at the default N = 2 and four configurations;
 4 hours at N = 5 and fourteen).
@@ -164,7 +195,7 @@ Script: `scripts/40-perf.sh memcached` (about 34 minutes at the default N = 2 an
 
 Stock ThreadSanitizer against native: 2.96x [2.79, 3.28] (the paper: 2.4x). This is the campaign's
 widest slowdown column, because SQLite's uninstrumented build varies by 37.9% run to run; that is the
-workload, not the measurement. Resolvable subtests: 5 of 7 (`stress1` and `stress2` excluded).
+workload, not the measurement. Resolvable subtests: 5 of 7 (`dynamic_triggers` and `stress1` excluded).
 
 **Nothing is claimed for SQLite: every headline interval contains 1.0**, over all seven subtests and
 on both run ranges. The paper's SQLite bars, which include its largest single claim (AllOpt 1.71),
@@ -190,8 +221,8 @@ is not claimed: DynSTC excludes it on the resolvable subtests (0.980, a 2% cost)
 column contains it. A row is claimed only on the headline column, so it is reported as no measurable
 change, with the disagreement shown rather than resolved by choosing the column that separates.
 
-What the resolvable-subtest column does say, once `stress1` and `stress2` are set aside: on SQLite
-every configuration sits within about 2% of stock, with intervals two to four times narrower than
+What the resolvable-subtest column does say, once `dynamic_triggers` and `stress1` are set aside: on SQLite
+every configuration sits within about 2% of stock, with intervals three to five times narrower than
 the headline ones. SQLite is not a workload on which these analyses do nothing measurable in
 principle; it is one on which they do nothing worth more than 2%.
 
@@ -213,17 +244,17 @@ takes about 2.2 hours to build on the previous compiler; `docs/mysql.md`.
 | AllOpt with peeling | 1.16 and 1.11 on the two scripts the paper plots (`select-random-points`, `write-only`); the campaign's figure is a geometric mean over five scripts | 1.042 [0.985, 1.062] | 1.025 | 1.027 [0.991, 1.052] | no measurable change |
 | AllOpt with peeling and DynSTC | not in the paper | 1.018 [0.967, 1.037] | 1.009 | 1.000 [0.964, 1.023] | no measurable change |
 
-AllOpt with peeling at 1.042 is the nearest any row in this campaign comes to separating from stock
-in its favour, and it does not. Both runs-2-5 points lie inside their all-five intervals.
+AllOpt with peeling at 1.042 is the largest MySQL point in the campaign, and it does not separate from
+stock (lower bound 0.985; FFmpeg's DE row, lower bound 0.996, comes nearest in the whole campaign). Both runs-2-5 points lie inside their all-five intervals.
 
 Second concurrency row, 84 threads (the paper's `nproc*3/4` value; N = 5): AllOpt with peeling 1.011
 [0.978, 1.049], with DynSTC 0.992 [0.966, 1.023]; both cross 1.0. Stock against native at 84 threads:
 8.77x [8.56, 9.37].
 
 Script: `scripts/40-perf.sh mysql` (four configurations only; about 3.4 hours at the default N = 2,
-6.7 at N = 5, on 48 CPUs; builds about half an hour each with the shipped compiler).
+6.7 at N = 5, on 48 CPUs; builds in about 8 minutes each with the shipped compiler, 459 s measured at 56 jobs, against 2.2 hours on the previous one).
 
-### FFmpeg 4.3.9 (libx264, libx265, mjpeg, stream copy at `-threads 4`; the Tears of Steel clip; session of 17 Sep, pinned)
+### FFmpeg 4.3.9 (libx264, libx265, mjpeg, stream copy at `-threads 4`; the Tears of Steel clip; session of 16 Sep 22:02, pinned)
 
 Stock ThreadSanitizer against native: 2.76x [2.70, 2.80] (the paper: 2.9x, on a different clip).
 Every shipped FFmpeg run carries all four codecs, checked over the recorded runs with
@@ -292,8 +323,8 @@ are far from 1.0 and both survive the second concurrency point on Redis. The pee
 the tightest of the four at a resolution floor of 2.5%: 0.9941 [0.9753, 1.0125], crossing 1.0 like
 the other three.
 
-Script: `scripts/40-perf.sh ffmpeg` (about 24 minutes at the default N = 2 and four configurations;
-2.4 hours at N = 5 and twelve). The input is produced before the build by one of three paths, in this
+Script: `scripts/40-perf.sh ffmpeg` (about 22 minutes at the default N = 2 and four configurations;
+2.2 hours at N = 5 and twelve). The input is produced before the build by one of three paths, in this
 order: a prepared copy of the reference clip from `ART_FFMPEG_CLIP_URL` (a URL or a local path), checked against
 the sha256 in `docs/ffmpeg-input.md` whichever way it arrived; a local copy of the Blender source in `ART_FFMPEG_SOURCE`, cut with the recorded
 command; or, with neither set, the 557 MB Blender source downloaded, verified and cut. The second and
@@ -308,9 +339,8 @@ so. The reference clip becomes downloadable with the artifact's Zenodo record at
 own rehearsal of 17 Sep ran on a regenerated clip and reports the FFmpeg row as not comparable for that
 reason. FFmpeg additionally carries a control leg on the
 retired clip, so that the difference from the paper's FFmpeg column can be attributed to the
-compiler or to the input; see `docs/ffmpeg-input.md`. Until then the artifact claims no performance
-number for them; the recorded Stage B runs under `data/perf/stageB-d3bf9f8c39fe` are from an
-earlier compiler and are shipped as data, not as claims.
+compiler or to the input; see `docs/ffmpeg-input.md`. The recorded Stage B runs under `data/perf/stageB-d3bf9f8c39fe` are from
+an earlier compiler and are shipped as data, not as claims.
 
 Workload thread counts follow the campaign's rule, set by the harness and recorded per cell: the memcached
 server runs one thread per processor of the pinned set, sysbench three quarters of that, FFmpeg an
@@ -328,17 +358,18 @@ estimates below are for a quiet machine.
 
 ### What an evaluator actually has to run
 
-Reproducing all five applications at fourteen configurations with five runs each is 43 hours; that is
-our campaign and not what anyone should be asked for. The claims are per row, so a subset reproduces
+Reproducing all five applications at fourteen configurations with five runs each took our campaign
+32 hours of measurement (the legs ran from 15 Sep 18:49 to 17 Sep 03:03) after about 7 hours of builds;
+that is not what anyone should be asked for. The claims are per row, so a subset reproduces
 a subset, and the cost is linear in configurations and in runs. Measured from the campaign's per-cell
-costs (Redis 86 s, memcached 169 s, FFmpeg 119 s, SQLite 291 s, MySQL 1012 s), with one warm-up plus
+costs (Redis 86 s, memcached 169 s, FFmpeg 110 s, SQLite 291 s, MySQL 1012 s), with one warm-up plus
 N runs per configuration:
 
 | Mode | Runs | Configurations | Time on 48 processors | What a row yields |
 |---|---|---|---|---|
 | **default** | N = 2 | four: native, stock, AllOpt with peeling, DynSTC | measured on this host and on a 64-processor AMD host: Redis 13-15 min, memcached 28-36, FFmpeg 20-25, SQLite 65-68: **about 2 h 15 min** together; MySQL a further 3.4 h (estimated) | a point estimate, no interval |
 | everything at the default | N = 2 | all fourteen (MySQL four) | Redis 1.0 h, memcached 2.0, FFmpeg 1.2, SQLite 3.4, MySQL 3.4: **about 11 h**, 14 h with the builds | a point estimate, no interval |
-| our campaign | N = 5 | any of the above | 2.5 times the figures above; everything, 43 h | a 95% interval |
+| our campaign | N = 5 | any of the above | twice the figures above (one warm-up plus five runs against one plus two); everything, 32 h of legs plus builds | a 95% interval |
 
 ```
 ./docker/run.sh scripts/40-perf.sh redis                 # default: four configurations, N = 2
@@ -347,7 +378,8 @@ ART_RUNS=5 ./docker/run.sh scripts/40-perf.sh redis      # our setting: interval
 ```
 
 **What the default mode measured when we ran it as an evaluator would** (17-18 Sep 2026, the pushed
-checkout in the container, 48 pinned processors, N = 2, four configurations, nothing else on the machine):
+checkout in the container, 48 pinned processors, N = 2, four configurations, nothing else on the machine;
+those runs are not shipped, the figures are what the scripts printed):
 the functional check 52 s; Redis 15 min; memcached 28 min at the rule's 48 server threads; FFmpeg 25 min
 on the reference clip with all four codecs; SQLite 68 min. Seven of the eight configuration rows landed
 inside our interval, both rows whose interval excludes 1.0 on the same side, and one row landed outside:
@@ -388,7 +420,7 @@ inside, and its silence is never a pass.
 
 On other hardware the criterion does not apply, and a full run there says what travels. An AMD EPYC
 9115 host (64 threads, 48 pinned, N = 2, no cell disturbed, the whole `evaluate.sh reproduced` tier
-from this commit, 19 Sep 2026) judged six rows and put four inside:
+from this commit, 19 Sep 2026; its runs are not shipped) judged six rows and put four inside:
 
 | Application | Row | That host (N = 2) | Shipped interval (N = 5) | Verdict |
 |---|---|---|---|---|
@@ -433,17 +465,34 @@ evaluator's value a few per cent outside its interval is that condition, not a m
 rehearsal of 17 Sep, N = 2 in the container on 48 pinned processors, gave Redis stock-against-native
 8.26 against 8.01 [7.83, 8.21], outside by 0.6% of the upper limit, while both configuration rows fell
 inside their intervals (AllOpt with peeling 1.004 in [0.983, 1.026]; DynSTC 0.968 in [0.927, 0.970],
-below 1.0 like ours). `docs/confounds.md` lists what makes this vary: memcached's wall time is
-bimodal with a 10 to 12 per cent coefficient of variation, SQLite's seven subtests are
-heterogeneous and three of them carry 16 to 20 per cent run-to-run variation, and absolute
+below 1.0 like ours). `docs/confounds.md` lists what makes this vary: memcached's throughput
+varies 1 to 3 per cent per configuration at N = 5 while its speedup intervals are 12 to 16 points wide
+(a ratio's bootstrap over five runs), SQLite's seven subtests are
+heterogeneous and two of them carry about 15 per cent run-to-run variation, and absolute
 overheads are not comparable across compiler trees even when ratios are.
 
+**What to conclude from a row outside its interval.** The comparator prints the distance. At N = 2 an
+outside row is first of all a two-run point against a five-run interval: re-run that application with
+`ART_RUNS=5 ./docker/run.sh scripts/40-perf.sh <app>` (about 2.5 times the default's time) and apply the
+N = 5 criterion, which is what we did for SQLite above. If it still falls outside: for a row whose shipped
+interval excludes 1.0 (the directional claims, DynSTC's cost on Redis and its gain on FFmpeg), the claim is
+reproduced when the evaluator's interval lies on the same side of 1.0 and not reproduced otherwise; for a
+row whose shipped interval contains 1.0 (claimed as no measurable change), an evaluator's interval that
+also contains 1.0 reproduces the claim whatever its width, and one that excludes 1.0 is a measurable
+effect we did not see, to be reported as such. On hardware unlike ours (another vendor, or fewer than 48
+pinned processors) the AMD table above is what such a run says: the signs travel, the magnitudes need not,
+and the criterion is not applied.
+
 ## 6. Bounded shadow state
+
+The shipped data here come from compilers `f80e80b1dbe6` (the two-race experiment) and
+`e90a3fc41004` and `89e5d0078d2f` (the occupied-granule experiment), as `data/README.md` records; the
+script re-runs the occupied-granule experiment on the shipped compiler.
 
 | Claim | Script | Match criterion |
 |---|---|---|
 | ThreadSanitizer itself fails to report a planted race in about a quarter of runs on a fully occupied granule; the optimized builds sit in the same range where the burst remains instrumented | `scripts/50-eviction-stress.sh` | within the confidence intervals: stock about 75%, optimized 74 to 76% |
-| Dominance elimination trades losses against gains rather than only losing. The program plants two races on one granule, A-B and C-B, and a third thread's burst evicts A's record in 236 of 1000 runs (the same 236 under every build, since the burst is the same). **In those 236 runs DE reports A-B in 0 and stock in 54**: stock's second, dominated store of A re-inserts the record, DE has removed that store. In the other 764 runs both report A-B in exactly 174, so DE's loss on A-B is confined to the evicted runs. Conversely that re-inserting store of stock's evicts C's record in 71 runs, all among the 236, and stock reports C-B in none of those 71 (165 of 236), while DE, which never executes it, reports C-B in 236 of 236. Overall 0.93 reports per run against stock's 0.91 | `scripts/50-eviction-stress.sh` (experiment b in its report) | the conditional counts, within their intervals: A-B given the eviction near 0 under DE and near a fifth under stock; C-B given the eviction all of them under DE and about two thirds under stock; outside the eviction the two builds equal |
+| Dominance elimination trades losses against gains rather than only losing. The program plants two races on one granule, A-B and C-B, and a third thread's burst evicts A's record in 236 of 1000 runs (the same 236 under every build, since the burst is the same). **In those 236 runs DE reports A-B in 0 and stock in 54**: stock's second, dominated store of A re-inserts the record, DE has removed that store. In the other 764 runs both report A-B in exactly 174, so DE's loss on A-B is confined to the evicted runs. Conversely that re-inserting store of stock's evicts C's record in 71 runs, all among the 236, and stock reports C-B in none of those 71 (165 of 236), while DE, which never executes it, reports C-B in 236 of 236. Overall 0.93 reports per run against stock's 0.91 | recorded in `data/eviction-stress/de2-2026-09-03-f80e80b1dbe6/report.md`, not re-run: `scripts/50-eviction-stress.sh` runs experiment (a) only | the conditional counts, within their intervals: A-B given the eviction near 0 under DE and near a fifth under stock; C-B given the eviction all of them under DE and about two thirds under stock; outside the eviction the two builds equal |
 
 ## 7. Not claimed here
 

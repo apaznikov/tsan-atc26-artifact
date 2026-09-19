@@ -32,7 +32,7 @@ header was used when one was installed. We checked the two structures the SQLite
 `sqlite3_vfs` and `sqlite3_io_methods`, and they are byte-for-byte identical between 3.45.1 and 3.50.2, so
 this is a provenance discrepancy and not a correctness one. The build script now puts the amalgamation's
 own header first (`-I build/`), so the container and the lab both compile against the version the archive
-pins, and a host with no `libsqlite3-dev` builds correctly. The measurement harness (`harness/`, 122 files plus their sha256 manifest)
+pins, and a host with no `libsqlite3-dev` builds correctly. The measurement harness (`harness/`, 123 files plus their sha256 manifest)
 contains no third-party source; it is scripts and documentation of ours. Its vendoring script refuses
 any shipped file that carries a bare lab path outside an overridable default, and excludes by name
 the lab-only drivers that check found, among them one that deleted a lab directory.

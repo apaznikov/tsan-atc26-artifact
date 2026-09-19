@@ -29,7 +29,7 @@ that the `docker` command existed, and a run on a second server passed the check
 
 Two warnings from Docker itself are not failures: "DEPRECATED: The legacy builder is deprecated" means the
 BuildKit plugin (`docker-buildx`) is not installed, and the image builds with the legacy builder all the
-same; "seccomp" and "no_new_privileges" notices come from the flags `docker/run.sh` passes on purpose.
+same; a "seccomp" notice comes from the `--security-opt seccomp=unconfined` that `docker/run.sh` passes on purpose.
 
 ## "Segmentation fault" for every instrumented program inside Docker
 
@@ -113,14 +113,28 @@ reporting cost does not enter the timing.
 `race_on_barrier2.c` reports its race from either thread (18/20 one way, 2/20 the other, under
 stock and every configuration); `fd_location_closed.cpp` varies its location descriptor line;
 `fork_atexit.cpp` reports in roughly one run in five under stock and every configuration alike. The
-suite script's report diff excludes these three by name and says so in its output.
+recorded report-level comparison (`CLAIMS.md`, section 1) names these three; the suite script compares
+pass and fail per test.
 
 ## "The container has fewer cores than a script assumes"
 
-Every script prints its expected time for 8 and 32 cores and refuses to run the performance leg on
-fewer than 8 unless `ART_SMOKE=1`. Smoke-mode output carries a "not a measurement" marker.
+The measurement scripts print their expected time before starting. The regression suite refuses fewer
+than 8 processors (`ART_ALLOW_FEW_CPUS=1` overrides it; `docs/nondeterministic-tests.md` says why that is
+unwise); the performance scripts run on any count and record it, and `evaluate.sh` says when the count is
+too small for the comparison. Smoke-mode output carries a "not a measurement" marker.
 
 ## A filtered, timed-out pipeline printing nothing
 
 `timeout 5 ./prog | grep something` can print nothing because `grep` is killed before it flushes,
 not because nothing matched. Redirect to a file and inspect it. This cost us an hour once.
+
+## "stdin is not a terminal, so the confirmation cannot be asked"
+
+`evaluate.sh` asks before a multi-hour tier. Under `nohup`, `setsid`, a CI job or `< /dev/null` there is
+nobody to ask, so it stops with this line and exit status 2 rather than silently not starting. Add `--yes`.
+
+## The log's stamp and the results directories' stamps differ by hours
+
+Both are UTC since 19 Sep 2026 (`results/evaluate-<tier>-<stamp>.log` and the `perf-<app>-<stamp>`
+directories the container writes); the "started HH:MM:SS" lines on the console are local time. A log
+from an earlier checkout carries a local-time stamp.

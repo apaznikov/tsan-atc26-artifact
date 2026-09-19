@@ -4,7 +4,8 @@ MySQL 8.0.39 is part of the campaign at four configurations (native, stock Threa
 AllOpt with peeling, AllOpt with peeling and DynSTC) rather than the fourteen used for the other
 applications. Reasons and costs:
 
-- Building MySQL with the escape analysis takes about 2.2 hours per configuration on 56 cores
+- Building MySQL with the escape analysis took about 2.2 hours per configuration on 56 cores with the
+  previous compiler (`aa8a6dd8a2e8`; the shipped one builds it in 459 s at 56 jobs)
   (`sql/sql_yacc.cc` dominates: a 1600-way switch whose join block has 1600 predecessors), on
   top of about an hour for an uninstrumented build. Seven escape-analysis configurations would
   have cost more than the other four applications together.
@@ -14,6 +15,6 @@ applications. Reasons and costs:
   case; the paper's MySQL rows are reported as nulls where the interval contains 1.0.
 
 `40-perf.sh mysql` runs the four configurations if you have the time and the disk (about 100 GB
-for the installs); `ART_SMOKE=1` builds stock only and runs one script for 60 s to show the pipeline
-works. Our recorded runs are under `data/perf/`, and `90-tables.sh` regenerates the MySQL table
+for the installs); `ART_SMOKE=1` builds the same four configurations, runs one unwarmed run each and shortens
+every sysbench script to 20 s, to show the pipeline works. Our recorded runs are under `data/perf/`, and `90-tables.sh` regenerates the MySQL table
 from them.

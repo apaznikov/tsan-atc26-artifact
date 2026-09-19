@@ -48,9 +48,9 @@ audio track like the clip it replaces.
 direction: the paper's FFmpeg column and the Stage B runs used the retired clip, so a difference
 between them and the campaign could be the clip as much as the compiler. Within the campaign every
 configuration shares one input, so the speedup column, the peeling pair and its branch rule are
-unaffected. A control leg on the campaign compiler with the retired clip, four configurations, is
-scheduled last so that the clip's own contribution is measured rather than argued; its numbers are
-evidence for the paper only and are not shipped here, because the clip cannot be redistributed.
+unaffected. A control leg on the campaign compiler with the retired clip, four configurations, was run on
+18 Sep 2026 so that the clip's own contribution is measured rather than argued; its ratios are in
+`CLAIMS.md`'s FFmpeg section, and its runs are not shipped here, because the clip cannot be redistributed.
 
 Shape matches, content does not. No FFmpeg measurement taken on the retired clip is cited by this
 artifact: the FFmpeg arm of the concurrency sweep is re-run on this clip after the campaign, and
@@ -79,4 +79,4 @@ Paths 2 and 3 re-encode, and a re-encode's sha256 differs from the reference eve
 command, because encoder builds differ. Every run therefore records `input_is_reference: true|false`
 beside `input_sha256` in its `meta.json`. A run on a regenerated clip is valid, and its build and run
 times are what an evaluator pays; only the comparison of its ratios with the shipped intervals is not
-made, since those were measured on the reference clip. With `ART_SMOKE=1` a 10-second cut is used.
+made, since those were measured on the reference clip. Smoke mode uses the same 100 s clip at N = 1.

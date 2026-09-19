@@ -35,10 +35,11 @@ rule the regression suite uses, applied where the schedule is the workload's own
 
 # Regression-suite tests that are non-deterministic under stock ThreadSanitizer
 
-`30-preservation-suite.sh` compares every test's race report under each configuration with the
-report under stock ThreadSanitizer. Three tests vary run to run under stock itself, verified at
-K = 20; the script names them in its output and excludes them from the "identical" count rather
-than letting them appear as differences.
+The report-level comparison (every test's race report under each configuration against the report
+under stock, keyed by `tsan_reports.py`) was made in the K = 5 replay recorded under
+`data/suite/replay-aa8a6dd8a2e8/` (`CLAIMS.md`, section 1); `30-preservation-suite.sh` itself compares
+pass and fail per test. Three tests vary run to run under stock itself, verified at K = 20 on an earlier
+compiler; they are named here so that a reader of the replay does not take them for differences.
 
 | Test | What varies | Under stock, K = 20 | Under every configuration |
 |---|---|---|---|
