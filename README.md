@@ -36,6 +36,43 @@ step said, and ends with one verdict line and a sentence saying what it establis
   it are in `CLAIMS.md`, section 5, under "Match criterion". FFmpeg's two rows come back "not comparable"
   unless `ART_FFMPEG_CLIP_URL` names the reference clip (`docs/ffmpeg-input.md`); the run itself is valid.
 
+What the end of a run looks like, from our own runs. No graphs: the verdict and the numbers are the deliverable,
+and the per-application tables with every subtest are in `results/perf-<app>-<stamp>/perf_<app>.md`.
+
+```
+evaluate.sh: PASS  (tier check, 0h1m; full log in results/evaluate-check-20260919-144059.log)
+Every step ran and passed: the image is our compiler built from the patch series, each analysis removes what it
+claims and the race is still reported, and the shipped tables follow from the shipped runs. This is the check,
+not the Functional badge: the regression suite (no configuration loses a race) runs in ./evaluate.sh functional.
+```
+
+```
+evaluate.sh: PASS  (tier functional, 1h57m; full log in results/evaluate-functional-20260919-055431.log)
+Every step ran and passed: the image is our compiler built from the patch series, the analyses, the regression
+suite and the shipped tables (what each step established is CLAIMS.md sections 1 to 4). This tier says nothing
+about speed.
+```
+
+The Reproduced tier ends with the comparison. This one is from a 64-processor AMD host (the run `CLAIMS.md`
+section 5 quotes), with the stock-against-native lines and the "rows not produced by this run" lines left out;
+FFmpeg is not compared there because that host regenerated the clip:
+
+```
+app        row                                       yours  ours (N=5)             verdict
+----------------------------------------------------------------------------------------------------
+ffmpeg     AllOpt with peeling                 0.999 (N=2)  1.006 [0.990, 1.024]   not comparable: not the reference clip
+ffmpeg     DynSTC                              1.115 (N=2)  1.113 [1.099, 1.129]   not comparable: not the reference clip
+memcached  AllOpt with peeling                 1.059 (N=2)  1.019 [0.951, 1.079]   IN
+memcached  DynSTC                              0.942 (N=2)  0.986 [0.944, 1.063]   OUT by 0.002 below
+redis      AllOpt with peeling                 1.001 (N=2)  1.000 [0.983, 1.026]   IN
+redis      DynSTC                              0.971 (N=2)  0.944 [0.927, 0.970]   OUT by 0.001 above, same side of 1.0
+sqlite     AllOpt with peeling                 0.944 (N=2)  1.023 [0.942, 1.061]   IN
+sqlite     DynSTC                              0.968 (N=2)  0.995 [0.928, 1.082]   IN
+----------------------------------------------------------------------------------------------------
+6 rows judged, 2 outside their intervals.
+evaluate.sh: PASS on every step, COMPARISON NOT CLEAN  (tier reproduced, 4h6m; full log in results/evaluate-reproduced-20260919-010131.log)
+```
+
 The tables name configurations as the harness does:
 
 | Name | Meaning |
@@ -84,9 +121,9 @@ packs into a few megabytes of git history.
 Intel Xeon w9-3495X, 56 cores and 112 threads, 250 GB RAM, Ubuntu 24.04, kernel 6.8.0-40-generic.
 Performance runs are pinned to 48 processors, one measurement at a time. Nothing here needs that
 machine: the container runs anywhere, and the deterministic experiments give identical results on
-any x86-64 Linux host. The performance experiments need at least 32 processors to be meaningful and 48
-pinned for every row to be comparable with ours: between 32 and 47 the run is unpinned and memcached's
-rows, whose thread count follows the processor count, are reported but not compared. `docs/confounds.md`
+any x86-64 Linux host. The performance experiments run on any processor count; the comparison with our intervals is made with
+48 processors pinned (memcached's thread count follows the processor count): with fewer, the run is unpinned,
+memcached's rows are reported with their thread count and not compared, and the other rows are judged. `docs/confounds.md`
 says what varies and why. The minimum for the correctness set is 8 processors (the regression suite refuses
 fewer), 16 GB of memory (`ART_MEMORY=16g` caps the container so that the derived job count respects it) and
 20 GB of disk; the performance set needs up to 100 GB of disk with MySQL.
@@ -97,8 +134,8 @@ fewer), 16 GB of memory (`ART_MEMORY=16g` caps the container so that the derived
 checkout where `./evaluate.sh functional` already ended in PASS, `./evaluate.sh reproduced --performance-only`
 runs the performance subset alone (about 2 h 15 min); `./evaluate.sh <tier> --plan` prints a tier's steps and
 their expected times without running anything.
-Every multi-hour tier asks for confirmation first; `--yes` skips the question and is required when stdin is
-not a terminal (under `nohup`, for instance). `--rebuild` builds the image again without Docker's layer cache
+Nothing asks a question: a tier starts when named, after printing what to know about it (`--plan` lists the
+steps without starting anything). `--rebuild` builds the image again without Docker's layer cache
 (15-25 min), the only build that re-runs the assertion that the patch series reproduces our source tree; an
 image built before this checkout kept build logs makes the tier INCOMPLETE until then.
 

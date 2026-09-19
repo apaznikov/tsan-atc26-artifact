@@ -62,4 +62,4 @@ else
   if [ "$quick" = 1 ]; then printf '\nThe quick correctness set passed: every step above, without the regression suite (the Functional tier is the full set).\n'
   else printf '\nThe correctness set passed, in full.\n'; fi
 fi
-printf 'What it does NOT cover: performance (scripts/40-perf.sh and CLAIMS.md section 5), which needs\n32 processors and a quiet machine.\n'
+printf 'What it does NOT cover: performance (scripts/40-perf.sh and CLAIMS.md section 5), which compares\nwith our intervals only on 48 pinned processors and a quiet machine.\n'

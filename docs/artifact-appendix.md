@@ -39,8 +39,8 @@ About 140 MB of data: the compiler is 29 patch files, and the recorded runs are 
 Any x86-64 Linux host with Docker, 8 processors, 16 GB of memory and 20 GB of disk runs everything deterministic. The
 container build fetches upstream LLVM with a shallow clone and compiles it: measured with `--no-cache`,
 14m52s at the derived default of 25 jobs on our host and 24m38s at 8 jobs (mostly a fixed serial head:
-clone, patches, configure and the runtime stage do not scale with jobs). The performance experiments need at least 32 processors and a machine doing
-nothing else; ours was an Intel Xeon w9-3495X, 56 cores and 112 threads, 250 GB, Ubuntu 24.04, with
+clone, patches, configure and the runtime stage do not scale with jobs). The performance experiments run on any processor count, are compared with our intervals only with 48
+processors pinned, and need a machine doing nothing else; ours was an Intel Xeon w9-3495X, 56 cores and 112 threads, 250 GB, Ubuntu 24.04, with
 benchmarks pinned to 48 processors.
 
 ## Set-up and basic test

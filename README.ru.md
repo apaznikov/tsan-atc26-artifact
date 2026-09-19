@@ -38,6 +38,43 @@ git clone https://github.com/apaznikov/tsan-atc26-artifact.git && cd tsan-atc26-
   «not comparable», если `ART_FFMPEG_CLIP_URL` не указывает на эталонный клип (`docs/ffmpeg-input.md`);
   сам прогон при этом корректен.
 
+Как выглядит конец прогона, из наших собственных прогонов. Графиков нет: результат это вердикт и числа, а
+таблицы по приложениям со всеми подтестами лежат в `results/perf-<приложение>-<метка>/perf_<приложение>.md`.
+
+```
+evaluate.sh: PASS  (tier check, 0h1m; full log in results/evaluate-check-20260919-144059.log)
+Every step ran and passed: the image is our compiler built from the patch series, each analysis removes what it
+claims and the race is still reported, and the shipped tables follow from the shipped runs. This is the check,
+not the Functional badge: the regression suite (no configuration loses a race) runs in ./evaluate.sh functional.
+```
+
+```
+evaluate.sh: PASS  (tier functional, 1h57m; full log in results/evaluate-functional-20260919-055431.log)
+Every step ran and passed: the image is our compiler built from the patch series, the analyses, the regression
+suite and the shipped tables (what each step established is CLAIMS.md sections 1 to 4). This tier says nothing
+about speed.
+```
+
+Уровень Reproduced заканчивается сравнением. Это сравнение с 64-процессорной машины на AMD (тот прогон, который
+цитирует раздел 5 `CLAIMS.md`), без строк stock-против-native и без строк «rows not produced by this run»;
+FFmpeg там не сравнивается, потому что та машина пересоздала клип:
+
+```
+app        row                                       yours  ours (N=5)             verdict
+----------------------------------------------------------------------------------------------------
+ffmpeg     AllOpt with peeling                 0.999 (N=2)  1.006 [0.990, 1.024]   not comparable: not the reference clip
+ffmpeg     DynSTC                              1.115 (N=2)  1.113 [1.099, 1.129]   not comparable: not the reference clip
+memcached  AllOpt with peeling                 1.059 (N=2)  1.019 [0.951, 1.079]   IN
+memcached  DynSTC                              0.942 (N=2)  0.986 [0.944, 1.063]   OUT by 0.002 below
+redis      AllOpt with peeling                 1.001 (N=2)  1.000 [0.983, 1.026]   IN
+redis      DynSTC                              0.971 (N=2)  0.944 [0.927, 0.970]   OUT by 0.001 above, same side of 1.0
+sqlite     AllOpt with peeling                 0.944 (N=2)  1.023 [0.942, 1.061]   IN
+sqlite     DynSTC                              0.968 (N=2)  0.995 [0.928, 1.082]   IN
+----------------------------------------------------------------------------------------------------
+6 rows judged, 2 outside their intervals.
+evaluate.sh: PASS on every step, COMPARISON NOT CLEAN  (tier reproduced, 4h6m; full log in results/evaluate-reproduced-20260919-010131.log)
+```
+
 Таблицы называют конфигурации так, как их называет харнесс:
 
 | Имя | Значение |
@@ -87,10 +124,10 @@ LLVM `c609043dd009` — это текст. Контейнер при сборк�
 Intel Xeon w9-3495X, 56 ядер и 112 потоков, 250 ГБ памяти, Ubuntu 24.04, ядро 6.8.0-40.
 Измерения производительности привязаны к 48 процессорам, по одному измерению за раз. Эта машина
 ни для чего здесь не обязательна: контейнер работает где угодно, а детерминированные
-эксперименты дают одинаковый результат на любом x86-64 Linux. Измерениям производительности
-нужно хотя бы 32 процессора, чтобы быть осмысленными, и 48 закреплённых, чтобы каждая строка была
-сравнима с нашими: при 32–47 прогон идёт без привязки, и строки memcached, число потоков которого
-следует за числом процессоров, сообщаются, но не сравниваются. Что именно влияет на разброс, написано в
+эксперименты дают одинаковый результат на любом x86-64 Linux. Измерения производительности
+идут при любом числе процессоров; сравнение с нашими интервалами делается на 48 закреплённых (число
+потоков memcached следует за числом процессоров): при меньшем прогон идёт без привязки, строки memcached
+сообщаются со своим числом потоков и не сравниваются, остальные строки судятся. Что именно влияет на разброс, написано в
 `docs/confounds.md`. Минимум для набора корректности: 8 процессоров (регрессионный набор отказывается
 от меньшего), 16 ГБ памяти (`ART_MEMORY=16g` ограничивает контейнер так, чтобы выведенное число
 заданий это учитывало) и 20 ГБ диска; набору производительности нужно до 100 ГБ диска с MySQL.
@@ -100,8 +137,8 @@ Intel Xeon w9-3495X, 56 ядер и 112 потоков, 250 ГБ памяти, U
 `./evaluate.sh everything` это `reproduced` во всех четырнадцати конфигурациях плюс MySQL (около 14 часов).
 На копии, где `./evaluate.sh functional` уже закончился PASS, `./evaluate.sh reproduced --performance-only`
 запускает только подмножество производительности (около 2 ч 15 мин); `./evaluate.sh <уровень> --plan`
-печатает шаги уровня и ожидаемое время, ничего не запуская. Каждый многочасовой уровень сначала спрашивает подтверждение;
-`--yes` пропускает вопрос и обязателен, когда stdin не терминал (например, под `nohup`). `--rebuild` собирает
+печатает шаги уровня и ожидаемое время, ничего не запуская. Ничего не спрашивается: уровень стартует, когда назван, напечатав, что о нём надо знать (`--plan` перечисляет
+шаги, ничего не запуская). `--rebuild` собирает
 образ заново без кэша слоёв Docker (15–25 мин); только такая сборка повторяет проверку, что серия патчей
 воспроизводит наше дерево исходников; образ, собранный до того, как эта копия стала хранить логи сборки,
 делает уровень INCOMPLETE, пока её не сделать.

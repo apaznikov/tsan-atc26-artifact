@@ -9,16 +9,16 @@
 #                                64 processors, 1 h 45 min on 32, 2 h on 8).
 #   ./evaluate.sh reproduced     The Reproduced badge: the whole functional tier first, then the performance
 #                                subset, Redis, memcached, FFmpeg and SQLite at the defaults (four configurations,
-#                                two runs), compared with the intervals CLAIMS.md ships. About 4 hours. Needs 32
-#                                or more processors and a machine that is otherwise idle; every row is comparable
-#                                with ours only with 48 processors pinned.
+#                                two runs), compared with the intervals CLAIMS.md ships. About 4 hours. Runs on
+#                                any processor count; the comparison with our intervals needs 48 pinned
+#                                processors and a machine that is otherwise idle.
 #   ./evaluate.sh everything     reproduced at all fourteen configurations, plus MySQL. About 14 hours.
 #
 # Each tier contains the one before it, so one command per badge is the whole job. Without a tier name this
 # script prints this text and runs nothing.
 #
-# Options: --plan (print the tier's steps and expected times, run nothing), --yes (no confirmation before the
-# multi-hour tiers; required when stdin is not a terminal), --rebuild (build the image again from nothing,
+# Options: --plan (print the tier's steps and expected times, run nothing), --yes (accepted and ignored: nothing
+# asks a question, a tier starts when named), --rebuild (build the image again from nothing,
 # without Docker's layer cache, which is the only build that re-runs the reconstructed-tree assertion; 15-25 min),
 # --performance-only (reproduced or everything without repeating the functional tier, for a checkout on which
 # ./evaluate.sh functional already ended in PASS; about 2 h 15 min for reproduced). --quick is the old name of check.
@@ -108,9 +108,11 @@ i=0; for s in "${steps[@]}"; do i=$((i+1)); IFS='|' read -r label t cmd <<< "$s"
 autopin=0
 if [ "$perf_tier" = 1 ]; then
   echo
-  echo "Four things to know before starting the performance tier:"
-  echo "  1. Machine. It needs 32 or more processors and a machine on which nothing else runs: the disturbance"
-  echo "     gate retires every cell measured under foreign load (docs/confounds.md)."
+  echo "Four things to know about the performance tier (it starts right after them; --plan lists the steps without starting):"
+  echo "  1. Machine. Any processor count runs. The comparison with our intervals is made on 48 pinned processors"
+  echo "     (memcached's thread count follows the processor count; with fewer, its rows are reported, not judged)"
+  echo "     and on a machine on which nothing else runs: the disturbance gate retires every cell measured under"
+  echo "     foreign load (docs/confounds.md)."
   # Our intervals describe a 48-processor pinned set, and the workload's thread counts follow from the
   # set's size (docs/campaign-parameters.md). So, unless the caller chose a set, pin 48 processors when
   # the machine has them: the run is then gate-checked and its thread counts equal ours. Which 48: the
@@ -127,9 +129,9 @@ if [ "$perf_tier" = 1 ]; then
       echo "     when it grants them all; chosen once the image exists and printed then), so it is gate-checked and"
       echo "     its thread counts match ours. Set ART_CPUSET to choose which 48 yourself (topology, siblings)."
     else
-      echo "     ART_CPUSET not set and only $ncpu_here processors here: the run uses every processor the container"
-      echo "     sees and is not gate-checked; memcached's rows, whose thread count follows the processor count,"
-      echo "     are reported but not compared with our 48-processor intervals."
+      echo "     ART_CPUSET not set and $ncpu_here processors here (fewer than 48): the run uses every processor the"
+      echo "     container sees and is not gate-checked; memcached's rows are reported with their thread count and"
+      echo "     not compared with our 48-processor intervals; the Redis and SQLite rows are judged."
     fi
   else
     echo "     ART_CPUSET=$ART_CPUSET (our runs used 48 processors, 4-27 and 60-83 on our host)."
@@ -147,13 +149,10 @@ if [ "$perf_tier" = 1 ]; then
   echo "  4. The end. The tier ends with one line per configuration row of this run against the interval CLAIMS.md"
   echo "     ships for it (IN; OUT with the distance; not judged; not comparable) and 'N rows judged'. What an OUT"
   echo "     row can mean, and the five-run re-check for it, is CLAIMS.md section 5, 'Match criterion'."
-  if [ "$yes" != 1 ]; then
-    if [ ! -t 0 ]; then
-      echo "evaluate.sh: stdin is not a terminal, so the confirmation cannot be asked; add --yes to start. Nothing was started." >&2
-      exit 2
-    fi
-    printf 'Start now? [y/N] '; read -r ans; case "$ans" in y|Y|yes) ;; *) echo "not started"; exit 1;; esac
-  fi
+  # No question: a reviewer who named a four-hour tier meant it, --plan exists for looking first, and a prompt
+  # broke every run under nohup, tmux scripts and CI (a student asked why the script was interactive, 19 Sep
+  # 2026). --yes is still accepted, for instructions written before this.
+  : "$yes"
 fi
 
 # 48 of the processors the daemon grants to containers, as a range list; nothing if it grants fewer.
@@ -195,6 +194,10 @@ for s in "${steps[@]}"; do
   printf '%2d. %-38s started %s, expected %s\n' "$i" "$label" "$(date +%H:%M:%S)" "$t"
   t0=$(date +%s)
   step_out="$log.step"
+  case "$t" in "1 min"|"under a minute"|"2-5 min") ;; *)
+    echo "    follow it: tail -f $step_out   (the console shows the step's output when it ends)"
+    [[ "$cmd" == *01-functional.sh* ]] && echo "    the machine going idle for up to two minutes at a time is getline_nohang.cpp waiting out its timeout, not a hang (docs/nondeterministic-tests.md)" ;;
+  esac
   { echo "=== $label: $cmd"; bash -c "$cmd"; } > "$step_out" 2>&1; rc=$?
   cat "$step_out" >> "$log"
   dt=$(( $(date +%s) - t0 ))

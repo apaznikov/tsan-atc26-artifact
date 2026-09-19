@@ -128,10 +128,17 @@ too small for the comparison. Smoke-mode output carries a "not a measurement" ma
 `timeout 5 ./prog | grep something` can print nothing because `grep` is killed before it flushes,
 not because nothing matched. Redirect to a file and inspect it. This cost us an hour once.
 
-## "stdin is not a terminal, so the confirmation cannot be asked"
+## A test binary spins for minutes in `close()` returning EBADF
 
-`evaluate.sh` asks before a multi-hour tier. Under `nohup`, `setsid`, a CI job or `< /dev/null` there is
-nobody to ask, so it stops with this line and exit status 2 rather than silently not starting. Add `--yes`.
+Seen under `strace` on a compiled test (`deep_stack2.cpp.tmp`): thousands of `close(1007432713) = -1 EBADF`,
+descending. That is the sanitizer runtime starting its symbolizer: the forked child closes every descriptor
+from `sysconf(_SC_OPEN_MAX)` down to 3 before exec (compiler-rt, `sanitizer_posix_libcdep.cpp`,
+`StartSubprocess`), so the first race report of a process costs one `close()` per descriptor of the soft
+open-files limit. At 1024 or 1048576 that is milliseconds; at 1073741816, the limit a container inherits from
+a Docker daemon with `LimitNOFILE=infinity` on a host whose `fs.nr_open` is that, it is minutes, and the
+test times out. `docker/run.sh` pins the limit to 1048576 (our campaign's) since 19 Sep 2026, so the loop
+cannot be long inside it; running a test binary by hand outside `docker/run.sh` with a huge `ulimit -n` is
+where it can still be seen. Same under stock ThreadSanitizer; nothing of ours.
 
 ## The log's stamp and the results directories' stamps differ by hours
 

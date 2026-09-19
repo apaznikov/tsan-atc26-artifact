@@ -35,6 +35,18 @@ fi
 # ART_MEMORY caps the container's memory (docker --memory, e.g. 16g): how we run the artifact at the
 # README's minimum, 8 processors and 16 GB, to know the minimum is true rather than assumed.
 [ -n "${ART_MEMORY:-}" ] && cpus_flag+=(--memory "$ART_MEMORY")
+# The open-files limit, pinned. The sanitizer runtime starts its symbolizer with a fork that closes every
+# descriptor from sysconf(_SC_OPEN_MAX) down to 3, one close() each (compiler-rt, sanitizer_posix_libcdep.cpp,
+# StartSubprocess), so the first race report of every process costs time in proportion to the soft limit:
+# measured on the minimal example's report, 0.19 s at 1024, 0.27 s at 1048576, and a limit of 1073741816
+# (what a container inherits from a daemon with LimitNOFILE=infinity on a host whose fs.nr_open is that) means
+# a test binary spinning for minutes in close() = EBADF, which a student saw under strace (19 Sep 2026).
+# Docker's own default moved between versions (28: the daemon's 1048576; 29: 1024 soft), so the value is
+# fixed here rather than inherited: 1048576, the soft limit our campaign ran under, capped by the kernel's
+# nr_open so that the container can always start.
+nofile=1048576
+nr=$(cat /proc/sys/fs/nr_open 2>/dev/null || echo 0)
+[ "$nr" -gt 0 ] 2>/dev/null && [ "$nr" -lt "$nofile" ] && nofile=$nr
 tty_flag=()
 [ -t 0 ] && [ -t 1 ] && tty_flag=(-it)
 # --user: the container runs as the caller, not as root. As root, everything it wrote into results/ and
@@ -47,7 +59,7 @@ tty_flag=()
 exec docker run --rm "${tty_flag[@]}" "${cpus_flag[@]}" \
   --security-opt seccomp=unconfined \
   --user "$(id -u):$(id -g)" -e HOME=/tmp \
-  --shm-size=1g \
+  --shm-size=1g --ulimit "nofile=$nofile:$nofile" \
   -e ART_RUNS -e ART_WARMUP -e ART_SMOKE -e ART_CPUSET -e ART_JOBS -e ART_JOBS_WHY \
   -e ART_FFMPEG_CLIP_URL -e ART_FFMPEG_SOURCE \
   -e MC_THREADS -e MYSQL_THREADS -e FF_THREADS \

@@ -47,10 +47,19 @@ compiler; they are named here so that a reader of the replay does not take them 
 | `fd_location_closed.cpp` | the wording of the location descriptor line, not the race or its stacks | one L2 key 20/20 | one L2 key 20/20 |
 | `fork_atexit.cpp` | whether the report appears at all in a given run | about one run in five | about one run in five |
 
-One further test is not a report-level variation but a stall. `getline_nohang.cpp` either passes in
-seconds or waits out the per-test timeout, under stock, EA and STC alike, so it is flaky and not
-configuration-specific, and under the counting rule it can never become a candidate lost race because
-it does not pass under stock every time. Its stall rate rises with machine load, which is why we give
+One further test is not a report-level variation but a stall. `getline_nohang.cpp` exists to check that
+ThreadSanitizer does not deadlock on a stdio stream lock at exit while a detached thread blocks in
+`getline()` (its own comment; google/sanitizers issues 454 and 1733). Upstream marks it unsupported on
+glibc 2.38, where that deadlock came back; the image's Ubuntu 24.04 carries glibc 2.39, where it still
+occurs in some runs, and a run in which it occurs waits out the per-test timeout. So a stall is the
+deadlock the test looks for, under stock ThreadSanitizer as under every configuration: the test either
+passes in seconds or times out, under stock, EA and STC alike, it is flaky and not configuration-specific,
+and under the counting rule it can never become a candidate lost race because it does not pass under stock
+every time. The wall-time cost is real: `lit` runs the tests in name order, so a stalled repeat usually
+outlives the rest of its configuration's run and the machine sits idle for up to two minutes per stalled
+repeat, which an evaluator watching the load sees as idle periods; on a host where the stall is frequent
+that is a large share of the suite's time (`ART_LIT_TIMEOUT=60` halves it, at the price of a shorter limit
+for every test). Its stall rate rises with machine load, which is why we give
 two figures rather than one: on an otherwise idle machine it stalled 3 times in 21 repeats of the full
 383-test suite, roughly one repeat in six or seven; in the shipped-compiler run of 17 Sep,
 60 repeats at 64 lit jobs beside a concurrent build on the other processors, it stalled 48 times in 60,
