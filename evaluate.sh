@@ -214,8 +214,9 @@ for s in "${steps[@]}"; do
   # kept build logs (or with a warm layer cache) leaves that check unmade: neither a pass nor a failure.
   if /usr/bin/grep -q 'SKIP  patch series reproduced tree' "$step_out"; then
     [ "$verdict" = FAIL ] || verdict=INCOMPLETE
-    echo "    INCOMPLETE: no build log here shows the patch series reproducing our source tree; ./evaluate.sh $tier --rebuild"
-    echo "    builds the image again without the layer cache (15-25 min) and records it."
+    echo "    INCOMPLETE: the image tsan-atc26 on this machine was built from an earlier checkout, before the build"
+    echo "    stamped its source-tree hash into the image, so that check cannot be made from it. Every other step"
+    echo "    runs. ./evaluate.sh $tier --rebuild builds the image again from nothing (15-25 min) and stamps it."
   fi
   if [ "$rc" -ne 0 ]; then
     verdict=FAIL; failed="$label"; echo "    FAILED; the last lines of its output:"; tail -15 "$step_out" | sed 's/^/      /'; rm -f "$step_out"; break

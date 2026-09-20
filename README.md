@@ -135,9 +135,11 @@ checkout where `./evaluate.sh functional` already ended in PASS, `./evaluate.sh 
 runs the performance subset alone (about 2 h 15 min); `./evaluate.sh <tier> --plan` prints a tier's steps and
 their expected times without running anything.
 Nothing asks a question: a tier starts when named, after printing what to know about it (`--plan` lists the
-steps without starting anything). `--rebuild` builds the image again without Docker's layer cache
-(15-25 min), the only build that re-runs the assertion that the patch series reproduces our source tree; an
-image built before this checkout kept build logs makes the tier INCOMPLETE until then.
+steps without starting anything). `--rebuild` builds the image again from nothing (15-25 min).
+The build asserts that the patch series reproduces our source tree and stamps the measured tree hash into the
+image, where every tier checks it; an image built from a checkout older than 20 Sep 2026 has no such stamp,
+and a tier run against it is INCOMPLETE until `--rebuild`. On a machine that never had the image, the first
+command builds it and this never arises.
 
 Where the results are: `results/evaluate-<tier>-<stamp>.log` holds every step's full output;
 each performance run writes `results/perf-<app>-<stamp>/perf_<app>.md` (the table for that

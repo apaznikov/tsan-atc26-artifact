@@ -66,19 +66,29 @@ else
   chk "the install is self-contained" no "no LLVM library resolves inside /opt/tsan-llvm either, so there is nothing to be self-contained about: the prefix is missing or the binaries are not there"
 fi
 
-# The tree assertion runs inside the patch layer, so a cached rebuild prints nothing. Accept it from
-# a build log if one is here; otherwise skip, because absence of a log is not evidence of a bad tree.
-logs=$(ls "$ART_RESULTS"/image-build*.log "$here"/docker/build*.log /tmp/imgbuild*.log 2>/dev/null || true)
-if [ -n "$logs" ] && grep -qh "reconstructed tree $TREE (expected $TREE)" $logs 2>/dev/null; then
-  if [ -z "$(git -C "$here" status --porcelain compiler/patches 2>/dev/null)" ]; then
-    chk "patch series reproduced tree $TREE (from a build log; patches unmodified since)" ok
-  else
-    chk "patch series reproduced tree $TREE" no "patches modified since that log -- rebuild with ./docker/build.sh --no-cache"
-  fi
-else
-  chk "patch series reproduced tree $TREE" skip \
-    "no build log here contains the assertion (a cached build prints none). To produce it: ./docker/build.sh --no-cache, which keeps its log as results/image-build-<stamp>.log; or ./evaluate.sh --rebuild"
-fi
+# The tree the patch step measured is the image's own second stamp line since 20 Sep 2026, so the check
+# is made from the image, from any checkout. An image built before that carries the expected constant
+# there instead; for it, accept the assertion from a build log if one is here, otherwise say what the
+# image is and how to replace it, because absence of a record is not evidence of a bad tree.
+stamp2=$("${D[@]}" "$IMG" sed -n 2p /opt/tsan-llvm/TSAN_AUDIT_HASH 2>/dev/null || true)
+case "$stamp2" in
+  "reconstructed-tree $TREE")
+    chk "patch series reproduced tree $TREE (the image's own stamp, written by its build from the measured tree)" ok ;;
+  reconstructed-tree\ *)
+    chk "patch series reproduced tree $TREE" no "the image's stamp says ${stamp2#reconstructed-tree }: not built from these patches" ;;
+  *)
+    logs=$(ls "$ART_RESULTS"/image-build*.log "$here"/docker/build*.log /tmp/imgbuild*.log 2>/dev/null || true)
+    if [ -n "$logs" ] && grep -qh "reconstructed tree $TREE (expected $TREE)" $logs 2>/dev/null; then
+      if [ -z "$(git -C "$here" status --porcelain compiler/patches 2>/dev/null)" ]; then
+        chk "patch series reproduced tree $TREE (from a build log; patches unmodified since)" ok
+      else
+        chk "patch series reproduced tree $TREE" no "patches modified since that log -- rebuild with ./docker/build.sh --no-cache"
+      fi
+    else
+      chk "patch series reproduced tree $TREE" skip \
+        "this image was built from an earlier checkout, before the build stamped the measured tree into it, and no build log here carries the assertion; ./evaluate.sh <tier> --rebuild builds it again (15-25 min) and stamps it"
+    fi ;;
+esac
 
 echo
 echo "=== the vendored suites, run INSIDE the image ==="

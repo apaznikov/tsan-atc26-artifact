@@ -36,6 +36,7 @@ RUN cd llvm-project && for p in $(ls /src/patches/*.patch | sort); do \
     && git add -A \
     && t=$(git write-tree) \
     && echo "reconstructed tree $t (expected ${EXPECTED_TREE})" \
+    && echo "$t" > /reconstructed-tree \
     && [ "$t" = "${EXPECTED_TREE}" ] || { echo "TREE MISMATCH: the patch series did not reproduce the branch"; exit 1; }
 
 # llvm-lit is NOT a ninja target: cmake generates bin/llvm-lit at configure time and there is
@@ -47,7 +48,11 @@ RUN cd llvm-project && for p in $(ls /src/patches/*.patch | sort); do \
 # The branch commit this image reconstructs. It is NOT the upstream base (LLVM_BASE): the
 # harness derives a build stamp from the first 40-hex string in `clang --version`, so a
 # version line naming only the base would hand every downstream build a wrong-but-well-formed
-# stamp. Both the version string and the TSAN_AUDIT_HASH file below carry the branch commit.
+# stamp. Both the version string and the TSAN_AUDIT_HASH file below carry the branch commit; the file's
+# second line carries the tree hash the patch step MEASURED (not the expected constant), so that
+# scripts/13-verify-image.sh can check the reconstruction from the image itself, from any checkout,
+# without the build log (until 20 Sep 2026 the log was the only record, and a second checkout of the
+# repository reported the check as not made).
 ARG AUDIT_HASH=f3deebfbab602f4e05289e0acbde0efd06b8058c
 RUN cmake -G Ninja -S llvm-project/llvm -B build \
       -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=ON \
@@ -62,7 +67,7 @@ RUN cmake -G Ninja -S llvm-project/llvm -B build \
     && ninja -C build -j ${JOBS} clang lld compiler-rt FileCheck not count opt llvm-objdump \
     && ninja -C build -j ${JOBS} install \
     && install -m755 build/bin/llvm-lit /opt/tsan-llvm/bin/llvm-lit \
-    && printf '%s\n%s\n' "${AUDIT_HASH}" "tree ${EXPECTED_TREE}" > /opt/tsan-llvm/TSAN_AUDIT_HASH \
+    && printf '%s\nreconstructed-tree %s\n' "${AUDIT_HASH}" "$(cat /reconstructed-tree)" > /opt/tsan-llvm/TSAN_AUDIT_HASH \
     && mkdir -p /opt/tsan-llvm/lib/python-lit \
     && cp -r llvm-project/llvm/utils/lit/lit /opt/tsan-llvm/lib/python-lit/lit
 
