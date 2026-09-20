@@ -379,7 +379,9 @@ ART_RUNS=5 ./docker/run.sh scripts/40-perf.sh redis      # our setting: interval
 
 **What the default mode measured when we ran it as an evaluator would** (17-18 Sep 2026, the pushed
 checkout in the container, the campaign's own 48 processors (4-27,60-83) pinned, N = 2, four configurations, nothing else on the machine;
-those runs are not shipped, the figures are what the scripts printed):
+those runs are not shipped, the figures are what the scripts printed; the Redis rows are from the run of
+17 Sep 14:15, memcached and FFmpeg from the run of 17 Sep 23:07, which followed the thread-count and
+shared-memory fixes and carried `input_is_reference: true`, SQLite from the run of 18 Sep 11:47):
 the functional check 52 s; Redis 15 min; memcached 28 min at the rule's 48 server threads; FFmpeg 25 min
 on the reference clip with all four codecs; SQLite 68 min. Seven of the eight configuration rows landed
 inside our interval, both rows whose interval excludes 1.0 on the same side, and one row landed outside:
@@ -419,32 +421,42 @@ different thread count, and a count of rows judged; its exit status is 0 only wh
 inside, and its silence is never a pass.
 
 On other hardware the criterion does not apply, and a full run there says what travels. An AMD EPYC
-9115 host (2 sockets of 16 cores with 2 threads each; 48 pinned as 0-47, which there is all 32 physical cores with both SMT threads of 16 of them, not the campaign's 24 cores with both threads of each; N = 2, no cell disturbed, the whole `evaluate.sh reproduced` tier
-from this commit, 19 Sep 2026; its runs are not shipped, and they carry no session record because the harness's session writer read an Intel-only sysfs file and failed silently on that host, fixed 19 Sep; the processor set 0-47 and the pinned mode come from every cell's own `meta.json`) judged six rows and put four inside:
+9115 host (2 sockets of 16 cores with 2 threads each, 64 logical processors) ran the whole
+`evaluate.sh reproduced` tier twice from fresh clones, on 19 and 20 Sep 2026, both times pinned to 0-47 by
+the rule `evaluate.sh` had until 20 Sep (the first 48 processors the daemon grants), which on that host is
+all 32 physical cores, 16 of them with both SMT threads and 16 with one: a shape the campaign (24 cores with
+both threads of each) never used. N = 2, no cell disturbed, the runs not shipped. Their cells carry no
+session record (the harness's session writer read an Intel-only sysfs file and failed silently there, fixed
+19 Sep); the set and the pinned mode come from every cell's own `meta.json`. Judged by the comparator of
+those days; since 20 Sep the tool declines a tree whose set records no shape and whose cpuset is not ours,
+so it would not judge these rows today:
 
-| Application | Row | That host (N = 2) | Shipped interval (N = 5) | Verdict |
-|---|---|---|---|---|
-| Redis | AllOpt with peeling | 1.001 | 1.000 [0.983, 1.026] | inside |
-| Redis | DynSTC | 0.971 | 0.944 [0.927, 0.970] | outside by 0.001, on the same side of 1.0 |
-| memcached | AllOpt with peeling | 1.059 | 1.019 [0.951, 1.079] | inside |
-| memcached | DynSTC | 0.942 | 0.986 [0.944, 1.063] | outside by 0.002 |
-| SQLite | AllOpt with peeling | 0.944 | 1.023 [0.942, 1.061] | inside |
-| SQLite | DynSTC | 0.968 | 0.995 [0.928, 1.082] | inside |
-| FFmpeg | both rows | 0.999, 1.115 | | not comparable: the clip was regenerated there |
+| Application | Row | 19 Sep (N = 2) | 20 Sep (N = 2) | Shipped interval (N = 5) | Verdict on those days |
+|---|---|---|---|---|---|
+| Redis | AllOpt with peeling | 1.001 | 1.018 | 1.000 [0.983, 1.026] | inside, inside |
+| Redis | DynSTC | 0.971 | 0.977 | 0.944 [0.927, 0.970] | outside by 0.001 and by 0.007, both on the same side of 1.0 |
+| memcached | AllOpt with peeling | 1.059 | 1.104 | 1.019 [0.951, 1.079] | inside; outside by 0.025 |
+| memcached | DynSTC | 0.942 | 1.162 | 0.986 [0.944, 1.063] | outside by 0.002 below; outside by 0.099 above |
+| SQLite | AllOpt with peeling | 0.944 | 1.016 | 1.023 [0.942, 1.061] | inside, inside |
+| SQLite | DynSTC | 0.968 | 0.959 | 0.995 [0.928, 1.082] | inside, inside |
+| FFmpeg | both rows | 0.999, 1.115 | 1.008, 1.130 | | not comparable: the clip was regenerated there |
 
-Both rows that fall outside are DynSTC and both miss by a thousandth or two, which is what a point
-estimate from two runs on another vendor's processor, on a set the campaign never used (all 32 physical cores of that host, 16 of them with both SMT threads
-and 16 with one, against the campaign's 24 cores with both threads of each: the shape the first-48-granted
-rule chose there, which was `evaluate.sh`'s rule until 20 Sep 2026, when it began choosing sibling pairs),
-is worth against an interval measured here; the uneven contention on that set is a candidate explanation
-beside the vendor and the two runs; the
-Redis row keeps the sign the campaign found. The refusals are the machinery working rather than a gap:
-FFmpeg is declined because that host regenerated the clip, and every stock-against-native ratio is
-reported and not judged because the drift condition governs it. The same host's SQLite AllOpt row was
-0.909 and outside on the previous day's run and 0.944 and inside on this one, which is the size of the
-N = 2 variation on that column and the reason the criterion asks for five runs before it is strict. The Redis rows are from the
-run of 17 Sep 14:15; memcached and FFmpeg from the run of 17 Sep 23:07, which followed the thread-count
-and shared-memory fixes and carried `input_is_reference: true`; SQLite from the run of 18 Sep 11:47.
+What travels: the sign of the Redis DynSTC row on both days (below 1.0 by 2.9 and 2.3 per cent, against the
+campaign's 5.6), and SQLite's "no measurable change". What does not: memcached, whose swing from 0.942 to
+1.162 in a day is not the compiler. On that host every instrumented memcached run lands in one of two modes,
+about 200 s (1.40 to 1.46 million operations per second) or about 230 s (1.20 to 1.25 million): on 19 Sep
+stock drew one of each, AllOpt with peeling two fast, DynSTC two slow; on 20 Sep stock two slow, AllOpt one of
+each, DynSTC two fast. At N = 2 a ratio there is which mode each pair drew. This is the bimodality
+`docs/confounds.md` records for memcached on the earlier campaign on our host, absent from the shipped
+campaign (1 to 3 per cent per configuration at N = 5) and present on this host's 32-core set; whether the
+shape or the host produces it is what a run on that host's sibling-paired set (0-23,32-55, the set
+`evaluate.sh` chooses there since 20 Sep) will say. The refusals are the machinery working rather than a
+gap: FFmpeg is declined because that host regenerated the clip, and every stock-against-native ratio
+(memcached 4.56 and 4.85 on the two days against our 3.20 [2.97, 3.40]) is reported and not judged because
+the drift condition governs it. The SQLite AllOpt row was 0.909 and outside on that host's run of 18 Sep,
+then 0.944 and 1.016 and inside, which is the size of the N = 2 variation on that column and the reason the
+criterion asks for five runs before it is strict. Wall time there on 20 Sep: 2 h 48 min for the whole tier
+(the correctness set 30 min on 64 processors; Redis 13, memcached 36, FFmpeg 20, SQLite 69 minutes).
 
 The four configurations decide everything the paper's figure turns on, and Redis, memcached and
 FFmpeg together, about an hour and a quarter, cover the two things this campaign found: DynSTC's
