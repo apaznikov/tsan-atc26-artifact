@@ -1,0 +1,11 @@
+{
+  "_what": "The SHAPE of the processor set every cell of this campaign was measured on, recorded as data because it cannot be derived by a reader.",
+  "_why": "Equal logical-processor counts are not equal machines. This campaign's 48 logical processors were 24 physical cores with BOTH SMT siblings of each; 48 contiguous processors on another host can be 48 separate cores with none of their siblings, which is twice the compute and no sibling contention. A row measured on one shape cannot be compared with an interval measured on the other.",
+  "_how": "Measured on the host that ran the campaign, from /sys/devices/system/cpu/*/topology/thread_siblings_list over the cpuset below, with tools/perf/cpu_snapshot.py --topology. All 403 measured cells of primary/ and r2/ record this same cpuset; the campaign is frozen, so this is a fact about a completed dataset rather than a parameter that can drift.",
+  "_note": "Cells recorded before 2026-09-20 carry no n_physical_cores field of their own, which is why this file exists; cells recorded after it carry the same two numbers per cell.",
+  "cpuset": "4-27,60-83",
+  "n_logical": 48,
+  "n_physical_cores": 24,
+  "smt_pairs_complete": 24,
+  "siblings_on_that_host": "n, n+56"
+}

@@ -17,6 +17,28 @@ def expand(s):
             out.add(int(part))
     return out
 
+# --topology <cpuset>: the SHAPE of the set, printed as "n_physical n_complete_pairs n_logical".
+# Equal logical counts are not equal machines: the campaign's 48 was 24 physical cores with BOTH SMT
+# siblings of each, while 48 contiguous processors on this host would be 48 separate cores with none of
+# their siblings -- twice the compute and no sibling contention. A row measured on one cannot be compared
+# with an interval measured on the other, and nothing recorded the difference. (2026-09-20.)
+if len(sys.argv) > 2 and sys.argv[1] == "--topology":
+    want = expand(sys.argv[2]) if sys.argv[2].strip() else None
+    import os as _os
+    if want is None:                      # unpinned: the whole machine
+        want = {int(d[3:]) for d in _os.listdir("/sys/devices/system/cpu")
+                if d.startswith("cpu") and d[3:].isdigit()}
+    cores, complete = set(), 0
+    for c in sorted(want):
+        f = f"/sys/devices/system/cpu/cpu{c}/topology/thread_siblings_list"
+        try: sib = open(f).read().strip()
+        except OSError: continue
+        if sib in cores: continue
+        cores.add(sib)
+        if all(int(x) in want for x in expand(sib)): complete += 1
+    print(len(cores), complete, len(want))
+    raise SystemExit(0)
+
 inside = expand(sys.argv[1])
 # AN EMPTY CPUSET IS "UNPINNED", NOT "EVERY CPU IS FOREIGN". With no pinned set the benchmark runs
 # everywhere, so there is no region where nothing of ours can run and no foreign signal to read. Treating

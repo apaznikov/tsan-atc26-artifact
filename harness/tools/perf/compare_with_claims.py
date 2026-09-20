@@ -74,6 +74,42 @@ def reference_input_sha(root, app):
             return v
     return None
 
+def expected_shape(root):
+    """Our campaign's processor-set SHAPE, from the shipped data. None if not shipped.
+
+    Read from data/perf/campaign-*/shape.json rather than derived: the shape of a cpuset depends on the
+    topology of the machine it ran on, so an evaluator computing the sibling structure of "4-27,60-83"
+    would get THEIR machine's answer and not ours. Cells recorded from 2026-09-20 carry the two numbers
+    themselves; the campaign's predate that, which is why the file exists."""
+    for f in sorted(glob.glob(os.path.join(root, "data", "perf", "campaign-*", "shape.json"))):
+        try:
+            j = json.load(open(f))
+            if j.get("n_physical_cores"):
+                return j["n_physical_cores"], j.get("smt_pairs_complete"), j.get("cpuset")
+        except Exception:
+            continue
+    return None
+
+def run_cpuset(tree, app):
+    for m in sorted(glob.glob(os.path.join(tree, app, "*", "run*", "meta.json"))):
+        try:
+            c = json.load(open(m)).get("cpuset")
+        except Exception:
+            continue
+        if c: return c
+    return None
+
+def run_shape(tree, app):
+    """The run's own shape, from its cells. None when the run predates the recording."""
+    for m in sorted(glob.glob(os.path.join(tree, app, "*", "run*", "meta.json"))):
+        try:
+            j = json.load(open(m))
+        except Exception:
+            continue
+        if j.get("n_physical_cores"):
+            return j["n_physical_cores"], j.get("smt_pairs_complete")
+    return None
+
 def run_facts(tree, app, ref_sha=None):
     """N, the effective thread count, and whether FFmpeg ran on the reference clip: the recorded flag, or,
     where a run predates the flag (our own campaign's FFmpeg cells), its recorded input hash equal to the
@@ -152,8 +188,37 @@ def main():
         # shipped campaign data is missing", and those need opposite treatment. Collapsing them was the
         # same absence-as-a-match bug one level up: with no shipped data every row would have been judged
         # with no comparability check at all, silently.
-        why = None
-        if threads and want and threads != want:
+        # SHAPE BEFORE THREADS. A set of the same SIZE but a different shape is a different machine --
+        # 48 logical processors are 24 cores with both SMT siblings on our host and can be 48 separate
+        # cores elsewhere, twice the compute with no sibling contention -- and comparing across that is
+        # meaningless however well the thread counts agree. (2026-09-20.)
+        # Graduated, because refusing every run made before the shape was recorded would discard our own
+        # rehearsal evidence, which WAS measured on the campaign's set. Strongest basis available wins,
+        # and the weaker one says so: a matching cpuset STRING is only evidence of a matching shape on the
+        # same host, since the sibling structure of "4-27,60-83" is a property of the machine.
+        # THE SHAPE DECISION IS ITS OWN CHAIN, NOT THE HEAD OF THIS ONE. Folding it in as leading `elif`s
+        # meant the row-three case -- shape unrecorded, cpuset ours -- SATISFIED the chain and stopped it,
+        # so the thread and clip checks below were never reached: FFmpeg rows on a REGENERATED clip were
+        # judged IN/OUT although every cell said input_is_reference false. A guard that silently disables
+        # the guards after it is worse than the bug it was added for. (Found by tsan-paper running the
+        # vendored copy on real trees before committing, 2026-09-20.)
+        ours_shape, mine_shape = expected_shape(root), run_shape(tree, app)
+        why = None; basis = None
+        if ours_shape and mine_shape and ours_shape[:2] != mine_shape:
+            why = (f"not comparable: {mine_shape[0]} physical cores, {mine_shape[1]} full SMT pairs; "
+                   f"ours {ours_shape[0]} and {ours_shape[1]}")
+        elif ours_shape and not mine_shape:
+            mine_cs = run_cpuset(tree, app)
+            if mine_cs and ours_shape[2] and mine_cs == ours_shape[2]:
+                basis = (f"shape not recorded (cells predate 2026-09-20); matched on cpuset {mine_cs}, "
+                         "which is our shape only if this is the same host")
+            else:
+                why = (f"not judged: no processor-set shape recorded and cpuset {mine_cs or 'unknown'!s} "
+                       f"is not ours ({ours_shape[2]})")
+        # Every remaining condition is still evaluated when the shape did not already refuse the tree.
+        if why is not None:
+            pass
+        elif threads and want and threads != want:
             why = f"not comparable: {threads} threads, ours {want}"
         elif want and not threads:
             why = "not judged: this run records no effective thread count"
@@ -214,6 +279,8 @@ def main():
                     if not same and inside:
                         outside += 1
             print(f"{app:10} {row:24} {yours:>22}  {shipped:22} {v}")
+        if basis and printed:
+            print(f"{'':10}   basis: {basis}")
         missing = [r for r in claims.get(app, {}) if r not in rows]
         if printed and missing:
             print(f"{app:10} {len(missing)} of {len(claims[app])} rows CLAIMS.md ships for this application were not produced by this run"

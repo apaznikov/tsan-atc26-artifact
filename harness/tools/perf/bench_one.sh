@@ -39,6 +39,12 @@ D="$OUTROOT/$APP/$CFG/${P5_RUN_PREFIX:-run}$RUN"; mkdir -p "$D"; LOG="$D/cmd.log
 # lib.sh's p5_taskset already had the right shape; this is the same rule applied at the eight call sites.
 TSPIN=""; [ -n "${CPUSET:-}" ] && TSPIN="taskset -c $CPUSET"
 NCPU=$($TSPIN nproc)
+# THE SHAPE OF THE PROCESSOR SET, NOT ONLY ITS SIZE. Equal logical counts are not equal machines: the
+# campaign's 48 was 24 physical cores with both SMT siblings of each, and 48 contiguous processors on this
+# host would be 48 separate cores with none -- twice the compute, no sibling contention. Recorded per cell
+# so a row can be compared with an interval only when the shapes match, and so a shape change is visible
+# in the first meta.json anyone opens rather than after the numbers disagree. (2026-09-20.)
+read -r NPHYS NPAIRS _ <<< "$(python3 ./cpu_snapshot.py --topology "${CPUSET:-}")"
 # env.sh documents ART_MEMCACHED_PORT as "change if it collides with something on your host" -- and
 # nothing read it: the port was written 7777 at seven places here, so an evaluator whose 7777 was taken
 # had no recourse but to edit the harness. A documented knob that nothing reads is worse than an
@@ -216,6 +222,7 @@ meta = {
   "outside_busy_share": (round(($out1 - $out0) / max(1.0, ($t1 - $t0) * $HZ * $nout), 4) if $nout > 0 else None),
   "gate_checked": ($nout > 0),
   "n_inside": $nin, "n_outside": $nout,
+  "n_physical_cores": ${NPHYS:-0}, "smt_pairs_complete": ${NPAIRS:-0},
   "foreign_ticks": max(0, $machine_busy - $ours_ticks),
   "foreign_cpu_share": round(max(0, $machine_busy - $ours_ticks) / max(1.0, ($t1 - $t0) * $HZ * $(nproc)), 4),
   "tsan_options": "$TSAN_OPTIONS", "max_rss_kb": ${om:-0},
