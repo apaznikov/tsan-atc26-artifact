@@ -433,9 +433,11 @@ from this commit, 19 Sep 2026; its runs are not shipped, and they carry no sessi
 | FFmpeg | both rows | 0.999, 1.115 | | not comparable: the clip was regenerated there |
 
 Both rows that fall outside are DynSTC and both miss by a thousandth or two, which is what a point
-estimate from two runs on another vendor's processor, on 32 physical cores against the campaign's 24 (the
-core topology is a candidate explanation beside the vendor and the two runs), is worth against an interval
-measured here; the
+estimate from two runs on another vendor's processor, on a set the campaign never used (all 32 physical cores of that host, 16 of them with both SMT threads
+and 16 with one, against the campaign's 24 cores with both threads of each: the shape the first-48-granted
+rule chose there, which was `evaluate.sh`'s rule until 20 Sep 2026, when it began choosing sibling pairs),
+is worth against an interval measured here; the uneven contention on that set is a candidate explanation
+beside the vendor and the two runs; the
 Redis row keeps the sign the campaign found. The refusals are the machinery working rather than a gap:
 FFmpeg is declined because that host regenerated the clip, and every stock-against-native ratio is
 reported and not judged because the drift condition governs it. The same host's SQLite AllOpt row was
