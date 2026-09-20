@@ -367,7 +367,7 @@ N runs per configuration:
 
 | Mode | Runs | Configurations | Time on 48 processors | What a row yields |
 |---|---|---|---|---|
-| **default** | N = 2 | four: native, stock, AllOpt with peeling, DynSTC | measured on this host and on a 64-processor AMD host: Redis 13-15 min, memcached 28-36, FFmpeg 20-25, SQLite 65-68: **about 2 h 15 min** together; MySQL a further 3.4 h (estimated) | a point estimate, no interval |
+| **default** | N = 2 | four: native, stock, AllOpt with peeling, DynSTC | measured on this host and on a 64-processor AMD host: Redis 13-15 min, memcached 28-36, FFmpeg 20-25, SQLite 65-68: **about 2 h 20 min** together; MySQL a further 3.4 h (estimated) | a point estimate, no interval |
 | everything at the default | N = 2 | all fourteen (MySQL four) | Redis 1.0 h, memcached 2.0, FFmpeg 1.2, SQLite 3.4, MySQL 3.4: **about 11 h**, 14 h with the builds | a point estimate, no interval |
 | our campaign | N = 5 | any of the above | twice the figures above (one warm-up plus five runs against one plus two); everything, 32 h of legs plus builds | a 95% interval |
 
@@ -411,7 +411,13 @@ comparable one, also exists: AllOpt with peeling 1.004 [0.984, 1.032] against th
 0.980 [0.966, 0.999], the same point estimate, with one nuance stated rather than rounded away: the
 shipped interval excludes 1.0 by 0.001 and the evaluator's contains it by 0.003, which by the letter of
 the N = 5 criterion is a mismatch and by the numbers is a knife-edge on a bound of 0.999 with identical
-points. Both numbers are given so a reader sees the 0.001. The table is generated from this
+points. Both numbers are given so a reader sees the 0.001. A second run of the whole tier from a fresh clone on
+the same set, 20 Sep 2026 (2 h 56 min: the correctness set 37 min on the 48 pinned processors, Redis 15,
+memcached 27, FFmpeg 24, SQLite 73 minutes; no cell disturbed, outside busy share at most 0.014), put five
+of six judged rows inside (Redis 1.015 and 0.961, the latter on the same side of 1.0; memcached 0.982 and
+0.977; SQLite DynSTC 0.989) and the SQLite AllOpt row outside again at N = 2, 1.076 by 0.015, the same row
+at nearly the same value as on 18 Sep, which the N = 5 run above decided; FFmpeg was not comparable there
+because the reference clip is not yet downloadable and the run regenerated it. The table is generated from this
 file's own interval tables and each run's `perf_<app>.md`, not transcribed, by
 `harness/tools/perf/compare_with_claims.py`, which ships and is the last step of `evaluate.sh reproduced`:
 one line per configuration row (the evaluator's point or interval, the shipped interval, inside or outside,

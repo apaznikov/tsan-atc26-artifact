@@ -13,7 +13,7 @@ recorded, and one script per experiment.
 git clone https://github.com/apaznikov/tsan-atc26-artifact.git && cd tsan-atc26-artifact
 ./evaluate.sh check          # does it all run here? 5 minutes, plus the image build the first time (15-25 min). Not a badge.
 ./evaluate.sh functional     # the Functional badge: the full correctness set, about 2 hours (31 min on 64 processors, 1 h 45 min on 32, 2 h on 8)
-./evaluate.sh reproduced     # the Reproduced badge: the whole functional tier, then the performance subset; about 4 hours on 48 idle processors
+./evaluate.sh reproduced     # the Reproduced badge: the whole functional tier, then the performance subset; about 3 hours on 48 idle processors
 ./evaluate.sh                # prints the tiers and their steps, runs nothing
 ```
 
@@ -134,7 +134,7 @@ fewer), 16 GB of memory (`ART_MEMORY=16g` caps the container so that the derived
 
 `./evaluate.sh everything` is `reproduced` at all fourteen configurations, plus MySQL (about 14 hours). On a
 checkout where `./evaluate.sh functional` already ended in PASS, `./evaluate.sh reproduced --performance-only`
-runs the performance subset alone (about 2 h 15 min); `./evaluate.sh <tier> --plan` prints a tier's steps and
+runs the performance subset alone (about 2 h 20 min); `./evaluate.sh <tier> --plan` prints a tier's steps and
 their expected times without running anything.
 Nothing asks a question: a tier starts when named, after printing what to know about it (`--plan` lists the
 steps without starting anything). `--rebuild` builds the image again from nothing (15-25 min).

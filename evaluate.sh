@@ -9,7 +9,8 @@
 #                                64 processors, 1 h 45 min on 32, 2 h on 8).
 #   ./evaluate.sh reproduced     The Reproduced badge: the whole functional tier first, then the performance
 #                                subset, Redis, memcached, FFmpeg and SQLite at the defaults (four configurations,
-#                                two runs), compared with the intervals CLAIMS.md ships. About 4 hours. Runs on
+#                                two runs), compared with the intervals CLAIMS.md ships. About 3 hours (measured 2 h 56 min
+#                                and 2 h 48 min on two hosts). Runs on
 #                                any processor count; the comparison with our intervals needs the campaign's
 #                                shape pinned, 24 physical cores with both SMT threads (48 logical processors,
 #                                chosen here when the machine has them), and a machine that is otherwise idle.
@@ -22,7 +23,7 @@
 # asks a question, a tier starts when named), --rebuild (build the image again from nothing,
 # without Docker's layer cache, which is the only build that re-runs the reconstructed-tree assertion; 15-25 min),
 # --performance-only (reproduced or everything without repeating the functional tier, for a checkout on which
-# ./evaluate.sh functional already ended in PASS; about 2 h 15 min for reproduced). --quick is the old name of check.
+# ./evaluate.sh functional already ended in PASS; about 2 h 20 min for reproduced). --quick is the old name of check.
 #
 # Why tiers and not one command for all of it: the correctness set runs anywhere in two hours; the performance
 # set runs only on a quiet, large machine and takes four to fourteen hours, which is a decision a person makes;
@@ -93,8 +94,8 @@ fi
 total=$(case "$tier:$perf_only" in
   check:*)      echo "about 5 minutes, plus the image build the first time (15-25 min)";;
   functional:*) echo "about 2 hours, plus the image build the first time";;
-  reproduced:1) echo "about 2 h 15 min, plus the image build the first time";;
-  reproduced:*) echo "about 4 hours, plus the image build the first time";;
+  reproduced:1) echo "about 2 h 20 min, plus the image build the first time";;
+  reproduced:*) echo "about 3 hours, plus the image build the first time";;
   everything:1) echo "about 12 hours, plus the image build the first time";;
   everything:*) echo "about 14 hours, plus the image build the first time";; esac)
 describe=$(case "$tier" in
