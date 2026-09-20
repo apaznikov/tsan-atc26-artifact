@@ -58,7 +58,7 @@ need_harness tools/perf; need_compiler
 # so getting this wrong does not produce wrong numbers, it produces a run that cannot start. Read it from
 # the file the image writes, and fall back to asking clang, which is where that file came from.
 if [ -r "$TSAN_LLVM_ROOT/TSAN_AUDIT_HASH" ]; then
-  hash=$(grep -oE '[0-9a-f]{40}' "$TSAN_LLVM_ROOT/TSAN_AUDIT_HASH" | head -1 || true)
+  hash=$(head -1 "$TSAN_LLVM_ROOT/TSAN_AUDIT_HASH" | grep -oE '[0-9a-f]{40}' || true)   # line 1 is the commit; line 2 is a tree hash
 else
   hash=$("$TSAN_LLVM_ROOT/bin/clang" --version 2>/dev/null | grep -oE '[0-9a-f]{40}' | head -1 || true)
 fi

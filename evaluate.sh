@@ -10,8 +10,9 @@
 #   ./evaluate.sh reproduced     The Reproduced badge: the whole functional tier first, then the performance
 #                                subset, Redis, memcached, FFmpeg and SQLite at the defaults (four configurations,
 #                                two runs), compared with the intervals CLAIMS.md ships. About 4 hours. Runs on
-#                                any processor count; the comparison with our intervals needs 48 pinned
-#                                processors and a machine that is otherwise idle.
+#                                any processor count; the comparison with our intervals needs the campaign's
+#                                shape pinned, 24 physical cores with both SMT threads (48 logical processors,
+#                                chosen here when the machine has them), and a machine that is otherwise idle.
 #   ./evaluate.sh everything     reproduced at all fourteen configurations, plus MySQL. About 14 hours.
 #
 # Each tier contains the one before it, so one command per badge is the whole job. Without a tier name this
@@ -109,25 +110,27 @@ autopin=0
 if [ "$perf_tier" = 1 ]; then
   echo
   echo "Four things to know about the performance tier (it starts right after them; --plan lists the steps without starting):"
-  echo "  1. Machine. Any processor count runs. The comparison with our intervals is made on 48 pinned processors"
-  echo "     (memcached's thread count follows the processor count; with fewer, its rows are reported, not judged)"
-  echo "     and on a machine on which nothing else runs: the disturbance gate retires every cell measured under"
-  echo "     foreign load (docs/confounds.md)."
-  # Our intervals describe a 48-processor pinned set, and the workload's thread counts follow from the
-  # set's size (docs/campaign-parameters.md). So, unless the caller chose a set, pin 48 processors when
-  # the machine has them: the run is then gate-checked and its thread counts equal ours. Which 48: the
-  # first 48 the Docker daemon actually grants to containers, asked of the image once it exists, because
-  # a daemon confined by systemd (AllowedCPUs on docker.slice) grants fewer than the host has and a request
-  # for 0-47 would be clipped to whatever of it the daemon may use (44 of 48 on our own host). A smaller
-  # machine runs unpinned, not gate-checked, and its memcached rows are reported with their thread count
-  # rather than compared. Topology (which 48, hyperthread siblings) is the caller's to refine.
+  echo "  1. Machine. Any processor count runs. The comparison with our intervals is made on the campaign's shape,"
+  echo "     24 physical cores with both SMT threads of each pinned (48 logical processors; memcached's thread count"
+  echo "     follows the logical count; with fewer, its rows are reported, not judged), and on a machine on which"
+  echo "     nothing else runs: the disturbance gate retires every cell measured under foreign load (docs/confounds.md)."
+  # Our intervals describe 24 physical cores with both SMT siblings (48 logical, 4-27 and 60-83 on our host,
+  # siblings n and n+56), and the workload's thread counts follow from the logical count
+  # (docs/campaign-parameters.md). So, unless the caller chose a set, pin that shape when the machine has it:
+  # the first 24 complete sibling pairs among the processors the Docker daemon actually grants to containers
+  # (asked of the image once it exists, because a daemon confined by systemd grants fewer than the host has,
+  # and a request outside the grant is clipped). "The first 48 granted" was the rule until 20 Sep 2026, and on
+  # our host that was 4-51: 48 distinct cores with no SMT contention, twice the campaign's compute under the
+  # same logical count (tsan-exp). Without 24 such pairs, the first 48 granted, labelled as a different shape.
+  # A smaller machine runs unpinned, not gate-checked, memcached's rows reported rather than compared.
   if [ -z "${ART_CPUSET:-}" ]; then
     ncpu_here=$(nproc 2>/dev/null || echo 0)
     if [ "$ncpu_here" -ge 48 ]; then
       autopin=1
-      echo "     ART_CPUSET not set: the run pins 48 of the processors the Docker daemon grants to containers (0-47"
-      echo "     when it grants them all; chosen once the image exists and printed then), so it is gate-checked and"
-      echo "     its thread counts match ours. Set ART_CPUSET to choose which 48 yourself (topology, siblings)."
+      echo "     ART_CPUSET not set: once the image exists, the run pins the campaign's shape from the processors the"
+      echo "     Docker daemon grants to containers, the first 24 complete SMT sibling pairs (48 logical), and prints"
+      echo "     the set; on a machine without 24 such pairs, the first 48 granted, printed as a different shape."
+      echo "     Set ART_CPUSET to choose the set yourself."
     else
       echo "     ART_CPUSET not set and $ncpu_here processors here (fewer than 48): the run uses every processor the"
       echo "     container sees and is not gate-checked; memcached's rows are reported with their thread count and"
@@ -155,17 +158,42 @@ if [ "$perf_tier" = 1 ]; then
   : "$yes"
 fi
 
-# 48 of the processors the daemon grants to containers, as a range list; nothing if it grants fewer.
+# The campaign's shape from the processors the daemon grants to containers: the first 24 complete SMT
+# sibling pairs (48 logical); failing that, the first 48 granted, labelled. Prints "<set><TAB><shape>";
+# nothing when fewer than 48 are granted. Sibling pairs come from the host's sysfs, which the container
+# shares.
+expand_cpus() { tr ',' '\n' | awk -F- '{ if ($2 == "") print $1; else for (i = $1; i <= $2; i++) print i }' | sort -n; }
+compress_cpus() {  # sorted list on stdin -> range list
+  awk 'NR == 1 { s = $1; p = $1; next }
+       $1 == p + 1 { p = $1; next }
+       { out = out (out == "" ? "" : ",") (s == p ? s : s "-" p); s = $1; p = $1 }
+       END { if (NR) print out (out == "" ? "" : ",") (s == p ? s : s "-" p) }'
+}
 resolve_autopin() {
-  local granted
+  local granted list c sib a b n=0 used=" " pairs="" chosen shape cores
   granted=$(docker run --rm "${ART_IMAGE:-tsan-atc26}" bash -c 'grep Cpus_allowed_list /proc/self/status | cut -f2' 2>/dev/null || true)
   [ -n "$granted" ] || granted="0-$(( $(nproc 2>/dev/null || echo 1) - 1 ))"
-  printf '%s' "$granted" | tr ',' '\n' | awk -F- '{ if ($2 == "") print $1; else for (i = $1; i <= $2; i++) print i }' \
-    | sort -n | head -48 \
-    | awk 'NR == 1 { s = $1; p = $1; next }
-           $1 == p + 1 { p = $1; next }
-           { out = out (out == "" ? "" : ",") (s == p ? s : s "-" p); s = $1; p = $1 }
-           END { if (NR < 48) exit; print out (out == "" ? "" : ",") (s == p ? s : s "-" p) }'
+  list=$(printf '%s' "$granted" | expand_cpus)
+  [ "$(printf '%s\n' "$list" | wc -l)" -ge 48 ] || return 0
+  for c in $list; do
+    case "$used" in *" $c "*) continue ;; esac
+    sib=$(cat "/sys/devices/system/cpu/cpu$c/topology/thread_siblings_list" 2>/dev/null | expand_cpus | tr '\n' ' ')
+    set -- $sib
+    [ $# -eq 2 ] || continue
+    a=$1; b=$2
+    { printf '%s\n' "$list" | grep -qx "$a" && printf '%s\n' "$list" | grep -qx "$b"; } || continue
+    pairs="$pairs $a $b"; used="$used $a $b "; n=$((n+1))
+    [ "$n" -eq 24 ] && break
+  done
+  if [ "$n" -eq 24 ]; then
+    chosen=$(printf '%s\n' $pairs | sort -n | compress_cpus)
+    shape="24 physical cores with both SMT threads of each (48 logical processors), the campaign's shape"
+  else
+    chosen=$(printf '%s\n' "$list" | head -48 | compress_cpus)
+    cores=$(for c in $(printf '%s\n' "$list" | head -48); do echo "$(cat /sys/devices/system/cpu/cpu$c/topology/physical_package_id 2>/dev/null):$(cat /sys/devices/system/cpu/cpu$c/topology/core_id 2>/dev/null)"; done | sort -u | wc -l)
+    shape="48 logical processors on $cores physical cores: NOT the campaign's shape (24 cores with both SMT threads), so the rows are labelled with it and the memcached rows are not compared"
+  fi
+  printf '%s\t%s' "$chosen" "$shape"
 }
 
 mkdir -p results
@@ -182,10 +210,10 @@ for s in "${steps[@]}"; do
     cmd="./docker/build.sh"; [ "$rebuild" = 1 ] && cmd="./docker/build.sh --no-cache"
   fi
   if [ "$autopin" = 1 ] && [ -z "${ART_CPUSET:-}" ] && [[ "$cmd" == *40-perf.sh* ]]; then
-    set48=$(resolve_autopin)
+    IFS=$'\t' read -r set48 shape48 <<< "$(resolve_autopin)"
     if [ -n "$set48" ]; then
       export ART_CPUSET="$set48"
-      echo "    pinning ART_CPUSET=$set48: 48 of the processors the Docker daemon grants to containers"
+      echo "    pinning ART_CPUSET=$set48: $shape48" | tee -a "$log"
     else
       autopin=0
       echo "    the Docker daemon grants fewer than 48 processors to containers: running unpinned, not gate-checked"

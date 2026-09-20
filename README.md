@@ -119,10 +119,12 @@ packs into a few megabytes of git history.
 ## The environment we used
 
 Intel Xeon w9-3495X, 56 cores and 112 threads, 250 GB RAM, Ubuntu 24.04, kernel 6.8.0-40-generic.
-Performance runs are pinned to 48 processors, one measurement at a time. Nothing here needs that
+Performance runs are pinned to 24 physical cores with both SMT threads of each (48 logical processors, CPUs 4-27
+and 60-83), one measurement at a time. Nothing here needs that
 machine: the container runs anywhere, and the deterministic experiments give identical results on
 any x86-64 Linux host. The performance experiments run on any processor count; the comparison with our intervals is made with
-48 processors pinned (memcached's thread count follows the processor count): with fewer, the run is unpinned,
+the campaign's shape pinned, 24 physical cores with both SMT threads (48 logical processors; memcached's thread
+count follows the logical count): with fewer, the run is unpinned,
 memcached's rows are reported with their thread count and not compared, and the other rows are judged. `docs/confounds.md`
 says what varies and why. The minimum for the correctness set is 8 processors (the regression suite refuses
 fewer), 16 GB of memory (`ART_MEMORY=16g` caps the container so that the derived job count respects it) and
@@ -149,9 +151,10 @@ preservation suite's `report.txt` and `manifest.txt`, the soundness shapes' lit 
 performance tiers end with `harness/tools/perf/compare_with_claims.py`, which prints one line per
 configuration row against the interval `CLAIMS.md` ships for it (inside or outside, not judged, not
 comparable) and a count of rows judged; read that count first, since a row it cannot judge is reported,
-never passed, and its silence is never a pass. On a machine with 48 or more processors the performance tier pins 48 of the processors the Docker daemon
-grants to containers (0-47 when it grants them all) unless `ART_CPUSET` says which; on a smaller one it
-runs unpinned and says so.
+never passed, and its silence is never a pass. On a machine with 48 or more processors the performance tier pins the campaign's shape from the processors
+the Docker daemon grants to containers, the first 24 complete SMT sibling pairs, and prints the set (on a
+machine without 24 such pairs, the first 48 granted, printed as a different shape) unless `ART_CPUSET` says
+which; on a smaller one it runs unpinned and says so.
 
 `evaluate.sh` runs the scripts below in the documented order, prints one line per step with its time,
 writes the full log under `results/`, and ends with one verdict: PASS, INCOMPLETE (a check whose

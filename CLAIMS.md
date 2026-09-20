@@ -7,7 +7,7 @@ claim it.
 Measurement provenance for every performance row: compiler `f3deebfbab60` (the commit the image reproduces and
 every run's `TSAN_AUDIT_HASH` names; it sits on branch `artifact/atc26`, whose tip has since moved past
 it by two documentation-only commits restoring and completing the audit ledger, so the stamp and not
-the branch identifies the measured compiler), five applications, one discarded warm-up then N = 5 runs per configuration (our campaign; the artifact's default for a reviewer is N = 2, see "What an evaluator actually has to run"), pinned to 48 processors (CPUs 4-27 and 60-83 on our machine), one
+the branch identifies the measured compiler), five applications, one discarded warm-up then N = 5 runs per configuration (our campaign; the artifact's default for a reviewer is N = 2, see "What an evaluator actually has to run"), pinned to 48 logical processors that are 24 physical cores with both SMT threads of each (CPUs 4-27 and 60-83 on our machine, siblings n and n+56), one
 measurement at a time in run-major order. The statistic is the geometric mean over an
 application's tests of per-test medians, with a 95% confidence interval from 2000 bootstrap
 resamples over runs (seed 1). Our machine: Intel Xeon w9-3495X, 56 cores / 112 threads, 250 GB
@@ -345,7 +345,7 @@ an earlier compiler and are shipped as data, not as claims.
 Workload thread counts follow the campaign's rule, set by the harness and recorded per cell: the memcached
 server runs one thread per processor of the pinned set, sysbench three quarters of that, FFmpeg an
 absolute four; on the 48-processor set the intervals describe, that is 48 and 36, and each cell's
-`meta.json` carries the value it ran with. To compare a point with these intervals, pin 48 processors; on
+`meta.json` carries the value it ran with. To compare a point with these intervals, pin the campaign's shape, 24 physical cores with both SMT threads (48 logical processors; `evaluate.sh` chooses such a set when the machine has one); on
 another count the rule yields that machine's point and the row is reported with its thread count rather
 than compared (`docs/campaign-parameters.md`). The rehearsal of 17 Sep found the shipped defaults off by
 one `/2` (24 and 18 on this set) while the campaign's values lived only in a lab launcher; a memcached row
@@ -378,7 +378,7 @@ ART_RUNS=5 ./docker/run.sh scripts/40-perf.sh redis      # our setting: interval
 ```
 
 **What the default mode measured when we ran it as an evaluator would** (17-18 Sep 2026, the pushed
-checkout in the container, 48 pinned processors, N = 2, four configurations, nothing else on the machine;
+checkout in the container, the campaign's own 48 processors (4-27,60-83) pinned, N = 2, four configurations, nothing else on the machine;
 those runs are not shipped, the figures are what the scripts printed):
 the functional check 52 s; Redis 15 min; memcached 28 min at the rule's 48 server threads; FFmpeg 25 min
 on the reference clip with all four codecs; SQLite 68 min. Seven of the eight configuration rows landed
@@ -419,7 +419,7 @@ different thread count, and a count of rows judged; its exit status is 0 only wh
 inside, and its silence is never a pass.
 
 On other hardware the criterion does not apply, and a full run there says what travels. An AMD EPYC
-9115 host (64 threads, 48 pinned, N = 2, no cell disturbed, the whole `evaluate.sh reproduced` tier
+9115 host (2 sockets of 16 cores with 2 threads each; 48 pinned as 0-47, which there is all 32 physical cores with both SMT threads of 16 of them, not the campaign's 24 cores with both threads of each; N = 2, no cell disturbed, the whole `evaluate.sh reproduced` tier
 from this commit, 19 Sep 2026; its runs are not shipped, and they carry no session record because the harness's session writer read an Intel-only sysfs file and failed silently on that host, fixed 19 Sep; the processor set 0-47 and the pinned mode come from every cell's own `meta.json`) judged six rows and put four inside:
 
 | Application | Row | That host (N = 2) | Shipped interval (N = 5) | Verdict |
@@ -433,7 +433,9 @@ from this commit, 19 Sep 2026; its runs are not shipped, and they carry no sessi
 | FFmpeg | both rows | 0.999, 1.115 | | not comparable: the clip was regenerated there |
 
 Both rows that fall outside are DynSTC and both miss by a thousandth or two, which is what a point
-estimate from two runs on another vendor's processor is worth against an interval measured here; the
+estimate from two runs on another vendor's processor, on 32 physical cores against the campaign's 24 (the
+core topology is a candidate explanation beside the vendor and the two runs), is worth against an interval
+measured here; the
 Redis row keeps the sign the campaign found. The refusals are the machinery working rather than a gap:
 FFmpeg is declined because that host regenerated the clip, and every stock-against-native ratio is
 reported and not judged because the drift condition governs it. The same host's SQLite AllOpt row was

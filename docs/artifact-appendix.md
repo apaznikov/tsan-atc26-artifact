@@ -41,7 +41,7 @@ container build fetches upstream LLVM with a shallow clone and compiles it: meas
 14m52s at the derived default of 25 jobs on our host and 24m38s at 8 jobs (mostly a fixed serial head:
 clone, patches, configure and the runtime stage do not scale with jobs). The performance experiments run on any processor count, are compared with our intervals only with 48
 processors pinned, and need a machine doing nothing else; ours was an Intel Xeon w9-3495X, 56 cores and 112 threads, 250 GB, Ubuntu 24.04, with
-benchmarks pinned to 48 processors.
+benchmarks pinned to 24 physical cores with both SMT threads of each (48 logical processors).
 
 ## Set-up and basic test
 

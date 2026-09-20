@@ -16,7 +16,7 @@ case "$app" in sqlite|memcached|redis|ffmpeg|mysql) ;; *) echo "unknown app $app
 need_harness tools/perf; need_compiler
 
 if [ -r "$TSAN_LLVM_ROOT/TSAN_AUDIT_HASH" ]; then
-  hash=$(grep -oE '[0-9a-f]{40}' "$TSAN_LLVM_ROOT/TSAN_AUDIT_HASH" | head -1 || true)
+  hash=$(head -1 "$TSAN_LLVM_ROOT/TSAN_AUDIT_HASH" | grep -oE '[0-9a-f]{40}' || true)   # line 1 is the commit; line 2 is a tree hash
 else
   hash=$("$TSAN_LLVM_ROOT/bin/clang" --version 2>/dev/null | grep -oE '[0-9a-f]{40}' | head -1 || true)
 fi
