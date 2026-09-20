@@ -73,8 +73,39 @@ else
   rc=0
   for t in "$@"; do regen_perf "$t" || rc=1; done
 fi
+if [ $# -eq 0 ]; then
+  # Last, after the regeneration, so it checks what this step produced and not what was on disk before it:
+  # do the documents still agree with the data they ship? Every configuration row CLAIMS.md claims, against
+  # the shipped campaign cells, through the same comparator an evaluator's run ends with. It asserts that
+  # some rows were judged and that none is outside; the count is printed, not asserted, because CLAIMS.md
+  # can gain a row without anything being wrong. "0 judged, 0 outside" is the state it exists to refuse.
+  echo
+  echo "The documents against the data they ship (harness/tools/perf/check_shipped_comparison.sh):"
+  chk="$ART_ROOT/harness/tools/perf/check_shipped_comparison.sh"
+  if out=$("$chk" 2>&1); then printf '%s\n' "$out" | tail -1 | sed 's/^/  /'
+  else printf '%s\n' "$out" | tail -4 | sed 's/^/  /'; rc=1; fi
+  # And the refusal that makes the comparison mean something: a tree whose clip is not the reference one must
+  # be reported as not comparable, never judged. Built here from copies of the shipped FFmpeg cells' metadata
+  # with input_is_reference set to false; nothing shipped is touched. Until 20 Sep 2026 a chain-ordering
+  # defect judged exactly such trees, which this control would have caught.
+  ctl=$(mktemp -d); src="$ART_DATA/perf/campaign-f3deebfbab60/primary"; t="$ctl/perf-ffmpeg-control"
+  mkdir -p "$t" && cp "$src/perf_ffmpeg.md" "$t/"
+  while IFS= read -r m; do
+    mkdir -p "$t/$(dirname "$m")"
+    python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); d["input_is_reference"]=False; json.dump(d,open(sys.argv[2],"w"))' "$src/$m" "$t/$m"
+  done < <(cd "$src" && find ffmpeg -name meta.json)
+  # Captured, then searched: `python3 ... | grep -q` under pipefail reports failure when grep closes the pipe
+  # on the first match and the comparator dies of SIGPIPE, which is how this control failed on its first run.
+  cout=$(python3 "$ART_ROOT/harness/tools/perf/compare_with_claims.py" "$ART_ROOT/CLAIMS.md" "$t" 2>&1 || true)
+  if printf '%s\n' "$cout" | grep -c 'not comparable: not the reference clip' >/dev/null; then
+    echo "  ok: a run on a clip that is not the reference is refused, not judged (control)"
+  else
+    echo "  FAIL: a run on a non-reference clip was not refused by the comparator (control)" >&2; rc=1
+  fi
+  rm -rf "$ctl"
+fi
 if [ "${rc:-0}" -ne 0 ]; then
-  echo "Done, with at least one tree whose shipped tables do not follow from its shipped runs." >&2
+  echo "Done, with at least one tree whose shipped tables do not follow from its shipped runs, or a document that disagrees with the data." >&2
   exit 1
 fi
 echo "Done."
