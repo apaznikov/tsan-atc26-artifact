@@ -259,7 +259,8 @@ fi
 dt=$(( $(date +%s) - start_all ))
 echo
 {
-where="(tier $tier, $((dt/3600))h$(( (dt%3600)/60 ))m; full log in $log)"
+if [ "$dt" -ge 3600 ]; then took="$((dt/3600))h$(( (dt%3600)/60 ))m"; else took="$((dt/60))m$(printf %02d $((dt%60)))s"; fi
+where="(tier $tier, $took; full log in $log)"
 if [ "$verdict" = PASS ] && [ -n "${compared:-}" ]; then
   # Not "PASS, rows outside": every step ran, and the comparison is the tier's question, so the line
   # must say the comparison did not come back clean. The exit status says the same.
