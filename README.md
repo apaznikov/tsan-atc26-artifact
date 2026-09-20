@@ -53,25 +53,32 @@ suite and the shipped tables (what each step established is CLAIMS.md sections 1
 about speed.
 ```
 
-The Reproduced tier ends with the comparison. This one is from a 64-processor AMD host (the run `CLAIMS.md`
-section 5 quotes), with the stock-against-native lines and the "rows not produced by this run" lines left out;
-FFmpeg is not compared there because that host regenerated the clip:
+The Reproduced tier ends with the comparison. This one is our own run of 20 Sep 2026 from a fresh clone on our
+host, the set chosen by the script (the stock-against-native lines and the "rows not produced by this run"
+lines left out); FFmpeg is not compared because the reference clip is not yet downloadable and the run
+regenerated it:
 
 ```
+    pinning ART_CPUSET=4-27,60-83: 24 physical cores with both SMT threads of each (48 logical processors), the campaign's shape
 app        row                                       yours  ours (N=5)             verdict
 ----------------------------------------------------------------------------------------------------
-ffmpeg     AllOpt with peeling                 0.999 (N=2)  1.006 [0.990, 1.024]   not comparable: not the reference clip
-ffmpeg     DynSTC                              1.115 (N=2)  1.113 [1.099, 1.129]   not comparable: not the reference clip
-memcached  AllOpt with peeling                 1.059 (N=2)  1.019 [0.951, 1.079]   IN
-memcached  DynSTC                              0.942 (N=2)  0.986 [0.944, 1.063]   OUT by 0.002 below
-redis      AllOpt with peeling                 1.001 (N=2)  1.000 [0.983, 1.026]   IN
-redis      DynSTC                              0.971 (N=2)  0.944 [0.927, 0.970]   OUT by 0.001 above, same side of 1.0
-sqlite     AllOpt with peeling                 0.944 (N=2)  1.023 [0.942, 1.061]   IN
-sqlite     DynSTC                              0.968 (N=2)  0.995 [0.928, 1.082]   IN
+ffmpeg     AllOpt with peeling                 1.010 (N=2)  1.006 [0.990, 1.024]   not comparable: not the reference clip
+ffmpeg     DynSTC                              1.122 (N=2)  1.113 [1.099, 1.129]   not comparable: not the reference clip
+memcached  AllOpt with peeling                 1.017 (N=2)  1.019 [0.951, 1.079]   IN
+memcached  DynSTC                              0.958 (N=2)  0.986 [0.944, 1.063]   IN
+redis      AllOpt with peeling                 1.023 (N=2)  1.000 [0.983, 1.026]   IN
+redis      DynSTC                              0.984 (N=2)  0.944 [0.927, 0.970]   OUT by 0.014 above, same side of 1.0
+sqlite     AllOpt with peeling                 1.063 (N=2)  1.023 [0.942, 1.061]   OUT by 0.002 above
+sqlite     DynSTC                              1.029 (N=2)  0.995 [0.928, 1.082]   IN
 ----------------------------------------------------------------------------------------------------
 6 rows judged, 2 outside their intervals.
-evaluate.sh: PASS on every step, COMPARISON NOT CLEAN  (tier reproduced, 4h6m; full log in results/evaluate-reproduced-20260919-010131.log)
+evaluate.sh: PASS on every step, COMPARISON NOT CLEAN  (tier reproduced, 2h23m; full log in results/evaluate-reproduced-20260920-115055.log)
 ```
+
+Two rows outside is what this run reads at N = 2, and `CLAIMS.md` section 5 says what each means: the
+SQLite row lands above its bound in 3 of the 10 two-run subsets of our own N = 5 leg (a figure an evaluator
+can recompute with `harness/tools/perf/subset_spread.py`), and the Redis row keeps the sign of the claim
+with a smaller cost, the size of the documented between-session drift on that application.
 
 The tables name configurations as the harness does:
 

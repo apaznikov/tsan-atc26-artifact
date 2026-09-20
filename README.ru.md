@@ -55,25 +55,32 @@ suite and the shipped tables (what each step established is CLAIMS.md sections 1
 about speed.
 ```
 
-Уровень Reproduced заканчивается сравнением. Это сравнение с 64-процессорной машины на AMD (тот прогон, который
-цитирует раздел 5 `CLAIMS.md`), без строк stock-против-native и без строк «rows not produced by this run»;
-FFmpeg там не сравнивается, потому что та машина пересоздала клип:
+Уровень Reproduced заканчивается сравнением. Это наш собственный прогон 20 сентября 2026 с чистого клона на нашей
+машине, набор процессоров выбран скриптом (без строк stock-против-native и без строк «rows not produced by
+this run»); FFmpeg не сравнивается, потому что эталонный клип ещё не скачивается и прогон пересоздал его:
 
 ```
+    pinning ART_CPUSET=4-27,60-83: 24 physical cores with both SMT threads of each (48 logical processors), the campaign's shape
 app        row                                       yours  ours (N=5)             verdict
 ----------------------------------------------------------------------------------------------------
-ffmpeg     AllOpt with peeling                 0.999 (N=2)  1.006 [0.990, 1.024]   not comparable: not the reference clip
-ffmpeg     DynSTC                              1.115 (N=2)  1.113 [1.099, 1.129]   not comparable: not the reference clip
-memcached  AllOpt with peeling                 1.059 (N=2)  1.019 [0.951, 1.079]   IN
-memcached  DynSTC                              0.942 (N=2)  0.986 [0.944, 1.063]   OUT by 0.002 below
-redis      AllOpt with peeling                 1.001 (N=2)  1.000 [0.983, 1.026]   IN
-redis      DynSTC                              0.971 (N=2)  0.944 [0.927, 0.970]   OUT by 0.001 above, same side of 1.0
-sqlite     AllOpt with peeling                 0.944 (N=2)  1.023 [0.942, 1.061]   IN
-sqlite     DynSTC                              0.968 (N=2)  0.995 [0.928, 1.082]   IN
+ffmpeg     AllOpt with peeling                 1.010 (N=2)  1.006 [0.990, 1.024]   not comparable: not the reference clip
+ffmpeg     DynSTC                              1.122 (N=2)  1.113 [1.099, 1.129]   not comparable: not the reference clip
+memcached  AllOpt with peeling                 1.017 (N=2)  1.019 [0.951, 1.079]   IN
+memcached  DynSTC                              0.958 (N=2)  0.986 [0.944, 1.063]   IN
+redis      AllOpt with peeling                 1.023 (N=2)  1.000 [0.983, 1.026]   IN
+redis      DynSTC                              0.984 (N=2)  0.944 [0.927, 0.970]   OUT by 0.014 above, same side of 1.0
+sqlite     AllOpt with peeling                 1.063 (N=2)  1.023 [0.942, 1.061]   OUT by 0.002 above
+sqlite     DynSTC                              1.029 (N=2)  0.995 [0.928, 1.082]   IN
 ----------------------------------------------------------------------------------------------------
 6 rows judged, 2 outside their intervals.
-evaluate.sh: PASS on every step, COMPARISON NOT CLEAN  (tier reproduced, 4h6m; full log in results/evaluate-reproduced-20260919-010131.log)
+evaluate.sh: PASS on every step, COMPARISON NOT CLEAN  (tier reproduced, 2h23m; full log in results/evaluate-reproduced-20260920-115055.log)
 ```
+
+Две строки снаружи это то, что этот прогон читает при N = 2, а раздел 5 `CLAIMS.md` говорит, что каждая из них
+значит: строка SQLite ложится выше своей границы в 3 из 10 двухпрогонных подмножеств нашей собственной серии
+N = 5 (число, которое рецензент может пересчитать `harness/tools/perf/subset_spread.py`), а строка Redis
+сохраняет знак утверждения при меньшей цене, размером с задокументированный межсессионный дрейф этого
+приложения.
 
 Таблицы называют конфигурации так, как их называет харнесс:
 

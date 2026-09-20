@@ -48,7 +48,10 @@ point plots use the paper's own thread counts; the curves are shipped so no poin
 - **memcached**: on the earlier campaign its wall time was bimodal (two modes about 20% apart, sticky
   for tens of minutes); on the shipped campaign the per-configuration variation is 1 to 3% at N = 5,
   and the speedup intervals of its twelve instrumented configurations are still 11.9 to 15.7 points
-  wide (a ratio's bootstrap over five runs). Rows inside that interval are nulls, not zeros.
+  wide (a ratio's bootstrap over five runs). Rows inside that interval are nulls, not zeros. The two modes
+  returned on another host with a different processor-set shape (32 cores, 16 of them with both SMT threads)
+  and vanished on that host's sibling-paired set: the bimodality follows the set's shape
+  (`docs/campaign-parameters.md`, "The shape of the processor set").
 - **MySQL**: intervals 7 to 8 points wide on the campaign (AllOpt with peeling 1.042 [0.985, 1.062], with
   DynSTC 1.018 [0.967, 1.037]). Same reading. Its EA-bearing configurations took about 2.2 hours each to
   build with the previous compiler and about half an hour with the shipped one.

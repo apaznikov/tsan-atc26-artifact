@@ -417,7 +417,22 @@ memcached 27, FFmpeg 24, SQLite 73 minutes; no cell disturbed, outside busy shar
 of six judged rows inside (Redis 1.015 and 0.961, the latter on the same side of 1.0; memcached 0.982 and
 0.977; SQLite DynSTC 0.989) and the SQLite AllOpt row outside again at N = 2, 1.076 by 0.015, the same row
 at nearly the same value as on 18 Sep, which the N = 5 run above decided; FFmpeg was not comparable there
-because the reference clip is not yet downloadable and the run regenerated it. The table is generated from this
+because the reference clip is not yet downloadable and the run regenerated it. A third run the same night,
+the performance subset alone from another fresh clone on the same set, every cell recording its shape (24
+cores, 24 complete SMT pairs; 2 h 23 min; no cell disturbed), put four of six inside (memcached 1.017 and
+0.958, Redis AllOpt 1.023, SQLite DynSTC 1.029) and two outside: SQLite AllOpt 1.063 by 0.002 and Redis DynSTC
+0.984 by 0.014, on the same side of 1.0. The two are different cases, and both are derivable from shipped data
+with `harness/tools/perf/subset_spread.py`, which recomputes the headline statistic over every two-run subset
+of an N = 5 leg through the aggregator's own estimator. SQLite AllOpt: over the ten two-run subsets of the
+N = 5 leg of 18 Sep (shipped as `data/perf/n2-spread-sqlite-n5-20260918`, claimed for nothing) the point
+ranges from 0.977 to 1.104 with median 1.028 around the leg's 1.041, and 3 of the 10 exceed the shipped bound
+of 1.061; so this row reads outside for about a third of evaluators at N = 2 for reasons unrelated to their
+machine (the subsets share runs, so this is within-session spread, not a probability), and our three N = 2
+readings of 1.078, 1.076 and 1.063 are that spread. Redis DynSTC: the campaign's own ten two-run subsets range
+from 0.926 to 0.965 (1 of 10 outside), and our three N = 2 readings of 0.968, 0.961 and 0.984 sit at or above
+that maximum, so they are not the N = 2 spread: the cost of DynSTC on Redis is 2 to 4 per cent on this host
+now against the campaign's 5.6, the size of change the documented between-session Redis drift (14 per cent in
+the stock baseline six days apart) produces in a ratio, with the sign kept in every run. The table is generated from this
 file's own interval tables and each run's `perf_<app>.md`, not transcribed, by
 `harness/tools/perf/compare_with_claims.py`, which ships and is the last step of `evaluate.sh reproduced`:
 one line per configuration row (the evaluator's point or interval, the shipped interval, inside or outside,
@@ -463,6 +478,19 @@ the drift condition governs it. The SQLite AllOpt row was 0.909 and outside on t
 then 0.944 and 1.016 and inside, which is the size of the N = 2 variation on that column and the reason the
 criterion asks for five runs before it is strict. Wall time there on 20 Sep: 2 h 48 min for the whole tier
 (the correctness set 30 min on 64 processors; Redis 13, memcached 36, FFmpeg 20, SQLite 69 minutes).
+
+The same host, the same night, on the campaign's shape: `evaluate.sh` now chooses the first 24 complete SMT
+pairs, which there is 0-23,32-55 (24 cores with both threads, every cell recording it), and the whole tier ran
+again from a fresh clone (2 h 49 min). The comparator judged six rows: memcached inside on both (1.016 and
+0.983), Redis inside on both (0.986; DynSTC 0.939, on the same side of 1.0, a cost of 6.1 per cent against the
+campaign's 5.6), SQLite outside on both (AllOpt 0.913 by 0.029 below, DynSTC 1.123 by 0.041 above). Two things
+follow. The memcached two-mode behaviour above was the shape, not the host: on the paired set all eight
+instrumented runs landed in the fast mode (194 to 207 s, 1.37 to 1.49 million operations per second) and both
+rows fell inside, where on the 32-core set the pairs had split between the modes on two days running. And
+SQLite's headline column is wide on that host at N = 2 in either direction (0.909, 0.944, 1.016 and 0.913 for
+AllOpt over four runs; 0.851, 0.968, 0.959 and 1.123 for DynSTC), wider than on ours, so on that host the row
+is one that only an N = 5 run can decide; the resolvable-subtest column, which the shipped tables carry, is
+the one to read there.
 
 The four configurations decide everything the paper's figure turns on, and Redis, memcached and
 FFmpeg together, about an hour and a quarter, cover the two things this campaign found: DynSTC's

@@ -11,7 +11,7 @@ evidence behind each thread count.
 | Item | Value |
 |---|---|
 | Host | Intel Xeon w9-3495X, 56 cores / 112 threads, 250 GB, Ubuntu 24.04, kernel 6.8.0-40 |
-| Benchmark CPU set | 4-27,60-83 (48 logical CPUs), one measurement at a time, `taskset`-pinned |
+| Benchmark CPU set | 4-27,60-83: 48 logical CPUs that are 24 physical cores with both SMT siblings of each (siblings n and n+56 on this host), one measurement at a time, `taskset`-pinned; recorded as `data/perf/campaign-f3deebfbab60/shape.json` |
 | Compiler for the sweeps and Stage B | frozen copy `tsan-perf-d3bf9f8c39fe` (stamp in `clang --version`) |
 | Compiler for the campaign | `tsan-line-f3deebfbab60` (commit `f3deebfbab60` on branch `artifact/atc26`, at the time named `artifact/paper-sound`; the branch tip later moved past it by documentation-only commits, and the stamp identifies the compiler = `aa8a6dd8a2e8` plus the three EA compile-time commits 412d1d513f3d, 2dcc82078a60, c38c1e7e94ec; decision of 15 Sep 15:50; gate passed 15 Sep ~16:50): 112/112 static-count rows identical to `tsan-line-aa8a6dd8a2e8` on the 28-module corpus (stock, EA, the four sound analyses, and AllOpt with dominance elimination, so DE rows included); zero abandoned functions per TU on the corpus and the MYSQLparse extract; five IR suites 126/0 (1 unsupported); 12-configuration matrix 12 x 292/0; check-tsan 371/0 in each of five configurations; K=5 replay 293 x 5 x 12 with L2 = 0 everywhere (the one flagged bucket, `fork_atexit.cpp`, is a thread-leak diagnostic flaky under stock itself, 0/5-3/5, Fisher p = 0.444); frozen at `/extra/alexey/builds/tsan-line-f3deebfbab60`, `ldd` 87 libraries from the copy and none from a worktree. Gates ran while application builds used the other half of the machine (load 20-30), re-run serially after an overlapping-lit contamination of the first pass. Fallback if any gate is red: `tsan-line-aa8a6dd8a2e8` (tag `artifact-paper-sound-aa8a6dd8a2e8`), whose builds were kept. The series changes compile time only. On the `MYSQLparse` extract (1.9 MB bitcode, the ledger's proxy for sql_yacc.cc, full campaign flag set, same core, same input): `f3deebfbab60` 13.55 s and 1.98 GB peak, rc = 0; `aa8a6dd8a2e8` did not finish within a 30-minute cap (> 1800 s, 3.14 GB peak, rc = 124). That is a lower bound of 133x, not a measured ratio; the ledger's pre-series figure of 1 091.6 s for the same extract was taken on a different tree and is not this measurement. Memory is uncensored: 37% lower. On the whole MySQL build, same configuration both sides finishing: AllOpt+peel 8 321 s on `aa8a6dd8a2e8` (-j40, half the machine, a clang rebuild on the other half) against 459 s on `f3deebfbab60` (-j56, quiet machine), 18.1x raw; the two non-EA configurations price the conditions at about 1.3x (native 435 -> 319 s, stock 456 -> 365 s), leaving about 14x attributable to the series. Static counts on the MySQL binary identical on both compilers: 640 355 memory-access sites, 1 263 905 TSan calls |
 | Abandoned-function check on the applications | every instrumented configuration is built with `TSAN_EXTRA_MLLVM="-mllvm -tsan-ea-report-abandoned"` (an environment variable tied to the compiler, because the flag does not exist in the fallback compiler; configuration identities are unchanged; native takes no TSan flags). The rebuild chain fails if any instrumented `build_info.txt` `flags:` line lacks the flag, and fails if it examined zero configurations, so a zero cannot mean "flag absent" or "nothing checked" (its first version checked nothing: an invalid `find -newermt` spec and provenance files outside the repository for MySQL, FFmpeg and Redis). On 15 Sep it flagged `redis-tsan`, whose provenance file omitted the flag the compiler had received; Redis was rebuilt so the record matches the build. Counts are reported per application and per translation unit; zero required per application, FFmpeg included. Result 15 Sep 18:18: zero on all five applications, every translation unit |
@@ -318,6 +318,24 @@ beside the Redis rows in `CLAIMS.md` (not resolved, disclosed); the headline con
    the rule values above with the March values as second rows.
 3. **One clean re-measurement of all five applications** replaces Stage B once the machine state
    is settled and written down (~30 h at N = 5).
+
+## The shape of the processor set
+
+Equal logical-processor counts are not equal machines. The campaign's 48 logical processors are 24 physical
+cores with both SMT siblings of each; 48 contiguous processors on another host can be 48 separate cores with
+no sibling contention, twice the compute under the same count, and on a 2-socket 16-core AMD host the first 48
+are all 32 cores with 16 of them doubled, a third shape. Since 20 Sep 2026 every cell records
+`n_physical_cores` and `smt_pairs_complete` (from `tools/perf/cpu_snapshot.py --topology`), the campaign's
+own shape ships beside its roots as `shape.json` because its cells predate the field, `evaluate.sh` chooses
+the first 24 complete sibling pairs the Docker daemon grants (4-27,60-83 here; 0-23,32-55 on that AMD host),
+and the comparator refuses a run of another shape. What the shape does to a measurement was seen on that
+AMD host: on its first-48 set memcached's instrumented runs split between two modes about 15 per cent apart
+and the N = 2 ratio was whichever mode each pair drew (0.942 one day, 1.162 the next); on its sibling-paired
+set all eight runs landed in one mode and both rows fell inside our intervals (`CLAIMS.md`, section 5).
+
+One field is not what it looks like: `session.json`'s `host` is `os.uname().nodename` inside the container,
+the container's id for every containerised run, so it names the run and not the machine; two runs on one
+machine ten minutes apart differ in it.
 
 ## Smoke mode
 
