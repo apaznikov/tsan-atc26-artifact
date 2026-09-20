@@ -220,7 +220,8 @@ controls covering the 23 lost-race shapes, plus one multi-step summary test) and
 unsupported on this platform before anything is compiled, so 292 execute; our own run of them ships as
 `data/suite/`, with the command to re-derive each count. One test, `getline_nohang.cpp`, stalls to its
 two-minute timeout in many repeats under stock as well as under every configuration; a pause of a couple of
-minutes during the suite is that test, not a hang; it should be skipped on this glibc and is not, a lit
+minutes during the suite is that test, not a hang (on our 8-processor run it stalled 40 of 60 repeats, most of
+the two hours); it should be skipped on this glibc and is not, a lit
 configuration defect explained in `docs/nondeterministic-tests.md`, to be fixed after the submission.
 
 ## Running the experiments

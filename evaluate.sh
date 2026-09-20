@@ -76,7 +76,7 @@ if [ "$perf_only" != 1 ]; then
   if [ "$tier" = check ]; then
     add "correctness set, quick"          "2-5 min"   "./docker/run.sh scripts/01-functional.sh --quick"
   else
-    add "correctness set, full"           "31 min on 64 processors, 1 h 45 min on 32, 2 h on 8" "./docker/run.sh scripts/01-functional.sh"
+    add "correctness set, full"           "31 min on 64 processors to 2 h on 8; much of it one test waiting out a 2-minute timeout" "./docker/run.sh scripts/01-functional.sh"
   fi
   add "tables from the shipped runs"      "1 min"     "./docker/run.sh scripts/90-tables.sh"
 fi
@@ -201,7 +201,7 @@ for s in "${steps[@]}"; do
   { echo "=== $label: $cmd"; bash -c "$cmd"; } > "$step_out" 2>&1; rc=$?
   cat "$step_out" >> "$log"
   dt=$(( $(date +%s) - t0 ))
-  printf '    %-38s rc=%d  %dm%02ds\n' "$label" "$rc" $((dt/60)) $((dt%60))
+  printf '    %-38s rc=%d  finished %s, %dm%02ds elapsed\n' "$label" "$rc" "$(date +%H:%M:%S)" $((dt/60)) $((dt%60))
   # A skipped check is neither a pass nor a failure, and it must not be reported as a pass: 01-functional
   # prints "the correctness set is INCOMPLETE" when a step's prerequisite is absent and exits 0, because
   # nothing failed. The first version of this script tested the text only on a non-zero exit and reported

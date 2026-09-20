@@ -65,7 +65,8 @@ and under the counting rule it can never become a candidate lost race because it
 every time. The wall-time cost is real: `lit` runs the tests in name order, so a stalled repeat usually
 outlives the rest of its configuration's run and the machine sits idle for up to two minutes per stalled
 repeat, which an evaluator watching the load sees as idle periods; on a host where the stall is frequent
-that is a large share of the suite's time (`ART_LIT_TIMEOUT=60` halves it, at the price of a shorter limit
+that is a large share of the suite's time: on our 8-processor run of 19 Sep it stalled 40 of 60 repeats,
+up to 80 of the suite's 117 minutes (`ART_LIT_TIMEOUT=60` halves it, at the price of a shorter limit
 for every test). Its stall rate rises with machine load, which is why we give
 two figures rather than one: on an otherwise idle machine it stalled 3 times in 21 repeats of the full
 383-test suite, roughly one repeat in six or seven; in the shipped-compiler run of 17 Sep,
