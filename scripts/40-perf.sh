@@ -24,6 +24,9 @@ set -euo pipefail
 app="${1:?usage: 40-perf.sh <app> [--build-only] [--all-configs] [--configs \"c1 c2\"]}"; shift
 build_only=0; configs=""; all_configs=0
 SUBSET="orig tsan tsan-dom_peeling-ea-lo-st-swmr tsan-stmt"
+# FFmpeg adds the combination, its headline row (AllOpt with peeling and DynSTC, 1.187 [1.171, 1.201] at the
+# 16-thread default; CLAIMS.md, the first FFmpeg section). About a quarter more time than the four.
+[ "$app" = ffmpeg ] && SUBSET="$SUBSET tsan-dom_peeling-ea-lo-st-swmr-stmt"
 while [ $# -gt 0 ]; do
   case "$1" in
     --build-only)  build_only=1; shift;;
@@ -68,7 +71,7 @@ hash=${hash:0:12}
 # Measured at the defaults (four configurations, N = 2) on 48 pinned processors, 17-19 Sep 2026, on two hosts;
 # --all-configs multiplies by about 3.4 and ART_RUNS=5 by about 2 (one warm-up plus N runs; the campaign's per-cell costs).
 case "$app" in
-  sqlite)    t="1 h";;      memcached) t="30 min";;   ffmpeg) t="25 min plus the clip's first download";;
+  sqlite)    t="1 h";;      memcached) t="30 min";;   ffmpeg) t="30 min for the five configurations, plus the clip's first download";;
   redis)     t="15 min";;   mysql)     t="3.5 h plus a build of about 10 min per configuration";;
 esac
 runs="$ART_RUNS"; warmup="$ART_WARMUP"
@@ -76,7 +79,7 @@ if [ "$ART_SMOKE" = 1 ]; then
   runs=1; warmup=0
   # Smoke mode shortens the WORKLOAD as well as the repetition count. A single full-length run is still
   # hours on some applications, and a reader checking that the plumbing works should not pay for that.
-  export MYSQL_SECONDS=20 MC_REQUESTS=2000 SQLITE_TESTS=walthread1 FF_THREADS="${FF_THREADS:-4}"
+  export MYSQL_SECONDS=20 MC_REQUESTS=2000 SQLITE_TESTS=walthread1 FF_THREADS="${FF_THREADS:-16}"
 fi
 printf 'Expected: performance for %s, %s warm-up + %s runs per configuration -- about %s at the defaults on 48 pinned processors (--all-configs about 3.4x, ART_RUNS=5 about 2x, smoke mode a few minutes), 20-100 GB of disk.\n' "$app" "$warmup" "$runs" "$t"
 smoke_banner

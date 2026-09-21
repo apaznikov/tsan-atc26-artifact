@@ -69,12 +69,18 @@ case "${MC_THREADS:-}${MYSQL_THREADS:-}${FF_THREADS:-}" in "") THREADS_FROM_ENV=
 # its own point of the SAME rule, which is what the paper's concurrency section describes and what
 # "comparable on comparable hardware" already qualifies. Neither choice makes a differently-sized machine
 # comparable to ours -- what the rule preserves is the regime, threads at parity with cores, rather than a
-# number. FFmpeg's 4 stays ABSOLUTE: libx265 refuses more than 16 frame threads and drops the codec
-# silently above it, so that one is a property of the encoder and not of the machine.
+# number. FFmpeg's count stays ABSOLUTE for a different reason: libx265 refuses more than 16 frame threads
+# and drops the codec silently above it, so the ceiling is a property of the ENCODER and not of the machine.
+# THE ARTIFACT'S FFMPEG DEFAULT IS 16 FROM 2026-09-22, NOT 4. The thread sweep found DynSTC flat from 2 to
+# 16 while AllOpt with peeling pays only at 8 and above, so 16 is both the sweep's best and the encoder's
+# ceiling. The paper's runs used 4, and FF_THREADS=4 reproduces the paper's count against CLAIMS's
+# 4-thread section. The rule lives HERE rather than in env.sh because env.sh exporting FF_THREADS would
+# flip threads_from_env to True on every run of every application -- line 60 concatenates the three knobs --
+# turning the record of "a human chose this" into noise. (tsan-paper, 2026-09-22.)
 case "$APP" in
   memcached) THREADS_EFFECTIVE="${MC_THREADS:-$NCPU}";;
   mysql)     THREADS_EFFECTIVE="${MYSQL_THREADS:-$((NCPU * 3 / 4))}";;
-  ffmpeg)    THREADS_EFFECTIVE="${FF_THREADS:-4}";;
+  ffmpeg)    THREADS_EFFECTIVE="${FF_THREADS:-16}";;
   *)         THREADS_EFFECTIVE="";;
 esac
 export TSAN_OPTIONS="${TSAN_OPTIONS:-report_bugs=0}"

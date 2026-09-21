@@ -300,6 +300,7 @@ checks both strictly against the shipped compiler.
 
 The paper's thread count, and the campaign's table. The artifact's default since 22 Sep 2026 is 16 threads
 (the section above); a run with `FF_THREADS=4` exported is compared with this table.
+
 Stock ThreadSanitizer against native: 2.76x [2.70, 2.80] (the paper: 2.9x, on a different clip).
 Every shipped FFmpeg run carries all four codecs, checked over the recorded runs with
 `check_ffmpeg_codecs.py`, which runs as a gate on every cell as it is produced: a cell whose workload
@@ -389,7 +390,9 @@ an earlier compiler and are shipped as data, not as claims.
 
 Workload thread counts follow the campaign's rule, set by the harness and recorded per cell: the memcached
 server runs one thread per processor of the pinned set, sysbench three quarters of that, FFmpeg an
-absolute four; on the 48-processor set the intervals describe, that is 48 and 36, and each cell's
+absolute 16 since 22 Sep 2026 (the sweep's best and libx265's ceiling; the campaign's own FFmpeg rows were
+taken at the paper's 4, which `FF_THREADS=4` reproduces); on the 48-processor set the intervals describe,
+that is 48 and 36, and each cell's
 `meta.json` carries the value it ran with. To compare a point with these intervals, pin the campaign's shape, 24 physical cores with both SMT threads (48 logical processors; `evaluate.sh` chooses such a set when the machine has one); on
 another count the rule yields that machine's point and the row is reported with its thread count rather
 than compared (`docs/campaign-parameters.md`). The rehearsal of 17 Sep found the shipped defaults off by
@@ -484,7 +487,7 @@ N runs per configuration:
 
 | Mode | Runs | Configurations | Time on 48 processors | What a row yields |
 |---|---|---|---|---|
-| **default** | N = 2 | four: native, stock, AllOpt with peeling, DynSTC | measured on this host and on a 64-processor AMD host: Redis 13-15 min, memcached 28-36, FFmpeg 20-25, SQLite 65-68: **about 2 h 20 min** together; MySQL a further 3.4 h (estimated) | a point estimate, no interval |
+| **default** | N = 2 | four: native, stock, AllOpt with peeling, DynSTC (FFmpeg five: plus AllOpt with peeling and DynSTC, at 16 threads) | measured on this host and on a 64-processor AMD host: Redis 13-15 min, memcached 28-36, FFmpeg about 30, SQLite 65-68: **about 2 h 30 min** together; MySQL a further 3.4 h (estimated) | a point estimate, no interval |
 | everything at the default | N = 2 | all fourteen (MySQL four) | Redis 1.0 h, memcached 2.0, FFmpeg 1.2, SQLite 3.4, MySQL 3.4: **about 11 h**, 14 h with the builds | a point estimate, no interval |
 | our campaign | N = 5 | any of the above | twice the figures above (one warm-up plus five runs against one plus two); everything, 32 h of legs plus builds | a 95% interval |
 

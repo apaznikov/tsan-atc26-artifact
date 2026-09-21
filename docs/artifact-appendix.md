@@ -39,9 +39,10 @@ re-measured with the compiler released here: it incorporates 23 soundness fixes 
 artifact and keeps every race stock ThreadSanitizer finds (`CLAIMS.md`, section 1). Its campaign (section 5;
 N = 5, 95 % intervals) is what the Reproduced tier compares against. The submitted version's figures, measured
 before the fixes, are kept in `CLAIMS.md`'s "Paper" column for the record. What the campaign establishes:
-DynSTC changes performance measurably (FFmpeg +11 %, Redis −5.6 %, confirmed at a second concurrency and on a
-second host); every other configuration lies within its interval of stock ThreadSanitizer, and the static
-instrumentation removed is 2 to 8 per cent (section 3).
+DynSTC changes performance measurably (FFmpeg +11 % at the paper's 4 threads, Redis −5.6 %, confirmed at a second
+concurrency and on a second host); at 16 threads, the artifact's default since 22 Sep 2026, AllOpt with peeling
+and DynSTC together reach +19 % on FFmpeg (1.187 [1.171, 1.201]); every other configuration lies within its
+interval of stock ThreadSanitizer, and the static instrumentation removed is 2 to 8 per cent (section 3).
 
 ## Contents, hosting and requirements
 

@@ -50,7 +50,9 @@ export ART_FFMPEG_CLIP_URL="${ART_FFMPEG_CLIP_URL-https://github.com/apaznikov/t
 export ART_FFMPEG_SOURCE="${ART_FFMPEG_SOURCE:-}"
 
 # Workload thread counts. Empty means the campaign's rule (docs/campaign-parameters.md): one memcached server
-# thread per processor of the pinned set, three quarters of that for sysbench, FFmpeg at an absolute 4. Set
+# thread per processor of the pinned set, three quarters of that for sysbench, FFmpeg at an absolute 16 since
+# 22 Sep 2026 (libx265's ceiling, where the thread sweep found the paper's transforms gain most; the paper's
+# own count was 4, and FF_THREADS=4 is compared with the 4-thread rows of CLAIMS.md). Set
 # one to measure a different point; every cell records the value it ran with (threads_setting) and whether
 # it was overridden (threads_from_env). docker/run.sh forwards all three; until 18 Sep 2026 it forwarded none,
 # so the documented override could not reach the container (the same defect as the clip variables).

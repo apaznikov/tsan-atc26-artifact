@@ -31,7 +31,7 @@ R2 (the whole-machine values as a second row).
 
 | Application | Workload | Primary (R3 / R1) | Second row | Notes |
 |---|---|---|---|---|
-| FFmpeg | 4 codecs (h264, h265, mjpeg, stream copy), CC-BY input, `-c:v` only; **12 configurations** (no whole-program rows: FFmpeg has no summary generator, and the paper's FFmpeg figure has none either) | `-threads 4` (March) | `-threads 16` (libx265's ceiling) | sweep: AllOpt+peel 1.008 at 4, 1.055 at 16; DynSTC ~1.12 throughout |
+| FFmpeg | 4 codecs (h264, h265, mjpeg, stream copy), CC-BY input, `-c:v` only; **12 configurations** (no whole-program rows: FFmpeg has no summary generator, and the paper's FFmpeg figure has none either) | `-threads 4` (March) | `-threads 16` (libx265's ceiling; the artifact's default since 22 Sep 2026, `CLAIMS.md`'s first FFmpeg section) | sweep: AllOpt+peel 1.008 at 4, 1.055 at 16; DynSTC ~1.12 throughout; AllOpt+peel+DynSTC 1.187 at 16 |
 | Redis | `redis-benchmark`, 19 tests, `-P 1024 -n <per-test>` | `-c 50` (tool default, March) | `-c 112` (logical CPU count) | sweep: DynSTC 1.068 at 50, 1.039 at 112, no trend; AllOpt+peel 1.021 at 50, 0.992 at 112 |
 | SQLite | `threadtest3`, all 7 subtests (`SQLITE_TESTS='*'`); resolvable set = walthread1, walthread2, checkpoint_starvation_1, checkpoint_starvation_2 | no thread argument (March) | `--w1-threads 112` for walthread1 | sweep: flat 2-112 |
 | memcached | `memtier_benchmark -t 10 -x 5 --pipeline 16 -P memcache_text --random-data --requests 100000`; server `-c 4096` | server `-t 48` (R1) | server `-t 112` (March `nproc`, R2) | no sweep |
@@ -51,8 +51,10 @@ equal the campaign hash).
 
 Thread counts follow a rule, and the rule is the lab's, not a number copied from one machine: the memcached
 server runs one thread per processor of the set it is pinned to (`-t 48` here), sysbench three quarters of
-that (`--threads=36` here), and FFmpeg an absolute `-threads 4` because libx265 refuses more than 16 frame
-threads. The same rule evaluated on the whole 112-thread host is the lab's "paper" policy (`MC_THREADS=112
+that (`--threads=36` here), and FFmpeg an absolute `-threads 16` since 22 Sep 2026, libx265's ceiling (it refuses more than 16 frame
+threads) and the point of the thread sweep where the paper's transforms gain most; the campaign's primary FFmpeg
+rows were taken at the paper's `-threads 4`, which `FF_THREADS=4` reproduces, and each set of rows is compared
+only with runs at its own count. The same rule evaluated on the whole 112-thread host is the lab's "paper" policy (`MC_THREADS=112
 MYSQL_THREADS=84` in the lab's launcher), which is how the paper's March runs were taken; the campaign is
 the rule at the 48-processor pinned set. The intervals in `CLAIMS.md` describe that set: to compare a point
 with them, pin 48 processors, where the rule reproduces 48 and 36 exactly. On a different count the rule

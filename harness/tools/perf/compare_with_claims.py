@@ -21,30 +21,86 @@ would rot the moment the campaign's parameters changed, and the shipped meta.jso
 """
 import glob, json, math, os, re, sys
 
+def flag_labels():
+    """The labels of the UPSTREAM-FLAG configurations, derived from the configuration names.
+
+    The flag table in CLAIMS carries context rows too (stock, the sound bundle) so that the flag's effect
+    can be read against something; those are not flag configurations and must not be reported as
+    "measured, not claimed". Deriving the set from names ending in -nofe keeps that distinction with the
+    configurations rather than with the prose of a label."""
+    return {v for k, v in LABEL.items() if k.endswith("-nofe")}
+
+def _heading_threads(line):
+    """The thread count a section heading states, or None. Two exact forms only, plus memcached's.
+
+    The count is a property of the ROW, not of the application: it is the condition the interval was
+    measured under, so it belongs beside the interval. shape.json is per-application and cannot express
+    "these rows at 16, those at 4", which is what FFmpeg needs from 2026-09-22. Parsing prose is the weak
+    point, so this is strict rather than clever: an ambiguous heading is treated as unannotated and its
+    rows behave exactly as before. (Design agreed with tsan-paper, 2026-09-21.)"""
+    for pat in (r"-threads (\d+)", r"server at (\d+) threads", r"(\d+) threads"):
+        m = re.search(pat, line)
+        if m:
+            return m.group(1)
+    return None
+
 def claims_rows(path):
-    """{app: {row: (point, lo, hi)}} from CLAIMS.md's own tables, so the two cannot drift apart."""
-    out, app, cols = {}, None, None
+    """{app: {threads_key: {row: (point, lo, hi)}}} from CLAIMS.md's own tables.
+
+    threads_key is the count the section heading states, or None where it states none (Redis, SQLite).
+    The upstream-flag table is stored under the extra key "flag": {threads_key: {configuration: iv}},
+    bucketed by its own Application column rather than by a heading, because one table carries rows for
+    several applications."""
+    out, app, cols, tkey, flag = {}, None, None, None, False
     for line in open(path, encoding="utf-8"):
-        m = re.match(r"^### (\w+)", line)
-        if m:
-            app = m.group(1).lower(); out.setdefault(app, {}); cols = None
-        if app is None:
+        if line.startswith("### "):
+            cols = None
+            tkey = _heading_threads(line)
+            m = re.match(r"^### (\w+)", line)
+            app = m.group(1).lower() if m else None
+            # The flag section is not an application section: its rows name their own applications.
+            flag = "instrument-func-entry-exit" in line
+            if app and not flag:
+                out.setdefault(app, {}).setdefault(tkey, {})
+        if app is None and not flag:
             continue
-        m = re.search(r"Stock ThreadSanitizer against native:\s*([\d.]+)x?\s*\[([\d.]+),\s*([\d.]+)\]", line)
-        if m:
-            out[app]["stock vs native"] = tuple(float(x) for x in m.groups())
-        if line.startswith("| Configuration |"):
-            cols = [c.strip() for c in line.strip().strip("|").split("|")]; continue
-        if cols and line.startswith("|"):
-            cells = [c.strip() for c in line.strip().strip("|").split("|")]
-            if len(cells) != len(cols) or "All five runs [95%]" not in cols:
-                continue
-            m = re.search(r"([\d.]+)\s*\[([\d.]+),\s*([\d.]+)\]", cells[cols.index("All five runs [95%]")])
+        if not flag:
+            m = re.search(r"Stock ThreadSanitizer against native:\s*([\d.]+)x?\s*\[([\d.]+),\s*([\d.]+)\]", line)
             if m:
-                out[app][cells[0]] = tuple(float(x) for x in m.groups())
+                out[app][tkey]["stock vs native"] = tuple(float(x) for x in m.groups())
+        if line.startswith("| Configuration |") or line.startswith("| Application |"):
+            cols = [c.strip() for c in line.strip().strip("|").split("|")]; continue
+        if not cols or not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) != len(cols) or "All five runs [95%]" not in cols:
+            continue
+        m = re.search(r"([\d.]+)\s*\[([\d.]+),\s*([\d.]+)\]", cells[cols.index("All five runs [95%]")])
+        if not m:
+            continue
+        iv = tuple(float(x) for x in m.groups())
+        if "Application" in cols:
+            acell = cells[cols.index("Application")]
+            a = acell.split()[0].lower() if acell.split() else None
+            if not a:
+                continue
+            t = re.search(r"\((\d+) threads\)", acell)
+            out.setdefault(a, {}).setdefault("flag", {}).setdefault(t.group(1) if t else None, {})[
+                cells[cols.index("Configuration")]] = iv
+        else:
+            out.setdefault(app, {}).setdefault(tkey, {})[cells[0]] = iv
     return out
 
-LABEL = {"tsan-dom_peeling-ea-lo-st-swmr": "AllOpt with peeling", "tsan-stmt": "DynSTC",
+# A CONFIGURATION MISSING FROM HERE USED TO VANISH. LABEL is a plain dict and the row loop iterated
+# CLAIMS's rows, so a run configuration with no entry was silently absent from the table -- the
+# absence-as-silence shape. The loop now iterates the RUN's configurations and says so when one is not in
+# CLAIMS, so a future `-nofe`-style addition announces itself. (2026-09-22.)
+LABEL = {"tsan-sound": "four sound analyses",
+         "tsan-nofe": "stock with the flag",
+         "tsan-sound-nofe": "four sound analyses with the flag",
+         "tsan-dom_peeling-ea-lo-st-swmr-nofe": "AllOpt with peeling and the flag",
+         "tsan-dom_peeling-ea-lo-st-swmr-stmt-nofe": "AllOpt with peeling, DynSTC and the flag",
+         "tsan-dom_peeling-ea-lo-st-swmr": "AllOpt with peeling", "tsan-stmt": "DynSTC",
          "tsan-dom-ea-lo-st-swmr": "AllOpt without peeling", "tsan-ea": "EA", "tsan-lo": "LO",
          "tsan-st": "STC", "tsan-swmr": "SWMR", "tsan-dom": "DE", "tsan-dom_peeling": "DE + peeling",
          # The three rows that were silently never judged until 19 Sep 2026 (no label, so `continue`).
@@ -222,14 +278,34 @@ def main():
             else:
                 why = (f"not judged: no processor-set shape recorded and cpuset {mine_cs or 'unknown'!s} "
                        f"is not ours ({ours_shape[2]})")
+        # WHICH BUCKET OF CLAIMS'S ROWS THIS RUN IS JUDGED AGAINST. From 2026-09-22 FFmpeg has rows at
+        # two thread counts, so "the application's rows" is no longer a single set: the run's own recorded
+        # count chooses. A count CLAIMS has no rows for is REFUSED by name rather than compared against
+        # whichever section happened to parse first, which is what a single-bucket tool would have done
+        # silently the moment the second section appeared.
+        buckets = claims.get(app, {})
+        flagrows = buckets.get("flag", {})
+        tkeys = sorted(k for k in buckets if k not in (None, "flag"))
+        bucket, tkey = {}, None
+        if tkeys:
+            if threads and threads in buckets:
+                bucket, tkey = buckets[threads], threads
+            elif threads:
+                why = why or (f"not comparable: {threads} threads; CLAIMS.md has rows at {', '.join(tkeys)}")
+            else:
+                why = why or "not judged: this run records no effective thread count"
+        else:
+            bucket, tkey = buckets.get(None, {}), None
+        fbucket = flagrows.get(tkey if tkey in flagrows else (threads if threads in flagrows else None), {})
+
         # Every remaining condition is still evaluated when the shape did not already refuse the tree.
         if why is not None:
             pass
-        elif threads and want and threads != want:
+        elif not tkeys and threads and want and threads != want:
             why = f"not comparable: {threads} threads, ours {want}"
-        elif want and not threads:
+        elif not tkeys and want and not threads:
             why = "not judged: this run records no effective thread count"
-        elif threads and not want:
+        elif not tkeys and threads and not want:
             why = ("not judged: no shipped campaign data to compare the thread count with "
                    f"(looked in {os.path.join(root, 'data', 'perf')})")
         elif app == "ffmpeg" and isref is not True:
@@ -241,16 +317,52 @@ def main():
         # printed, nothing is judged, and the summary still reports success on the other applications.
         # Silence for a tree the caller explicitly named is the same failure as silence overall, and the
         # all-or-nothing guard below does not catch it. (Audit, 2026-09-19.)
+        def verdict(pt, iv, ours):
+            """The comparison itself, shared by judged rows and flag rows so the two cannot diverge."""
+            if iv:
+                overlap = iv[0] <= ours[2] and ours[1] <= iv[1]
+                agree = (iv[0] <= 1.0 <= iv[1]) == (ours[1] <= 1.0 <= ours[2])
+                ins = overlap and agree
+                if ins: return "IN (intervals overlap)", True
+                if not overlap:
+                    return f"OUT: intervals do not overlap (gap {max(iv[0] - ours[2], ours[1] - iv[1]):.3f})", False
+                return "OUT: one interval contains 1.0 and the other does not", False
+            ins = ours[1] <= pt <= ours[2]
+            if ins: return "IN ", True
+            return (f"OUT by {ours[1] - pt:.3f} below" if pt < ours[1]
+                    else f"OUT by {pt - ours[2]:.3f} above"), False
+
+        # THE LOOP RUNS OVER THE RUN'S ROWS, NOT CLAIMS'S. Iterating CLAIMS meant a configuration the run
+        # measured but CLAIMS does not carry was skipped in silence -- so an unlabelled or unclaimed
+        # configuration simply did not appear. Every row the run produced now gets a line.
         printed = 0
-        for row, ours in sorted(claims.get(app, {}).items()):
-            if row not in rows:
-                continue
-            printed += 1
-            pt, iv, nrow = rows[row]
+        for label in sorted(rows):
+            pt, iv, nrow = rows[label]
             n_here = nrow or n
             yours = f"{pt:.3f} [{iv[0]:.3f}, {iv[1]:.3f}]" if iv else f"{pt:.3f} (N={n_here})"
-            shipped = f"{ours[0]:.3f} [{ours[1]:.3f}, {ours[2]:.3f}]"
-            if row == "stock vs native":
+            ours = bucket.get(label)
+            fiv = fbucket.get(label) if label in flag_labels() else None
+            if ours is None and fiv is None:
+                # A tree already refused as a whole is not ALSO told its rows are unknown: the reason it
+                # was refused is the useful line, and "not in CLAIMS" would suggest a second, different
+                # problem. (Spec case: an 8-thread FFmpeg run against rows at 16 and 4.)
+                printed += 1 if why else 0
+                print(f"{app:10} {label:24} {yours:>22}  {'':22} "
+                      + (why or "not in CLAIMS.md for this application at this thread count"))
+                continue
+            printed += 1
+            shipped = f"{(ours or fiv)[0]:.3f} [{(ours or fiv)[1]:.3f}, {(ours or fiv)[2]:.3f}]"
+            if ours is None:
+                # Measured and reported, counted in neither total: the flag is upstream's, so a row about
+                # it is evidence in this artifact and not a claim of this paper.
+                if why:
+                    v = f"measured, not claimed (upstream flag): {why}"
+                else:
+                    t, ins = verdict(pt, iv, fiv)
+                    v = f"measured, not claimed (upstream flag): {'inside' if ins else 'outside'} our interval"
+                print(f"{app:10} {label:24} {yours:>22}  {shipped:22} {v}")
+                continue
+            if label == "stock vs native":
                 v = "not judged (session drift is wider than this interval)"
             elif n_here < 2:
                 v = "no verdict (N<2 is not a measurement)"
@@ -258,26 +370,7 @@ def main():
                 v = why
             else:
                 judged += 1
-                if iv:
-                    # The N = 5 rule of CLAIMS.md section 5: the intervals overlap, and both contain 1.0 or
-                    # neither does. Until 19 Sep 2026 the point-in-interval rule was applied at every N, which
-                    # failed an overlapping N = 5 interval whose point lay outside ours.
-                    overlap = iv[0] <= ours[2] and ours[1] <= iv[1]
-                    agree = (iv[0] <= 1.0 <= iv[1]) == (ours[1] <= 1.0 <= ours[2])
-                    inside = overlap and agree
-                    if inside:
-                        v = "IN (intervals overlap)"
-                    elif not overlap:
-                        v = f"OUT: intervals do not overlap (gap {max(iv[0] - ours[2], ours[1] - iv[1]):.3f})"
-                    else:
-                        v = "OUT: one interval contains 1.0 and the other does not"
-                else:
-                    inside = ours[1] <= pt <= ours[2]
-                    if inside:
-                        v = "IN "
-                    else:
-                        # The distance, so a reader sees a thousandth for what it is without computing it.
-                        v = f"OUT by {ours[1] - pt:.3f} below" if pt < ours[1] else f"OUT by {pt - ours[2]:.3f} above"
+                v, inside = verdict(pt, iv, ours)
                 if not inside:
                     outside += 1
                 if ours[1] > 1.0 or ours[2] < 1.0:
@@ -285,15 +378,17 @@ def main():
                     v += ", same side of 1.0" if same else ", WRONG SIDE OF 1.0"
                     if not same and inside:
                         outside += 1
-            print(f"{app:10} {row:24} {yours:>22}  {shipped:22} {v}")
+            print(f"{app:10} {label:24} {yours:>22}  {shipped:22} {v}")
         if basis and printed:
             print(f"{'':10}   basis: {basis}")
-        missing = [r for r in claims.get(app, {}) if r not in rows]
+        missing = [r for r in bucket if r not in rows]
         if printed and missing:
-            print(f"{app:10} {len(missing)} of {len(claims[app])} rows CLAIMS.md ships for this application were not produced by this run"
-                  + (" (the default four-configuration subset)" if len(rows) <= 3 else "") + "; nothing is judged for them.")
+            print(f"{app:10} {len(missing)} of {len(bucket)} rows CLAIMS.md ships for this application"
+                  + (f" at {tkey} threads" if tkey else "")
+                  + " were not produced by this run"
+                  + (" (the default subset)" if len(rows) <= 4 else "") + "; nothing is judged for them.")
         if not printed:
-            cl = sorted(claims.get(app, {})) or ["(none parsed from CLAIMS.md)"]
+            cl = sorted(bucket) or ["(none parsed from CLAIMS.md)"]
             rn = sorted(rows) or ["(none parsed from the run's table)"]
             print(f"{app:10} {'-':24} {'':>22}  {'':22} TABLES COULD NOT BE MATCHED")
             print(f"{'':10}   CLAIMS.md offers: {', '.join(cl)}")

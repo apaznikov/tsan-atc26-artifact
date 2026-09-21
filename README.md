@@ -12,9 +12,10 @@ re-measured with the compiler released here: it incorporates 23 soundness fixes 
 artifact and keeps every race stock ThreadSanitizer finds (`CLAIMS.md`, section 1). Its campaign (section 5;
 N = 5, 95 % intervals) is what the Reproduced tier compares against. The submitted version's figures, measured
 before the fixes, are kept in `CLAIMS.md`'s "Paper" column for the record. What the campaign establishes:
-DynSTC changes performance measurably (FFmpeg +11 %, Redis −5.6 %, confirmed at a second concurrency and on a
-second host); every other configuration lies within its interval of stock ThreadSanitizer, and the static
-instrumentation removed is 2 to 8 per cent (section 3).
+DynSTC changes performance measurably (FFmpeg +11 % at the paper's 4 threads, Redis −5.6 %, confirmed at a second
+concurrency and on a second host); at 16 threads, the artifact's default since 22 Sep 2026, AllOpt with peeling
+and DynSTC together reach +19 % on FFmpeg (1.187 [1.171, 1.201]); every other configuration lies within its
+interval of stock ThreadSanitizer, and the static instrumentation removed is 2 to 8 per cent (section 3).
 
 ## Start here
 
@@ -274,7 +275,7 @@ regenerated from whichever runs you point them at.
 | `21-compile-time.sh <app>` | compile-time overhead, three clean builds per configuration | 20 min to 3 h per application (MySQL 5 to 10 h) | 8 cores |
 | `30-preservation-suite.sh` | 12 configurations over ThreadSanitizer's regression suite, pass or fail per test (the report-level comparison is recorded, not re-run; `CLAIMS.md` section 1) | about 20 min on 64 processors, 25 min on this host, 40 min on 8 | 8 cores |
 | `31-preservation-apps.sh <app> 10` | races reported on the applications, against stock; N = 10 runs for a verdict (the default N = 2 prints the per-site frequencies without one) | 1.5 to 3 h per application | 16 cores |
-| `40-perf.sh <app>` | the performance table, one application at a time | default (4 configurations, N = 2), measured: Redis 13-15 min, memcached 28-36, FFmpeg 20-25, SQLite 65-68; MySQL about 3.4 h; everything at N = 2 about 14 h with builds; `ART_RUNS=5` for intervals, twice as long | 32 cores |
+| `40-perf.sh <app>` | the performance table, one application at a time | default (4 configurations, N = 2), measured: Redis 13-15 min, memcached 28-36, FFmpeg about 30 (five configurations at 16 threads), SQLite 65-68; MySQL about 3.4 h; everything at N = 2 about 14 h with builds; `ART_RUNS=5` for intervals, twice as long | 32 cores |
 | `50-eviction-stress.sh` | the bounded-shadow experiments | 15 min to 1 h | any |
 | `13-verify-image.sh` | the image an evaluator built is the compiler we measured: version, stamp, self-containedness, and the reconstructed tree hash from the build log | about 35 min (a minute with `--static`); runs on the host, it starts its own container | any |
 | `90-tables.sh` | regenerates every table, from your runs or from ours | 1 min | any |
