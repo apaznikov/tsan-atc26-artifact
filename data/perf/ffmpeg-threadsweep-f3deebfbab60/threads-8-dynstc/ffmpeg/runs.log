@@ -1,0 +1,27 @@
+ffmpeg orig run1 rc=0 49.6s outside_busy=0.0069 inside_busy=0.1979 foreign_cpu_share=0.0107 (warmup, discarded)
+ffmpeg tsan run1 rc=0 82.3s outside_busy=0.0069 inside_busy=0.2417 foreign_cpu_share=0.0094 (warmup, discarded)
+ffmpeg tsan-stmt run1 rc=0 82.7s outside_busy=0.0092 inside_busy=0.2445 foreign_cpu_share=0.0128 (warmup, discarded)
+ffmpeg tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 80.4s outside_busy=0.0073 inside_busy=0.257 foreign_cpu_share=0.01 (warmup, discarded)
+ffmpeg orig run1 rc=0 51.1s outside_busy=0.0089 inside_busy=0.1973 foreign_cpu_share=0.013
+ffmpeg tsan run1 rc=0 84.6s outside_busy=0.0084 inside_busy=0.2412 foreign_cpu_share=0.0116
+ffmpeg tsan-stmt run1 rc=0 83.9s outside_busy=0.0114 inside_busy=0.2473 foreign_cpu_share=0.0185
+ffmpeg tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 81.5s outside_busy=0.0231 inside_busy=0.2554 foreign_cpu_share=0.0309
+ffmpeg orig run2 rc=0 52.0s outside_busy=0.039 inside_busy=0.1966 foreign_cpu_share=0.053
+ffmpeg tsan run2 rc=0 85.9s outside_busy=0.0395 inside_busy=0.2409 foreign_cpu_share=0.0529
+ffmpeg tsan-stmt run2 rc=0 86.3s outside_busy=0.059 inside_busy=0.2439 foreign_cpu_share=0.0791
+ffmpeg tsan-dom_peeling-ea-lo-st-swmr-stmt run2 rc=0 84.8s outside_busy=0.1021 inside_busy=0.2552 foreign_cpu_share=0.1362
+ffmpeg orig run3 rc=0 53.6s outside_busy=0.1023 inside_busy=0.1966 foreign_cpu_share=0.1371
+ffmpeg tsan run3 rc=0 86.5s outside_busy=0.057 inside_busy=0.2412 foreign_cpu_share=0.0767
+ffmpeg tsan-stmt run3 rc=0 84.8s outside_busy=0.0182 inside_busy=0.2452 foreign_cpu_share=0.0257
+ffmpeg tsan-dom_peeling-ea-lo-st-swmr-stmt run3 rc=0 80.4s outside_busy=0.0198 inside_busy=0.2562 foreign_cpu_share=0.0269
+ffmpeg orig run4 rc=0 51.5s outside_busy=0.0268 inside_busy=0.1971 foreign_cpu_share=0.0364
+ffmpeg tsan run4 rc=0 84.9s outside_busy=0.0303 inside_busy=0.2471 foreign_cpu_share=0.0471
+ffmpeg tsan-stmt run4 rc=0 85.0s outside_busy=0.0167 inside_busy=0.2462 foreign_cpu_share=0.0249
+ffmpeg tsan-dom_peeling-ea-lo-st-swmr-stmt run4 rc=0 82.1s outside_busy=0.0246 inside_busy=0.2565 foreign_cpu_share=0.0335
+ffmpeg orig run5 rc=0 52.0s outside_busy=0.0247 inside_busy=0.1968 foreign_cpu_share=0.0338
+ffmpeg tsan run5 rc=0 85.1s outside_busy=0.0241 inside_busy=0.2422 foreign_cpu_share=0.0325
+ffmpeg tsan-stmt run5 rc=0 84.9s outside_busy=0.016 inside_busy=0.2442 foreign_cpu_share=0.0227
+ffmpeg tsan-dom_peeling-ea-lo-st-swmr-stmt run5 rc=0 81.7s outside_busy=0.0164 inside_busy=0.2555 foreign_cpu_share=0.0226
+ffmpeg tsan-dom_peeling-ea-lo-st-swmr-stmt run2 rc=0 80.7s outside_busy=0.0111 inside_busy=0.2566 foreign_cpu_share=0.0156 (rerun)
+ffmpeg orig run3 rc=0 50.5s outside_busy=0.0089 inside_busy=0.1973 foreign_cpu_share=0.0132 (rerun)
+DONE ffmpeg

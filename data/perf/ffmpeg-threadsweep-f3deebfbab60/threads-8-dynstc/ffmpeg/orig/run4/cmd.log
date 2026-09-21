@@ -1,0 +1,40 @@
+jq found, will generate JSON output to /artifact/results/perf-ffmpeg-20260921-144526/ffmpeg/orig/run4/summary.json.
+--- FFmpeg Benchmark Start (using /usr/bin/time) ---
+Builds to test: ffmpeg-orig
+Video file: ./input/TearsOfSteel-1366x768-100s.mkv
+Runs per test: 1
+
+--- Benchmarking: Codec [h264_libx264], Build [ffmpeg-orig] ---
+
+[96;1mffmpeg-orig/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 8 -y -c:v libx264 -preset medium -crf 23  -loglevel error /dev/shm/out.mp4[0m
+
+  Run 1/1... OK (Time: 20.07s, Mem: 378064KB)
+  Results: Time(avg±std): 20.0700s ± 0s | Mem(peak): 378064KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [copy_passthrough], Build [ffmpeg-orig] ---
+
+[96;1mffmpeg-orig/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 8 -y -c:v copy -c:a copy  -loglevel error /dev/shm/out.mkv[0m
+
+  Run 1/1... OK (Time: 0.13s, Mem: 22336KB)
+  Results: Time(avg±std): .1300s ± 0s | Mem(peak): 22336KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [mjpeg], Build [ffmpeg-orig] ---
+
+[96;1mffmpeg-orig/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 8 -y -c:v mjpeg -pix_fmt yuvj420p -q:v 2  -loglevel error /dev/shm/out.avi[0m
+
+  Run 1/1... OK (Time: 3.49s, Mem: 164800KB)
+  Results: Time(avg±std): 3.4900s ± 0s | Mem(peak): 164800KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [h265_libx265], Build [ffmpeg-orig] ---
+
+[96;1mffmpeg-orig/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 8 -y -c:v libx265 -preset medium -crf 28 -tag:v hvc1  -loglevel error /dev/shm/out.mp4[0m
+
+  Run 1/1... OK (Time: 27.41s, Mem: 661180KB)
+  Results: Time(avg±std): 27.4100s ± 0s | Mem(peak): 661180KB | Runs: 1/1
+--------------------------------------------------------
+
+JSON results have been finalized in /artifact/results/perf-ffmpeg-20260921-144526/ffmpeg/orig/run4/summary.json
+Benchmark finished. CSV results are in /artifact/results/perf-ffmpeg-20260921-144526/ffmpeg/orig/run4/summary.csv

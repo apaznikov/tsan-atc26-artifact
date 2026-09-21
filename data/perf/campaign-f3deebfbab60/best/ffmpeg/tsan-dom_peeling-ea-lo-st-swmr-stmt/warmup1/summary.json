@@ -1,0 +1,92 @@
+{
+  "benchmarks": [
+    {
+      "codec": "h264_libx264",
+      "build": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt",
+      "runs": {
+        "successful": 1,
+        "total": 1
+      },
+      "time": {
+        "mean_s": 17.8200,
+        "stddev_s": 0,
+        "min_s": 17.82,
+        "max_s": 17.82
+      },
+      "cpu": {
+        "mean_user_s": 296.2300,
+        "mean_system_s": 18.9200
+      },
+      "memory": {
+        "max_peak_kb": 759528
+      },
+      "command_template": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt/bin/ffmpeg -hide_banner -i \"./input/TearsOfSteel-1366x768-100s.mkv\" -threads 16 -y -c:v libx264 -preset medium -crf 23  -loglevel error /dev/shm/out.mp4"
+    },
+    {
+      "codec": "copy_passthrough",
+      "build": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt",
+      "runs": {
+        "successful": 1,
+        "total": 1
+      },
+      "time": {
+        "mean_s": 0.5100,
+        "stddev_s": 0,
+        "min_s": 0.51,
+        "max_s": 0.51
+      },
+      "cpu": {
+        "mean_user_s": 0.4000,
+        "mean_system_s": 0.1000
+      },
+      "memory": {
+        "max_peak_kb": 78048
+      },
+      "command_template": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt/bin/ffmpeg -hide_banner -i \"./input/TearsOfSteel-1366x768-100s.mkv\" -threads 16 -y -c:v copy -c:a copy  -loglevel error /dev/shm/out.mkv"
+    },
+    {
+      "codec": "mjpeg",
+      "build": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt",
+      "runs": {
+        "successful": 1,
+        "total": 1
+      },
+      "time": {
+        "mean_s": 14.6300,
+        "stddev_s": 0,
+        "min_s": 14.63,
+        "max_s": 14.63
+      },
+      "cpu": {
+        "mean_user_s": 240.4100,
+        "mean_system_s": 2.2700
+      },
+      "memory": {
+        "max_peak_kb": 803640
+      },
+      "command_template": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt/bin/ffmpeg -hide_banner -i \"./input/TearsOfSteel-1366x768-100s.mkv\" -threads 16 -y -c:v mjpeg -pix_fmt yuvj420p -q:v 2  -loglevel error /dev/shm/out.avi"
+    },
+    {
+      "codec": "h265_libx265",
+      "build": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt",
+      "runs": {
+        "successful": 1,
+        "total": 1
+      },
+      "time": {
+        "mean_s": 35.7000,
+        "stddev_s": 0,
+        "min_s": 35.7,
+        "max_s": 35.7
+      },
+      "cpu": {
+        "mean_user_s": 499.1500,
+        "mean_system_s": 8.5800
+      },
+      "memory": {
+        "max_peak_kb": 2251524
+      },
+      "command_template": "ffmpeg-tsan-dom_peeling-ea-lo-st-swmr-stmt/bin/ffmpeg -hide_banner -i \"./input/TearsOfSteel-1366x768-100s.mkv\" -threads 16 -y -c:v libx265 -preset medium -crf 28 -tag:v hvc1  -loglevel error /dev/shm/out.mp4"
+    }
+  ]
+}

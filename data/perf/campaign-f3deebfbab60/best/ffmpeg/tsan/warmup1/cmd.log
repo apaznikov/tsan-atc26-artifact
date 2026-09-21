@@ -1,0 +1,40 @@
+jq found, will generate JSON output to /artifact/results/perf-ffmpeg-20260921-135106/ffmpeg/tsan/warmup1/summary.json.
+--- FFmpeg Benchmark Start (using /usr/bin/time) ---
+Builds to test: ffmpeg-tsan
+Video file: ./input/TearsOfSteel-1366x768-100s.mkv
+Runs per test: 1
+
+--- Benchmarking: Codec [h264_libx264], Build [ffmpeg-tsan] ---
+
+[96;1mffmpeg-tsan/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 16 -y -c:v libx264 -preset medium -crf 23  -loglevel error /dev/shm/out.mp4[0m
+
+  Run 1/1... OK (Time: 17.82s, Mem: 755520KB)
+  Results: Time(avg±std): 17.8200s ± 0s | Mem(peak): 755520KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [copy_passthrough], Build [ffmpeg-tsan] ---
+
+[96;1mffmpeg-tsan/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 16 -y -c:v copy -c:a copy  -loglevel error /dev/shm/out.mkv[0m
+
+  Run 1/1... OK (Time: 0.82s, Mem: 75096KB)
+  Results: Time(avg±std): .8200s ± 0s | Mem(peak): 75096KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [mjpeg], Build [ffmpeg-tsan] ---
+
+[96;1mffmpeg-tsan/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 16 -y -c:v mjpeg -pix_fmt yuvj420p -q:v 2  -loglevel error /dev/shm/out.avi[0m
+
+  Run 1/1... OK (Time: 18.66s, Mem: 780208KB)
+  Results: Time(avg±std): 18.6600s ± 0s | Mem(peak): 780208KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [h265_libx265], Build [ffmpeg-tsan] ---
+
+[96;1mffmpeg-tsan/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 16 -y -c:v libx265 -preset medium -crf 28 -tag:v hvc1  -loglevel error /dev/shm/out.mp4[0m
+
+  Run 1/1... OK (Time: 36.08s, Mem: 2252968KB)
+  Results: Time(avg±std): 36.0800s ± 0s | Mem(peak): 2252968KB | Runs: 1/1
+--------------------------------------------------------
+
+JSON results have been finalized in /artifact/results/perf-ffmpeg-20260921-135106/ffmpeg/tsan/warmup1/summary.json
+Benchmark finished. CSV results are in /artifact/results/perf-ffmpeg-20260921-135106/ffmpeg/tsan/warmup1/summary.csv

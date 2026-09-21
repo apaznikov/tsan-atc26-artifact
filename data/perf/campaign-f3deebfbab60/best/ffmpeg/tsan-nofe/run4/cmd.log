@@ -1,0 +1,40 @@
+jq found, will generate JSON output to /artifact/results/perf-ffmpeg-20260921-135106/ffmpeg/tsan-nofe/run4/summary.json.
+--- FFmpeg Benchmark Start (using /usr/bin/time) ---
+Builds to test: ffmpeg-tsan-nofe
+Video file: ./input/TearsOfSteel-1366x768-100s.mkv
+Runs per test: 1
+
+--- Benchmarking: Codec [h264_libx264], Build [ffmpeg-tsan-nofe] ---
+
+[96;1mffmpeg-tsan-nofe/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 16 -y -c:v libx264 -preset medium -crf 23  -loglevel error /dev/shm/out.mp4[0m
+
+  Run 1/1... OK (Time: 17.63s, Mem: 755652KB)
+  Results: Time(avg±std): 17.6300s ± 0s | Mem(peak): 755652KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [copy_passthrough], Build [ffmpeg-tsan-nofe] ---
+
+[96;1mffmpeg-tsan-nofe/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 16 -y -c:v copy -c:a copy  -loglevel error /dev/shm/out.mkv[0m
+
+  Run 1/1... OK (Time: 0.8s, Mem: 71840KB)
+  Results: Time(avg±std): .8000s ± 0s | Mem(peak): 71840KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [mjpeg], Build [ffmpeg-tsan-nofe] ---
+
+[96;1mffmpeg-tsan-nofe/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 16 -y -c:v mjpeg -pix_fmt yuvj420p -q:v 2  -loglevel error /dev/shm/out.avi[0m
+
+  Run 1/1... OK (Time: 18.23s, Mem: 773692KB)
+  Results: Time(avg±std): 18.2300s ± 0s | Mem(peak): 773692KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [h265_libx265], Build [ffmpeg-tsan-nofe] ---
+
+[96;1mffmpeg-tsan-nofe/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 16 -y -c:v libx265 -preset medium -crf 28 -tag:v hvc1  -loglevel error /dev/shm/out.mp4[0m
+
+  Run 1/1... OK (Time: 35.82s, Mem: 2249168KB)
+  Results: Time(avg±std): 35.8200s ± 0s | Mem(peak): 2249168KB | Runs: 1/1
+--------------------------------------------------------
+
+JSON results have been finalized in /artifact/results/perf-ffmpeg-20260921-135106/ffmpeg/tsan-nofe/run4/summary.json
+Benchmark finished. CSV results are in /artifact/results/perf-ffmpeg-20260921-135106/ffmpeg/tsan-nofe/run4/summary.csv

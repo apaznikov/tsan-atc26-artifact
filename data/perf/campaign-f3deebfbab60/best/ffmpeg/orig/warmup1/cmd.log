@@ -1,0 +1,40 @@
+jq found, will generate JSON output to /artifact/results/perf-ffmpeg-20260921-135106/ffmpeg/orig/warmup1/summary.json.
+--- FFmpeg Benchmark Start (using /usr/bin/time) ---
+Builds to test: ffmpeg-orig
+Video file: ./input/TearsOfSteel-1366x768-100s.mkv
+Runs per test: 1
+
+--- Benchmarking: Codec [h264_libx264], Build [ffmpeg-orig] ---
+
+[96;1mffmpeg-orig/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 16 -y -c:v libx264 -preset medium -crf 23  -loglevel error /dev/shm/out.mp4[0m
+
+  Run 1/1... OK (Time: 12.64s, Mem: 472844KB)
+  Results: Time(avg±std): 12.6400s ± 0s | Mem(peak): 472844KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [copy_passthrough], Build [ffmpeg-orig] ---
+
+[96;1mffmpeg-orig/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 16 -y -c:v copy -c:a copy  -loglevel error /dev/shm/out.mkv[0m
+
+  Run 1/1... OK (Time: 0.13s, Mem: 21444KB)
+  Results: Time(avg±std): .1300s ± 0s | Mem(peak): 21444KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [mjpeg], Build [ffmpeg-orig] ---
+
+[96;1mffmpeg-orig/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 16 -y -c:v mjpeg -pix_fmt yuvj420p -q:v 2  -loglevel error /dev/shm/out.avi[0m
+
+  Run 1/1... OK (Time: 3.45s, Mem: 230204KB)
+  Results: Time(avg±std): 3.4500s ± 0s | Mem(peak): 230204KB | Runs: 1/1
+--------------------------------------------------------
+
+--- Benchmarking: Codec [h265_libx265], Build [ffmpeg-orig] ---
+
+[96;1mffmpeg-orig/bin/ffmpeg -hide_banner -i "./input/TearsOfSteel-1366x768-100s.mkv" -threads 16 -y -c:v libx265 -preset medium -crf 28 -tag:v hvc1  -loglevel error /dev/shm/out.mp4[0m
+
+  Run 1/1... OK (Time: 25.73s, Mem: 793792KB)
+  Results: Time(avg±std): 25.7300s ± 0s | Mem(peak): 793792KB | Runs: 1/1
+--------------------------------------------------------
+
+JSON results have been finalized in /artifact/results/perf-ffmpeg-20260921-135106/ffmpeg/orig/warmup1/summary.json
+Benchmark finished. CSV results are in /artifact/results/perf-ffmpeg-20260921-135106/ffmpeg/orig/warmup1/summary.csv
