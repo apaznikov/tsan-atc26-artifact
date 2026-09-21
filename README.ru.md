@@ -117,6 +117,10 @@ N = 5 (число, которое рецензент может пересчит
 | `tsan-dom_peeling-ea-lo-st-swmr-stmt` | AllOpt с peeling плюс DynSTC |
 | `tsan-sound-wp`, `tsan-dom_peeling-ea-lo-st-swmr-wp` | четыре анализа STC, SWMR, LO и EA (без DE) и AllOpt с peeling, каждый с межмодульными (whole-program) сводками |
 
+Матрица регрессионного набора (`data/preservation/lit-configurations.txt`, её печатает `30-preservation-suite.sh`)
+называет те же конфигурации короткими метками: `EA`, `LO`, `STC`, `SWMR`, `DE`, `DE+peel`, `sound` (четыре анализа
+без DE), `AllOpt-peel` (AllOpt без peeling), `AllOpt+peel` (с peeling), `AllOpt-peel+DynSTC` и `AllOpt+peel+DynSTC`.
+
 Сеть нужна дважды: для сборки образа (поверхностный клон upstream LLVM и пакеты Ubuntu) и для входного
 клипа FFmpeg (78 МБ из релиза этого репозитория на GitHub, либо 557 МБ исходника Blender, если
 `ART_FFMPEG_CLIP_URL` задана пустой). Исходники приложений лежат в
