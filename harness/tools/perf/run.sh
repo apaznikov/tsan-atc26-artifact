@@ -36,6 +36,12 @@ else export P5_MODE=unpinned; fi
 # the campaign's, and the value in force is recorded per session below, so the two cannot drift unseen
 # again. (Found on the evaluator path, 2026-09-17, the same way as the other three defects of that day.)
 FMAX=${P5_FOREIGN_MAX:-0.10}
+# Fast-failure stop (exit 70). FFSECS is below the shortest cell any application produces even in smoke
+# mode, so only a cell that exited nonzero can match it; FFMAX is how many such cells of one configuration
+# the leg tolerates before stopping.
+FFSECS=${P5_FAIL_FAST_SECONDS:-5}
+FFMAX=${P5_FAIL_FAST_MAX:-2}
+declare -A FASTFAIL
 # Inside/outside CPU counts from the same helper bench_one.sh uses, so the session and its cells cannot
 # disagree about whether the gate is checkable at all.
 read -r _ _ SNIN SNOUT <<< "$(python3 ./cpu_snapshot.py "$CPUSET")"
@@ -75,8 +81,29 @@ bench_and_mark() {  # cfg run [suffix]
              --why "$APP $c run$run ($HASH)" -- ./bench_one.sh "$APP" "$c" "$run" "$OUT" "$CPUSET" 2>&1 | grep -v '^machine-lock:' | tail -1)
   fi
   p5_log "$line"; echo "$line${3:-}" >> "$OUT/$APP/runs.log"
-  [ -f "$d/meta.json" ] || { mkdir -p "$d"; printf '{"app":"%s","config":"%s","run":%s,"rc":1,"foreign_cpu_share":0,"error":"%s"}\n' "$APP" "$c" "$run" "${line//\"/}" > "$d/meta.json"; }
+  [ -f "$d/meta.json" ] || { mkdir -p "$d"; printf '{"app":"%s","config":"%s","run":%s,"rc":1,"seconds":0,"foreign_cpu_share":0,"error":"%s"}\n' "$APP" "$c" "$run" "${line//\"/}" > "$d/meta.json"; }
   python3 ./meta_tool.py mark "$d/meta.json" "$FMAX"
+  # A LEG MUST NOT SPEND ITS WHOLE MATRIX DISCOVERING ONE BROKEN PATH. When a configuration's cells exit
+  # nonzero in less time than any real workload takes, nothing is being measured and repeating it only
+  # buries the reason: the MySQL leg of 22 Sep 2026 retired 30 cells in 40 seconds and ended in a NO DATA
+  # table, with the cause -- one missing directory -- visible in the first cell and in every one after it.
+  # Two such cells of the SAME configuration stop the leg with the reason quoted, which costs one wasted
+  # cell instead of a matrix. A healthy cell of that configuration resets the count, so a single transient
+  # failure does not end a long leg.
+  if python3 ./meta_tool.py is-fast-failure "$d/meta.json" "$FFSECS"; then
+    FASTFAIL["$c"]=$(( ${FASTFAIL["$c"]:-0} + 1 ))
+    if [ "${FASTFAIL[$c]}" -ge "$FFMAX" ]; then
+      p5_log "STOPPING THE LEG: $APP/$c produced ${FASTFAIL[$c]} cells that exited nonzero in under ${FFSECS}s."
+      p5_log "  reason from the last cell: $(python3 ./meta_tool.py reason "$d/meta.json")"
+      p5_log "  cell: $d"
+      p5_log "  Nothing was measured, so no table is written for this leg. Fix the cause and re-run;"
+      p5_log "  completed cells are kept and skipped (is-done), so the leg resumes where it stopped."
+      echo "STOPPED $APP $c (fast failures)" >> "$OUT/$APP/runs.log"
+      exit 70
+    fi
+  else
+    FASTFAIL["$c"]=0
+  fi
 }
 # Discarded warm-up, before the measured runs and once per configuration. The campaign reports STEADY-STATE
 # performance (campaign-parameters.md): the warm-up builds SQLite's database and leaves it, warms FFmpeg's

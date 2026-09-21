@@ -14,6 +14,13 @@ applications. Reasons and costs:
 - Its speedup interval is about 14 points wide, so small effects are not resolvable on it in any
   case; the paper's MySQL rows are reported as nulls where the interval contains 1.0.
 
+The workload is `harness/sql/mysql/benchmysql/run-one.sh` (server start, sysbench prepare, run, cleanup, server
+shutdown, once per sysbench script): the data directory is initialised once per container run under the container's
+`/tmp` (about half a gigabyte, sysbench's default one table of 10 000 rows) and reused by every configuration of the
+leg, the server listens on `/tmp/mysql.sock`, and both vanish with the container, so a server ThreadSanitizer killed
+cannot leave a dirty data directory for the next run. Until 22 Sep 2026 this directory was missing from the artifact
+(the vendoring stopped one level above it) and every MySQL cell failed on `cd`; found by the leg of that day.
+
 `40-perf.sh mysql` runs the four configurations if you have the time and the disk (about 100 GB
 for the installs); `ART_SMOKE=1` builds the same four configurations, runs one unwarmed run each and shortens
 every sysbench script to 20 s, to show the pipeline works. Our recorded runs are under `data/perf/`, and `90-tables.sh` regenerates the MySQL table

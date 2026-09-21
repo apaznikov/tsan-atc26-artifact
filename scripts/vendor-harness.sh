@@ -45,7 +45,13 @@ INCLUDE_FILES=(
   tools/verify_archive.sh
   tools/source_archives.sha256
 )
-APP_DIRS=(nosql/memcached nosql/redis sql/sqlite sql/mysql projects/ffmpeg)
+# sql/mysql/benchmysql IS THE MYSQL WORKLOAD: bench_one.sh runs `$APPDIR/benchmysql/run-one.sh`, which drives
+# server-run, bench-init, bench-run, bench-cleanup and server-shutdown from that directory. Until 22 Sep 2026 the
+# list stopped at sql/mysql and -maxdepth 1 never descended, so every MySQL cell of the shipped artifact died on
+# `cd` after a 35-minute build of four servers: the MySQL RUN path had never been exercised in the container
+# (the rehearsals built MySQL and measured nothing; found by the flag leg of 22 Sep). The directory's result
+# files (benchmark_*.txt, *.stderr.log, old/, results/) are not scripts and the globs leave them behind.
+APP_DIRS=(nosql/memcached nosql/redis sql/sqlite sql/mysql sql/mysql/benchmysql projects/ffmpeg)
 # NOT ONLY SCRIPTS. An application directory holds inputs its scripts need, and a glob list of
 # executables ships the caller without the thing it reads. Two were missing: sql/sqlite/threadtest3.c, the
 # SQLite WORKLOAD ITSELF -- build_sqlite_test.sh:132 compiles ./threadtest3.c from the application
@@ -70,6 +76,11 @@ LAB_ONLY=(
   export_campaign.sh       # copies OUR campaign results into the artifact; an evaluator has no such tree
   cmake-export-main-vars.sh  # dead code naming a /dev/shm build root; build_mysql.sh builds under BUILD_SCRATCH on disk
   de_build.sh de_build2.sh   # one-off eviction drivers naming a frozen lab compiler; referenced by nothing
+  # sql/mysql/benchmysql: run-one.sh's closure over code lines is nine files (run-one, server-datadir-init, server-run,
+  # server-shutdown, server-check-connection, bench-init, bench-run, bench-cleanup, callmysql-export-main-vars);
+  # the rest of the directory is the lab's launcher and its result analysis (computed 22 Sep 2026).
+  benchmarks-launch.sh benchmarks-launch-progress.sh benchmarks-launch.md server-run-ap.sh server-cli.sh
+  analyze_mysql_results.py test_analyze_mysql_results.py bench-post-logs2csv.sh
 )
 EXCLUDES=(
   --exclude='results/' --exclude='old-builds/' --exclude='.scratch/' --exclude='installs/'
