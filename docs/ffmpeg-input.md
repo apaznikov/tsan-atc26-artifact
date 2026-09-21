@@ -71,7 +71,7 @@ FFmpeg build before anything is compiled, produces it by the first of three path
    deletes the file and refuses, and a local copy is trusted no more for being local. The default is
    the asset of this repository's GitHub release `inputs-v1`
    (`https://github.com/apaznikov/tsan-atc26-artifact/releases/download/inputs-v1/TearsOfSteel-1366x768-100s.mkv`); the artifact's
-   Zenodo record carries the same file. Exporting the empty string opts out and takes path 3. `docker/run.sh` forwards the variable into the container; until 17 Sep 2026 it
+   Zenodo deposit made when evaluation finishes will carry the same file. Exporting the empty string opts out and takes path 3. `docker/run.sh` forwards the variable into the container; until 17 Sep 2026 it
    did not, and a local path could not be used because the image's `wget` does not speak `file://`.
 2. `ART_FFMPEG_SOURCE`: a local copy of the unpacked Blender source (`.mov`), cut here with the command
    above.

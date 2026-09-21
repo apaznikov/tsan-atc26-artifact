@@ -92,9 +92,9 @@ if [ "$perf_tier" = 1 ]; then
 fi
 
 total=$(case "$tier:$perf_only" in
-  check:*)      echo "about 5 minutes, plus the image build the first time (15-25 min)";;
+  check:*)      echo "about 2 minutes, plus the image build the first time (15-25 min)";;
   functional:*) echo "under an hour (23 min on 64 processors, 48 min on 8), plus the image build the first time";;
-  reproduced:1) echo "about 2 h 20 min, plus the image build the first time";;
+  reproduced:1) echo "about 2 h 30 min, plus the image build the first time";;
   reproduced:*) echo "about 3 hours, plus the image build the first time";;
   everything:1) echo "about 12 hours, plus the image build the first time";;
   everything:*) echo "about 14 hours, plus the image build the first time";; esac)
@@ -134,8 +134,9 @@ if [ "$perf_tier" = 1 ]; then
       echo "     Set ART_CPUSET to choose the set yourself."
     else
       echo "     ART_CPUSET not set and $ncpu_here processors here (fewer than 48): the run uses every processor the"
-      echo "     container sees and is not gate-checked; memcached's rows are reported with their thread count and"
-      echo "     not compared with our 48-processor intervals; the Redis and SQLite rows are judged."
+      echo "     container sees and is not gate-checked. Its processor-set shape differs from the campaign's (24 cores"
+      echo "     with both SMT threads), so every row is reported with its ratio against stock and the reason, and none"
+      echo "     is judged: the tier then ends 'COMPARISON NOT APPLICABLE ON THIS MACHINE', which is not a failure."
     fi
   else
     echo "     ART_CPUSET=$ART_CPUSET (our runs used 48 processors, 4-27 and 60-83 on our host)."
@@ -149,7 +150,7 @@ if [ "$perf_tier" = 1 ]; then
     echo "     (557 MB) instead; those rows are then 'not comparable' by design (docs/ffmpeg-input.md)."
   else
     echo "  3. FFmpeg. ART_FFMPEG_CLIP_URL is empty: the run regenerates the input from the Blender source (557 MB), its"
-    echo "     timings are valid, and its two rows print 'not comparable' by design (docs/ffmpeg-input.md)."
+    echo "     timings are valid, and its three rows print 'not comparable' by design (docs/ffmpeg-input.md)."
   fi
   echo "  4. The end. The tier ends with one line per configuration row of this run against the interval CLAIMS.md"
   echo "     ships for it (IN; OUT with the distance; not judged; not comparable) and 'N rows judged'. What an OUT"
@@ -298,7 +299,10 @@ if [ "$perf_tier" = 1 ] && [ "$verdict" != FAIL ]; then
     echo "Comparison with the intervals in CLAIMS.md (section 5):"
     ./docker/run.sh python3 harness/tools/perf/compare_with_claims.py CLAIMS.md $trees 2>&1 | tee -a "$log"
     cmp_rc=${PIPESTATUS[0]}
-    [ "$cmp_rc" -eq 0 ] || compared=OUTSIDE
+    # 0: every judged row inside. 2: nothing could be compared for a machine reason (the processor-set shape,
+    # a thread count, the input) and nothing was outside: the run is valid and unjudged, which is not a failure
+    # and not a pass. Anything else: a judged row outside, or no table / no shipped data to compare with.
+    case "$cmp_rc" in 0) ;; 2) compared=NOTAPPLICABLE;; *) compared=OUTSIDE;; esac
   fi
 fi
 dt=$(( $(date +%s) - start_all ))
@@ -306,7 +310,13 @@ echo
 {
 if [ "$dt" -ge 3600 ]; then took="$((dt/3600))h$(( (dt%3600)/60 ))m"; else took="$((dt/60))m$(printf %02d $((dt%60)))s"; fi
 where="(tier $tier, $took; full log in $log)"
-if [ "$verdict" = PASS ] && [ -n "${compared:-}" ]; then
+if [ "$verdict" = PASS ] && [ "${compared:-}" = NOTAPPLICABLE ]; then
+  echo "evaluate.sh: PASS on every step; COMPARISON NOT APPLICABLE ON THIS MACHINE  $where"
+  echo "Every step ran and passed. No performance row could be compared with our intervals, for the reason each row"
+  echo "prints (this machine's processor-set shape, thread count or input is not the campaign's); the run is a valid"
+  echo "measurement and its ratios stand beside the intervals above, unjudged. To be judged, pin 24 physical cores with"
+  echo "both SMT threads (48 logical processors) with ART_CPUSET, as CLAIMS.md section 5 describes. Exit status 3."
+elif [ "$verdict" = PASS ] && [ -n "${compared:-}" ]; then
   # Not "PASS, rows outside": every step ran, and the comparison is the tier's question, so the line
   # must say the comparison did not come back clean. The exit status says the same.
   echo "evaluate.sh: PASS on every step, COMPARISON NOT CLEAN  $where"
@@ -317,7 +327,8 @@ else
   vline="$verdict"
   # Both facts when both hold: a skipped check and a comparison that did not come back clean are two answers,
   # and the last line must not drop the second (found by the reviewer walkthrough, 21 Sep 2026).
-  [ "$verdict" = INCOMPLETE ] && [ -n "${compared:-}" ] && vline="INCOMPLETE, and COMPARISON NOT CLEAN"
+  [ "$verdict" = INCOMPLETE ] && [ "${compared:-}" = OUTSIDE ] && vline="INCOMPLETE, and COMPARISON NOT CLEAN"
+  [ "$verdict" = INCOMPLETE ] && [ "${compared:-}" = NOTAPPLICABLE ] && vline="INCOMPLETE; COMPARISON NOT APPLICABLE ON THIS MACHINE"
   echo "evaluate.sh: $vline  $where"
   case "$verdict" in
     PASS) case "$tier" in
@@ -332,9 +343,14 @@ else
         echo "Every step ran and passed, and every judged performance row lies inside its shipped interval (the table above)." ;;
     esac ;;
     INCOMPLETE) echo "Nothing failed, but a check could not be made here (its prerequisite is absent); the log names it. A skipped check is neither a pass nor a failure."
-                [ -n "${compared:-}" ] && echo "And the comparison above did not come back clean: a judged row lies outside its shipped interval, or no row could be judged; CLAIMS.md section 5 ('Match criterion') says what that can mean." ;;
+                [ "${compared:-}" = OUTSIDE ] && echo "And the comparison above did not come back clean: a judged row lies outside its shipped interval, or no row could be judged; CLAIMS.md section 5 ('Match criterion') says what that can mean."
+                [ "${compared:-}" = NOTAPPLICABLE ] && echo "And no performance row could be compared on this machine (each row prints why); the ratios stand unjudged." ;;
     FAIL) echo "Stopped at: $failed. docs/troubleshooting.md lists the failures we know; the log has the rest." ;;
   esac
 fi
 } | tee -a "$log"    # the verdict goes into the log too: a log that ends without it answers a different question
-[ "$verdict" = PASS ] && [ -z "${compared:-}" ]
+# Exit status: 0 PASS with a clean comparison (or no comparison in this tier); 3 PASS on every step with the comparison
+# not applicable on this machine; 1 otherwise.
+if [ "$verdict" = PASS ] && [ -z "${compared:-}" ]; then exit 0; fi
+if [ "$verdict" = PASS ] && [ "${compared:-}" = NOTAPPLICABLE ]; then exit 3; fi
+exit 1

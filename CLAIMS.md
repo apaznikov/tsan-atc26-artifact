@@ -382,8 +382,7 @@ beside it; the campaign's own FFmpeg runs predate the field and carry the sha256
 the reference clip's, while the thread sweep carries both. The point-in-interval comparison for this
 row is made only on the reference clip; on a regenerated clip the run is valid, its build and run times
 are what an evaluator pays, but its ratios are not compared with the intervals above and the script says
-so. The reference clip is downloadable from this repository's GitHub release `inputs-v1` (the Zenodo record
-carries the same file), `env.sh` defaults `ART_FFMPEG_CLIP_URL` to it, and an evaluator's FFmpeg rows are
+so. The reference clip is downloadable from this repository's GitHub release `inputs-v1` (the Zenodo deposit made when evaluation finishes will carry the same file), `env.sh` defaults `ART_FFMPEG_CLIP_URL` to it, and an evaluator's FFmpeg rows are
 therefore compared unless the variable is exported empty. Our
 own rehearsal of 17 Sep ran on a regenerated clip and reports the FFmpeg row as not comparable for that
 reason. FFmpeg additionally carries a control leg on the
@@ -516,7 +515,7 @@ N runs per configuration:
 
 | Mode | Runs | Configurations | Time on 48 processors | What a row yields |
 |---|---|---|---|---|
-| **default** | N = 2 | four: native, stock, AllOpt with peeling, DynSTC (FFmpeg five: plus AllOpt with peeling and DynSTC, at 16 threads) | measured on this host and on a 64-processor AMD host: Redis 13-15 min, memcached 28-36, FFmpeg about 30 (an estimate for the five-configuration 16-thread default from the measured 20-25 for four at 4 threads), SQLite 65-68: **about 2 h 30 min** together; MySQL a further 3.4 h (estimated) | a point estimate, no interval |
+| **default** | N = 2 | four: native, stock, AllOpt with peeling, DynSTC (FFmpeg: five, the fifth being the single configuration AllOpt with peeling and DynSTC, at 16 threads) | measured on this host and on a 64-processor AMD host: Redis 13-15 min, memcached 28-36, FFmpeg about 30 (an estimate for the five-configuration 16-thread default from the measured 20-25 for four at 4 threads), SQLite 65-68: **about 2 h 30 min** together; MySQL a further 3.4 h (estimated) | a point estimate, no interval |
 | everything at the default | N = 2 | all fourteen (MySQL four) | Redis 1.0 h, memcached 2.0, FFmpeg 1.2, SQLite 3.4, MySQL 3.4: **about 11 h**, 14 h with the builds | a point estimate, no interval |
 | our campaign | N = 5 | any of the above | twice the figures above (one warm-up plus five runs against one plus two); everything, 32 h of legs plus builds | a 95% interval |
 
@@ -642,8 +641,9 @@ is one that only an N = 5 run can decide; the resolvable-subtest column, which t
 the one to read there.
 
 The four configurations decide everything the paper's figure turns on, and Redis, memcached and
-FFmpeg together, about an hour and a quarter, cover the two things this campaign found: DynSTC's
-cost on Redis, and the absence of a measurable effect elsewhere. MySQL is the expensive one and its
+FFmpeg together, about an hour and a quarter, cover what this campaign found: DynSTC's cost on Redis and its
+gain on FFmpeg (with the sound bundle, about 19 per cent at 16 threads), and the absence of a measurable
+effect elsewhere. MySQL is the expensive one and its
 table ships, so `scripts/90-tables.sh` gives it without running anything.
 
 Two runs give no confidence interval, and the artifact does not print one: below five runs a row is
@@ -695,7 +695,7 @@ script re-runs the occupied-granule experiment on the shipped compiler.
 
 ## 7. Not claimed here
 
-Five things the submitted paper reports that this artifact does not support, named here so that a reader
+Six things the submitted paper reports that this artifact does not support, named here so that a reader
 following the paper does not look for them:
 - **The static-reduction figures of the submitted version** (up to 65 %; 60.8, 34.7, 64.9, 55.6 and 14.5 %
   per application). Measured with the submitted compiler; the shipped compiler's are 2 to 8 per cent
@@ -709,9 +709,6 @@ following the paper does not look for them:
 - **The ReX comparison and the access-trace oracle** (the paper's appendix). The filter is research
   code behind a build flag that is off by default, and the oracle is a tool on an internal branch;
   neither is in this repository, and neither number can be reproduced from it.
-- **Chromium**, for the reason given below.
-
-
 - **Chromium.** No performance number. The only Chromium build we have is on an earlier compiler
   and corresponds to no measurement in the paper. `docs/chromium.md` records the revision
   (`bdef6783a05f0b3f885591e7d2c7b2aec1a89dea`), the configuration and the timeout patch.

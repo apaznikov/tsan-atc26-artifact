@@ -17,21 +17,23 @@ compiler we measured, checked rather than asserted.
 Supported by the artifact:
 
 - **Race detection is preserved.** No configuration loses a race that unmodified ThreadSanitizer
-  reports, over ThreadSanitizer's own regression suite in 12 configurations and over the
-  applications' own races.
+  reports, over ThreadSanitizer's own regression suite in 12 configurations, and over the races of
+  SQLite and memcached at N = 10 under stock, the sound bundle and AllOpt with peeling.
 - **The analyses are sound on 23 code shapes** in which an optimized build could have failed to
   report a race; each has a test that fails on the commit before its fix, and a control proving the
   test can tell a removal from an absence.
 - **Static instrumentation removed**, per application and configuration, exactly reproducible.
-- **Compile-time cost**, including the case the paper's largest application turns on.
+- **Compile-time cost**: the script and the criterion (same order of magnitude as stock); the shipped control
+  is memcached, whose build is too short to resolve the effect; MySQL's run is the evaluator's option (5-10 h).
 - **Runtime performance**, as a table with confidence intervals. On the shipped compiler DynSTC's two
   directional effects (FFmpeg above stock, Redis below) reproduce on comparable hardware; at the paper's thread
   counts every other configuration lies within its interval of stock ThreadSanitizer, and at 16 threads the full
   sound bundle with DynSTC reaches +19 % on FFmpeg.
 
 Not supported, and stated in `CLAIMS.md` as not claimed: Chromium (a checkout exceeds a terabyte and
-our only build predates the shipped compiler), and any number from before the campaign of
-15-17 September 2026.
+our only build predates the shipped compiler), and any performance number from before the campaign of
+15-17 September 2026 (the report-key replay and the bounded-shadow results are claimed on the earlier
+compilers they name, `CLAIMS.md` sections 1 and 6).
 
 ## Which version of the paper the artifact reproduces
 
@@ -48,7 +50,8 @@ interval of stock ThreadSanitizer, and the static instrumentation removed is 2 t
 
 ## Contents, hosting and requirements
 
-`https://github.com/apaznikov/tsan-atc26-artifact`, and archived with a DOI for the final version.
+`https://github.com/apaznikov/tsan-atc26-artifact`, under the MIT licence (`LICENSE`; vendored third-party code
+under its own licences, `THIRD-PARTY.md`), and archived on Zenodo with a DOI when evaluation finishes.
 About 140 MB of data: the compiler is 29 patch files, and the recorded runs are text.
 
 Any x86-64 Linux host with Docker, 8 processors, 16 GB of memory and 20 GB of disk runs everything deterministic. The
@@ -98,7 +101,7 @@ produces the confidence intervals in `CLAIMS.md`, is a variable away and twice a
 ./docker/run.sh scripts/40-perf.sh <redis|memcached|sqlite|ffmpeg|mysql>
 ```
 
-Each row is claimed only where both run ranges of its interval agree, and a row whose interval
+Each row is claimed only where the runs-2-5 point lies inside the all-five interval, and a row whose interval
 contains 1.0 is reported as no measurable change rather than as an absence of effect. What makes the
 numbers vary, and by how much, is in `docs/confounds.md`; it includes the conditions we could not
 explain and did not hide.

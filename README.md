@@ -18,6 +18,9 @@ and DynSTC together reach +19 % on FFmpeg (1.187 [1.171, 1.201]; that thread cou
 the campaign and is reported as such); at the paper's own thread counts every other configuration lies within its
 interval of stock ThreadSanitizer, and the static instrumentation removed is 2 to 8 per cent (section 3).
 
+The artifact's own code and documents are under the MIT licence (`LICENSE`); vendored third-party components keep
+their own licences (`THIRD-PARTY.md`).
+
 ## Start here
 
 ```
@@ -110,6 +113,11 @@ The tables name configurations as the harness does:
 | `tsan-dom_peeling-ea-lo-st-swmr-stmt` | AllOpt with peeling plus DynSTC |
 | `tsan-sound-wp`, `tsan-dom_peeling-ea-lo-st-swmr-wp` | the four analyses STC, SWMR, LO and EA (without DE), and AllOpt with peeling, each with whole-program summaries |
 
+The regression-suite matrix (`data/preservation/lit-configurations.txt`, printed by `30-preservation-suite.sh`) names
+the same configurations by short labels: `EA`, `LO`, `STC`, `SWMR`, `DE`, `DE+peel`, `sound` (the four analyses
+without DE), `AllOpt-peel` (AllOpt without peeling), `AllOpt+peel` (with peeling), `AllOpt-peel+DynSTC` and
+`AllOpt+peel+DynSTC`.
+
 The network is needed twice: the image build (a shallow clone of upstream LLVM and Ubuntu packages) and
 FFmpeg's input clip (78 MB from this repository's GitHub release, or the 557 MB Blender source when
 `ART_FFMPEG_CLIP_URL` is exported empty). The
@@ -143,8 +151,8 @@ licence of every vendored component.
 The compiler is not here as a binary and there is no copy of LLVM. There are 29 patches over the
 upstream LLVM commit `c609043dd009`, which is text. The container fetches upstream itself with a
 shallow clone, applies the patches, checks that the reconstructed source tree hashes to ours, and
-builds the compiler inside itself. The recorded runs are text too, logs and JSON, so about 140 MB of data
-packs into a few megabytes of git history. Every third-party archive the harness unpacks ships in
+builds the compiler inside itself. The recorded runs are text too, logs and JSON; a clone is about 65 MB of
+history plus the 31 MB of application archives under `third-party/sources/`. Every third-party archive the harness unpacks ships in
 `third-party/sources/` (MySQL's 421 MB is fetched) and is verified against the sha256 pinned in
 `third-party/SOURCES.md` before use; that file names each component's origin URL, and `THIRD-PARTY.md` its
 licence.
@@ -157,8 +165,9 @@ and 60-83), one measurement at a time. Nothing here needs that
 machine: the container runs anywhere, and the deterministic experiments give identical results on
 any x86-64 Linux host. The performance experiments run on any processor count; the comparison with our intervals is made with
 the campaign's shape pinned, 24 physical cores with both SMT threads (48 logical processors; memcached's thread
-count follows the logical count): with fewer, the run is unpinned,
-memcached's rows are reported with their thread count and not compared, and the other rows are judged. `docs/confounds.md`
+count follows the logical count): on a machine of another shape the run is unpinned and valid, every row is
+reported with its ratio against stock and the reason it is not compared, none is judged, and the tier ends
+"COMPARISON NOT APPLICABLE ON THIS MACHINE" (exit status 3), which is neither a failure nor a pass. `docs/confounds.md`
 says what varies and why. The minimum for the correctness set is 8 processors (the regression suite refuses
 fewer), 16 GB of memory (`ART_MEMORY=16g` caps the container so that the derived job count respects it) and
 20 GB of disk; the performance set needs up to 100 GB of disk with MySQL.
@@ -167,7 +176,7 @@ fewer), 16 GB of memory (`ART_MEMORY=16g` caps the container so that the derived
 
 `./evaluate.sh everything` is `reproduced` at all fourteen configurations, plus MySQL (about 14 hours). On a
 checkout where `./evaluate.sh functional` already ended in PASS, `./evaluate.sh reproduced --performance-only`
-runs the performance subset alone (about 2 h 20 min); `./evaluate.sh <tier> --plan` prints a tier's steps and
+runs the performance subset alone (about 2 h 30 min); `./evaluate.sh <tier> --plan` prints a tier's steps and
 their expected times without running anything.
 Nothing asks a question: a tier starts when named, after printing what to know about it (`--plan` lists the
 steps without starting anything). `--rebuild` builds the image again from nothing (15-25 min).
@@ -192,7 +201,7 @@ which; on a smaller one it runs unpinned and says so.
 `evaluate.sh` runs the scripts below in the documented order, prints one line per step with its time,
 writes the full log under `results/`, and ends with one verdict: PASS, INCOMPLETE (a check whose
 prerequisite is absent here was skipped, which is neither a pass nor a failure) or FAIL with the step
-that stopped it. The tiers are separate because the correctness set runs anywhere in two hours while
+that stopped it. The tiers are separate because the correctness set runs anywhere in under an hour while
 the performance set needs a quiet 32-processor machine for four to fourteen hours, and the badges are
 awarded separately. The same steps, one at a time:
 
@@ -243,7 +252,7 @@ spending a day on measurements:
 
 It runs the deterministic checks in order and prints one verdict per step: the minimal example, the
 23 lost-race shapes with their vacuity control, the compiler's equivalence to the one we measured on,
-the provenance of the shipped runs, the image's identity (`13-verify-image.sh`, on the host, from the build log), the identity of the two copies of the table code, the self-test of the
+the provenance of the shipped runs, the identity of the two copies of the table code, the self-test of the
 rule that decides a lost race, the ThreadSanitizer regression suite in 12 configurations preceded by its
 self-test, and the regeneration of every table from the shipped data (`--quick` omits the two
 regression-suite steps and its verdict says so). It stops at the
@@ -257,8 +266,8 @@ controls covering the 23 lost-race shapes, plus one multi-step summary test) and
 unsupported on this platform before anything is compiled, so 293 execute; our own run of them ships as
 `data/suite/`, with the command to re-derive each count. One test, `getline_nohang.cpp`, is unsupported on the image's glibc (2.39, as upstream marks it) and is
 skipped. Until 21 Sep 2026 the vendored lit configuration failed to detect glibc under Python 3.12, so the
-test ran and stalled to its two-minute timeout in most repeats, and the correctness set took about twice as
-long as it does now (`docs/nondeterministic-tests.md`).
+test ran and stalled to its two-minute timeout in most repeats, and the correctness set took two to four times as
+long as it does now (about twice on 8 processors, four times on 32) (`docs/nondeterministic-tests.md`).
 
 ## Running the experiments
 
@@ -279,10 +288,10 @@ regenerated from whichever runs you point them at.
 | `40-perf.sh <app>` | the performance table, one application at a time | default (4 configurations, N = 2), measured: Redis 13-15 min, memcached 28-36, FFmpeg about 30 (five configurations at 16 threads), SQLite 65-68; MySQL about 3.4 h; everything at N = 2 about 14 h with builds; `ART_RUNS=5` for intervals, twice as long | 32 cores |
 | `50-eviction-stress.sh` | the bounded-shadow experiments | 15 min to 1 h | any |
 | `13-verify-image.sh` | the image an evaluator built is the compiler we measured: version, stamp, self-containedness, and the reconstructed tree hash from the build log | about 35 min (a minute with `--static`); runs on the host, it starts its own container | any |
-| `90-tables.sh` | regenerates every table, from your runs or from ours | 1 min | any |
+| `90-tables.sh` | regenerates every performance table, the results ledger and the eviction tables, from your runs or from ours | 1 min | any |
 
 Everything, every application at all fourteen configurations, is about 14 hours on 48 processors; the reviewer's
-subset of the performance table, four configurations on the four cheaper applications (five on FFmpeg), is about two
+subset of the performance table, four configurations on the four cheaper applications (five on FFmpeg), is about two and a half
 hours. Our own campaign used five runs per configuration and took 32 hours of measurement after about 7 hours
 of builds; that setting is one variable away (`ART_RUNS=5`, twice the default's time) and `CLAIMS.md` says
 what each mode can and cannot conclude.
@@ -295,8 +304,9 @@ two or three of ten paper-scale runs, so the script prints that no verdict was a
 plumbing alone; the positive control that refuses to certify a run in which stock found nothing applies
 unchanged at the paper scale.
 
-`90-tables.sh` works without running anything else: run with no argument, it re-derives every table
-in the paper from the runs we recorded. That is the fastest way to check that our tables follow
+`90-tables.sh` works without running anything else: run with no argument, it re-derives every performance
+table, the results ledger and the eviction tables from the runs we recorded (the static-count and preservation
+tables have their own scripts, `20-static-counts.sh` and `tools/preservation/tsan_reports.py`). That is the fastest way to check that our tables follow
 from our data.
 
 ### The three checks that make a clean result mean something
