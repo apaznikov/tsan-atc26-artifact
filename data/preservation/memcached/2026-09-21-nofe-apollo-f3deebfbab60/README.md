@@ -6,5 +6,5 @@ artifact's own image (compiler `f3deebfbab60`, the manifest's `build_info` carri
 binary), with `scripts/31-preservation-apps.sh memcached 10 --configs tsan-nofe,tsan-dom_peeling-ea-lo-st-swmr-nofe`
 (stock is always built and run as the baseline). `verdict-L3.txt` is the verdict script's output over `logs/`,
 all three levels printed, gating at L3; regenerate it with
-`python3 data/tools/preservation/preservation_verdict.py --results-dir <this dir>/logs --app memcached --baseline tsan`.
+`python3 harness/tools/preservation/preservation_verdict.py --results-dir <this dir>/logs --app memcached --baseline tsan`.
 Same layout as `../2026-09-17-shipped-f3deebfbab60`.
