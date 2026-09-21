@@ -1,0 +1,8 @@
+--- Running Benchmark for: tsan-dom_peeling-ea-lo-st-swmr-nofe ---
+Executable: build/test-tsan-dom_peeling-ea-lo-st-swmr-nofe/threadtest3
+Full Command: build/test-tsan-dom_peeling-ea-lo-st-swmr-nofe/threadtest3
+Output will be saved to: results/tsan-dom_peeling-ea-lo-st-swmr-nofe.log
+Memory usage will be saved to: results/memory.txt
+Running, please wait...
+--- Benchmark for [tsan-dom_peeling-ea-lo-st-swmr-nofe] completed successfully. ---
+

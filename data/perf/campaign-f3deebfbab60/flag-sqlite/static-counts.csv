@@ -1,0 +1,6 @@
+app,config,hash,memory_access_sites,tsan_calls_total,sha256,build_seconds
+sqlite,orig,f3deebfbab60,0,0,36aef300a875b6cc5f03bcd5f50f6cc9b7e66bfa3e261de36aa6bc149a472cc7,32
+sqlite,tsan,f3deebfbab60,57996,62654,a7f5c0c04e485e0c9b40f6529147ed187ea601feadb568cf2fcb040a688b5ef9,27
+sqlite,tsan-nofe,f3deebfbab60,58008,59437,2c1a157bfde5eb9587fcbb7f486684dbbcc86faf606a69845a20279555373919,27
+sqlite,tsan-dom_peeling-ea-lo-st-swmr,f3deebfbab60,61931,66659,e616e0ef17533998832eb2ed34c560819e5763c3f17fa4bdafa47cbf9b22a512,32
+sqlite,tsan-dom_peeling-ea-lo-st-swmr-nofe,f3deebfbab60,61928,63433,4f04d036a3134e7f92a36e830dbe1d02756b99487961e7c200d04fb0ec5dd9c4,32

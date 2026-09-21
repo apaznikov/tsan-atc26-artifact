@@ -1,0 +1,23 @@
+{
+ "app": "sqlite",
+ "hash": "f3deebfbab60",
+ "N": 5,
+ "configs": [
+  "orig",
+  "tsan",
+  "tsan-nofe",
+  "tsan-dom_peeling-ea-lo-st-swmr",
+  "tsan-dom_peeling-ea-lo-st-swmr-nofe"
+ ],
+ "cpuset": "4-27,60-83",
+ "mode": "pinned",
+ "started": "2026-09-21T17:36:07",
+ "host": "d66e49eb47b8",
+ "nproc_machine": 112,
+ "governor": "powersave",
+ "no_turbo": "0",
+ "n_inside": 48,
+ "n_outside": 64,
+ "gate_checked": true,
+ "foreign_max": 0.1
+}
