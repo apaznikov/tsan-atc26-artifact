@@ -26,6 +26,7 @@ legs_copy() { [ -d "$LEGS_SRC/$1" ] && rsync -a --delete "${EXCL[@]}" "$LEGS_SRC
 legs_copy perf-ffmpeg-20260921-135106 campaign-f3deebfbab60/best
 legs_copy perf-ffmpeg-20260921-144526 ffmpeg-threadsweep-f3deebfbab60/threads-8-dynstc
 legs_copy perf-redis-20260921-152206 campaign-f3deebfbab60/flag-redis
+legs_copy perf-memcached-20260921-162538 campaign-f3deebfbab60/flag-memcached
 rsync -a --delete "${EXCL[@]}" --exclude 'memcached-10k' "$src/tools/preservation/results/" "$dst/preservation/"
 rsync -a --delete "${EXCL[@]}" --exclude '*.mod4-artefact' "$src/tools/eviction-stress/results/" "$dst/eviction-stress/"
 rsync -a --delete "${EXCL[@]}" "$src/tools/eviction-counters/results/" "$dst/eviction-counters/"

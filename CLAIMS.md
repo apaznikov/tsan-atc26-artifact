@@ -445,7 +445,8 @@ measure.
 
 Rows (N = 5, 95% intervals, the campaign's set and shape, the legs of 21-22 Sep described under FFmpeg
 above; the Redis leg had two cells retired by the disturbance gate, `outside_busy` 0.107 against the bar
-of 0.10, and re-run to completion; "stock" is stock ThreadSanitizer; runs under
+of 0.10, and re-run to completion; the memcached leg, 15 measured cells, none retired; "stock" is stock
+ThreadSanitizer; runs under
 `data/perf/campaign-f3deebfbab60/flag-<application>/` and, for FFmpeg, `best/`):
 
 | Application | Configuration | All five runs [95%] | Runs 2-5, point | Reading |
@@ -458,17 +459,23 @@ of 0.10, and re-run to completion; "stock" is stock ThreadSanitizer; runs under
 | Redis | AllOpt with peeling, DynSTC and the flag | 1.083 [1.061, 1.107] | 1.077 | DynSTC's Redis cost, under the flag |
 | FFmpeg (16 threads) | stock with the flag | 1.016 [1.002, 1.029] | 1.018 | the flag alone |
 | FFmpeg (16 threads) | AllOpt with peeling, DynSTC and the flag | 1.200 [1.185, 1.221] | 1.211 | |
-| memcached, SQLite, MySQL | measured the night of 21-22 Sep; rows added when the legs end | | | |
+| memcached (48 threads) | stock with the flag | 1.000 [0.914, 1.040] | 0.981 | the flag alone: nothing resolved on memcached |
+| memcached (48 threads) | AllOpt with peeling | 1.033 [0.945, 1.068] | 1.015 | ours alone, this leg |
+| memcached (48 threads) | AllOpt with peeling and the flag | 1.019 [0.925, 1.058] | 1.018 | |
+| SQLite, MySQL | measured the night of 21-22 Sep; rows added when the legs end | | | |
 
 **Does the flag gain more with our analyses than on stock?** No more than the product of the two, on both
-applications measured so far. Redis: the flag alone 1.107, AllOpt with peeling alone 1.008, their product
+applications where anything is resolved. Redis: the flag alone 1.107, AllOpt with peeling alone 1.008, their product
 1.116, and the combination 1.138 [1.109, 1.161], whose interval contains the product and overlaps the
 flag-alone interval; the data allows an interaction of up to about three points in our favour and does not
 establish one. FFmpeg: 1.016 x 1.187 = 1.206 against 1.200 [1.185, 1.221] measured. So the sentence the
 data supports is that the flag's gain is the flag's, and our analyses gain the same on top of it as without
-it: the two are independent, as their mechanisms say they should be. Stock ThreadSanitizer with the flag
-against native, for the record: Redis 7.60x [7.41, 7.81] against 8.42x without; FFmpeg at 16 threads 2.84x
-[2.75, 2.87] against 2.88x.
+it: the two are independent, as their mechanisms say they should be. memcached resolves nothing either way:
+the flag alone 1.000 [0.914, 1.040], the combination 1.019 [0.925, 1.058], intervals twelve to thirteen points
+wide as in the campaign (its memtier workload varies that much run to run), every one containing 1.0 and the
+product. Stock ThreadSanitizer with the flag against native, for the record: Redis 7.60x [7.41, 7.81] against
+8.42x without; FFmpeg at 16 threads 2.84x [2.75, 2.87] against 2.88x; memcached 3.68x [3.59, 3.92] against
+3.68x [3.54, 3.77], the flag buying nothing measurable there.
 
 The earlier leg on the previous compiler (`data/perf/nofe-d3bf9f8c39fe`, 15 Sep 2026, the sound bundle
 with and without the flag: Redis 1.233 [1.183, 1.254], MySQL 1.136 [1.081, 1.188], SQLite 1.044 [1.025,
