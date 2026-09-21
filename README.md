@@ -12,7 +12,7 @@ recorded, and one script per experiment.
 ```
 git clone https://github.com/apaznikov/tsan-atc26-artifact.git && cd tsan-atc26-artifact
 ./evaluate.sh check          # does it all run here? 5 minutes, plus the image build the first time (15-25 min). Not a badge.
-./evaluate.sh functional     # the Functional badge: the full correctness set, under an hour (23 min on 64 processors, 30 min on this host; before the 21 Sep lit fix it was two to four times that)
+./evaluate.sh functional     # the Functional badge: the full correctness set, under an hour (23 min on 64 processors, 30 min on this host, 48 min on 8; before the 21 Sep lit fix it was two to four times that)
 ./evaluate.sh reproduced     # the Reproduced badge: the whole functional tier, then the performance subset; about 3 hours on 48 idle processors
 ./evaluate.sh                # prints the tiers and their steps, runs nothing
 ```
@@ -217,7 +217,7 @@ For the Functional badge, and for anyone who wants to know the artifact does wha
 spending a day on measurements:
 
 ```
-./docker/run.sh scripts/01-functional.sh            # 23 min on 64 processors, 30 min on this host
+./docker/run.sh scripts/01-functional.sh            # 23 min on 64 processors, 30 min on this host, 48 min on 8
 ./docker/run.sh scripts/01-functional.sh --quick    # about 5 minutes, without the regression suite
 ```
 
@@ -254,7 +254,7 @@ regenerated from whichever runs you point them at.
 | `12-compiler-equivalence.sh` | the shipped compiler emits the instrumentation our measurements were taken on | 3 min | any |
 | `20-static-counts.sh` | static instrumentation per application and configuration, counted on the binaries `40-perf.sh` built | 5 min | any |
 | `21-compile-time.sh <app>` | compile-time overhead, three clean builds per configuration | 20 min to 3 h per application (MySQL 5 to 10 h) | 8 cores |
-| `30-preservation-suite.sh` | 12 configurations over ThreadSanitizer's regression suite, pass or fail per test (the report-level comparison is recorded, not re-run; `CLAIMS.md` section 1) | about 20 min on 64 processors, 25 min on this host | 8 cores |
+| `30-preservation-suite.sh` | 12 configurations over ThreadSanitizer's regression suite, pass or fail per test (the report-level comparison is recorded, not re-run; `CLAIMS.md` section 1) | about 20 min on 64 processors, 25 min on this host, 40 min on 8 | 8 cores |
 | `31-preservation-apps.sh <app> 10` | races reported on the applications, against stock; N = 10 runs for a verdict (the default N = 2 prints the per-site frequencies without one) | 1.5 to 3 h per application | 16 cores |
 | `40-perf.sh <app>` | the performance table, one application at a time | default (4 configurations, N = 2), measured: Redis 13-15 min, memcached 28-36, FFmpeg 20-25, SQLite 65-68; MySQL about 3.4 h; everything at N = 2 about 14 h with builds; `ART_RUNS=5` for intervals, twice as long | 32 cores |
 | `50-eviction-stress.sh` | the bounded-shadow experiments | 15 min to 1 h | any |

@@ -6,7 +6,7 @@
 #                                regression suite, the tables. About 5 minutes. Not a badge: the kick-the-tires check.
 #   ./evaluate.sh functional     The Functional badge: everything in check, plus the regression suite in 12
 #                                configurations. Under an hour on any x86-64 Linux host with Docker (23 min on
-#                                64 processors).
+#                                64 processors, 48 min on 8).
 #   ./evaluate.sh reproduced     The Reproduced badge: the whole functional tier first, then the performance
 #                                subset, Redis, memcached, FFmpeg and SQLite at the defaults (four configurations,
 #                                two runs), compared with the intervals CLAIMS.md ships. About 3 hours (measured 2 h 56 min
@@ -78,7 +78,7 @@ if [ "$perf_only" != 1 ]; then
   if [ "$tier" = check ]; then
     add "correctness set, quick"          "2-5 min"   "./docker/run.sh scripts/01-functional.sh --quick"
   else
-    add "correctness set, full"           "23 min on 64 processors, longer on fewer" "./docker/run.sh scripts/01-functional.sh"
+    add "correctness set, full"           "23 min on 64 processors, 48 min on 8" "./docker/run.sh scripts/01-functional.sh"
   fi
   add "tables from the shipped runs"      "1 min"     "./docker/run.sh scripts/90-tables.sh"
 fi
@@ -93,7 +93,7 @@ fi
 
 total=$(case "$tier:$perf_only" in
   check:*)      echo "about 5 minutes, plus the image build the first time (15-25 min)";;
-  functional:*) echo "under an hour (23 min on 64 processors), plus the image build the first time";;
+  functional:*) echo "under an hour (23 min on 64 processors, 48 min on 8), plus the image build the first time";;
   reproduced:1) echo "about 2 h 20 min, plus the image build the first time";;
   reproduced:*) echo "about 3 hours, plus the image build the first time";;
   everything:1) echo "about 12 hours, plus the image build the first time";;
