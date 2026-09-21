@@ -227,7 +227,21 @@ for s in "${steps[@]}"; do
     echo "    follow it: tail -f $step_out   (the console shows the step's output when it ends)"
     [[ "$cmd" == *01-functional.sh* ]] && echo "    the machine going idle for up to two minutes at a time is getline_nohang.cpp waiting out its timeout, not a hang (docs/nondeterministic-tests.md)" ;;
   esac
-  { echo "=== $label: $cmd"; bash -c "$cmd"; } > "$step_out" 2>&1; rc=$?
+  # LIVE PROGRESS. The step's full output goes to the step file and the log; the lines that say what is
+  # happening (a sub-step's verdict, a build starting or failing, a measured cell, an image layer, a fetch)
+  # are echoed to the console as they appear, prefixed with a bar, so a reader watching a two-hour step sees
+  # it move and sees what it is doing (two evaluators asked for exactly this, 20 Sep 2026). Everything else
+  # stays in the log.
+  : > "$step_out"
+  { echo "=== $label: $cmd"; bash -c "$cmd"; } > "$step_out" 2>&1 & steppid=$!
+  # The reader follows the step's own process (tail --pid) and ends by itself when the step ends; killing
+  # a subshell around the pipeline left tail, grep and sed alive on a deleted file and held the console
+  # open for whoever was piping this script (found on the first run, 21 Sep 2026).
+  tail -n +1 -F --pid="$steppid" "$step_out" 2>/dev/null \
+      | grep --line-buffered -E '^(PASS|FAIL|SKIP)  |^== |^Expected:|^ *configurations RUN|^  [A-Za-z+-]+ +always-fail=|^\[[0-9-]+ [0-9:]+\] .*( run[0-9]+ rc=| build |BUILD FAILED|builds of |done: |ERROR|-> )|^#[0-9]+ (\[|DONE)|^fetch_archive:|^ensure_input_clip:|^  (ok|FAIL|MISSING|WARNING|later) |^(analysis|STC|SWMR|LO|EA|DE) |^  race-|^app  |^[a-z]+  +(AllOpt|DynSTC|DE|EA|LO|STC|SWMR|four|stock)|rows judged|replayed |Regenerating|identical to the shipped' \
+      | sed -u 's/^/      | /' & readerpid=$!
+  wait "$steppid"; rc=$?
+  wait "$readerpid" 2>/dev/null || true
   cat "$step_out" >> "$log"
   dt=$(( $(date +%s) - t0 ))
   printf '    %-38s rc=%d  finished %s, %dm%02ds elapsed\n' "$label" "$rc" "$(date +%H:%M:%S)" $((dt/60)) $((dt%60))
@@ -253,10 +267,11 @@ for s in "${steps[@]}"; do
   # A clipped or refused processor set is the one warning a reviewer must see at once, not after hours.
   /usr/bin/grep -h 'docker/run.sh: ART_CPUSET' "$step_out" | sed 's/^/    /' || true
   # What the step said, on the console as well as in the log: a short output in full (the minimal
-  # example's table, the correctness set's per-step verdicts), a long one by its last lines.
+  # example's table, the correctness set's per-step verdicts); a long one was followed live above, and its
+  # closing lines are repeated here so the verdict sentences are not lost among the progress lines.
   n=$(wc -l < "$step_out")
   if [ "$n" -le 30 ]; then sed 's/^/      /' "$step_out"
-  else echo "      ... last 12 of $n lines (all of them in the log):"; tail -12 "$step_out" | sed 's/^/      /'; fi
+  else echo "      ... last 6 of $n lines (all of them in the log):"; tail -6 "$step_out" | sed 's/^/      /'; fi
   rm -f "$step_out"
 done
 # The performance tiers end with the comparison an evaluator came for: every row this run produced

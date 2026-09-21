@@ -94,6 +94,11 @@ The tables name configurations as the harness does:
 | `tsan-dom_peeling-ea-lo-st-swmr-stmt` | AllOpt with peeling plus DynSTC |
 | `tsan-sound-wp`, `tsan-dom_peeling-ea-lo-st-swmr-wp` | the four analyses STC, SWMR, LO and EA (without DE), and AllOpt with peeling, each with whole-program summaries |
 
+The network is needed twice: the image build (a shallow clone of upstream LLVM and Ubuntu packages) and
+FFmpeg's input clip (a 557 MB download from the Blender Foundation, or `ART_FFMPEG_CLIP_URL`). The
+application sources ship in `third-party/sources/` and are verified against pinned hashes before use; only
+MySQL's 421 MB archive is fetched, by the `everything` tier.
+
 `CLAIMS.md` is the contract: every claim the paper makes, the script that produces it, and what counts
 as a match. Nothing outside that file is claimed here. Read it once the quick tier has passed.
 

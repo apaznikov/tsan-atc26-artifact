@@ -1,9 +1,11 @@
 # Application sources: what is fetched, from where, and what it must hash to
 
-The applications are not vendored in this repository; the harness fetches them at build time and
-must verify each archive against the sha256 below before unpacking it. The same archives are
-deposited with the artifact's Zenodo record as a mirror, so a moved or changed upstream file cannot
-change what is built. A hash mismatch is a stop, not a warning.
+The application archives ship in this repository, under `third-party/sources/` (every one below but
+MySQL's, 31 MB together), and the harness uses the shipped copy; it fetches from the origin URL only when
+the shipped file is absent (MySQL, 421 MB, is fetched), and in either case it verifies the archive against
+the sha256 below before unpacking it. Until 20 Sep 2026 every archive was fetched at build time, and an
+evaluator whose machine could not reach download.redis.io lost the performance tier at its first
+application. A hash mismatch is a stop, not a warning.
 
 | Component | Archive | Origin | Size | sha256 |
 |---|---|---|---|---|

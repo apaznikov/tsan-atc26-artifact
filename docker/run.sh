@@ -72,5 +72,6 @@ exec docker run --rm "${tty_flag[@]}" "${cpus_flag[@]}" \
   -v "$here/env.sh:/artifact/env.sh:ro" \
   -v "$here/CLAIMS.md:/artifact/CLAIMS.md:ro" \
   -v "$here/harness:/artifact/harness:ro" \
+  -v "$here/third-party:/artifact/third-party:ro" \
   -w /artifact \
   "${ART_IMAGE:-tsan-atc26}" "${@:-/bin/bash}"

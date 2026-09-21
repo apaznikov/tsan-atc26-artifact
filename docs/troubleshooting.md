@@ -140,6 +140,15 @@ test times out. `docker/run.sh` pins the limit to 1048576 (our campaign's) since
 cannot be long inside it; running a test binary by hand outside `docker/run.sh` with a huge `ulimit -n` is
 where it can still be seen. Same under stock ThreadSanitizer; nothing of ours.
 
+## "fetch_archive: download failed for https://..."
+
+The application archives ship in `third-party/sources/` and are used from there, so this line can only
+come from MySQL's archive (fetched by the `everything` tier, 421 MB from GitHub) or from a checkout whose
+`third-party/sources/` is missing. Obtain the file by any means and place it at the path the message names;
+it is verified against the pinned sha256 before use, so where it came from does not matter. Until 20 Sep
+2026 every archive was fetched at build time, and a host that could not reach download.redis.io lost the
+performance tier at Redis within a second.
+
 ## The log's stamp and the results directories' stamps differ by hours
 
 Both are UTC since 19 Sep 2026 (`results/evaluate-<tier>-<stamp>.log` and the `perf-<app>-<stamp>`
