@@ -1,0 +1,19 @@
+# Configurations for the TSan test suite, as TSAN_MLLVM_FLAGS values. Flag strings are the
+# campaign's own, recovered from the recorded run metadata (tools/perf/results/*/meta.json).
+# The whole-program legs (-tsan-use-analysis-summaries -tsan-summary-dir=...) are omitted:
+# they need a summary directory built for one specific application tree and cannot be
+# reproduced from this artifact alone.
+stock|
+EA|-tsan-use-escape-analysis-global
+LO|-tsan-use-lock-ownership
+STC|-tsan-use-single-threaded
+SWMR|-tsan-use-swmr
+DE|-tsan-use-dominance-analysis
+DE+peel|-tsan-use-dominance-analysis -tsan-use-loop-peeling=true
+sound|-tsan-use-escape-analysis-global -tsan-use-lock-ownership -tsan-use-single-threaded -tsan-use-swmr
+AllOpt-peel|-tsan-use-dominance-analysis -tsan-use-escape-analysis-global -tsan-use-lock-ownership -tsan-use-single-threaded -tsan-use-swmr
+AllOpt+peel|-tsan-use-dominance-analysis -tsan-use-loop-peeling=true -tsan-use-escape-analysis-global -tsan-use-lock-ownership -tsan-use-single-threaded -tsan-use-swmr
+AllOpt-peel+DynSTC|-tsan-use-dominance-analysis -tsan-use-escape-analysis-global -tsan-use-lock-ownership -tsan-use-single-threaded -tsan-use-swmr -tsan-use-active-thread-count
+AllOpt+peel+DynSTC|-tsan-use-dominance-analysis -tsan-use-loop-peeling=true -tsan-use-escape-analysis-global -tsan-use-lock-ownership -tsan-use-single-threaded -tsan-use-swmr -tsan-use-active-thread-count
+nofe|-tsan-instrument-func-entry-exit=false
+AllOpt+peel+DynSTC+nofe|-tsan-use-dominance-analysis -tsan-use-loop-peeling=true -tsan-use-escape-analysis-global -tsan-use-lock-ownership -tsan-use-single-threaded -tsan-use-swmr -tsan-use-active-thread-count -tsan-instrument-func-entry-exit=false

@@ -1,0 +1,203 @@
+==================
+WARNING: ThreadSanitizer: data race (pid=1143)
+  Atomic read of size 4 at 0x7ffff7c11060 by thread T14:
+    #0 walTryBeginRead /artifact/build/harness/sql/sqlite/build/sqlite3.c:68992:20 (threadtest3+0x15704b)
+    #1 walBeginReadTransaction /artifact/build/harness/sql/sqlite/build/sqlite3.c:69270:10 (threadtest3+0x14d96f)
+    #2 sqlite3WalBeginReadTransaction /artifact/build/harness/sql/sqlite/build/sqlite3.c:69354:10 (threadtest3+0x14d96f)
+    #3 pagerBeginReadTransaction /artifact/build/harness/sql/sqlite/build/sqlite3.c:61316:8 (threadtest3+0x14d96f)
+    #4 sqlite3PagerSharedLock /artifact/build/harness/sql/sqlite/build/sqlite3.c:63485:10 (threadtest3+0x14d96f)
+    #5 lockBtree /artifact/build/harness/sql/sqlite/build/sqlite3.c:74834:8 (threadtest3+0x14c400)
+    #6 btreeBeginTrans /artifact/build/harness/sql/sqlite/build/sqlite3.c:75231:47 (threadtest3+0x14c400)
+    #7 sqlite3BtreeBeginTrans /artifact/build/harness/sql/sqlite/build/sqlite3.c:75331:12 (threadtest3+0x192e70)
+    #8 sqlite3InitOne /artifact/build/harness/sql/sqlite/build/sqlite3.c:143983:10 (threadtest3+0x192e70)
+    #9 sqlite3Init /artifact/build/harness/sql/sqlite/build/sqlite3.c:144170:10 (threadtest3+0x1b054b)
+    #10 sqlite3ReadSchema /artifact/build/harness/sql/sqlite/build/sqlite3.c:144196:10 (threadtest3+0x1b054b)
+    #11 sqlite3Pragma /artifact/build/harness/sql/sqlite/build/sqlite3.c:141151:9 (threadtest3+0x1de2e9)
+    #12 yy_reduce /artifact/build/harness/sql/sqlite/build/sqlite3.c (threadtest3+0x1b8b39)
+    #13 sqlite3Parser /artifact/build/harness/sql/sqlite/build/sqlite3.c:180681:15 (threadtest3+0x133204)
+    #14 sqlite3RunParser /artifact/build/harness/sql/sqlite/build/sqlite3.c:182022:5 (threadtest3+0x133204)
+    #15 sqlite3Prepare /artifact/build/harness/sql/sqlite/build/sqlite3.c:144507:5 (threadtest3+0x1a95e0)
+    #16 sqlite3LockAndPrepare /artifact/build/harness/sql/sqlite/build/sqlite3.c:144582:10 (threadtest3+0x13036d)
+    #17 sqlite3_prepare_v2 /artifact/build/harness/sql/sqlite/build/sqlite3.c:144669:8 (threadtest3+0x11cee4)
+    #18 sqlite3_exec /artifact/build/harness/sql/sqlite/build/sqlite3.c:138236:10 (threadtest3+0x11cee4)
+    #19 opendb_x /artifact/build/harness/sql/sqlite/./threadtest3.c:565:7 (threadtest3+0x104dc0)
+    #20 walthread2_thread /artifact/build/harness/sql/sqlite/./threadtest3.c:1080:5 (threadtest3+0x1071f5)
+    #21 launch_thread_main /artifact/build/harness/sql/sqlite/./threadtest3.c:788:13 (threadtest3+0x1066f0)
+
+  Previous write of size 4 at 0x7ffff7c11060 by thread T15:
+    #0 walIndexRecover /artifact/build/harness/sql/sqlite/build/sqlite3.c:67451:22 (threadtest3+0x15853e)
+    #1 walIndexReadHdr /artifact/build/harness/sql/sqlite/build/sqlite3.c:68588:18 (threadtest3+0x15853e)
+    #2 walTryBeginRead /artifact/build/harness/sql/sqlite/build/sqlite3.c:68940:12 (threadtest3+0x156c09)
+    #3 walBeginReadTransaction /artifact/build/harness/sql/sqlite/build/sqlite3.c:69270:10 (threadtest3+0x14d96f)
+    #4 sqlite3WalBeginReadTransaction /artifact/build/harness/sql/sqlite/build/sqlite3.c:69354:10 (threadtest3+0x14d96f)
+    #5 pagerBeginReadTransaction /artifact/build/harness/sql/sqlite/build/sqlite3.c:61316:8 (threadtest3+0x14d96f)
+    #6 sqlite3PagerSharedLock /artifact/build/harness/sql/sqlite/build/sqlite3.c:63485:10 (threadtest3+0x14d96f)
+    #7 lockBtree /artifact/build/harness/sql/sqlite/build/sqlite3.c:74834:8 (threadtest3+0x14c400)
+    #8 btreeBeginTrans /artifact/build/harness/sql/sqlite/build/sqlite3.c:75231:47 (threadtest3+0x14c400)
+    #9 sqlite3BtreeBeginTrans /artifact/build/harness/sql/sqlite/build/sqlite3.c:75331:12 (threadtest3+0x192e70)
+    #10 sqlite3InitOne /artifact/build/harness/sql/sqlite/build/sqlite3.c:143983:10 (threadtest3+0x192e70)
+    #11 sqlite3Init /artifact/build/harness/sql/sqlite/build/sqlite3.c:144170:10 (threadtest3+0x1b054b)
+    #12 sqlite3ReadSchema /artifact/build/harness/sql/sqlite/build/sqlite3.c:144196:10 (threadtest3+0x1b054b)
+    #13 sqlite3Pragma /artifact/build/harness/sql/sqlite/build/sqlite3.c:141151:9 (threadtest3+0x1de2e9)
+    #14 yy_reduce /artifact/build/harness/sql/sqlite/build/sqlite3.c (threadtest3+0x1b8b39)
+    #15 sqlite3Parser /artifact/build/harness/sql/sqlite/build/sqlite3.c:180681:15 (threadtest3+0x133204)
+    #16 sqlite3RunParser /artifact/build/harness/sql/sqlite/build/sqlite3.c:182022:5 (threadtest3+0x133204)
+    #17 sqlite3Prepare /artifact/build/harness/sql/sqlite/build/sqlite3.c:144507:5 (threadtest3+0x1a95e0)
+    #18 sqlite3LockAndPrepare /artifact/build/harness/sql/sqlite/build/sqlite3.c:144582:10 (threadtest3+0x13036d)
+    #19 sqlite3_prepare_v2 /artifact/build/harness/sql/sqlite/build/sqlite3.c:144669:8 (threadtest3+0x11cee4)
+    #20 sqlite3_exec /artifact/build/harness/sql/sqlite/build/sqlite3.c:138236:10 (threadtest3+0x11cee4)
+    #21 opendb_x /artifact/build/harness/sql/sqlite/./threadtest3.c:565:7 (threadtest3+0x104dc0)
+    #22 walthread2_thread /artifact/build/harness/sql/sqlite/./threadtest3.c:1080:5 (threadtest3+0x1071f5)
+    #23 launch_thread_main /artifact/build/harness/sql/sqlite/./threadtest3.c:788:13 (threadtest3+0x1066f0)
+
+  Location is global '??' at 0x7ffff7c11000 (test.db-shm+0x60)
+
+  Thread T14 (tid=1158, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x7d553)
+    #1 launch_thread_x /artifact/build/harness/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0xff81e)
+    #2 walthread2 /artifact/build/harness/sql/sqlite/./threadtest3.c:1117:3 (threadtest3+0xff81e)
+    #3 main /artifact/build/harness/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xfebe2)
+
+  Thread T15 (tid=1159, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x7d553)
+    #1 launch_thread_x /artifact/build/harness/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0xff931)
+    #2 walthread2 /artifact/build/harness/sql/sqlite/./threadtest3.c:1118:3 (threadtest3+0xff931)
+    #3 main /artifact/build/harness/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xfebe2)
+
+SUMMARY: ThreadSanitizer: data race /artifact/build/harness/sql/sqlite/build/sqlite3.c:68992:20 in walTryBeginRead
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=1143)
+  Write of size 4 at 0x7ffff7c11068 by thread T23:
+    #0 walRestartHdr /artifact/build/harness/sql/sqlite/build/sqlite3.c:68035:23 (threadtest3+0x15dda1)
+    #1 walRestartLog /artifact/build/harness/sql/sqlite/build/sqlite3.c:69751:9 (threadtest3+0x15dda1)
+    #2 walFrames /artifact/build/harness/sql/sqlite/build/sqlite3.c:69934:24 (threadtest3+0x15dda1)
+    #3 sqlite3WalFrames /artifact/build/harness/sql/sqlite/build/sqlite3.c:70140:10 (threadtest3+0x15dda1)
+    #4 pagerWalFrames /artifact/build/harness/sql/sqlite/build/sqlite3.c:61275:8 (threadtest3+0x15dda1)
+    #5 sqlite3PagerCommitPhaseOne /artifact/build/harness/sql/sqlite/build/sqlite3.c:64553:14 (threadtest3+0x120b3b)
+    #6 sqlite3BtreeCommitPhaseOne /artifact/build/harness/sql/sqlite/build/sqlite3.c:75850:10 (threadtest3+0x121274)
+    #7 vdbeCommit /artifact/build/harness/sql/sqlite/build/sqlite3.c:88895:14 (threadtest3+0x169256)
+    #8 sqlite3VdbeHalt /artifact/build/harness/sql/sqlite/build/sqlite3.c:89305:16 (threadtest3+0x1680ff)
+    #9 sqlite3VdbeExec /artifact/build/harness/sql/sqlite/build/sqlite3.c:95663:8 (threadtest3+0x18547a)
+    #10 sqlite3Step /artifact/build/harness/sql/sqlite/build/sqlite3.c:92305:10 (threadtest3+0x11b02f)
+    #11 sqlite3_step /artifact/build/harness/sql/sqlite/build/sqlite3.c:92366:16 (threadtest3+0x11b02f)
+    #12 execsql_i64_x /artifact/build/harness/sql/sqlite/./threadtest3.c:692:26 (threadtest3+0x1067f4)
+    #13 walthread4_writer_thread /artifact/build/harness/sql/sqlite/./threadtest3.c:1208:5 (threadtest3+0x107f6d)
+    #14 launch_thread_main /artifact/build/harness/sql/sqlite/./threadtest3.c:788:13 (threadtest3+0x1066f0)
+
+  Previous atomic read of size 4 at 0x7ffff7c11068 by thread T22:
+    #0 walTryBeginRead /artifact/build/harness/sql/sqlite/build/sqlite3.c:69041:22 (threadtest3+0x15695f)
+    #1 walBeginReadTransaction /artifact/build/harness/sql/sqlite/build/sqlite3.c:69270:10 (threadtest3+0x14d96f)
+    #2 sqlite3WalBeginReadTransaction /artifact/build/harness/sql/sqlite/build/sqlite3.c:69354:10 (threadtest3+0x14d96f)
+    #3 pagerBeginReadTransaction /artifact/build/harness/sql/sqlite/build/sqlite3.c:61316:8 (threadtest3+0x14d96f)
+    #4 sqlite3PagerSharedLock /artifact/build/harness/sql/sqlite/build/sqlite3.c:63485:10 (threadtest3+0x14d96f)
+    #5 lockBtree /artifact/build/harness/sql/sqlite/build/sqlite3.c:74834:8 (threadtest3+0x14c400)
+    #6 btreeBeginTrans /artifact/build/harness/sql/sqlite/build/sqlite3.c:75231:47 (threadtest3+0x14c400)
+    #7 sqlite3BtreeBeginTrans /artifact/build/harness/sql/sqlite/build/sqlite3.c:75331:12 (threadtest3+0x11f8df)
+    #8 sqlite3VdbeExec /artifact/build/harness/sql/sqlite/build/sqlite3.c:98411:10 (threadtest3+0x17a07d)
+    #9 sqlite3Step /artifact/build/harness/sql/sqlite/build/sqlite3.c:92305:10 (threadtest3+0x11b02f)
+    #10 sqlite3_step /artifact/build/harness/sql/sqlite/build/sqlite3.c:92366:16 (threadtest3+0x11b02f)
+    #11 integrity_check_x /artifact/build/harness/sql/sqlite/./threadtest3.c:758:26 (threadtest3+0x10691a)
+    #12 walthread4_reader_thread /artifact/build/harness/sql/sqlite/./threadtest3.c:1192:5 (threadtest3+0x107c54)
+    #13 launch_thread_main /artifact/build/harness/sql/sqlite/./threadtest3.c:788:13 (threadtest3+0x1066f0)
+
+  Location is global '??' at 0x7ffff7c11000 (test.db-shm+0x68)
+
+  Thread T23 (tid=1168, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x7d553)
+    #1 launch_thread_x /artifact/build/harness/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0x10030b)
+    #2 walthread4 /artifact/build/harness/sql/sqlite/./threadtest3.c:1234:3 (threadtest3+0x10030b)
+    #3 main /artifact/build/harness/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xfebe2)
+
+  Thread T22 (tid=1167, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x7d553)
+    #1 launch_thread_x /artifact/build/harness/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0x1001f9)
+    #2 walthread4 /artifact/build/harness/sql/sqlite/./threadtest3.c:1233:3 (threadtest3+0x1001f9)
+    #3 main /artifact/build/harness/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xfebe2)
+
+SUMMARY: ThreadSanitizer: data race /artifact/build/harness/sql/sqlite/build/sqlite3.c:68035:23 in walRestartHdr
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=1143)
+  Write of size 4 at 0x7ffff7c11070 by thread T23:
+    #0 walRestartHdr /artifact/build/harness/sql/sqlite/build/sqlite3.c:68036:52 (threadtest3+0x15ddc3)
+    #1 walRestartLog /artifact/build/harness/sql/sqlite/build/sqlite3.c:69751:9 (threadtest3+0x15ddc3)
+    #2 walFrames /artifact/build/harness/sql/sqlite/build/sqlite3.c:69934:24 (threadtest3+0x15ddc3)
+    #3 sqlite3WalFrames /artifact/build/harness/sql/sqlite/build/sqlite3.c:70140:10 (threadtest3+0x15ddc3)
+    #4 pagerWalFrames /artifact/build/harness/sql/sqlite/build/sqlite3.c:61275:8 (threadtest3+0x15ddc3)
+    #5 sqlite3PagerCommitPhaseOne /artifact/build/harness/sql/sqlite/build/sqlite3.c:64553:14 (threadtest3+0x120b3b)
+    #6 sqlite3BtreeCommitPhaseOne /artifact/build/harness/sql/sqlite/build/sqlite3.c:75850:10 (threadtest3+0x121274)
+    #7 vdbeCommit /artifact/build/harness/sql/sqlite/build/sqlite3.c:88895:14 (threadtest3+0x169256)
+    #8 sqlite3VdbeHalt /artifact/build/harness/sql/sqlite/build/sqlite3.c:89305:16 (threadtest3+0x1680ff)
+    #9 sqlite3VdbeExec /artifact/build/harness/sql/sqlite/build/sqlite3.c:95663:8 (threadtest3+0x18547a)
+    #10 sqlite3Step /artifact/build/harness/sql/sqlite/build/sqlite3.c:92305:10 (threadtest3+0x11b02f)
+    #11 sqlite3_step /artifact/build/harness/sql/sqlite/build/sqlite3.c:92366:16 (threadtest3+0x11b02f)
+    #12 execsql_i64_x /artifact/build/harness/sql/sqlite/./threadtest3.c:692:26 (threadtest3+0x1067f4)
+    #13 walthread4_writer_thread /artifact/build/harness/sql/sqlite/./threadtest3.c:1208:5 (threadtest3+0x107f6d)
+    #14 launch_thread_main /artifact/build/harness/sql/sqlite/./threadtest3.c:788:13 (threadtest3+0x1066f0)
+
+  Previous atomic read of size 4 at 0x7ffff7c11070 by thread T22:
+    #0 walTryBeginRead /artifact/build/harness/sql/sqlite/build/sqlite3.c:69041:22 (threadtest3+0x1569a5)
+    #1 walBeginReadTransaction /artifact/build/harness/sql/sqlite/build/sqlite3.c:69270:10 (threadtest3+0x14d96f)
+    #2 sqlite3WalBeginReadTransaction /artifact/build/harness/sql/sqlite/build/sqlite3.c:69354:10 (threadtest3+0x14d96f)
+    #3 pagerBeginReadTransaction /artifact/build/harness/sql/sqlite/build/sqlite3.c:61316:8 (threadtest3+0x14d96f)
+    #4 sqlite3PagerSharedLock /artifact/build/harness/sql/sqlite/build/sqlite3.c:63485:10 (threadtest3+0x14d96f)
+    #5 lockBtree /artifact/build/harness/sql/sqlite/build/sqlite3.c:74834:8 (threadtest3+0x14c400)
+    #6 btreeBeginTrans /artifact/build/harness/sql/sqlite/build/sqlite3.c:75231:47 (threadtest3+0x14c400)
+    #7 sqlite3BtreeBeginTrans /artifact/build/harness/sql/sqlite/build/sqlite3.c:75331:12 (threadtest3+0x11f8df)
+    #8 sqlite3VdbeExec /artifact/build/harness/sql/sqlite/build/sqlite3.c:98411:10 (threadtest3+0x17a07d)
+    #9 sqlite3Step /artifact/build/harness/sql/sqlite/build/sqlite3.c:92305:10 (threadtest3+0x11b02f)
+    #10 sqlite3_step /artifact/build/harness/sql/sqlite/build/sqlite3.c:92366:16 (threadtest3+0x11b02f)
+    #11 integrity_check_x /artifact/build/harness/sql/sqlite/./threadtest3.c:758:26 (threadtest3+0x10691a)
+    #12 walthread4_reader_thread /artifact/build/harness/sql/sqlite/./threadtest3.c:1192:5 (threadtest3+0x107c54)
+    #13 launch_thread_main /artifact/build/harness/sql/sqlite/./threadtest3.c:788:13 (threadtest3+0x1066f0)
+
+  Location is global '??' at 0x7ffff7c11000 (test.db-shm+0x70)
+
+  Thread T23 (tid=1168, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x7d553)
+    #1 launch_thread_x /artifact/build/harness/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0x10030b)
+    #2 walthread4 /artifact/build/harness/sql/sqlite/./threadtest3.c:1234:3 (threadtest3+0x10030b)
+    #3 main /artifact/build/harness/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xfebe2)
+
+  Thread T22 (tid=1167, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x7d553)
+    #1 launch_thread_x /artifact/build/harness/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0x1001f9)
+    #2 walthread4 /artifact/build/harness/sql/sqlite/./threadtest3.c:1233:3 (threadtest3+0x1001f9)
+    #3 main /artifact/build/harness/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xfebe2)
+
+SUMMARY: ThreadSanitizer: data race /artifact/build/harness/sql/sqlite/build/sqlite3.c:68036:52 in walRestartHdr
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=1143)
+  Write of size 4 at 0x555555876d5c by main thread:
+    #0 sqlite3_enable_shared_cache /artifact/build/harness/sql/sqlite/build/sqlite3.c:71643:42 (threadtest3+0x11df6c)
+    #1 dynamic_triggers /artifact/build/harness/sql/sqlite/./threadtest3.c:1479:3 (threadtest3+0x1019a0)
+    #2 main /artifact/build/harness/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xfebe2)
+
+  Previous read of size 4 at 0x555555876d5c by thread T30:
+    #0 openDatabase /artifact/build/harness/sql/sqlite/build/sqlite3.c:185910:33 (threadtest3+0x13c045)
+    #1 sqlite3_open_v2 /artifact/build/harness/sql/sqlite/build/sqlite3.c:186250:10 (threadtest3+0x13cd00)
+    #2 opendb_x /artifact/build/harness/sql/sqlite/./threadtest3.c:555:10 (threadtest3+0x104cc0)
+    #3 dynamic_triggers_2 /artifact/build/harness/sql/sqlite/./threadtest3.c:1431:3 (threadtest3+0x10857d)
+    #4 launch_thread_main /artifact/build/harness/sql/sqlite/./threadtest3.c:788:13 (threadtest3+0x1066f0)
+
+  As if synchronized via sleep:
+    #0 nanosleep /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:398:3 (threadtest3+0x870ee)
+    #1 unixSleep /artifact/build/harness/sql/sqlite/build/sqlite3.c:45701:3 (threadtest3+0x119e0c)
+    #2 sqlite3OsSleep /artifact/build/harness/sql/sqlite/build/sqlite3.c:26821:10 (threadtest3+0x13f8f6)
+    #3 sqlite3_sleep /artifact/build/harness/sql/sqlite/build/sqlite3.c:186678:9 (threadtest3+0x13f8f6)
+    #4 dynamic_triggers /artifact/build/harness/sql/sqlite/./threadtest3.c:1478:3 (threadtest3+0x101999)
+    #5 main /artifact/build/harness/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xfebe2)
+
+  Location is global 'sqlite3Config' of size 440 at 0x555555876c10 (threadtest3+0x322d5c)
+
+  Thread T30 (tid=1175, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x7d553)
+    #1 launch_thread_x /artifact/build/harness/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0x101900)
+    #2 dynamic_triggers /artifact/build/harness/sql/sqlite/./threadtest3.c:1476:3 (threadtest3+0x101900)
+    #3 main /artifact/build/harness/sql/sqlite/./threadtest3.c:1588:9 (threadtest3+0xfebe2)
+
+SUMMARY: ThreadSanitizer: data race /artifact/build/harness/sql/sqlite/build/sqlite3.c:71643:42 in sqlite3_enable_shared_cache
+==================
+ThreadSanitizer: reported 4 warnings

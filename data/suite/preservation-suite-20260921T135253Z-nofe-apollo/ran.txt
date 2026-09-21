@@ -1,0 +1,3 @@
+stock
+nofe
+AllOpt+peel+DynSTC+nofe

@@ -1,0 +1,29 @@
+preservation verdict — baseline tsan, N=10 runs per configuration
+gating level: L3   (verdicts printed at all three)
+
+=== L1 ===
+  site                                                             tsan  tsan-dom_peeli       tsan-nofe   verdict
+  data race | atomic read:walTryBeginRead@sqlite3.c:68992 | wr    6/10       2/10            3/10         KEPT
+  data race | atomic read:walTryBeginRead@sqlite3.c:69041 | wr    2/10       0/10            0/10         UNDETERMINED
+  data race | atomic read:walTryBeginRead@sqlite3.c:69041 | wr    1/10       0/10            0/10         UNDETERMINED
+  data race | read:openDatabase@sqlite3.c:185910 | write:sqlit    1/10       1/10            0/10         UNDETERMINED
+  data race | atomic read:walTryBeginRead@sqlite3.c:69041 | wr    0/10       1/10            0/10         UNDETERMINED
+  data race | atomic read:walTryBeginRead@sqlite3.c:69041 | wr    0/10       1/10            0/10         UNDETERMINED
+
+=== L2 ===
+  site                                                             tsan  tsan-dom_peeli       tsan-nofe   verdict
+  data race | atomic read:walTryBeginRead | write:walIndexReco    6/10       2/10            3/10         KEPT
+  data race | atomic read:walTryBeginRead | write:walRestartHd    2/10       1/10            0/10         UNDETERMINED
+  data race | read:openDatabase | write:sqlite3_enable_shared_    1/10       1/10            0/10         UNDETERMINED
+
+=== L3 ===
+  site                                                             tsan  tsan-dom_peeli       tsan-nofe   verdict
+  data race | write:walIndexRecover@sqlite3.c:67451 | mapped:t    6/10       2/10            3/10         KEPT
+  data race | write:walRestartHdr@sqlite3.c:68035 | mapped:tes    2/10       0/10            0/10         UNDETERMINED
+  data race | write:sqlite3_enable_shared_cache@sqlite3.c:7164    1/10       1/10            0/10         UNDETERMINED
+  data race | write:walRestartHdr@sqlite3.c:68036 | mapped:tes    1/10       1/10            0/10         UNDETERMINED
+
+RESULT: no site LOST.
+3 site(s) UNDETERMINED at N=10: no configuration reported them at all and stock
+itself did not report them in every run, so this N cannot separate a loss from stock's own
+detection noise. Raise --runs to narrow it.

@@ -1,0 +1,22 @@
+==================
+WARNING: ThreadSanitizer: data race (pid=790)
+  Write of size 4 at 0x555555895d5c by main thread:
+    #0 sqlite3_enable_shared_cache /artifact/build/harness/sql/sqlite/build/sqlite3.c:71643:42 (threadtest3+0x120be3)
+
+  Previous read of size 4 at 0x555555895d5c by thread T30:
+    #0 openDatabase /artifact/build/harness/sql/sqlite/build/sqlite3.c:185910:33 (threadtest3+0x13ecc3)
+
+  As if synchronized via sleep:
+    #0 nanosleep /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:398:3 (threadtest3+0x870ee)
+    #1 unixSleep /artifact/build/harness/sql/sqlite/build/sqlite3.c:45701:3 (threadtest3+0x11c801)
+
+  Location is global 'sqlite3Config' of size 440 at 0x555555895c10 (threadtest3+0x341d5c)
+
+  Thread T30 (tid=821, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x7d553)
+    #1 launch_thread_x /artifact/build/harness/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0x101c19)
+    #2 dynamic_triggers /artifact/build/harness/sql/sqlite/./threadtest3.c:1476:3 (threadtest3+0x101c19)
+
+SUMMARY: ThreadSanitizer: data race /artifact/build/harness/sql/sqlite/build/sqlite3.c:71643:42 in sqlite3_enable_shared_cache
+==================
+ThreadSanitizer: reported 1 warnings

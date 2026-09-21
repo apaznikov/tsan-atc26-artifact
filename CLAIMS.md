@@ -426,7 +426,8 @@ not claimed and never counts it toward a verdict, and `scripts/40-perf.sh` runs 
 regression-suite gate of section 1 (row 22: a test that passes under stock ThreadSanitizer and fails under
 the configuration is a candidate lost race) was run with `tsan-nofe` and
 `tsan-dom_peeling-ea-lo-st-swmr-stmt-nofe` added to the matrix, K = 5, on the second host (AMD EPYC 9115,
-21 Sep 2026): **20 candidate losses under each, the same twenty**: `atexit4`, `atexit5`,
+21 Sep 2026; `data/suite/preservation-suite-20260921T135253Z-nofe-apollo/`, the twelve paper configurations
+0 failures in the same run): **20 candidate losses under each, the same twenty**: `atexit4`, `atexit5`,
 `deadlock_detector_stress_test`, `deep_stack1`, `free_race`, `free_race2`, `ignorelist2`, `longjmp3`,
 `longjmp4`, `mutex_held_wrong_context`, `on_exit`, `race_on_heap`, `race_with_finished_thread`,
 `signal_errno`, `signal_malloc`, `simple_stack`, `simple_stack2`, `sleep_sync`, `suppressions_mutex`,
@@ -438,10 +439,19 @@ reports 128 races instead of 224, adjacent unaligned accesses in one function co
 once their stacks are identical. So in the suite the flag loses no race at the location level and changes what a
 report says: reports name the accessing function and nothing below it, suppressions keyed on callers stop
 working, and reports that differ only in their callers merge. On the applications
-(`scripts/31-preservation-apps.sh` on the second host, SQLite, N = 10, `tsan-nofe` and `tsan-sound-nofe`):
-no site lost at any level on SQLite, every report key intact at L1, L2 and L3, because the keys are built from
-the access PC; the same check on memcached was running as this was written and its result is added here when
-it lands. That is the trade: about 11 per cent on Redis for report stacks of one frame. The submitted paper
+(`scripts/31-preservation-apps.sh <app> 10` on the second host, stock against `tsan-nofe` and against AllOpt with
+peeling and the flag; `data/preservation/{sqlite,memcached}/2026-09-21-nofe-apollo-f3deebfbab60/`, verdicts at all
+three levels): no site LOST under either configuration on either application, and the report keys are the same
+strings under the flag as under stock at L1, L2 and L3, because the keys are built from the access PC. memcached:
+every site stock reports in ten of ten runs (eight at L1) is reported in ten of ten under the flag alone; under
+AllOpt with peeling and the flag it shows the one relocation row 24 describes for AllOpt with peeling without the
+flag (`conn_new@memcached.c:761` paired with `clock_handler` 0 of 10 at L1 and L2, the location kept 10 of 10 at
+L3), the same shape, so it is the bundle's and not the flag's. SQLite resolves less on that host, where stock itself
+reports its sites in 1 to 6 of 10 runs (10 of 10 for two of them on this host on 17 Sep, row 24): the site stock
+reports most often, `walIndexRecover`, 6 of 10, is KEPT under the flag (3 of 10) and under the bundle with the flag
+(2 of 10); the three sites stock reports 1 or 2 times in 10 are 0 of 10 under the flag and UNDETERMINED at this N,
+which is what the rule says of a site that stock itself misses in most runs, and is why the check is comparative and
+not a fixed list. That is the trade: about 11 per cent on Redis for report stacks of one frame. The submitted paper
 does not use the flag, the camera-ready decision on it is the authors', and the artifact reports it
 because an evaluator who reads the harness finds these configuration names and should know what they
 measure.

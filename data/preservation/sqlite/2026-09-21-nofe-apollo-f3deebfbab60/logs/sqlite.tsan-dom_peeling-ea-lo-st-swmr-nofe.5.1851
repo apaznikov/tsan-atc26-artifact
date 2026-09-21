@@ -1,0 +1,53 @@
+==================
+WARNING: ThreadSanitizer: data race (pid=1851)
+  Atomic read of size 4 at 0x7ffff7c1106c by thread T22:
+    #0 walTryBeginRead /artifact/build/harness/sql/sqlite/build/sqlite3.c:69041:22 (threadtest3+0x15a7a8)
+
+  Previous write of size 4 at 0x7ffff7c1106c by thread T23:
+    #0 walRestartHdr /artifact/build/harness/sql/sqlite/build/sqlite3.c:68036:52 (threadtest3+0x1621c2)
+    #1 walRestartLog /artifact/build/harness/sql/sqlite/build/sqlite3.c:69751:9 (threadtest3+0x1621c2)
+    #2 walFrames /artifact/build/harness/sql/sqlite/build/sqlite3.c:69934:24 (threadtest3+0x1621c2)
+    #3 sqlite3WalFrames /artifact/build/harness/sql/sqlite/build/sqlite3.c:70140:10 (threadtest3+0x1621c2)
+    #4 pagerWalFrames /artifact/build/harness/sql/sqlite/build/sqlite3.c:61275:8 (threadtest3+0x1621c2)
+
+  Location is global '??' at 0x7ffff7c11000 (test.db-shm+0x6c)
+
+  Thread T22 (tid=1874, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x7d553)
+    #1 launch_thread_x /artifact/build/harness/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0x100442)
+    #2 walthread4 /artifact/build/harness/sql/sqlite/./threadtest3.c:1233:3 (threadtest3+0x100442)
+
+  Thread T23 (tid=1875, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x7d553)
+    #1 launch_thread_x /artifact/build/harness/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0x100554)
+    #2 walthread4 /artifact/build/harness/sql/sqlite/./threadtest3.c:1234:3 (threadtest3+0x100554)
+
+SUMMARY: ThreadSanitizer: data race /artifact/build/harness/sql/sqlite/build/sqlite3.c:69041:22 in walTryBeginRead
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=1851)
+  Atomic read of size 4 at 0x7ffff7c11074 by thread T22:
+    #0 walTryBeginRead /artifact/build/harness/sql/sqlite/build/sqlite3.c:69041:22 (threadtest3+0x15a806)
+
+  Previous write of size 4 at 0x7ffff7c11074 by thread T23:
+    #0 walRestartHdr /artifact/build/harness/sql/sqlite/build/sqlite3.c:68036:52 (threadtest3+0x1621e4)
+    #1 walRestartLog /artifact/build/harness/sql/sqlite/build/sqlite3.c:69751:9 (threadtest3+0x1621e4)
+    #2 walFrames /artifact/build/harness/sql/sqlite/build/sqlite3.c:69934:24 (threadtest3+0x1621e4)
+    #3 sqlite3WalFrames /artifact/build/harness/sql/sqlite/build/sqlite3.c:70140:10 (threadtest3+0x1621e4)
+    #4 pagerWalFrames /artifact/build/harness/sql/sqlite/build/sqlite3.c:61275:8 (threadtest3+0x1621e4)
+
+  Location is global '??' at 0x7ffff7c11000 (test.db-shm+0x74)
+
+  Thread T22 (tid=1874, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x7d553)
+    #1 launch_thread_x /artifact/build/harness/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0x100442)
+    #2 walthread4 /artifact/build/harness/sql/sqlite/./threadtest3.c:1233:3 (threadtest3+0x100442)
+
+  Thread T23 (tid=1875, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (threadtest3+0x7d553)
+    #1 launch_thread_x /artifact/build/harness/sql/sqlite/./threadtest3.c:815:10 (threadtest3+0x100554)
+    #2 walthread4 /artifact/build/harness/sql/sqlite/./threadtest3.c:1234:3 (threadtest3+0x100554)
+
+SUMMARY: ThreadSanitizer: data race /artifact/build/harness/sql/sqlite/build/sqlite3.c:69041:22 in walTryBeginRead
+==================
+ThreadSanitizer: reported 2 warnings

@@ -1,0 +1,25 @@
+  configurations RUN : 3   repeats: K=5
+  stock nofe AllOpt+peel+DynSTC+nofe
+  stock: fails always=0  fails at least once=0
+
+  nofe                   always-fail= 20 ever-fail= 20  20 CANDIDATE LOSS
+        LOST: atexit4.cpp
+        LOST: atexit5.cpp
+        LOST: deadlock_detector_stress_test.cpp
+        LOST: deep_stack1.cpp
+        LOST: free_race.c
+        LOST: free_race2.c
+        LOST: ignorelist2.cpp
+        LOST: longjmp3.cpp
+  AllOpt+peel+DynSTC+nofe always-fail= 20 ever-fail= 20  20 CANDIDATE LOSS
+        LOST: atexit4.cpp
+        LOST: atexit5.cpp
+        LOST: deadlock_detector_stress_test.cpp
+        LOST: deep_stack1.cpp
+        LOST: free_race.c
+        LOST: free_race2.c
+        LOST: ignorelist2.cpp
+        LOST: longjmp3.cpp
+
+RESULT: at least one candidate lost race. Read the per-test logs before concluding:
+        a thread-leak report and a missed race both show up as a failing test.

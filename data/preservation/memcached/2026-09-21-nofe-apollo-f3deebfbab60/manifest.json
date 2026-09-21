@@ -1,0 +1,91 @@
+{
+ "app": "memcached",
+ "created": "2026-09-21T16:27:43",
+ "host": "c57636dab3e4",
+ "cpus": 64,
+ "argv": [
+  "/artifact/build/harness/tools/preservation/run_preservation.py",
+  "--app",
+  "memcached",
+  "--configs",
+  "tsan,tsan-nofe,tsan-dom_peeling-ea-lo-st-swmr-nofe",
+  "--runs",
+  "10",
+  "--scale",
+  "paper",
+  "--llvm-root",
+  "/opt/tsan-llvm",
+  "--workdir",
+  "/tmp/preservation-memcached",
+  "--no-ninja-check",
+  "--out",
+  "/artifact/results/preservation-memcached-20260921-162718"
+ ],
+ "scale": "paper",
+ "out": "/artifact/results/preservation-memcached-20260921-162718",
+ "workload": {
+  "server_threads": 64,
+  "memtier_threads": 10,
+  "memtier_x": 25,
+  "memtier_extra": [],
+  "pipeline": 16,
+  "server_extra": "-U 0 (UDP off; not in run-memcached.sh, no effect on the memtier TCP workload)"
+ },
+ "tsan_options_template": "log_path=/artifact/results/preservation-memcached-20260921-162718/logs/memcached.<cfg>.0 exitcode=0 external_symbolizer_path=/opt/tsan-llvm/bin/llvm-symbolizer",
+ "compiler": {
+  "llvm_root": "/opt/tsan-llvm",
+  "tree": "/",
+  "clang_version": "clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)",
+  "clang_mtime": "2026-09-20T14:52:03",
+  "tsan_rt_mtime": "2026-09-20T14:49:06",
+  "git_head": "f3deebfbab602f4e05289e0acbde0efd06b8058c",
+  "compiler_head_source": "TSAN_AUDIT_HASH in the frozen copy"
+ },
+ "configs": {
+  "tsan": {
+   "artifacts": [
+    {
+     "path": "/artifact/build/harness/nosql/memcached/memcached-tsan/memcached",
+     "mtime": "2026-09-21T16:27:30.742155",
+     "size": 10670632,
+     "sha256": "d0404c30d45226e4c74737dfec3aff20eaa8a489edb1d9be4673cfd39cf1052a",
+     "compilers": [
+      "GCC: (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)"
+     ]
+    }
+   ],
+   "build_info": "date: 2026-09-21T16:27:30+00:00\nhost: c57636dab3e4\ncompiler: /opt/tsan-llvm/bin/clang-19\ncompiler_version: clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)\ncompiler_mtime: 2026-09-20T14:52:03+00:00\ncompiler_tree: /opt/tsan-llvm (frozen copy)\ncompiler_head: f3deebfbab602f4e05289e0acbde0efd06b8058c\nflags: -fsanitize=thread -g -O2\ncwd: /artifact/build/harness/nosql/memcached/memcached-tsan\ntsan-logs: <none>\nconfig: tsan\nsummaries: none\n"
+  },
+  "tsan-nofe": {
+   "artifacts": [
+    {
+     "path": "/artifact/build/harness/nosql/memcached/memcached-tsan-nofe/memcached",
+     "mtime": "2026-09-21T16:27:36.468155",
+     "size": 10668392,
+     "sha256": "66b5532ab55561f45f53f8931fb2d0c1bf527bed8171cfd5d46e73edc570f62e",
+     "compilers": [
+      "GCC: (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)"
+     ]
+    }
+   ],
+   "build_info": "date: 2026-09-21T16:27:36+00:00\nhost: c57636dab3e4\ncompiler: /opt/tsan-llvm/bin/clang-19\ncompiler_version: clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)\ncompiler_mtime: 2026-09-20T14:52:03+00:00\ncompiler_tree: /opt/tsan-llvm (frozen copy)\ncompiler_head: f3deebfbab602f4e05289e0acbde0efd06b8058c\nflags: -fsanitize=thread -g -O2 -mllvm -tsan-instrument-func-entry-exit=false\ncwd: /artifact/build/harness/nosql/memcached/memcached-tsan-nofe\ntsan-logs: <none>\nconfig: tsan-nofe\nsummaries: none\n"
+  },
+  "tsan-dom_peeling-ea-lo-st-swmr-nofe": {
+   "artifacts": [
+    {
+     "path": "/artifact/build/harness/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr-nofe/memcached",
+     "mtime": "2026-09-21T16:27:42.746155",
+     "size": 10715480,
+     "sha256": "d00b367f5b832f38463f8860d12dca6a9c992bdb5d9b4d189593bdd660db1946",
+     "compilers": [
+      "GCC: (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)"
+     ]
+    }
+   ],
+   "build_info": "date: 2026-09-21T16:27:42+00:00\nhost: c57636dab3e4\ncompiler: /opt/tsan-llvm/bin/clang-19\ncompiler_version: clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)\ncompiler_mtime: 2026-09-20T14:52:03+00:00\ncompiler_tree: /opt/tsan-llvm (frozen copy)\ncompiler_head: f3deebfbab602f4e05289e0acbde0efd06b8058c\nflags: -fsanitize=thread -g -O2 -mllvm -tsan-use-dominance-analysis -mllvm -tsan-use-loop-peeling=true -mllvm -tsan-use-escape-analysis-global -mllvm -tsan-use-lock-ownership -mllvm -tsan-use-single-threaded -mllvm -tsan-use-swmr -mllvm -tsan-instrument-func-entry-exit=false\ncwd: /artifact/build/harness/nosql/memcached/memcached-tsan-dom_peeling-ea-lo-st-swmr-nofe\ntsan-logs: <none>\nconfig: tsan-dom_peeling-ea-lo-st-swmr-nofe\nsummaries: none\n"
+  }
+ }
+}

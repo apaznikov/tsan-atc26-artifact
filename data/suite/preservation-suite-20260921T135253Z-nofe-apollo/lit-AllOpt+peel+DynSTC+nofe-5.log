@@ -1,0 +1,26 @@
+********************
+Failed Tests (20):
+  ThreadSanitizer-x86_64-linux :: atexit4.cpp
+  ThreadSanitizer-x86_64-linux :: atexit5.cpp
+  ThreadSanitizer-x86_64-linux :: deadlock_detector_stress_test.cpp
+  ThreadSanitizer-x86_64-linux :: deep_stack1.cpp
+  ThreadSanitizer-x86_64-linux :: free_race.c
+  ThreadSanitizer-x86_64-linux :: free_race2.c
+  ThreadSanitizer-x86_64-linux :: ignorelist2.cpp
+  ThreadSanitizer-x86_64-linux :: longjmp3.cpp
+  ThreadSanitizer-x86_64-linux :: longjmp4.cpp
+  ThreadSanitizer-x86_64-linux :: mutex_held_wrong_context.cpp
+  ThreadSanitizer-x86_64-linux :: on_exit.cpp
+  ThreadSanitizer-x86_64-linux :: race_on_heap.cpp
+  ThreadSanitizer-x86_64-linux :: race_with_finished_thread.cpp
+  ThreadSanitizer-x86_64-linux :: signal_errno.cpp
+  ThreadSanitizer-x86_64-linux :: signal_malloc.cpp
+  ThreadSanitizer-x86_64-linux :: simple_stack.c
+  ThreadSanitizer-x86_64-linux :: simple_stack2.cpp
+  ThreadSanitizer-x86_64-linux :: sleep_sync.cpp
+  ThreadSanitizer-x86_64-linux :: suppressions_mutex.cpp
+  ThreadSanitizer-x86_64-linux :: unaligned_race.cpp
+
+
+Total Discovered Tests: 383
+  Failed: 20 (5.22%)

@@ -1,0 +1,1 @@
+/opt/tsan-llvm/bin/llvm-symbolizer: error: '/tmp/preservation-sqlite/tsan-dom_peeling-ea-lo-st-swmr-nofe.4/test.db-shm': The file was not recognized as a valid object file

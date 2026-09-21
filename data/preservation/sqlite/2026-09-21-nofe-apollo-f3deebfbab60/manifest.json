@@ -1,0 +1,87 @@
+{
+ "app": "sqlite",
+ "created": "2026-09-21T13:59:10",
+ "host": "db94bec36586",
+ "cpus": 64,
+ "argv": [
+  "/artifact/build/harness/tools/preservation/run_preservation.py",
+  "--app",
+  "sqlite",
+  "--configs",
+  "tsan,tsan-nofe,tsan-dom_peeling-ea-lo-st-swmr-nofe",
+  "--runs",
+  "10",
+  "--scale",
+  "paper",
+  "--llvm-root",
+  "/opt/tsan-llvm",
+  "--workdir",
+  "/tmp/preservation-sqlite",
+  "--no-ninja-check",
+  "--out",
+  "/artifact/results/preservation-sqlite-20260921-135744"
+ ],
+ "scale": "paper",
+ "out": "/artifact/results/preservation-sqlite-20260921-135744",
+ "workload": {
+  "tests": "all",
+  "cwd": "fresh dir per run under workdir"
+ },
+ "tsan_options_template": "log_path=/artifact/results/preservation-sqlite-20260921-135744/logs/sqlite.<cfg>.0 exitcode=0 external_symbolizer_path=/opt/tsan-llvm/bin/llvm-symbolizer",
+ "compiler": {
+  "llvm_root": "/opt/tsan-llvm",
+  "tree": "/",
+  "clang_version": "clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)",
+  "clang_mtime": "2026-09-20T14:52:03",
+  "tsan_rt_mtime": "2026-09-20T14:49:06",
+  "git_head": "f3deebfbab602f4e05289e0acbde0efd06b8058c",
+  "compiler_head_source": "TSAN_AUDIT_HASH in the frozen copy"
+ },
+ "configs": {
+  "tsan": {
+   "artifacts": [
+    {
+     "path": "/artifact/build/harness/sql/sqlite/build/test-tsan/threadtest3",
+     "mtime": "2026-09-21T13:58:14.132248",
+     "size": 15292952,
+     "sha256": "a7f5c0c04e485e0c9b40f6529147ed187ea601feadb568cf2fcb040a688b5ef9",
+     "compilers": [
+      "GCC: (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)"
+     ]
+    }
+   ],
+   "build_info": "date: 2026-09-21T13:58:14+00:00\nhost: db94bec36586\ncompiler: /opt/tsan-llvm/bin/clang-19\ncompiler_version: clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)\ncompiler_mtime: 2026-09-20T14:52:03+00:00\ncompiler_tree: /opt/tsan-llvm (frozen copy)\ncompiler_head: f3deebfbab602f4e05289e0acbde0efd06b8058c\nflags: -fsanitize=thread -g -O2 -fno-omit-frame-pointer\ncwd: /artifact/build/harness/sql/sqlite\ntsan-logs: <none>\nconfig: tsan\nsummaries: none\n"
+  },
+  "tsan-nofe": {
+   "artifacts": [
+    {
+     "path": "/artifact/build/harness/sql/sqlite/build/test-tsan-nofe/threadtest3",
+     "mtime": "2026-09-21T13:58:39.865247",
+     "size": 15271328,
+     "sha256": "2c1a157bfde5eb9587fcbb7f486684dbbcc86faf606a69845a20279555373919",
+     "compilers": [
+      "GCC: (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)"
+     ]
+    }
+   ],
+   "build_info": "date: 2026-09-21T13:58:39+00:00\nhost: db94bec36586\ncompiler: /opt/tsan-llvm/bin/clang-19\ncompiler_version: clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)\ncompiler_mtime: 2026-09-20T14:52:03+00:00\ncompiler_tree: /opt/tsan-llvm (frozen copy)\ncompiler_head: f3deebfbab602f4e05289e0acbde0efd06b8058c\nflags: -fsanitize=thread -g -O2 -fno-omit-frame-pointer -mllvm -tsan-instrument-func-entry-exit=false\ncwd: /artifact/build/harness/sql/sqlite\ntsan-logs: <none>\nconfig: tsan-nofe\nsummaries: none\n"
+  },
+  "tsan-dom_peeling-ea-lo-st-swmr-nofe": {
+   "artifacts": [
+    {
+     "path": "/artifact/build/harness/sql/sqlite/build/test-tsan-dom_peeling-ea-lo-st-swmr-nofe/threadtest3",
+     "mtime": "2026-09-21T13:59:09.277247",
+     "size": 15667112,
+     "sha256": "4f04d036a3134e7f92a36e830dbe1d02756b99487961e7c200d04fb0ec5dd9c4",
+     "compilers": [
+      "GCC: (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+      "clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)"
+     ]
+    }
+   ],
+   "build_info": "date: 2026-09-21T13:59:09+00:00\nhost: db94bec36586\ncompiler: /opt/tsan-llvm/bin/clang-19\ncompiler_version: clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)\ncompiler_mtime: 2026-09-20T14:52:03+00:00\ncompiler_tree: /opt/tsan-llvm (frozen copy)\ncompiler_head: f3deebfbab602f4e05289e0acbde0efd06b8058c\nflags: -fsanitize=thread -g -O2 -fno-omit-frame-pointer -mllvm -tsan-use-dominance-analysis -mllvm -tsan-use-loop-peeling=true -mllvm -tsan-use-escape-analysis-global -mllvm -tsan-use-lock-ownership -mllvm -tsan-use-single-threaded -mllvm -tsan-use-swmr -mllvm -tsan-instrument-func-entry-exit=false\ncwd: /artifact/build/harness/sql/sqlite\ntsan-logs: <none>\nconfig: tsan-dom_peeling-ea-lo-st-swmr-nofe\nsummaries: none\n"
+  }
+ }
+}

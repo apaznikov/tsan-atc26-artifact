@@ -1,0 +1,418 @@
+==================
+WARNING: ThreadSanitizer: data race (pid=16322)
+  Write of size 4 at 0x555556a499f8 by main thread:
+    #0 clock_handler /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c (memcached+0x1072be)
+    #1 <null> <null> (libevent-2.1.so.7+0x20a5f) (BuildId: 042fabb5e7acb69befdc7d1ba10c4c367ccb9d27)
+    #2 <null> <null> (libc.so.6+0x2a1c9) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+
+  Previous read of size 4 at 0x555556a499f8 by thread T2:
+    #0 conn_new /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:761:24 (memcached+0xfc91a)
+    #1 thread_libevent_process /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:624:21 (memcached+0x1184ba)
+    #2 <null> <null> (libevent-2.1.so.7+0x20b17) (BuildId: 042fabb5e7acb69befdc7d1ba10c4c367ccb9d27)
+
+  Location is global 'current_time' of size 4 at 0x555556a499f8 (memcached+0x14f59f8)
+
+  Thread T2 'mc-worker' (tid=16325, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x777a3)
+    #1 create_worker /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x117f4e)
+    #2 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x117f4e)
+    #3 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+SUMMARY: ThreadSanitizer: data race /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c in clock_handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=16322)
+  Write of size 2 at 0x7fffcda43cce by thread T7 (mutexes: write M0):
+    #0 do_item_unlink /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:516:22 (memcached+0x10fdda)
+    #1 do_item_replace /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:589:5 (memcached+0x110905)
+    #2 item_replace /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:934:12 (memcached+0x116b0b)
+    #3 do_store_item /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:1715:13 (memcached+0xff062)
+    #4 store_item /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:974:11 (memcached+0x116e32)
+    #5 complete_nread_ascii /artifact/build/harness/nosql/memcached/memcached-tsan/proto_text.c:184:13 (memcached+0x121d33)
+    #6 complete_nread /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:1485:9 (memcached+0xf9f6e)
+    #7 drive_machine /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3239:17 (memcached+0xf9f6e)
+    #8 event_handler /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xfd05f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b17) (BuildId: 042fabb5e7acb69befdc7d1ba10c4c367ccb9d27)
+
+  Previous read of size 2 at 0x7fffcda43cce by thread T56:
+    #0 item_remove /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:921:15 (memcached+0x116a12)
+    #1 complete_nread_ascii /artifact/build/harness/nosql/memcached/memcached-tsan/proto_text.c:241:5 (memcached+0x121f1c)
+    #2 complete_nread /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:1485:9 (memcached+0xf9f6e)
+    #3 drive_machine /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3239:17 (memcached+0xf9f6e)
+    #4 event_handler /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xfd05f)
+    #5 <null> <null> (libevent-2.1.so.7+0x20b17) (BuildId: 042fabb5e7acb69befdc7d1ba10c4c367ccb9d27)
+
+  Location is heap block of size 1048576 at 0x7fffcd944000 allocated by thread T3:
+    #0 malloc /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:666:5 (memcached+0x7c71c)
+    #1 memory_allocate /artifact/build/harness/nosql/memcached/memcached-tsan/slabs.c:615:15 (memcached+0x10df0c)
+    #2 do_slabs_newslab /artifact/build/harness/nosql/memcached/memcached-tsan/slabs.c:386:17 (memcached+0x10df0c)
+    #3 do_slabs_alloc /artifact/build/harness/nosql/memcached/memcached-tsan/slabs.c:423:9 (memcached+0x10b862)
+    #4 slabs_alloc /artifact/build/harness/nosql/memcached/memcached-tsan/slabs.c:661:11 (memcached+0x10b862)
+    #5 do_item_alloc_pull /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:181:14 (memcached+0x10e4ce)
+    #6 do_item_alloc /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:298:14 (memcached+0x10f3b5)
+    #7 item_alloc /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:876:10 (memcached+0x1166f2)
+    #8 process_update_command /artifact/build/harness/nosql/memcached/memcached-tsan/proto_text.c:2044:10 (memcached+0x126c61)
+    #9 process_command_ascii /artifact/build/harness/nosql/memcached/memcached-tsan/proto_text.c (memcached+0x123117)
+    #10 try_read_command_ascii /artifact/build/harness/nosql/memcached/memcached-tsan/proto_text.c:494:5 (memcached+0x122951)
+    #11 try_read_command_negotiate /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:2427:12 (memcached+0xfcfa7)
+    #12 drive_machine /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3193:17 (memcached+0xf946b)
+    #13 event_handler /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xfd05f)
+    #14 <null> <null> (libevent-2.1.so.7+0x20b17) (BuildId: 042fabb5e7acb69befdc7d1ba10c4c367ccb9d27)
+
+  Mutex M0 (0x7ffff3d2ff48) created at:
+    #0 pthread_mutex_init /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x824e0)
+    #1 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1132:9 (memcached+0x117a58)
+    #2 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+  Thread T7 'mc-worker' (tid=16330, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x777a3)
+    #1 create_worker /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x117f4e)
+    #2 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x117f4e)
+    #3 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+  Thread T56 'mc-worker' (tid=16379, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x777a3)
+    #1 create_worker /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x117f4e)
+    #2 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x117f4e)
+    #3 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+  Thread T3 'mc-worker' (tid=16326, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x777a3)
+    #1 create_worker /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x117f4e)
+    #2 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x117f4e)
+    #3 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+SUMMARY: ThreadSanitizer: data race /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:516:22 in do_item_unlink
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=16322)
+  Read of size 2 at 0x7fffcda43a76 by thread T68 (mutexes: write M0, write M1):
+    #0 lru_pull_tail /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:1137:28 (memcached+0x10e746)
+    #1 lru_maintainer_juggle /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:1448:13 (memcached+0x113767)
+    #2 lru_maintainer_thread /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:1645:29 (memcached+0x113767)
+
+  Previous write of size 2 at 0x7fffcda43a76 by thread T55 (mutexes: write M2):
+    #0 do_item_unlink /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:516:22 (memcached+0x10fdda)
+    #1 do_item_replace /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:589:5 (memcached+0x110905)
+    #2 item_replace /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:934:12 (memcached+0x116b0b)
+    #3 do_store_item /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:1715:13 (memcached+0xff062)
+    #4 store_item /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:974:11 (memcached+0x116e32)
+    #5 complete_nread_ascii /artifact/build/harness/nosql/memcached/memcached-tsan/proto_text.c:184:13 (memcached+0x121d33)
+    #6 complete_nread /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:1485:9 (memcached+0xf9f6e)
+    #7 drive_machine /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3239:17 (memcached+0xf9f6e)
+    #8 event_handler /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xfd05f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b17) (BuildId: 042fabb5e7acb69befdc7d1ba10c4c367ccb9d27)
+
+  Location is heap block of size 1048576 at 0x7fffcd944000 allocated by thread T3:
+    #0 malloc /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:666:5 (memcached+0x7c71c)
+    #1 memory_allocate /artifact/build/harness/nosql/memcached/memcached-tsan/slabs.c:615:15 (memcached+0x10df0c)
+    #2 do_slabs_newslab /artifact/build/harness/nosql/memcached/memcached-tsan/slabs.c:386:17 (memcached+0x10df0c)
+    #3 do_slabs_alloc /artifact/build/harness/nosql/memcached/memcached-tsan/slabs.c:423:9 (memcached+0x10b862)
+    #4 slabs_alloc /artifact/build/harness/nosql/memcached/memcached-tsan/slabs.c:661:11 (memcached+0x10b862)
+    #5 do_item_alloc_pull /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:181:14 (memcached+0x10e4ce)
+    #6 do_item_alloc /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:298:14 (memcached+0x10f3b5)
+    #7 item_alloc /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:876:10 (memcached+0x1166f2)
+    #8 process_update_command /artifact/build/harness/nosql/memcached/memcached-tsan/proto_text.c:2044:10 (memcached+0x126c61)
+    #9 process_command_ascii /artifact/build/harness/nosql/memcached/memcached-tsan/proto_text.c (memcached+0x123117)
+    #10 try_read_command_ascii /artifact/build/harness/nosql/memcached/memcached-tsan/proto_text.c:494:5 (memcached+0x122951)
+    #11 try_read_command_negotiate /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:2427:12 (memcached+0xfcfa7)
+    #12 drive_machine /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3193:17 (memcached+0xf946b)
+    #13 event_handler /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xfd05f)
+    #14 <null> <null> (libevent-2.1.so.7+0x20b17) (BuildId: 042fabb5e7acb69befdc7d1ba10c4c367ccb9d27)
+
+  Mutex M0 (0x555556a56d80) created at:
+    #0 pthread_mutex_lock /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x78488)
+    #1 start_lru_maintainer_thread /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:1725:5 (memcached+0x1131dc)
+    #2 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6170:33 (memcached+0x104a2b)
+
+  Mutex M1 (0x555556a57780) created at:
+    #0 pthread_mutex_init /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x824e0)
+    #1 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1093:9 (memcached+0x11794a)
+    #2 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+  Mutex M2 (0x7ffff3d8f380) created at:
+    #0 pthread_mutex_init /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x824e0)
+    #1 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1132:9 (memcached+0x117a58)
+    #2 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+  Thread T68 'mc-lrumaint' (tid=16391, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x777a3)
+    #1 start_lru_maintainer_thread /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:1728:16 (memcached+0x113226)
+    #2 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6170:33 (memcached+0x104a2b)
+
+  Thread T55 'mc-worker' (tid=16378, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x777a3)
+    #1 create_worker /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x117f4e)
+    #2 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x117f4e)
+    #3 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+  Thread T3 'mc-worker' (tid=16326, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x777a3)
+    #1 create_worker /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x117f4e)
+    #2 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x117f4e)
+    #3 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+SUMMARY: ThreadSanitizer: data race /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:1137:28 in lru_pull_tail
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=16322)
+  Read of size 8 at 0x555556a49ca0 by main thread:
+    #0 clock_handler /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:4009:36 (memcached+0x1071b6)
+    #1 <null> <null> (libevent-2.1.so.7+0x20a5f) (BuildId: 042fabb5e7acb69befdc7d1ba10c4c367ccb9d27)
+    #2 <null> <null> (libc.so.6+0x2a1c9) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+
+  Previous write of size 8 at 0x555556a49ca0 by thread T21 (mutexes: write M0, write M1):
+    #0 do_item_link /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:499:28 (memcached+0x10fac0)
+    #1 do_item_replace /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:590:12 (memcached+0x110912)
+    #2 item_replace /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:934:12 (memcached+0x116b0b)
+    #3 do_store_item /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:1715:13 (memcached+0xff062)
+    #4 store_item /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:974:11 (memcached+0x116e32)
+    #5 complete_nread_ascii /artifact/build/harness/nosql/memcached/memcached-tsan/proto_text.c:184:13 (memcached+0x121d33)
+    #6 complete_nread /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:1485:9 (memcached+0xf9f6e)
+    #7 drive_machine /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3239:17 (memcached+0xf9f6e)
+    #8 event_handler /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xfd05f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b17) (BuildId: 042fabb5e7acb69befdc7d1ba10c4c367ccb9d27)
+
+  Location is global 'stats_state' of size 56 at 0x555556a49ca0 (memcached+0x14f5ca0)
+
+  Mutex M0 (0x7ffff3d2c550) created at:
+    #0 pthread_mutex_init /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x824e0)
+    #1 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1132:9 (memcached+0x117a58)
+    #2 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+  Mutex M1 (0x555556a57708) created at:
+    #0 pthread_mutex_lock /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x78488)
+    #1 STATS_LOCK /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:982:5 (memcached+0x116ea6)
+    #2 assoc_init /artifact/build/harness/nosql/memcached/memcached-tsan/assoc.c:64:5 (memcached+0x11478d)
+    #3 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6082:5 (memcached+0x10486f)
+
+  Thread T21 'mc-worker' (tid=16344, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x777a3)
+    #1 create_worker /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x117f4e)
+    #2 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x117f4e)
+    #3 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+SUMMARY: ThreadSanitizer: data race /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:4009:36 in clock_handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=16322)
+  Write of size 4 at 0x555556a499f8 by main thread:
+    #0 clock_handler /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c (memcached+0x1072be)
+    #1 <null> <null> (libevent-2.1.so.7+0x20a5f) (BuildId: 042fabb5e7acb69befdc7d1ba10c4c367ccb9d27)
+    #2 <null> <null> (libc.so.6+0x2a1c9) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+
+  Previous read of size 4 at 0x555556a499f8 by thread T24:
+    #0 try_read_command_ascii /artifact/build/harness/nosql/memcached/memcached-tsan/proto_text.c:493:24 (memcached+0x122929)
+    #1 drive_machine /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3193:17 (memcached+0xf946b)
+    #2 event_handler /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xfd05f)
+    #3 <null> <null> (libevent-2.1.so.7+0x20b17) (BuildId: 042fabb5e7acb69befdc7d1ba10c4c367ccb9d27)
+
+  Location is global 'current_time' of size 4 at 0x555556a499f8 (memcached+0x14f59f8)
+
+  Thread T24 'mc-worker' (tid=16347, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x777a3)
+    #1 create_worker /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x117f4e)
+    #2 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x117f4e)
+    #3 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+SUMMARY: ThreadSanitizer: data race /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c in clock_handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=16322)
+  Read of size 8 at 0x555556a49ca0 by main thread:
+    #0 clock_handler /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:4009:36 (memcached+0x1071b6)
+    #1 <null> <null> (libevent-2.1.so.7+0x20a5f) (BuildId: 042fabb5e7acb69befdc7d1ba10c4c367ccb9d27)
+    #2 <null> <null> (libc.so.6+0x2a1c9) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+
+  Previous write of size 8 at 0x555556a49ca0 by thread T11 (mutexes: write M0, write M1):
+    #0 do_item_unlink /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:519:32 (memcached+0x10fe5c)
+    #1 do_item_replace /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:589:5 (memcached+0x110905)
+    #2 item_replace /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:934:12 (memcached+0x116b0b)
+    #3 do_store_item /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:1715:13 (memcached+0xff062)
+    #4 store_item /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:974:11 (memcached+0x116e32)
+    #5 complete_nread_ascii /artifact/build/harness/nosql/memcached/memcached-tsan/proto_text.c:184:13 (memcached+0x121d33)
+    #6 complete_nread /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:1485:9 (memcached+0xf9f6e)
+    #7 drive_machine /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3239:17 (memcached+0xf9f6e)
+    #8 event_handler /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xfd05f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b17) (BuildId: 042fabb5e7acb69befdc7d1ba10c4c367ccb9d27)
+
+  Location is global 'stats_state' of size 56 at 0x555556a49ca0 (memcached+0x14f5ca0)
+
+  Mutex M0 (0x7ffff3dd4e58) created at:
+    #0 pthread_mutex_init /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x824e0)
+    #1 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1132:9 (memcached+0x117a58)
+    #2 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+  Mutex M1 (0x555556a57708) created at:
+    #0 pthread_mutex_lock /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x78488)
+    #1 STATS_LOCK /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:982:5 (memcached+0x116ea6)
+    #2 assoc_init /artifact/build/harness/nosql/memcached/memcached-tsan/assoc.c:64:5 (memcached+0x11478d)
+    #3 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6082:5 (memcached+0x10486f)
+
+  Thread T11 'mc-worker' (tid=16334, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x777a3)
+    #1 create_worker /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x117f4e)
+    #2 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x117f4e)
+    #3 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+SUMMARY: ThreadSanitizer: data race /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:4009:36 in clock_handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=16322)
+  Read of size 2 at 0x7fffcda3841e by thread T68 (mutexes: write M0, write M1):
+    #0 lru_pull_tail /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:1137:28 (memcached+0x10e746)
+    #1 lru_maintainer_juggle /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:1453:24 (memcached+0x1137c7)
+    #2 lru_maintainer_thread /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:1645:29 (memcached+0x1137c7)
+
+  Previous write of size 2 at 0x7fffcda3841e by thread T44 (mutexes: write M2):
+    #0 do_item_unlink /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:516:22 (memcached+0x10fdda)
+    #1 do_item_replace /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:589:5 (memcached+0x110905)
+    #2 item_replace /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:934:12 (memcached+0x116b0b)
+    #3 do_store_item /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:1715:13 (memcached+0xff062)
+    #4 store_item /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:974:11 (memcached+0x116e32)
+    #5 complete_nread_ascii /artifact/build/harness/nosql/memcached/memcached-tsan/proto_text.c:184:13 (memcached+0x121d33)
+    #6 complete_nread /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:1485:9 (memcached+0xf9f6e)
+    #7 drive_machine /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3239:17 (memcached+0xf9f6e)
+    #8 event_handler /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xfd05f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b17) (BuildId: 042fabb5e7acb69befdc7d1ba10c4c367ccb9d27)
+
+  Location is heap block of size 1048576 at 0x7fffcd944000 allocated by thread T3:
+    #0 malloc /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:666:5 (memcached+0x7c71c)
+    #1 memory_allocate /artifact/build/harness/nosql/memcached/memcached-tsan/slabs.c:615:15 (memcached+0x10df0c)
+    #2 do_slabs_newslab /artifact/build/harness/nosql/memcached/memcached-tsan/slabs.c:386:17 (memcached+0x10df0c)
+    #3 do_slabs_alloc /artifact/build/harness/nosql/memcached/memcached-tsan/slabs.c:423:9 (memcached+0x10b862)
+    #4 slabs_alloc /artifact/build/harness/nosql/memcached/memcached-tsan/slabs.c:661:11 (memcached+0x10b862)
+    #5 do_item_alloc_pull /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:181:14 (memcached+0x10e4ce)
+    #6 do_item_alloc /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:298:14 (memcached+0x10f3b5)
+    #7 item_alloc /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:876:10 (memcached+0x1166f2)
+    #8 process_update_command /artifact/build/harness/nosql/memcached/memcached-tsan/proto_text.c:2044:10 (memcached+0x126c61)
+    #9 process_command_ascii /artifact/build/harness/nosql/memcached/memcached-tsan/proto_text.c (memcached+0x123117)
+    #10 try_read_command_ascii /artifact/build/harness/nosql/memcached/memcached-tsan/proto_text.c:494:5 (memcached+0x122951)
+    #11 try_read_command_negotiate /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:2427:12 (memcached+0xfcfa7)
+    #12 drive_machine /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3193:17 (memcached+0xf946b)
+    #13 event_handler /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xfd05f)
+    #14 <null> <null> (libevent-2.1.so.7+0x20b17) (BuildId: 042fabb5e7acb69befdc7d1ba10c4c367ccb9d27)
+
+  Mutex M0 (0x555556a56d80) created at:
+    #0 pthread_mutex_lock /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x78488)
+    #1 start_lru_maintainer_thread /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:1725:5 (memcached+0x1131dc)
+    #2 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6170:33 (memcached+0x104a2b)
+
+  Mutex M1 (0x555556a58b80) created at:
+    #0 pthread_mutex_init /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x824e0)
+    #1 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1093:9 (memcached+0x11794a)
+    #2 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+  Mutex M2 (0x7ffff3d0ea78) created at:
+    #0 pthread_mutex_init /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x824e0)
+    #1 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1132:9 (memcached+0x117a58)
+    #2 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+  Thread T68 'mc-lrumaint' (tid=16391, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x777a3)
+    #1 start_lru_maintainer_thread /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:1728:16 (memcached+0x113226)
+    #2 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6170:33 (memcached+0x104a2b)
+
+  Thread T44 'mc-worker' (tid=16367, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x777a3)
+    #1 create_worker /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x117f4e)
+    #2 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x117f4e)
+    #3 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+  Thread T3 'mc-worker' (tid=16326, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x777a3)
+    #1 create_worker /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x117f4e)
+    #2 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x117f4e)
+    #3 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+SUMMARY: ThreadSanitizer: data race /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:1137:28 in lru_pull_tail
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=16322)
+  Write of size 4 at 0x555556a499f8 by main thread:
+    #0 clock_handler /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c (memcached+0x1072be)
+    #1 <null> <null> (libevent-2.1.so.7+0x20a5f) (BuildId: 042fabb5e7acb69befdc7d1ba10c4c367ccb9d27)
+    #2 <null> <null> (libc.so.6+0x2a1c9) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+
+  Previous read of size 4 at 0x555556a499f8 by thread T20 (mutexes: write M0):
+    #0 do_item_link /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:495:16 (memcached+0x10fa3d)
+    #1 do_item_replace /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:590:12 (memcached+0x110912)
+    #2 item_replace /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:934:12 (memcached+0x116b0b)
+    #3 do_store_item /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:1715:13 (memcached+0xff062)
+    #4 store_item /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:974:11 (memcached+0x116e32)
+    #5 complete_nread_ascii /artifact/build/harness/nosql/memcached/memcached-tsan/proto_text.c:184:13 (memcached+0x121d33)
+    #6 complete_nread /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:1485:9 (memcached+0xf9f6e)
+    #7 drive_machine /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3239:17 (memcached+0xf9f6e)
+    #8 event_handler /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:3476:5 (memcached+0xfd05f)
+    #9 <null> <null> (libevent-2.1.so.7+0x20b17) (BuildId: 042fabb5e7acb69befdc7d1ba10c4c367ccb9d27)
+
+  Location is global 'current_time' of size 4 at 0x555556a499f8 (memcached+0x14f59f8)
+
+  Mutex M0 (0x7ffff3dc75a0) created at:
+    #0 pthread_mutex_init /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x824e0)
+    #1 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1132:9 (memcached+0x117a58)
+    #2 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+  Thread T20 'mc-worker' (tid=16343, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x777a3)
+    #1 create_worker /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:385:16 (memcached+0x117f4e)
+    #2 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1155:9 (memcached+0x117f4e)
+    #3 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+SUMMARY: ThreadSanitizer: data race /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c in clock_handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=16322)
+  Write of size 4 at 0x555556a499f8 by main thread:
+    #0 clock_handler /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c (memcached+0x1072be)
+    #1 <null> <null> (libevent-2.1.so.7+0x20a5f) (BuildId: 042fabb5e7acb69befdc7d1ba10c4c367ccb9d27)
+    #2 <null> <null> (libc.so.6+0x2a1c9) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+
+  Previous read of size 4 at 0x555556a499f8 by thread T68 (mutexes: write M0):
+    #0 lru_maintainer_thread /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:1671:59 (memcached+0x113add)
+
+  Location is global 'current_time' of size 4 at 0x555556a499f8 (memcached+0x14f59f8)
+
+  Mutex M0 (0x555556a56d80) created at:
+    #0 pthread_mutex_lock /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x78488)
+    #1 start_lru_maintainer_thread /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:1725:5 (memcached+0x1131dc)
+    #2 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6170:33 (memcached+0x104a2b)
+
+  Thread T68 'mc-lrumaint' (tid=16391, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x777a3)
+    #1 start_lru_maintainer_thread /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:1728:16 (memcached+0x113226)
+    #2 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6170:33 (memcached+0x104a2b)
+
+SUMMARY: ThreadSanitizer: data race /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c in clock_handler
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=16322)
+  Write of size 4 at 0x555556a499f8 by main thread:
+    #0 clock_handler /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c (memcached+0x1072be)
+    #1 <null> <null> (libevent-2.1.so.7+0x20a5f) (BuildId: 042fabb5e7acb69befdc7d1ba10c4c367ccb9d27)
+    #2 <null> <null> (libc.so.6+0x2a1c9) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+
+  Previous read of size 4 at 0x555556a499f8 by thread T68 (mutexes: write M0, write M1):
+    #0 lru_maintainer_juggle /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:1426:24 (memcached+0x11362e)
+    #1 lru_maintainer_thread /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:1645:29 (memcached+0x11362e)
+
+  Location is global 'current_time' of size 4 at 0x555556a499f8 (memcached+0x14f59f8)
+
+  Mutex M0 (0x555556a56d80) created at:
+    #0 pthread_mutex_lock /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1342:3 (memcached+0x78488)
+    #1 start_lru_maintainer_thread /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:1725:5 (memcached+0x1131dc)
+    #2 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6170:33 (memcached+0x104a2b)
+
+  Mutex M1 (0x555556a58b80) created at:
+    #0 pthread_mutex_init /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1316:3 (memcached+0x824e0)
+    #1 memcached_thread_init /artifact/build/harness/nosql/memcached/memcached-tsan/thread.c:1093:9 (memcached+0x11794a)
+    #2 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6138:5 (memcached+0x1049c6)
+
+  Thread T68 'mc-lrumaint' (tid=16391, running) created by main thread at:
+    #0 pthread_create /src/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_posix.cpp:1023:3 (memcached+0x777a3)
+    #1 start_lru_maintainer_thread /artifact/build/harness/nosql/memcached/memcached-tsan/items.c:1728:16 (memcached+0x113226)
+    #2 main /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c:6170:33 (memcached+0x104a2b)
+
+SUMMARY: ThreadSanitizer: data race /artifact/build/harness/nosql/memcached/memcached-tsan/memcached.c in clock_handler
+==================
+ThreadSanitizer: reported 10 warnings
