@@ -192,3 +192,16 @@ estimate moves by about 4 points depending on which three runs are kept. `ART_SM
 therefore prints its numbers with an explicit "not a measurement" marker. A result from two to four runs
 is compared with `CLAIMS.md` as a point against the shipped interval, never as an interval of its own
 (the N = 2 criterion in `CLAIMS.md` section 5).
+
+## Foreign load inside the pinned set is invisible from inside the container
+
+The disturbance gate measures the processors outside the pinned set, so a foreign process whose affinity covers
+the whole machine and that the scheduler places inside the set is not seen by it: the cell reads clean and is
+slower. The per-cell intruder record (`cpuset_intruders`, `cpuset_intruder_peak_pcpu`) exists for that case, but
+the artifact's runs execute inside a container with its own pid namespace, where `ps` lists the container's
+processes only, so from the evaluator path the record can name nothing on the host. During the verification run
+of 22 Sep 2026 another user's two-process job (about 2.7 cores, affinity 0-111) ran on this host for its first
+forty minutes with one process on a processor inside the set; every cell of the run records zero intruders. The
+condition is therefore stated here and not in the data: keep the whole host quiet during a timed leg, and read
+an outside row first against the leg's own `inside_busy_share` distribution. Sampling `/proc/<pid>/stat` deltas
+on the host, with the host's pid namespace, is the post-submission fix.
