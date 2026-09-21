@@ -213,6 +213,13 @@ def parse_table(tree, app):
         nrow = int(mn.group(1)) if mn else None
         if cfg == "orig":
             out["stock vs native"] = (pt, iv, nrow)
+        elif cfg not in LABEL:
+            # AN UNLABELLED CONFIGURATION MUST NOT VANISH. Dropping it here meant a configuration the run
+            # measured produced no line at all: not judged, not refused, not mentioned -- while sitting in
+            # the run's own table two files away. That is the absence-as-silence shape one level below the
+            # one the main loop was fixed for, and it is exactly what a new `-nofe`-style family would hit
+            # on the day it is added. Carried through under a marker so the loop can say so. (2026-09-22.)
+            out[f"(unlabelled) {cfg}"] = (pt, iv, nrow)
         elif cfg in LABEL:
             out[LABEL[cfg]] = (pt, iv, nrow)
     return out
@@ -347,8 +354,14 @@ def main():
                 # was refused is the useful line, and "not in CLAIMS" would suggest a second, different
                 # problem. (Spec case: an 8-thread FFmpeg run against rows at 16 and 4.)
                 printed += 1 if why else 0
-                print(f"{app:10} {label:24} {yours:>22}  {'':22} "
-                      + (why or "not in CLAIMS.md for this application at this thread count"))
+                if label.startswith("(unlabelled) "):
+                    # A different cause from "not in CLAIMS": the documents may well carry this row; the
+                    # comparator has no name for the configuration, which is a gap in LABEL, not in CLAIMS.
+                    reason = (f"no label for configuration {label[13:]!r}; add it to LABEL in "
+                              "compare_with_claims.py so this row can be compared")
+                else:
+                    reason = why or "not in CLAIMS.md for this application at this thread count"
+                print(f"{app:10} {label[:24]:24} {yours:>22}  {'':22} {reason}")
                 continue
             printed += 1
             shipped = f"{(ours or fiv)[0]:.3f} [{(ours or fiv)[1]:.3f}, {(ours or fiv)[2]:.3f}]"

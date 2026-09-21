@@ -1,4 +1,4 @@
-# vendored from /home/alexey/tsan-experiments on 2026-09-22T00:45:21+08:00
+# vendored from /home/alexey/tsan-experiments on 2026-09-22T00:47:57+08:00
 sha256	bytes	path
 02f84908c1130634220de08e42567e7cbe52c9c25f3e4e83e5078df7e74afa9e	3963	config_definitions.sh
 e45334db43c2bbabb02620792c6f18ba0a2f93bacbbc49f869524b18f3b1001b	12072	nosql/memcached/build_memcached.sh
@@ -71,7 +71,7 @@ f84384c1d6e231cc62545738d1e8f8892c384053a576c6823aa58ed7c4df1348	833	tools/perf/
 88f783afa99290b59784f619a49b349aeceaa350d0995d6e8a91b00b161a4d51	9575	tools/perf/build.sh
 8339c131024a4a0e588f312820c2498e5743094d6605d35a3e10e6fa56e1c390	6366	tools/perf/check_ffmpeg_codecs.py
 a439e2deadd38313a5d2a6eaee78949437d364ea973e768950f09218f6f3cb83	3489	tools/perf/check_shipped_comparison.sh
-fe264baf5c4b86d0233c29c4660196eb388b2d53394063bd04e10c5e0f680ecb	24482	tools/perf/compare_with_claims.py
+33412f0a5a9de2f203e0d07edbed215f393caf09a1ad40b68a1a30d60fe2fe36	25588	tools/perf/compare_with_claims.py
 89f0494a25b000e0d16f7796983d1103f385eb32d1b429255fa25c2558003535	7123	tools/perf/compile_time.sh
 e04995d3b260594386253bd42438f84f04666f55caee744cafff160d8d6574ba	2647	tools/perf/configs.sh
 6bf12cdb801606ad61dea4a75387ccc3e9e75db542e673c1c6e5db21c3fca8dd	3479	tools/perf/counters_read.py
