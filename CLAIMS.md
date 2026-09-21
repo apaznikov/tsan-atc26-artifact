@@ -426,8 +426,9 @@ not claimed and never counts it toward a verdict, and `scripts/40-perf.sh` runs 
 regression-suite gate of section 1 (row 22: a test that passes under stock ThreadSanitizer and fails under
 the configuration is a candidate lost race) was run with `tsan-nofe` and
 `tsan-dom_peeling-ea-lo-st-swmr-stmt-nofe` added to the matrix, K = 5, on the second host (AMD EPYC 9115,
-21 Sep 2026; `data/suite/preservation-suite-20260921T135253Z-nofe-apollo/`, the twelve paper configurations
-0 failures in the same run): **20 candidate losses under each, the same twenty**: `atexit4`, `atexit5`,
+21 Sep 2026; `data/suite/preservation-suite-20260921T135253Z-nofe-apollo/`: stock and the two flag configurations,
+stock 0 failures; the twelve paper configurations' K = 5 result is the run of the same day on this host,
+`data/suite/preservation-suite-20260921T052239Z/`, row 22): **20 candidate losses under each, the same twenty**: `atexit4`, `atexit5`,
 `deadlock_detector_stress_test`, `deep_stack1`, `free_race`, `free_race2`, `ignorelist2`, `longjmp3`,
 `longjmp4`, `mutex_held_wrong_context`, `on_exit`, `race_on_heap`, `race_with_finished_thread`,
 `signal_errno`, `signal_malloc`, `simple_stack`, `simple_stack2`, `sleep_sync`, `suppressions_mutex`,
