@@ -190,20 +190,37 @@ def run_facts(tree, app, ref_sha=None):
     return max(1, n // per_cfg), threads, isref
 
 def parse_table(tree, app):
-    """{row_label: (point, interval or None, N of that row or None)} from the run's own perf_<app>.md summary table.
-    N is the row's own (column 3): a tree-wide N derived from clean runs over configurations read one
-    disturbed cell in one configuration as N = 1 for every row of the application (found 19 Sep 2026)."""
+    """{row_label: (point, interval or None, N of that row or None)} from the SUMMARY table of the run's own
+    perf_<app>.md. The per-test table above it has the same shape and was parsed too until 22 Sep 2026.
+
+    Both tables begin `| config |` and both can have nine cells -- SQLite's per-test table has seven
+    subtests -- so a cell count cannot tell them apart. Reading the per-test table took column 3 to be a
+    ratio when it was the second subtest's throughput: `tsan` was carried as an unlabelled configuration,
+    and every labelled row was read once with a wrong point and then OVERWRITTEN by the summary row,
+    which is later in the file. The printed values were right by table order alone. FFmpeg escaped only
+    because four subtests make six cells. (Found by tsan-paper on the SQLite flag leg.)
+
+    N is the row's own (column 3 of the summary): a tree-wide N derived from clean runs over
+    configurations read one disturbed cell in one configuration as N = 1 for every row (19 Sep 2026)."""
     p = os.path.join(tree, f"perf_{app}.md")
     if not os.path.exists(p):
         return None
     out = {}
+    in_summary = False
     for line in open(p, encoding="utf-8"):
-        if not line.startswith("| "):
+        if line.startswith("| config | label |"):   # the summary's header; the per-test table's is "| config | N |"
+            in_summary = True
+            continue
+        if not in_summary or not line.startswith("| "):
             continue
         c = [x.strip() for x in line.strip().strip("|").split("|")]
         if len(c) < 8:
             continue
         cfg = c[0]
+        if cfg == "tsan":
+            # The baseline. Every configuration row is a ratio against it, so it has no row of its own;
+            # its SU cell is an em dash today, and skipping it by name keeps that true if that changes.
+            continue
         m = re.match(r"([\d.]+)(?:\s*\[([\d.]+),\s*([\d.]+)\])?", c[3])
         if not m:
             continue
