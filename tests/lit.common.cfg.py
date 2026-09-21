@@ -673,12 +673,19 @@ if config.host_os == "Linux":
         if config.android:
             return
 
-        from distutils.version import LooseVersion
+        # ARTIFACT MODIFICATION (21 Sep 2026, the only change to this vendored file): upstream compared
+        # versions with distutils.version.LooseVersion, and distutils is gone in Python 3.12 (the image's
+        # Ubuntu 24.04). The ImportError was swallowed by the bare `except` below, so no glibc-* feature
+        # was ever added: getline_nohang.cpp (UNSUPPORTED: glibc-2.38) ran on glibc 2.39 and stalled to its
+        # timeout in most repeats, and two tests that REQUIRE glibc-2.30 were skipped. A tuple comparison
+        # needs no module; upstream later made the same replacement.
+        def _ver(v):
+            return tuple(int(x) for x in v.split("."))
 
-        ver = LooseVersion(ver_string)
+        ver = _ver(ver_string)
         any_glibc = False
         for required in ["2.19", "2.27", "2.30", "2.33", "2.34", "2.37", "2.38"]:
-            if ver >= LooseVersion(required):
+            if ver >= _ver(required):
                 config.available_features.add("glibc-" + required)
                 any_glibc = True
             if any_glibc:

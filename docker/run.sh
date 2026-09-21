@@ -53,6 +53,9 @@ tty_flag=()
 # build/ was root-owned on the host (an evaluator could not delete a failed run without sudo, and a
 # second attempt could not clear the first's tree), and memcached refuses to start as root at all, so
 # its benchmark measured a client talking to nothing. HOME=/tmp because that uid has no home in the image.
+# tests/ is mounted from the checkout (read-only; lit writes under results/), so the suite that runs is the
+# checkout's and a fix to a test or a lit configuration needs no image rebuild; the image carries its own
+# copy for scripts/13-verify-image.sh, which starts containers without these mounts.
 # --shm-size: Docker's default /dev/shm is 64 MB. The FFmpeg workload writes each codec's output there,
 # and two of the four outputs exceed 64 MB (measured on the 100 s clip: mjpeg 298 MB, stream copy 78 MB);
 # without this the script drops those codecs, reports success, and the row measures a different quantity.
@@ -73,5 +76,6 @@ exec docker run --rm "${tty_flag[@]}" "${cpus_flag[@]}" \
   -v "$here/CLAIMS.md:/artifact/CLAIMS.md:ro" \
   -v "$here/harness:/artifact/harness:ro" \
   -v "$here/third-party:/artifact/third-party:ro" \
+  -v "$here/tests:/artifact/tests:ro" \
   -w /artifact \
   "${ART_IMAGE:-tsan-atc26}" "${@:-/bin/bash}"
