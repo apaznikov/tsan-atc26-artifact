@@ -34,6 +34,28 @@ ROOT=$(ls -d "$ART"/data/perf/campaign-*/primary 2>/dev/null | head -1)
 [ -f "$CLAIMS" ] || { echo "no CLAIMS.md at $CLAIMS" >&2; exit 2; }
 [ -n "$ROOT" ]   || { echo "no data/perf/campaign-*/primary under $ART" >&2; exit 2; }
 
+# THE TWO FILES AGREE BY CONVENTION; THIS MAKES THE CONVENTION FAIL BY NAME. compare_with_claims.py finds
+# the summary table by its header "| config | label |", because the per-test table above it begins the same
+# way and can have the same number of cells. If aggregate.py ever renames that header, every shipped table
+# becomes "NO TABLE (the leg produced none)" -- loud, but indistinguishable from an empty tree, and the
+# reader would look at the data rather than at the header. Checked here so a rename is reported as a
+# rename. (tsan-paper's suggestion, 2026-09-22.)
+HDR='| config | label |'
+missing=0
+for app in redis memcached sqlite ffmpeg mysql; do
+  [ -d "$ROOT/$app" ] || continue
+  t="$ROOT/perf_$app.md"
+  if [ ! -f "$t" ]; then
+    echo "FAIL: $ROOT/$app exists but $t does not: the leg shipped cells without its table." >&2
+    missing=1; continue
+  fi
+  grep -qF "$HDR" "$t" || {
+    echo "FAIL: $t has no '$HDR' header." >&2
+    echo "      compare_with_claims.py finds the summary table by that header; aggregate.py must still emit it." >&2
+    missing=1; }
+done
+[ "$missing" = 0 ] || exit 1
+
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 links=()
 for app in redis memcached sqlite ffmpeg mysql; do
