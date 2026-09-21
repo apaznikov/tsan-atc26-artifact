@@ -154,3 +154,14 @@ performance tier at Redis within a second.
 Both are UTC since 19 Sep 2026 (`results/evaluate-<tier>-<stamp>.log` and the `perf-<app>-<stamp>`
 directories the container writes); the "started HH:MM:SS" lines on the console are local time. A log
 from an earlier checkout carries a local-time stamp.
+
+## "COMPARISON NOT APPLICABLE ON THIS MACHINE" at the end of a Reproduced run
+
+Not a failure. Every step passed and the performance run is valid; no row was judged because this machine's
+processor-set shape (physical cores and complete SMT sibling pairs, recorded per cell), thread count or FFmpeg
+input is not the campaign's, and the comparator says which on each row. The intervals in `CLAIMS.md` section 5
+describe 24 physical cores with both SMT threads (48 logical processors); on such a machine `evaluate.sh` pins
+that set itself, elsewhere set `ART_CPUSET` to a set of that shape if the machine has one. On any other shape
+read the ratios beside the intervals by eye: the two directional results (DynSTC above stock on FFmpeg, below on
+Redis) are what `CLAIMS.md` says reproduces across hardware. Exit status 3 distinguishes this from a clean
+comparison (0) and from a judged row outside its interval (1).

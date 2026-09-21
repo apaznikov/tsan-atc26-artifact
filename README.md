@@ -43,6 +43,11 @@ step said, and ends with one verdict line and a sentence saying what it establis
   from the shipped runs. It says nothing about speed.
 - **INCOMPLETE** means nothing failed but a check could not be made here (its prerequisite is absent) and
   the log names it. Neither a pass nor a failure.
+- **PASS on every step, COMPARISON NOT CLEAN** (Reproduced and Everything) means every step passed and a judged
+  performance row lies outside its shipped interval; `CLAIMS.md` section 5 ("Match criterion") says what that can
+  mean. **PASS on every step; COMPARISON NOT APPLICABLE ON THIS MACHINE** (exit status 3) means every step passed
+  and no row could be compared, each row printing why (this machine's processor-set shape, thread count or input is
+  not the campaign's): the run is valid and its ratios stand beside the intervals, unjudged.
 - **FAIL** names the step that stopped it; `docs/troubleshooting.md` lists the failures we know.
 - The **Reproduced** tier ends with a table: one line per configuration row of your run against the
   interval `CLAIMS.md` ships for it, marked IN, OUT (with the distance), not judged, or not comparable,
