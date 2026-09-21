@@ -78,7 +78,7 @@ echo "Compiler:"
 if [ -x "$TSAN_LLVM_ROOT/bin/clang" ]; then
   echo "  ok       TSan clang            $TSAN_LLVM_ROOT/bin/clang ($("$TSAN_LLVM_ROOT/bin/clang" --version | head -1))"; ok=$((ok+1))
   if ldd "$TSAN_LLVM_ROOT/bin/clang" | grep -q 'libLLVM' && ldd "$TSAN_LLVM_ROOT/bin/clang" | grep 'libLLVM' | grep -qv "$TSAN_LLVM_ROOT"; then
-    echo "  WARNING  clang resolves an LLVM library outside $TSAN_LLVM_ROOT; the install is not self-contained"; miss=$((miss+1))
+    echo "  MISSING  self-contained clang   an LLVM library resolves outside $TSAN_LLVM_ROOT; the install is not self-contained"; miss=$((miss+1))
   fi
 else
   echo "  MISSING  TSan clang            expected at $TSAN_LLVM_ROOT/bin/clang (set TSAN_LLVM_ROOT)"; miss=$((miss+1))

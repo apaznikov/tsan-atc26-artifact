@@ -30,6 +30,11 @@ outdir="$ART_RESULTS/$name"; mkdir -p "$outdir"
 ir="$outdir/ir"; mkdir -p "$ir"
 tar -C "$ir" -xzf "$tarball"
 
+# THE HISTOGRAM IS SYMBOL-WIDE: every @__tsan_* symbol counts, __tsan_func_entry/exit included, so a
+# configuration carrying -tsan-instrument-func-entry-exit=false would move every row without one memory
+# access changing (measured 21 Sep 2026: memcached-items 954c98fed82d -> 1592918f00af, 622 accesses both).
+# data/equivalence/configurations.txt therefore never lists such a configuration; add one and the
+# equivalence check fails for a reason that is not a compiler difference.
 # Provenance and behaviour are two different questions and this script answers both
 # separately, because the corpus cannot answer the first. Measured 2026-09-15: the three
 # compile-time commits (aa8a6dd8a2e8 -> f3deebfbab60) change ZERO of the 112 rows below, and

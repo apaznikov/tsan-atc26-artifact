@@ -3,7 +3,7 @@
 # one verdict at the end. This is the path for the Functional badge; nothing here depends on the
 # machine, and the results are identical on any x86-64 Linux host.
 #
-#   scripts/01-functional.sh            all of it: 31 min on 64 processors, 1 h 45 min on 32 (measured 18 Sep 2026), longer on 8
+#   scripts/01-functional.sh            all of it: 23 min on 64 processors, 30 min on 112, 48 min on 8 (measured 21 Sep 2026)
 #   scripts/01-functional.sh --quick    everything except the regression suite, about 2 to 5 minutes
 #
 # Run it inside the container: docker/run.sh scripts/01-functional.sh
@@ -33,7 +33,7 @@ steps=(
 steps+=( "90-tables.sh|every table in the paper follows from the shipped runs" )
 
 if [ "$quick" = 1 ]; then budget "the quick correctness set (${#steps[@]} steps, no regression suite)" "2 min" "1 min" "2 GB"
-else budget "the correctness set (${#steps[@]} steps)" "a few hours" "1 h 45 min (31 min on 64)" "2 GB"; fi
+else budget "the correctness set (${#steps[@]} steps)" "48 min" "25 min (23 min on 64)" "2 GB"; fi
 printf '\n'
 declare -a verdict; skipped=0
 for spec in "${steps[@]}"; do
