@@ -70,8 +70,9 @@ compiler's equivalence to the one the measurements were taken on, over 112 corpu
 control showing the comparison can separate configurations; the provenance of every shipped run; the
 regression suite in 12 configurations, preceded by a self-test that requires the harness to detect
 deliberately lost races; and the regeneration of every table in the paper from the recorded runs.
-Measured on two other machines on 18 Sep 2026: 31 minutes on 64 processors and 1 h 45 min on 32,
-most of it the regression suite in 12 configurations; 1 h 57 min on eight processors with 16 GB.
+Measured on 21 Sep 2026, after the lit-configuration fix that stopped one unsupported test from stalling
+every repeat: 23 minutes on a 64-processor host and 30 minutes on ours, most of it the regression suite in
+12 configurations.
 
 Performance is separate and needs the hardware above. At the defaults (four configurations, two
 runs each, a point estimate per row) it is about two hours for Redis, memcached, FFmpeg and SQLite

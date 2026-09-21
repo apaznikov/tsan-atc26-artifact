@@ -12,7 +12,7 @@ recorded, and one script per experiment.
 ```
 git clone https://github.com/apaznikov/tsan-atc26-artifact.git && cd tsan-atc26-artifact
 ./evaluate.sh check          # does it all run here? 5 minutes, plus the image build the first time (15-25 min). Not a badge.
-./evaluate.sh functional     # the Functional badge: the full correctness set, about 2 hours (31 min on 64 processors, 1 h 45 min on 32, 2 h on 8)
+./evaluate.sh functional     # the Functional badge: the full correctness set, under an hour (23 min on 64 processors, 30 min on this host; before the 21 Sep lit fix it was two to four times that)
 ./evaluate.sh reproduced     # the Reproduced badge: the whole functional tier, then the performance subset; about 3 hours on 48 idle processors
 ./evaluate.sh                # prints the tiers and their steps, runs nothing
 ```
@@ -217,7 +217,7 @@ For the Functional badge, and for anyone who wants to know the artifact does wha
 spending a day on measurements:
 
 ```
-./docker/run.sh scripts/01-functional.sh            # 31 min on 64 processors, 1 h 45 min on 32, 2 h on 8
+./docker/run.sh scripts/01-functional.sh            # 23 min on 64 processors, 30 min on this host
 ./docker/run.sh scripts/01-functional.sh --quick    # about 5 minutes, without the regression suite
 ```
 
@@ -235,11 +235,10 @@ The correctness tests themselves are 62 IR tests of our own (`tests/ir`: 50 remo
 controls covering the 23 lost-race shapes, plus one multi-step summary test) and ThreadSanitizer's own regression suite vendored from compiler-rt under
 `tests/tsan`, run in each of 12 configurations. `lit` discovers 383 tests there and marks 91
 unsupported on this platform before anything is compiled, so 292 execute; our own run of them ships as
-`data/suite/`, with the command to re-derive each count. One test, `getline_nohang.cpp`, stalls to its
-two-minute timeout in many repeats under stock as well as under every configuration; a pause of a couple of
-minutes during the suite is that test, not a hang (on our 8-processor run it stalled 40 of 60 repeats, most of
-the two hours); it should be skipped on this glibc and is not, a lit
-configuration defect explained in `docs/nondeterministic-tests.md`, to be fixed after the submission.
+`data/suite/`, with the command to re-derive each count. One test, `getline_nohang.cpp`, is unsupported on the image's glibc (2.39, as upstream marks it) and is
+skipped. Until 21 Sep 2026 the vendored lit configuration failed to detect glibc under Python 3.12, so the
+test ran and stalled to its two-minute timeout in most repeats, and the correctness set took about twice as
+long as it does now (`docs/nondeterministic-tests.md`).
 
 ## Running the experiments
 
@@ -255,7 +254,7 @@ regenerated from whichever runs you point them at.
 | `12-compiler-equivalence.sh` | the shipped compiler emits the instrumentation our measurements were taken on | 3 min | any |
 | `20-static-counts.sh` | static instrumentation per application and configuration, counted on the binaries `40-perf.sh` built | 5 min | any |
 | `21-compile-time.sh <app>` | compile-time overhead, three clean builds per configuration | 20 min to 3 h per application (MySQL 5 to 10 h) | 8 cores |
-| `30-preservation-suite.sh` | 12 configurations over ThreadSanitizer's regression suite, pass or fail per test (the report-level comparison is recorded, not re-run; `CLAIMS.md` section 1) | 1 h 40 min on 32 processors, 25 min on 64, about 3 h on 8 | 8 cores |
+| `30-preservation-suite.sh` | 12 configurations over ThreadSanitizer's regression suite, pass or fail per test (the report-level comparison is recorded, not re-run; `CLAIMS.md` section 1) | about 20 min on 64 processors, 25 min on this host | 8 cores |
 | `31-preservation-apps.sh <app> 10` | races reported on the applications, against stock; N = 10 runs for a verdict (the default N = 2 prints the per-site frequencies without one) | 1.5 to 3 h per application | 16 cores |
 | `40-perf.sh <app>` | the performance table, one application at a time | default (4 configurations, N = 2), measured: Redis 13-15 min, memcached 28-36, FFmpeg 20-25, SQLite 65-68; MySQL about 3.4 h; everything at N = 2 about 14 h with builds; `ART_RUNS=5` for intervals, twice as long | 32 cores |
 | `50-eviction-stress.sh` | the bounded-shadow experiments | 15 min to 1 h | any |

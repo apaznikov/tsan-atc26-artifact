@@ -47,39 +47,29 @@ compiler; they are named here so that a reader of the replay does not take them 
 | `fd_location_closed.cpp` | the wording of the location descriptor line, not the race or its stacks | one L2 key 20/20 | one L2 key 20/20 |
 | `fork_atexit.cpp` | whether the report appears at all in a given run | about one run in five | about one run in five |
 
-One further test is not a report-level variation but a stall. `getline_nohang.cpp` exists to check that
-ThreadSanitizer does not deadlock on a stdio stream lock at exit while a detached thread blocks in
-`getline()` (its own comment; google/sanitizers issues 454 and 1733). Upstream marks it unsupported from
-glibc 2.38 on, where that deadlock came back, and the image's Ubuntu 24.04 carries glibc 2.39: the test
-should be skipped there and is not, because the vendored lit configuration detects the glibc version through
-`distutils`, which Python 3.12 no longer has, and swallows the failure (`tests/lit.common.cfg.py`, the bare
-`except` around `add_glibc_versions`), so no `glibc-*` feature is ever added; two tests that require glibc
-2.30 are skipped for the same reason. Found 20 Sep 2026; the one-line fix, a tuple comparison in place of
-`LooseVersion`, changes which tests run and goes in after the submission together with a re-run of the
-suite (the executed count and the zero failures are unaffected either way: the test never produced a
-failure, and the two newly running tests are not race tests). Until then a run in which the deadlock occurs
-waits out the per-test timeout. So a stall is the
-deadlock the test looks for, under stock ThreadSanitizer as under every configuration: the test either
-passes in seconds or times out, under stock, EA and STC alike, it is flaky and not configuration-specific,
-and under the counting rule it can never become a candidate lost race because it does not pass under stock
-every time. The wall-time cost is real: `lit` runs the tests in name order, so a stalled repeat usually
-outlives the rest of its configuration's run and the machine sits idle for up to two minutes per stalled
-repeat, which an evaluator watching the load sees as idle periods; on a host where the stall is frequent
-that is a large share of the suite's time: on our 8-processor run of 19 Sep it stalled 40 of 60 repeats,
-up to 80 of the suite's 117 minutes (`ART_LIT_TIMEOUT=60` halves it, at the price of a shorter limit
-for every test). Its stall rate rises with machine load, which is why we give
-two figures rather than one: on an otherwise idle machine it stalled 3 times in 21 repeats of the full
-383-test suite, roughly one repeat in six or seven; in the shipped-compiler run of 17 Sep,
-60 repeats at 64 lit jobs beside a concurrent build on the other processors, it stalled 48 times in 60,
-under all twelve configurations including stock. That run differed from the idle one in four recorded
-ways (per-test timeout 120 s against 600 s, 64 lit jobs against 96, a 64-processor cpuset against none,
-and the concurrent load), so we attribute the higher rate to load only loosely; what the two figures
-establish together is that an evaluator on a busy or small machine should expect it frequently and
-should read a two-minute pause as this test, not as a hang. What we cannot say
-is whether a longer limit would let a stalled run finish: those runs were cut at the timeout, not
-observed to complete. The cost is the timeout itself: at 600 s a single stall turned a 25-minute suite
-into a two-hour one, so the per-test timeout is 120 s (`ART_LIT_TIMEOUT` to change it). Nothing else in
-the suite failed across these runs.
+One further test, `getline_nohang.cpp`, is not a report-level variation but a test that should not have
+been running. It checks that ThreadSanitizer does not deadlock on a stdio stream lock at exit while a
+detached thread blocks in `getline()` (its own comment; google/sanitizers issues 454 and 1733), and upstream
+marks it `UNSUPPORTED: glibc-2.38`, which lit reads as "2.38 and later"; the image's Ubuntu 24.04 carries
+glibc 2.39. Until 21 Sep 2026 it ran anyway, because the vendored lit configuration detected the glibc
+version through `distutils.version.LooseVersion`, which Python 3.12 no longer has, inside a bare `except`
+that swallowed the import error: no `glibc-*` feature was ever added, so this test ran, and two tests that
+`REQUIRES: glibc-2.30` (`pthread_mutex_clocklock.cpp`, `Linux/clockwait_double_lock.c`) were skipped. The
+fix is one comparison in `tests/lit.common.cfg.py` (a tuple of integers in place of `LooseVersion`, marked in
+the file as the artifact's only modification of the vendored suite); exactly three tests in the suite are
+gated on glibc, so the fix moves exactly those three: 91 unsupported and 292 executed before it, 90 and 293
+after, measured on 21 Sep 2026 (`data/suite/`), with 0 failures and 0 timeouts in 60 repeats on both hosts.
+
+What the defect had cost, so that the earlier figures in this repository's history read correctly: a run in
+which the deadlock occurred waited out the per-test timeout (120 s), and since `lit` runs tests in name order
+the stalled repeat outlived the rest of its configuration's run and the machine sat idle for up to two minutes
+per stalled repeat. The shipped-compiler run of 17 Sep (`data/suite/preservation-suite-20260917T075005Z`)
+stalled in 48 of 60 repeats; a run on 8 processors on 19 Sep in 40 of 60, most of its two hours; a run on 112
+unpinned processors on 20 Sep in 1 of 60. Earlier text here called the test flaky and its stall rate
+load-dependent; both are withdrawn: the stall was a test running on a glibc it is unsupported on, and the
+runs whose rates were compared differed in four recorded ways, so no dependence on load was established.
+Under the counting rule the stalls were timeouts, never failures, and could not have become a candidate
+lost race. Nothing else in the suite failed across any of these runs.
 
 Everything else in the suite is deterministic: it reports the same race with the same stacks
 (function, file, line) under every configuration, or reports nothing under every configuration.

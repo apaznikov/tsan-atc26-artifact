@@ -1,0 +1,17 @@
+  configurations RUN : 12   repeats: K=5
+  stock EA LO STC SWMR DE DE+peel sound AllOpt-peel AllOpt+peel AllOpt-peel+DynSTC AllOpt+peel+DynSTC
+  stock: fails always=0  fails at least once=0
+
+  EA                     always-fail=  0 ever-fail=  0  clean
+  LO                     always-fail=  0 ever-fail=  0  clean
+  STC                    always-fail=  0 ever-fail=  0  clean
+  SWMR                   always-fail=  0 ever-fail=  0  clean
+  DE                     always-fail=  0 ever-fail=  0  clean
+  DE+peel                always-fail=  0 ever-fail=  0  clean
+  sound                  always-fail=  0 ever-fail=  0  clean
+  AllOpt-peel            always-fail=  0 ever-fail=  0  clean
+  AllOpt+peel            always-fail=  0 ever-fail=  0  clean
+  AllOpt-peel+DynSTC     always-fail=  0 ever-fail=  0  clean
+  AllOpt+peel+DynSTC     always-fail=  0 ever-fail=  0  clean
+
+RESULT: no configuration consistently failed a test that stock consistently passed.

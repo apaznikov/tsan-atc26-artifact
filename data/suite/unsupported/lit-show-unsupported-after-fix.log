@@ -1,0 +1,485 @@
+llvm-lit: /opt/tsan-llvm/lib/python-lit/lit/main.py:72: note: The test suite configuration requested an individual test timeout of 0 seconds but a timeout of 120 seconds was requested on the command line. Forcing timeout to be 120 seconds.
+-- Testing: 383 tests, 64 workers --
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/deadlock.mm (1 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/debug_external.cpp (2 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/external-dups.cpp (3 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/dlopen.cpp (4 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/dyld-insert-libraries.c (5 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/external-lib.cpp (6 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/external-noninstrumented-module.cpp (7 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/external-swift.cpp (8 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/external-swift-debugging.cpp (9 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/dyld-library-path.c (10 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/libcxx-future.mm (11 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/ignore-noninstrumented.mm (12 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/gcd-sync-block-copy.mm (13 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/external-ignore-noninstrumented.cpp (14 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/libcxx-shared-ptr-stress.mm (15 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/libcxx-shared-ptr.mm (16 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/libcxx-call-once.mm (17 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/objc-synchronize-cycle-tagged.mm (18 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/main_tid.mm (19 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/objc-synchronize-tagged.mm (20 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/libcxx-shared-ptr-recursive.mm (21 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/objc-synchronize-cycle.mm (22 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/malloc-stack-logging.cpp (23 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/objc-double-property.mm (24 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/objc-synchronize.mm (25 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/malloc_size.mm (26 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/norace-objcxx-run-time.mm (27 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/osatomics-list.mm (28 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/objc-simple.mm (29 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/mach_vm_allocate.c (30 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/no_call_setenv_in_symbolize.cpp (31 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/osspinlock-norace.cpp (32 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/osatomics-bitops.mm (33 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/realloc-zero.cpp (34 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/objc-race.mm (35 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/workerthreads.mm (36 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/os_unfair_lock.c (37 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/symbolizer-dladdr.cpp (38 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/osatomics-add.mm (39 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/external.cpp (40 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/signals-blocked.cpp (41 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/xpc.mm (42 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/symbolizer-atos.cpp (43 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/objc-synchronize-nested-recursive.mm (44 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/variadic-open.cpp (45 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/xpc-cancel.mm (46 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: Darwin/xpc-race.mm (47 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: atexit3.cpp (48 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: Linux/clockwait_double_lock.c (49 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: debug_alloc_stack.cpp (50 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: atexit.cpp (51 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: Linux/thread_timedjoin.c (52 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: atexit2.cpp (53 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: barrier.cpp (54 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: Linux/thread_tryjoin.c (55 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: Linux/user_fopen.cpp (56 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: Linux/sethostent.cpp (57 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: cond.c (58 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: bench_shadow_flush.cpp (59 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: bench_rwmutex.cpp (60 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: bench_mutex.cpp (61 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: bench_ten_mutexes.cpp (62 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: Linux/epoll_norace.cpp (63 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: bench_acquire_only.cpp (64 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: benign_race.cpp (65 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: cxa_guard_acquire.cpp (66 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: bench_memory_access.cpp (67 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: Linux/clone_setns.cpp (68 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: atomic_hle.cpp (69 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: Linux/user_malloc.cpp (70 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: bench_release_only.cpp (71 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: annotate_happens_before.cpp (72 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: atomic_norace.cpp (73 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: Linux/check_preinit.cpp (74 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: bench_local_mutex.cpp (75 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: bench_acquire_release.cpp (76 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: bench_single_writer.cpp (77 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: bench_malloc.cpp (78 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: atomic_free3.cpp (79 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: cond_destruction.cpp (80 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: Linux/fork_deadlock.cpp (81 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: custom_mutex4.cpp (82 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: custom_mutex0.cpp (83 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: atomic_free2.cpp (84 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: cond_race.cpp (85 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: atexit4.cpp (86 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: default_options.cpp (87 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: custom_mutex3.cpp (88 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: custom_mutex5.cpp (89 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: Linux/clone_deadlock.cpp (90 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: Linux/syscall.cpp (91 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: atomic_stack.cpp (92 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: compare_exchange_acquire_fence.cpp (93 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: getline_nohang.cpp (94 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: atomic_race.cpp (95 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: Linux/dlopen_static_tls.cpp (96 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: aligned_vs_unaligned_race.cpp (97 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: Linux/double_race.cpp (98 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fd_close_norace2.cpp (99 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: atomic_store.cpp (100 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: custom_mutex1.cpp (101 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fd_dup_norace.cpp (102 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: atomic_norace2.cpp (103 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fd_pipe_norace.cpp (104 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fd_socket_connect_norace.cpp (105 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fd_close_norace.cpp (106 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: custom_mutex2.cpp (107 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: debug_mutex_bad_unlock.cpp (108 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: debug_locate.cpp (109 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fd_dup_norace2.cpp (110 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: Linux/signal_in_futex_wait.cpp (111 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: compare_exchange.cpp (112 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fd_socket_norace.cpp (113 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: atexit5.cpp (114 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: dynstc_second_thread_race.c (115 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fiber_asm.cpp (116 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fiber_cleanup.cpp (117 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fiber_from_thread.cpp (118 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: debugging.cpp (119 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fiber_simple.cpp (120 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: deep_stack2.cpp (121 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fiber_two_threads.cpp (122 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fiber_longjmp.cpp (123 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fd_socketpair_norace.cpp (124 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fd_location_closed.cpp (125 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fd_dup_race.cpp (126 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: dlclose.cpp (127 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fd_close_race.cpp (128 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fd_location.cpp (129 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fd_pipe_race.cpp (130 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fiber_race.cpp (131 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: Linux/fork_syscall.cpp (132 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: interface_atomic_test.c (133 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fork_atexit.cpp (134 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fd_tid_recycled.cpp (135 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libcxx/std_shared_ptr.cpp (136 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/after.c (137 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/apply-race.c (138 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/apply.c (139 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/async-norace.c (140 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/async-race.c (141 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/async_and_wait.c (142 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/barrier-race.c (143 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/barrier.c (144 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/blocks.c (145 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/data.c (146 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/dispatch_main.c (147 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/dispatch_once_deadlock.c (148 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/fd.c (149 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/groups-destructor.cpp (150 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/groups-leave.c (151 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/groups-norace.c (152 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/groups-stress.c (153 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/io-barrier-race.c (154 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/io-barrier.c (155 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/io-cleanup.c (156 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/io-race.c (157 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/io.c (158 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/once.c (159 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/semaphore-norace.c (160 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/serial-queue-norace.c (161 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/source-cancel.c (162 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/source-cancel2.c (163 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/source-event.c (164 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/source-event2.c (165 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/source-registration.c (166 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/source-registration2.c (167 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/source-serial.c (168 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/suspend.c (169 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/sync-block-copy.cpp (170 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/sync-norace.c (171 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/sync-race.c (172 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: libdispatch/target-queue-norace.c (173 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: ignore_free.cpp (174 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fd_stdout_race.cpp (175 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: ignorelist.cpp (176 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: free_race3.c (177 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: ignore_race.cpp (178 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: ignore_malloc.cpp (179 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fork_multithreaded3.cpp (180 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: exceptions.cpp (181 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: dl_iterate_phdr.cpp (182 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: java_lock.cpp (183 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: halt_on_error.cpp (184 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: java_alloc.cpp (185 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: java_finalizer.cpp (186 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: heap_race.cpp (187 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: java_heap_init.cpp (188 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: java_find.cpp (189 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: cond_cancel.c (190 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: global_race2.cpp (191 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: java_lock_rec.cpp (192 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: global_race3.cpp (193 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: free_race.c (194 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: Linux/mutex_robust.cpp (195 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: ignore_lib3.cpp (196 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: java_lock_move.cpp (197 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: java_finalizer2.cpp (198 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: java_move_overlap_race.cpp (199 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: java_race_move.cpp (200 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: ignore_sync.cpp (201 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: longjmp.cpp (202 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: inlined_memcpy_race.cpp (203 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: java_move_overlap.cpp (204 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: longjmp2.cpp (205 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: java_rwlock.cpp (206 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: ignore_lib0.cpp (207 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: inlined_memcpy_race2.cpp (208 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: java_lock_rec_race.cpp (209 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: ignorelist2.cpp (210 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fork_multithreaded.cpp (211 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: java_race.cpp (212 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: java_volatile.cpp (213 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: ignore_lib2.cpp (214 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: java_race_pc.cpp (215 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: malloc_overflow.cpp (216 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: free_race2.c (217 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: ignore_lib1.cpp (218 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: ignored-interceptors-mmap.cpp (219 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mmap_large.cpp (220 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fork_deadlock.cpp (221 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: longjmp3.cpp (222 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: java_symbolization.cpp (223 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: java_symbolization_legacy.cpp (224 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mmap_lots.cpp (225 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: lo_striped_locks.c (226 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: Linux/mutex_robust2.cpp (227 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: longjmp4.cpp (228 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: lo_two_mutexes_one_struct.c (229 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: munmap_invalid.cpp (230 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: ignore_lib4.cpp (231 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: dtls.c (232 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mutex_annotations.cpp (233 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: pie_test.cpp (234 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mop1.c (235 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: malloc_stack.cpp (236 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: memcmp_race.cpp (237 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: map32bit.cpp (238 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: on_initialize_finalize_hooks.cpp (239 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: memcpy_race.cpp (240 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mop_with_offset2.cpp (241 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: pthread_mutex_clocklock.cpp (242 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mutex_destroy_locked2.cpp (243 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mutex_bad_read_unlock.cpp (244 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mutex_bad_unlock.cpp (245 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mop_with_offset.cpp (246 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: shadow_evictions.c (247 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: printf-1.c (248 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mutex_bad_read_lock.cpp (249 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mutex_destroy_locked.cpp (250 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mutex_double_lock.cpp (251 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mutex_held_wrong_context.cpp (252 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: atomic_free.cpp (253 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mutexset1.cpp (254 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: on_exit.cpp (255 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mutexset4.cpp (256 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mutexset2.cpp (257 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: signal_recursive.cpp (258 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mutexset5.cpp (259 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mutexset6.cpp (260 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mutexset3.cpp (261 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: pthread_atfork_deadlock2.c (262 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mutex_lock_destroyed.cpp (263 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: race_on_barrier2.c (264 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: load_shared_lib.cpp (265 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mutexset7.cpp (266 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: pthread_atfork_deadlock3.c (267 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: race_on_barrier.c (268 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: ignore_lib5.cpp (269 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mutexset8.cpp (270 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: postdom_end_to_end.cpp (271 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: pthread_atfork_deadlock.c (272 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: large_malloc_meta.cpp (273 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: race_on_speculative_load.cpp (274 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: lots_of_threads.c (275 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: print_full_thread_history.cpp (276 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: race_on_mutex2.c (277 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: race_on_mutex.c (278 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: pthread_key.cpp (279 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: race_on_fputs.cpp (280 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: signal_exit.cpp (281 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: signal_longjmp.cpp (282 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: race_on_heap.cpp (283 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: cond_version.c (284 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: race_on_puts.cpp (285 of 383)
+UNSUPPORTED: ThreadSanitizer-x86_64-linux :: sunrpc.cpp (286 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: signal_errno.cpp (287 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: race_range_pc.cpp (288 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: race_on_read.cpp (289 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: race_stress.cpp (290 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: deep_stack1.cpp (291 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: race_on_write.cpp (292 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: race_top_suppression.cpp (293 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mutex_cycle2.c (294 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: race_top_suppression1.cpp (295 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: signal_block.cpp (296 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mutex_cycle_long.c (297 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: sigsuspend.cpp (298 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: static_init1.cpp (299 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: stack_sync_reuse.cpp (300 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: static_init2.cpp (301 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: static_init4.cpp (302 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: static_init5.cpp (303 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: signal_in_mutex_lock.cpp (304 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: preservation_stc_unknown_external.c (305 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: static_init6.cpp (306 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: global_race.cpp (307 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: simple_race.c (308 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: static_init7.cpp (309 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: signal_thread_sigctx_race.cpp (310 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: simple_race.cpp (311 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: stc_preserve_uaf.c (312 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: stack_race2.cpp (313 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: stack_race.cpp (314 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: Linux/fork_multithreaded4.cpp (315 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: preservation_dominance.cpp (316 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: preservation_stc_main.cpp (317 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: thread_detach2.c (318 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: thread_detach.c (319 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: thread_leak.c (320 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: static_init3.cpp (321 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: thread_exit.c (322 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: simple_stack2.cpp (323 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: thread_leak2.c (324 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: suppressions_global.cpp (325 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: suppress_same_stacks.cpp (326 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: thread_leak4.c (327 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: suppressions_mutex.cpp (328 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: suppressions_race2.cpp (329 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: suppress_same_address.cpp (330 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: signal_reset.cpp (331 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: thread_end_with_ignore2.cpp (332 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: suppressions_race.cpp (333 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: thread_end_with_ignore3.cpp (334 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: thread_end_with_ignore.cpp (335 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: unaligned_norace.cpp (336 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: virtual_inheritance_compile_bug.cpp (337 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: vfork.cpp (338 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: vptr_benign_race.cpp (339 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: flush_memory.cpp (340 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: signal_sync2.cpp (341 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: tiny_race.c (342 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: tls_race2.cpp (343 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: real_deadlock_detector_stress_test.cpp (344 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: thread_name2.cpp (345 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: tls_race.cpp (346 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: thread_name.cpp (347 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: signal_cond.cpp (348 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: vptr_harmful_race4.cpp (349 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: vptr_harmful_race.cpp (350 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: signal_in_read.c (351 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: vptr_harmful_race2.cpp (352 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: vector_race.cpp (353 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: strerror_r.cpp (354 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: vptr_harmful_race3.cpp (355 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: write_in_reader_lock.cpp (356 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: signal_write.cpp (357 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: signal_pause.cpp (358 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: signal_sync.cpp (359 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: race_with_finished_thread.cpp (360 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: signal_malloc.cpp (361 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: tsan-vs-gvn.cpp (362 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: ignore_lib6.cpp (363 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: signal_thread.cpp (364 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: signal_thread2.cpp (365 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: unaligned_race.cpp (366 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: sleep_sync2.cpp (367 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: sleep_sync.cpp (368 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: signal_block2.cpp (369 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: simple_stack.c (370 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mmap_stress.cpp (371 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: thread_leak3.c (372 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: bench_threads.cpp (373 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: thread_leak5.c (374 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: mmap_stress2.cpp (375 of 383)
+XFAIL: ThreadSanitizer-x86_64-linux :: must_deadlock.cpp (376 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: setuid2.c (377 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: Linux/check_memcpy.c (378 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: fd_close_norace3.cpp (379 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: deadlock_detector_stress_test.cpp (380 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: force_background_thread.cpp (381 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: stress.cpp (382 of 383)
+PASS: ThreadSanitizer-x86_64-linux :: restore_stack.cpp (383 of 383)
+********************
+Unsupported Tests (90):
+  ThreadSanitizer-x86_64-linux :: Darwin/deadlock.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/debug_external.cpp
+  ThreadSanitizer-x86_64-linux :: Darwin/dlopen.cpp
+  ThreadSanitizer-x86_64-linux :: Darwin/dyld-insert-libraries.c
+  ThreadSanitizer-x86_64-linux :: Darwin/dyld-library-path.c
+  ThreadSanitizer-x86_64-linux :: Darwin/external-dups.cpp
+  ThreadSanitizer-x86_64-linux :: Darwin/external-ignore-noninstrumented.cpp
+  ThreadSanitizer-x86_64-linux :: Darwin/external-lib.cpp
+  ThreadSanitizer-x86_64-linux :: Darwin/external-noninstrumented-module.cpp
+  ThreadSanitizer-x86_64-linux :: Darwin/external-swift-debugging.cpp
+  ThreadSanitizer-x86_64-linux :: Darwin/external-swift.cpp
+  ThreadSanitizer-x86_64-linux :: Darwin/external.cpp
+  ThreadSanitizer-x86_64-linux :: Darwin/gcd-sync-block-copy.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/ignore-noninstrumented.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/libcxx-call-once.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/libcxx-future.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/libcxx-shared-ptr-recursive.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/libcxx-shared-ptr-stress.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/libcxx-shared-ptr.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/mach_vm_allocate.c
+  ThreadSanitizer-x86_64-linux :: Darwin/main_tid.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/malloc-stack-logging.cpp
+  ThreadSanitizer-x86_64-linux :: Darwin/malloc_size.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/no_call_setenv_in_symbolize.cpp
+  ThreadSanitizer-x86_64-linux :: Darwin/norace-objcxx-run-time.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/objc-double-property.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/objc-race.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/objc-simple.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/objc-synchronize-cycle-tagged.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/objc-synchronize-cycle.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/objc-synchronize-nested-recursive.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/objc-synchronize-tagged.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/objc-synchronize.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/os_unfair_lock.c
+  ThreadSanitizer-x86_64-linux :: Darwin/osatomics-add.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/osatomics-bitops.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/osatomics-list.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/osspinlock-norace.cpp
+  ThreadSanitizer-x86_64-linux :: Darwin/realloc-zero.cpp
+  ThreadSanitizer-x86_64-linux :: Darwin/signals-blocked.cpp
+  ThreadSanitizer-x86_64-linux :: Darwin/symbolizer-atos.cpp
+  ThreadSanitizer-x86_64-linux :: Darwin/symbolizer-dladdr.cpp
+  ThreadSanitizer-x86_64-linux :: Darwin/variadic-open.cpp
+  ThreadSanitizer-x86_64-linux :: Darwin/workerthreads.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/xpc-cancel.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/xpc-race.mm
+  ThreadSanitizer-x86_64-linux :: Darwin/xpc.mm
+  ThreadSanitizer-x86_64-linux :: debug_alloc_stack.cpp
+  ThreadSanitizer-x86_64-linux :: getline_nohang.cpp
+  ThreadSanitizer-x86_64-linux :: libcxx/std_shared_ptr.cpp
+  ThreadSanitizer-x86_64-linux :: libdispatch/after.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/apply-race.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/apply.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/async-norace.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/async-race.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/async_and_wait.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/barrier-race.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/barrier.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/blocks.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/data.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/dispatch_main.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/dispatch_once_deadlock.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/fd.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/groups-destructor.cpp
+  ThreadSanitizer-x86_64-linux :: libdispatch/groups-leave.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/groups-norace.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/groups-stress.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/io-barrier-race.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/io-barrier.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/io-cleanup.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/io-race.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/io.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/once.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/semaphore-norace.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/serial-queue-norace.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/source-cancel.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/source-cancel2.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/source-event.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/source-event2.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/source-registration.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/source-registration2.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/source-serial.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/suspend.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/sync-block-copy.cpp
+  ThreadSanitizer-x86_64-linux :: libdispatch/sync-norace.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/sync-race.c
+  ThreadSanitizer-x86_64-linux :: libdispatch/target-queue-norace.c
+  ThreadSanitizer-x86_64-linux :: shadow_evictions.c
+  ThreadSanitizer-x86_64-linux :: signal_recursive.cpp
+  ThreadSanitizer-x86_64-linux :: sunrpc.cpp
+
+
+Testing Time: 22.79s
+
+Total Discovered Tests: 383
+  Unsupported      :  90 (23.50%)
+  Passed           : 292 (76.24%)
+  Expectedly Failed:   1 (0.26%)

@@ -1,0 +1,17 @@
+date: 2026-09-21T05:22:39+00:00
+host: 21f37f24983e  kernel: 6.8.0-40-generic
+compiler: clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)
+compiler_stamp: f3deebfbab602f4e05289e0acbde0efd06b8058c
+suite: /artifact/tests/tsan
+configurations: 12  from /artifact/data/preservation/lit-configurations.txt
+repeats_K: 5
+lit_timeout_s: 120
+ART_JOBS: 25
+processors_visible: 104
+cpuset: 4-55,60-111
+ART_RUNS: 2  ART_SMOKE: 0
+loadavg_at_start: 16.51 11.02 5.12
+mem_available_gib_at_start: 207
+tests_discovered: 383
+tests_unsupported: not reported by lit -q; established separately, see data/suite/unsupported/README.md (91 on this platform)
+loadavg_at_end: 20.32 23.23 20.72

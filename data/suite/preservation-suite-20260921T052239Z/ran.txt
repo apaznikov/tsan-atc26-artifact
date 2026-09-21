@@ -1,0 +1,12 @@
+stock
+EA
+LO
+STC
+SWMR
+DE
+DE+peel
+sound
+AllOpt-peel
+AllOpt+peel
+AllOpt-peel+DynSTC
+AllOpt+peel+DynSTC

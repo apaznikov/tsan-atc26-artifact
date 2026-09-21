@@ -4,13 +4,11 @@
 # reports under stock in every repeat and fails under that configuration in every repeat.
 # Usage: scripts/30-preservation-suite.sh [--self-test] [K] [config-name ...]   K defaults to $ART_RUNS
 #
-# Per-test timeout is 120 s (override with ART_LIT_TIMEOUT). Measured 2026-09-17: one test,
-# getline_nohang.cpp, stalls in roughly one repeat in six and then waits out the whole
-# timeout -- under stock as often as under any analysis, so it can never count as a lost
-# race here. At 600 s that single test was the difference between a 25-minute suite and a
-# two-hour one. It either passes in seconds or hangs, so a long timeout buys nothing.
-# IF THE SUITE APPEARS TO STOP FOR A COUPLE OF MINUTES, IT HAS NOT HUNG: one test is
-# waiting out its timeout.
+# Per-test timeout is 120 s (override with ART_LIT_TIMEOUT). No test in the suite should
+# approach it: a whole 383-test repeat takes about 25 s on 64 processors, so the limit is
+# a bound on an unexpected hang rather than a tuned value. Before 2026-09-21 one test,
+# getline_nohang.cpp, did hit it in most repeats -- see docs/nondeterministic-tests.md;
+# that was a lit-configuration defect, since fixed, and not a property of the test.
 #   --self-test  runs stock against a deliberately blinded detector and requires this
 #                harness to REPORT the loss. A suite that reports nothing is what both a
 #                preserved race and a broken harness look like; this tells them apart.
@@ -164,7 +162,7 @@ if [ -n "$_first_log" ]; then
     # lit -q prints Unsupported only when non-zero, so an absent count is not zero and not a
     # parse failure. Say which, rather than emit an empty field that a diff reads as either.
     _unsup=$(grep -m1 -oE 'Unsupported: *[0-9]+' "$_first_log" | grep -oE '[0-9]+' | head -1 || true)
-    echo "tests_unsupported: ${_unsup:-not reported by lit -q; established separately, see data/suite/unsupported/README.md (91 on this platform)}"
+    echo "tests_unsupported: ${_unsup:-not reported by lit -q; established separately, see data/suite/unsupported/README.md (90 on this platform since the glibc-detection fix of 21 Sep 2026; 91 before it)}"
     echo "loadavg_at_end: $(cut -d' ' -f1-3 /proc/loadavg)"
   } >> "$outdir/manifest.txt"
 fi

@@ -29,7 +29,10 @@ The run CLAIMS row 22 cites. Exported so its numbers can be checked rather than 
     discovered: 383    grep -m1 'Total Discovered' lit-logs/lit-stock-1.log
 
 Every one of the 48 is getline_nohang.cpp and every one is kind=timeout, so none reaches
-the lost-race rule, which requires kind=fail. See docs/nondeterministic-tests.md.
+the lost-race rule, which requires kind=fail. That test should not have been running at all:
+upstream marks it unsupported from glibc 2.38 on, and it ran because the lit configuration
+of that date did not detect glibc (fixed 2026-09-21; the run after the fix ships beside this
+one). See docs/nondeterministic-tests.md.
 
 The executed count (292 = 383 - 91 unsupported) is NOT derivable from these logs: lit -q
 does not print an Unsupported line. It is established separately in ../unsupported/.
