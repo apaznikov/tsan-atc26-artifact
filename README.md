@@ -14,7 +14,8 @@ N = 5, 95 % intervals) is what the Reproduced tier compares against. The submitt
 before the fixes, are kept in `CLAIMS.md`'s "Paper" column for the record. What the campaign establishes:
 DynSTC changes performance measurably (FFmpeg +11 % at the paper's 4 threads, Redis −5.6 %, confirmed at a second
 concurrency and on a second host); at 16 threads, the artifact's default since 22 Sep 2026, AllOpt with peeling
-and DynSTC together reach +19 % on FFmpeg (1.187 [1.171, 1.201]); every other configuration lies within its
+and DynSTC together reach +19 % on FFmpeg (1.187 [1.171, 1.201]; that thread count was chosen from the sweep after
+the campaign and is reported as such); at the paper's own thread counts every other configuration lies within its
 interval of stock ThreadSanitizer, and the static instrumentation removed is 2 to 8 per cent (section 3).
 
 ## Start here
@@ -43,7 +44,7 @@ step said, and ends with one verdict line and a sentence saying what it establis
 - The **Reproduced** tier ends with a table: one line per configuration row of your run against the
   interval `CLAIMS.md` ships for it, marked IN, OUT (with the distance), not judged, or not comparable,
   then "N rows judged". What counts as reproduced, what an OUT row can mean, and the five-run re-check for
-  it are in `CLAIMS.md`, section 5, under "Match criterion". FFmpeg's two rows are compared when the clip came
+  it are in `CLAIMS.md`, section 5, under "Match criterion". FFmpeg's three rows are compared when the clip came
   from the artifact's release, which is the default; on a regenerated clip they come back "not comparable" and
   the run itself is valid (`docs/ffmpeg-input.md`).
 

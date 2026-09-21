@@ -1,7 +1,7 @@
 # Artifact Appendix
 
 Draft for the two-page appendix submitted with the paper. Numbers here are the ones in `CLAIMS.md`
-and nowhere else; when a leg completes, both change together.
+and nowhere else.
 
 ## Abstract
 
@@ -25,8 +25,9 @@ Supported by the artifact:
 - **Static instrumentation removed**, per application and configuration, exactly reproducible.
 - **Compile-time cost**, including the case the paper's largest application turns on.
 - **Runtime performance**, as a table with confidence intervals. On the shipped compiler DynSTC's two
-  directional effects (FFmpeg above stock, Redis below) reproduce on comparable hardware, and every other
-  configuration lies within its interval of stock ThreadSanitizer.
+  directional effects (FFmpeg above stock, Redis below) reproduce on comparable hardware; at the paper's thread
+  counts every other configuration lies within its interval of stock ThreadSanitizer, and at 16 threads the full
+  sound bundle with DynSTC reaches +19 % on FFmpeg.
 
 Not supported, and stated in `CLAIMS.md` as not claimed: Chromium (a checkout exceeds a terabyte and
 our only build predates the shipped compiler), and any number from before the campaign of
@@ -41,7 +42,8 @@ N = 5, 95 % intervals) is what the Reproduced tier compares against. The submitt
 before the fixes, are kept in `CLAIMS.md`'s "Paper" column for the record. What the campaign establishes:
 DynSTC changes performance measurably (FFmpeg +11 % at the paper's 4 threads, Redis −5.6 %, confirmed at a second
 concurrency and on a second host); at 16 threads, the artifact's default since 22 Sep 2026, AllOpt with peeling
-and DynSTC together reach +19 % on FFmpeg (1.187 [1.171, 1.201]); every other configuration lies within its
+and DynSTC together reach +19 % on FFmpeg (1.187 [1.171, 1.201]; that thread count was chosen from the sweep after
+the campaign and is reported as such); at the paper's own thread counts every other configuration lies within its
 interval of stock ThreadSanitizer, and the static instrumentation removed is 2 to 8 per cent (section 3).
 
 ## Contents, hosting and requirements
@@ -88,8 +90,8 @@ every repeat: 23 minutes on a 64-processor host, 30 minutes on ours and 48 minut
 most of it the regression suite in 12 configurations.
 
 Performance is separate and needs the hardware above. At the defaults (four configurations, five on FFmpeg, two
-runs each, a point estimate per row) it is about two hours for Redis, memcached, FFmpeg and SQLite
-together; everything at fourteen configurations is about 14 hours; our own five-run setting, which
+runs each, a point estimate per row) it is about 2 h 30 min for Redis, memcached, FFmpeg and SQLite
+together; everything at fourteen configurations is about 11 hours of runs, 14 with the builds; our own five-run setting, which
 produces the confidence intervals in `CLAIMS.md`, is a variable away and twice as long:
 
 ```

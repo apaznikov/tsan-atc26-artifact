@@ -107,7 +107,8 @@ primary concurrency, four separate from stock, and all four are DynSTC: a 5.6% c
 crosses 1.0. The legs of 21-22 Sep at FFmpeg's best thread count (the first FFmpeg section below) add three
 rows above stock, all from the paper's own transforms, the largest 1.187 [1.171, 1.201]; the rows with the
 upstream flag are measured and not claimed (the section after FFmpeg). Every configuration of the paper's figure is
-listed with the paper's bar beside it, plus the three configurations the paper does not show.
+listed with the paper's bar beside it, plus the configurations the paper does not show (AllOpt with peeling, its
+combination with DynSTC, and the two whole-program rows where they exist).
 Each row carries its interval over all five measured runs and, beside it, the point estimate over
 runs 2-5 with no interval (four runs never get one). The two share four runs, so overlap of two
 intervals was never a test; the check is that the runs-2-5 point lies inside the all-five interval,
@@ -259,8 +260,9 @@ Script: `scripts/40-perf.sh mysql` (four configurations only; about 3.4 hours at
 
 ### FFmpeg 4.3.9 at `-threads 16` (libx264, libx265, mjpeg, stream copy; the Tears of Steel reference clip; session of 21-22 Sep 2026, pinned; the artifact's default thread count)
 
-This is the FFmpeg table an evaluator's default run is compared with: from 22 Sep 2026 `env.sh` sets
-`FF_THREADS` to 16, and `scripts/40-perf.sh ffmpeg` measures AllOpt with peeling and DynSTC beside the four
+This is the FFmpeg table an evaluator's default run is compared with: from 22 Sep 2026 the harness's thread
+rule for FFmpeg is 16 (`FF_THREADS` empty in `env.sh` means the rule; `FF_THREADS=4` reproduces the paper's
+count), and `scripts/40-perf.sh ffmpeg` measures AllOpt with peeling and DynSTC beside the four
 default configurations. The thread count was chosen after the data and from it, and is reported as such:
 the thread sweep of 18 Sep (next section) found that AllOpt with peeling gains nothing at the paper's
 `-threads 4` and about 6 per cent at 8 and 16, that DynSTC's gain is the same at every count, and 16 is
@@ -273,14 +275,14 @@ Stock ThreadSanitizer against native: 2.883x [2.799, 2.916]. Resolvable subtests
 
 | Configuration | Paper | All five runs [95%] | Runs 2-5, point | Verdict |
 |---|---|---|---|---|
-| DynSTC | 1.15 (at `-threads 4`) | **1.133 [1.114, 1.146]** | 1.132 | **above stock** |
+| DynSTC | 1.15 (the paper's bar, measured at `-threads 4`; the paper has no 16-thread figure) | **1.133 [1.114, 1.146]** | 1.132 | **above stock** |
 | AllOpt with peeling | not in the paper | **1.067 [1.050, 1.079]** | 1.069 | **above stock** |
 | AllOpt with peeling and DynSTC | not in the paper | **1.187 [1.171, 1.201]** | 1.191 | **above stock** |
 
 The two effects compose about multiplicatively: 1.067 x 1.133 = 1.209 against 1.187 measured, the
-combination's interval two points below the product. This is the largest speedup the paper's own transforms
-reach on the shipped compiler in any measurement we have made: 18.7 per cent over stock ThreadSanitizer,
-the transcode 2.43x [2.36, 2.46] slower than native instead of 2.88x. At 8 threads (a second leg the same
+combination's interval two points below the product. This is where the paper's own transforms reach the most on
+the shipped compiler in any measurement we have made: about 19 per cent over stock ThreadSanitizer at 8 and at
+16 threads (one interval, below), the transcode 2.43x [2.36, 2.46] slower than native instead of 2.88x. At 8 threads (a second leg the same
 night, `data/perf/ffmpeg-threadsweep-f3deebfbab60/threads-8-dynstc/`) the same row is 1.190 [1.167, 1.211]
 and DynSTC alone 1.138 [1.112, 1.161], stock against native 2.822 [2.755, 2.889], so the combination's gain
 is flat between 8 and 16 threads and the choice of 16 over 8 is libx265's ceiling, not a better number.
@@ -288,10 +290,11 @@ AllOpt with peeling carries more static sites than stock at every count (535 690
 duplicates loop bodies), so the gain is a runtime effect and not a static-count one.
 
 Legs: a fresh clone of the artifact at `c280f2b` on this host, `ART_CPUSET=4-27,60-83 ART_RUNS=5
-ART_WARMUP=1`, the campaign's set and shape, the machine quiet by announcement. The 16-thread leg: 35
+ART_WARMUP=1`, the campaign's set and shape, the machine quiet by announcement, the evening and night of 21-22 Sep on this host's clock (the trees' UTC
+stamps read 21 Sep, 13:58 to 17:33). The 16-thread leg: 35
 measured cells beside their warm-ups, none retired. The 8-thread leg: 20 cells, two retired by the
 disturbance gate (a transient load outside the set) and re-run to completion, the retired cells shipped
-beside their replacements. Runs under `data/perf/campaign-f3deebfbab60/best/` (this table's leg, which also
+beside their replacements. Runs under `data/perf/campaign-f3deebfbab60/ffmpeg-t16/` (this table's leg, which also
 carries the two FFmpeg rows of the upstream-flag section below) and the sweep root above;
 `scripts/90-tables.sh` regenerates both tables byte-identically and `scripts/91-verify-provenance.sh`
 checks both strictly against the shipped compiler.
@@ -368,7 +371,7 @@ are far from 1.0 and both survive the second concurrency point on Redis. The pee
 the tightest of the four at a resolution floor of 2.5%: 0.9941 [0.9753, 1.0125], crossing 1.0 like
 the other three.
 
-Script: `scripts/40-perf.sh ffmpeg` (about 22 minutes at the default N = 2 and four configurations;
+Script: `scripts/40-perf.sh ffmpeg` (about 30 minutes at the default N = 2 and five configurations at 16 threads;
 2.2 hours at N = 5 and twelve). The input is produced before the build by one of three paths, in this
 order: a prepared copy of the reference clip from `ART_FFMPEG_CLIP_URL` (a URL or a local path), checked against
 the sha256 in `docs/ffmpeg-input.md` whichever way it arrived; a local copy of the Blender source in `ART_FFMPEG_SOURCE`, cut with the recorded
@@ -432,12 +435,12 @@ report content, the race is reported and the frames below the top one are missin
 from the access's own PC, the rest from the shadow stack the flag removed); `suppressions_mutex` fails
 because a suppression by function name no longer matches a frame that is no longer there; `unaligned_race`
 reports 128 races instead of 224, adjacent unaligned accesses in one function collapsing into one report
-once their stacks are identical. So the flag loses no race at the location level and changes what a
+once their stacks are identical. So in the suite the flag loses no race at the location level and changes what a
 report says: reports name the accessing function and nothing below it, suppressions keyed on callers stop
 working, and reports that differ only in their callers merge. On the applications
 (`scripts/31-preservation-apps.sh` on the second host, SQLite, N = 10, `tsan-nofe` and `tsan-sound-nofe`):
-no site lost at any level, every report key intact at L1, L2 and L3, because the keys are built from the
-access PC; the same check on memcached was running as this was written and its result is added here when
+no site lost at any level on SQLite, every report key intact at L1, L2 and L3, because the keys are built from
+the access PC; the same check on memcached was running as this was written and its result is added here when
 it lands. That is the trade: about 11 per cent on Redis for report stacks of one frame. The submitted paper
 does not use the flag, the camera-ready decision on it is the authors', and the artifact reports it
 because an evaluator who reads the harness finds these configuration names and should know what they
@@ -445,23 +448,23 @@ measure.
 
 Rows (N = 5, 95% intervals, the campaign's set and shape, the legs of 21-22 Sep described under FFmpeg
 above; the Redis leg had two cells retired by the disturbance gate, `outside_busy` 0.107 against the bar
-of 0.10, and re-run to completion; the memcached leg, 15 measured cells, none retired; "stock" is stock
+of 0.10, and re-run to completion; the memcached leg, 25 measured cells (five configurations), none retired; "stock" is stock
 ThreadSanitizer; runs under
-`data/perf/campaign-f3deebfbab60/flag-<application>/` and, for FFmpeg, `best/`):
+`data/perf/campaign-f3deebfbab60/flag-<application>/` and, for FFmpeg, `ffmpeg-t16/`):
 
-| Application | Configuration | All five runs [95%] | Runs 2-5, point | Reading |
+| Application | Configuration | All five runs [95%] | Runs 2-5, point | Reading (no row here is the paper's) |
 |---|---|---|---|---|
 | Redis (50 clients) | stock with the flag | 1.107 [1.072, 1.131] | 1.108 | the flag alone |
 | Redis | four sound analyses | 0.995 [0.972, 1.017] | 0.991 | the sound bundle alone, this leg |
-| Redis | four sound analyses with the flag | 1.115 [1.090, 1.144] | 1.112 | |
+| Redis | four sound analyses with the flag | 1.115 [1.090, 1.144] | 1.112 | the flag on the sound bundle |
 | Redis | AllOpt with peeling | 1.008 [0.989, 1.030] | 1.001 | ours alone, this leg |
-| Redis | AllOpt with peeling and the flag | 1.138 [1.109, 1.161] | 1.141 | the highest Redis row on the shipped compiler |
+| Redis | AllOpt with peeling and the flag | 1.138 [1.109, 1.161] | 1.141 | the highest Redis row on the shipped compiler, and the flag's, not the paper's |
 | Redis | AllOpt with peeling, DynSTC and the flag | 1.083 [1.061, 1.107] | 1.077 | DynSTC's Redis cost, under the flag |
 | FFmpeg (16 threads) | stock with the flag | 1.016 [1.002, 1.029] | 1.018 | the flag alone |
-| FFmpeg (16 threads) | AllOpt with peeling, DynSTC and the flag | 1.200 [1.185, 1.221] | 1.211 | |
+| FFmpeg (16 threads) | AllOpt with peeling, DynSTC and the flag | 1.200 [1.185, 1.221] | 1.211 | the flag on top of the paper's 1.187; the difference is the flag's |
 | memcached (48 threads) | stock with the flag | 1.000 [0.914, 1.040] | 0.981 | the flag alone: nothing resolved on memcached |
 | memcached (48 threads) | AllOpt with peeling | 1.033 [0.945, 1.068] | 1.015 | ours alone, this leg |
-| memcached (48 threads) | AllOpt with peeling and the flag | 1.019 [0.925, 1.058] | 1.018 | |
+| memcached (48 threads) | AllOpt with peeling and the flag | 1.019 [0.925, 1.058] | 1.018 | nothing resolved |
 | SQLite, MySQL | measured the night of 21-22 Sep; rows added when the legs end | | | |
 
 **Does the flag gain more with our analyses than on stock?** No more than the product of the two, on both
@@ -494,7 +497,7 @@ N runs per configuration:
 
 | Mode | Runs | Configurations | Time on 48 processors | What a row yields |
 |---|---|---|---|---|
-| **default** | N = 2 | four: native, stock, AllOpt with peeling, DynSTC (FFmpeg five: plus AllOpt with peeling and DynSTC, at 16 threads) | measured on this host and on a 64-processor AMD host: Redis 13-15 min, memcached 28-36, FFmpeg about 30, SQLite 65-68: **about 2 h 30 min** together; MySQL a further 3.4 h (estimated) | a point estimate, no interval |
+| **default** | N = 2 | four: native, stock, AllOpt with peeling, DynSTC (FFmpeg five: plus AllOpt with peeling and DynSTC, at 16 threads) | measured on this host and on a 64-processor AMD host: Redis 13-15 min, memcached 28-36, FFmpeg about 30 (an estimate for the five-configuration 16-thread default from the measured 20-25 for four at 4 threads), SQLite 65-68: **about 2 h 30 min** together; MySQL a further 3.4 h (estimated) | a point estimate, no interval |
 | everything at the default | N = 2 | all fourteen (MySQL four) | Redis 1.0 h, memcached 2.0, FFmpeg 1.2, SQLite 3.4, MySQL 3.4: **about 11 h**, 14 h with the builds | a point estimate, no interval |
 | our campaign | N = 5 | any of the above | twice the figures above (one warm-up plus five runs against one plus two); everything, 32 h of legs plus builds | a 95% interval |
 
