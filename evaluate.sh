@@ -144,11 +144,12 @@ if [ "$perf_tier" = 1 ]; then
   echo "     stock ThreadSanitizer; tsan-dom_peeling-ea-lo-st-swmr = AllOpt with peeling, the paper's AllOpt;"
   echo "     tsan-stmt = DynSTC. Each configuration row is a ratio against tsan: above 1.0 is faster than stock."
   if [ -n "${ART_FFMPEG_CLIP_URL:-}" ]; then
-    echo "  3. FFmpeg. ART_FFMPEG_CLIP_URL is set; its rows are compared once the clip's sha256 matches the reference."
+    echo "  3. FFmpeg. The reference clip is fetched from the artifact's GitHub release (78 MB) and verified by sha256,"
+    echo "     so its rows are compared. Export ART_FFMPEG_CLIP_URL= (empty) to regenerate it from the Blender source"
+    echo "     (557 MB) instead; those rows are then 'not comparable' by design (docs/ffmpeg-input.md)."
   else
-    echo "  3. FFmpeg. Its rows are compared with ours only on the reference clip, and ART_FFMPEG_CLIP_URL is not"
-    echo "     set: the run regenerates the input from the Blender source (a 557 MB download), its timings are"
-    echo "     valid, and the comparison prints 'not comparable' for FFmpeg's two rows by design (docs/ffmpeg-input.md)."
+    echo "  3. FFmpeg. ART_FFMPEG_CLIP_URL is empty: the run regenerates the input from the Blender source (557 MB), its"
+    echo "     timings are valid, and its two rows print 'not comparable' by design (docs/ffmpeg-input.md)."
   fi
   echo "  4. The end. The tier ends with one line per configuration row of this run against the interval CLAIMS.md"
   echo "     ships for it (IN; OUT with the distance; not judged; not comparable) and 'N rows judged'. What an OUT"
@@ -313,7 +314,11 @@ if [ "$verdict" = PASS ] && [ -n "${compared:-}" ]; then
   echo "its shipped interval, or no row could be judged at all. Its own output says which. CLAIMS.md section 5"
   echo "('Match criterion') says what an outside row can mean and gives the five-run re-check for it."
 else
-  echo "evaluate.sh: $verdict  $where"
+  vline="$verdict"
+  # Both facts when both hold: a skipped check and a comparison that did not come back clean are two answers,
+  # and the last line must not drop the second (found by the reviewer walkthrough, 21 Sep 2026).
+  [ "$verdict" = INCOMPLETE ] && [ -n "${compared:-}" ] && vline="INCOMPLETE, and COMPARISON NOT CLEAN"
+  echo "evaluate.sh: $vline  $where"
   case "$verdict" in
     PASS) case "$tier" in
       check)
@@ -326,7 +331,8 @@ else
       *)
         echo "Every step ran and passed, and every judged performance row lies inside its shipped interval (the table above)." ;;
     esac ;;
-    INCOMPLETE) echo "Nothing failed, but a check could not be made here (its prerequisite is absent); the log names it. A skipped check is neither a pass nor a failure." ;;
+    INCOMPLETE) echo "Nothing failed, but a check could not be made here (its prerequisite is absent); the log names it. A skipped check is neither a pass nor a failure."
+                [ -n "${compared:-}" ] && echo "And the comparison above did not come back clean: a judged row lies outside its shipped interval, or no row could be judged; CLAIMS.md section 5 ('Match criterion') says what that can mean." ;;
     FAIL) echo "Stopped at: $failed. docs/troubleshooting.md lists the failures we know; the log has the rest." ;;
   esac
 fi

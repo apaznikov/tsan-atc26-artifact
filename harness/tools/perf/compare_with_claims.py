@@ -168,6 +168,13 @@ def main():
     root = os.path.dirname(os.path.abspath(claims_path))
     claims = claims_rows(claims_path)
     outside = judged = unjudged = 0
+    # WHICH FIGURES THESE VERDICTS ARE AGAINST, said before the table rather than left to be inferred.
+    # The artifact's intervals are the campaign on the shipped compiler, which is the camera-ready's set of
+    # figures; the submitted version's numbers are a separate column in CLAIMS.md and are not what a row is
+    # judged against. A reader who assumes the wrong one misreads every line below. (Alexey, 2026-09-21.)
+    print("Verdicts are against the intervals in CLAIMS.md section 5: the campaign on the shipped compiler,")
+    print("the camera-ready's figures. The submitted version's figures are in that file's 'Paper' column.")
+    print()
     print(f"{'app':10} {'row':24} {'yours':>22}  {'ours (N=5)':22} verdict")
     print("-" * 100)
     for tree in trees:

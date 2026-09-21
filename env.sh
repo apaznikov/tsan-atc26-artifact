@@ -38,12 +38,15 @@ export ART_WARMUP="${ART_WARMUP:-1}"
 export ART_SMOKE="${ART_SMOKE:-0}"
 
 # The FFmpeg input clip, by the first of three paths that applies (docs/ffmpeg-input.md): a prepared copy of
-# the reference clip at ART_FFMPEG_CLIP_URL (checked against the pinned sha256; the artifact's Zenodo record
-# once it exists, and this default will name it then), a local copy of the Blender source in
-# ART_FFMPEG_SOURCE (cut here with the recorded command), or, with both empty, the Blender source downloaded
-# and cut. docker/run.sh forwards both into the container; until 17 Sep 2026 it forwarded neither, so a
-# setting made by an evaluator was silently dropped at the container boundary (defect 11 of the rehearsal).
-export ART_FFMPEG_CLIP_URL="${ART_FFMPEG_CLIP_URL:-}"
+# the reference clip at ART_FFMPEG_CLIP_URL (checked against the pinned sha256), a local copy of the Blender
+# source in ART_FFMPEG_SOURCE (cut here with the recorded command), or, with both empty, the Blender source
+# downloaded and cut. The default is the asset of this repository's GitHub release `inputs-v1` (78 MB, CC BY 3.0
+# with attribution in the release notes; the artifact's Zenodo record carries the same file). The `${VAR-default}`
+# form, not `${VAR:-default}`: an evaluator who exports the EMPTY string opts out and regenerates the clip from
+# the Blender source, whose rows are then reported and not compared. docker/run.sh forwards both variables into
+# the container; until 17 Sep 2026 it forwarded neither, so a setting made by an evaluator was silently dropped
+# at the container boundary (defect 11 of the rehearsal).
+export ART_FFMPEG_CLIP_URL="${ART_FFMPEG_CLIP_URL-https://github.com/apaznikov/tsan-atc26-artifact/releases/download/inputs-v1/TearsOfSteel-1366x768-100s.mkv}"
 export ART_FFMPEG_SOURCE="${ART_FFMPEG_SOURCE:-}"
 
 # Workload thread counts. Empty means the campaign's rule (docs/campaign-parameters.md): one memcached server

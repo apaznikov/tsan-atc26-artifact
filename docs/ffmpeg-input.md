@@ -1,8 +1,10 @@
 # The FFmpeg input clip
 
 The FFmpeg workload transcodes a 100-second clip four ways (libx264, libx265, mjpeg and stream
-copy) at a fixed `-threads` value. The clip is not shipped; it is produced from a CC-BY source by
-the exact command below, so the input is reproducible rather than redistributed.
+copy) at a fixed `-threads` value. The clip is not in git or in the image: a prepared copy (78 MB) is an
+asset of this repository's GitHub release `inputs-v1`, redistributed under the source's CC BY 3.0 with
+attribution, and `env.sh` defaults `ART_FFMPEG_CLIP_URL` to it; it can also be produced from the source by the
+exact command below, so the input is reproducible as well as redistributed.
 
 | Item | Value |
 |---|---|
@@ -66,14 +68,15 @@ FFmpeg build before anything is compiled, produces it by the first of three path
 
 1. `ART_FFMPEG_CLIP_URL`: a prepared copy of the reference clip, either a URL or a local path (a plain
    path or `file://`), fetched or copied and in both cases checked against the sha256 above; a mismatch
-   deletes the file and refuses, and a local copy is trusted no more for being local. The URL form is the
-   copy in the artifact's Zenodo record, which exists from the submission on; `env.sh` will default the
-   variable to it then. `docker/run.sh` forwards the variable into the container; until 17 Sep 2026 it
+   deletes the file and refuses, and a local copy is trusted no more for being local. The default is
+   the asset of this repository's GitHub release `inputs-v1`
+   (`https://github.com/apaznikov/tsan-atc26-artifact/releases/download/inputs-v1/TearsOfSteel-1366x768-100s.mkv`); the artifact's
+   Zenodo record carries the same file. Exporting the empty string opts out and takes path 3. `docker/run.sh` forwards the variable into the container; until 17 Sep 2026 it
    did not, and a local path could not be used because the image's `wget` does not speak `file://`.
 2. `ART_FFMPEG_SOURCE`: a local copy of the unpacked Blender source (`.mov`), cut here with the command
    above.
 3. Neither set: the 557 MB Blender source is downloaded, verified against its published sha256, unpacked
-   and cut. This is the default path today.
+   and cut. This is the path when `ART_FFMPEG_CLIP_URL` is exported empty, and the fallback when the release cannot be reached.
 
 Paths 2 and 3 re-encode, and a re-encode's sha256 differs from the reference even under an identical
 command, because encoder builds differ. Every run therefore records `input_is_reference: true|false`

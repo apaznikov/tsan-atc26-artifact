@@ -5,8 +5,10 @@
 # evaluator whose FFmpeg built then found no input — a failure at run time, after the build cost.
 #
 # Three paths, in this order, because they differ in what they can promise:
-#   1. ART_FFMPEG_CLIP_URL  — a prepared copy (the Zenodo deposit, once it exists). Fetched and checked
-#                             against the pinned sha256, so it is bit-identical to what we measured.
+#   1. ART_FFMPEG_CLIP_URL  — a prepared copy. env.sh defaults it to the artifact's GitHub release asset
+#                             (tag inputs-v1), fetched anonymously and checked against the pinned sha256,
+#                             so it is bit-identical to what we measured. Set the variable to the EMPTY
+#                             STRING to opt out and regenerate instead.
 #   2. ART_FFMPEG_SOURCE    — a local copy of the Blender source; cut here with the recorded command.
 #   3. the Blender source    — fetched from download.blender.org (557 MB, CC-BY 3.0), verified, then cut.
 #
@@ -25,7 +27,18 @@ say() { echo "ensure_input_clip: $*"; }
 if [ -f "$CLIP" ]; then
   got=$(sha256sum "$CLIP" | cut -d' ' -f1)
   [ "$got" = "$WANT" ] && { say "present, sha256 matches the reference clip"; exit 0; }
-  say "present but sha256 differs from the reference — a regenerated clip. Valid, not bit-comparable."; exit 0
+  # A REGENERATED CLIP IS NOT LEFT IN PLACE WHEN THE REFERENCE CAN BE HAD. Before the release asset
+  # existed, regenerating was the only path and a checkout that had done so kept a clip whose rows are
+  # forever "not comparable". With a URL set we move it aside and fetch the reference, so those checkouts
+  # become comparable without the evaluator knowing to delete anything. With no URL, nothing changes.
+  if [ -n "${ART_FFMPEG_CLIP_URL:-}" ]; then
+    mv "$CLIP" "$CLIP.regenerated" 2>/dev/null \
+      && { MOVED_ASIDE=1
+           say "present but not the reference clip; moved aside to $CLIP.regenerated and fetching the reference"; } \
+      || { say "present but not the reference, and it could not be moved aside; keeping it. Valid, not bit-comparable."; exit 0; }
+  else
+    say "present but sha256 differs from the reference — a regenerated clip. Valid, not bit-comparable."; exit 0
+  fi
 fi
 
 if [ -n "${ART_FFMPEG_CLIP_URL:-}" ]; then
@@ -41,7 +54,17 @@ if [ -n "${ART_FFMPEG_CLIP_URL:-}" ]; then
     cp "$src" "$CLIP.part" || { rm -f "$CLIP.part"; say "copy failed from $src"; exit 1; }
   else
     say "fetching a prepared clip from $ART_FFMPEG_CLIP_URL"
-    wget -q -O "$CLIP.part" "$ART_FFMPEG_CLIP_URL" || { rm -f "$CLIP.part"; say "download failed from $ART_FFMPEG_CLIP_URL (a local path must exist; wget cannot fetch file://)"; exit 1; }
+    wget -q -O "$CLIP.part" "$ART_FFMPEG_CLIP_URL" || { rm -f "$CLIP.part"
+      say "download failed from $ART_FFMPEG_CLIP_URL (a local path must exist; wget cannot fetch file://)"
+      # A FAILED FETCH MUST NOT LEAVE THE EVALUATOR WORSE OFF THAN BEFORE IT. If we moved a working
+      # regenerated clip aside a moment ago, put it back and proceed with it: the run is then valid and
+      # not bit-comparable, which is exactly where it was. Losing a usable input to a network error would
+      # be a regression introduced by an improvement. (Found by testing the failure path, 2026-09-21.)
+      if [ "${MOVED_ASIDE:-0}" = 1 ] && [ -f "$CLIP.regenerated" ]; then
+        mv "$CLIP.regenerated" "$CLIP" && { say "restored the regenerated clip; continuing with it. Valid, not bit-comparable."; exit 0; }
+      fi
+      say "  to regenerate from the Blender source instead, set ART_FFMPEG_CLIP_URL to the empty string"
+      exit 1; }
   fi
   mv "$CLIP.part" "$CLIP"
   got=$(sha256sum "$CLIP" | cut -d' ' -f1)
