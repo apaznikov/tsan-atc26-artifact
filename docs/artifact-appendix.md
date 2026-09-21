@@ -87,7 +87,7 @@ Measured on 21 Sep 2026, after the lit-configuration fix that stopped one unsupp
 every repeat: 23 minutes on a 64-processor host, 30 minutes on ours and 48 minutes pinned to 8 processors with 16 GB,
 most of it the regression suite in 12 configurations.
 
-Performance is separate and needs the hardware above. At the defaults (four configurations, two
+Performance is separate and needs the hardware above. At the defaults (four configurations, five on FFmpeg, two
 runs each, a point estimate per row) it is about two hours for Redis, memcached, FFmpeg and SQLite
 together; everything at fourteen configurations is about 14 hours; our own five-run setting, which
 produces the confidence intervals in `CLAIMS.md`, is a variable away and twice as long:

@@ -281,7 +281,7 @@ regenerated from whichever runs you point them at.
 | `90-tables.sh` | regenerates every table, from your runs or from ours | 1 min | any |
 
 Everything, every application at all fourteen configurations, is about 14 hours on 48 processors; the reviewer's
-subset of the performance table, four configurations on the four cheaper applications, is about two
+subset of the performance table, four configurations on the four cheaper applications (five on FFmpeg), is about two
 hours. Our own campaign used five runs per configuration and took 32 hours of measurement after about 7 hours
 of builds; that setting is one variable away (`ART_RUNS=5`, twice the default's time) and `CLAIMS.md` says
 what each mode can and cannot conclude.
