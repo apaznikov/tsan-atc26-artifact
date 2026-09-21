@@ -4,7 +4,15 @@
     compare_with_claims.py CLAIMS.md results/perf-redis-20260918-120000 [more trees...]
 
 For every configuration row the artifact claims, prints your value, our shipped interval, and a verdict.
-Exits 0 when every JUDGED row is inside and every tree could be compared, 1 otherwise, 2 on a usage error.
+Exit codes, because three outcomes were being spelled as two:
+  0   every judged row is inside its interval and every tree could be compared.
+  1   a judged row is outside, or a tree could not be read at all (no table, no shipped data, unknown app).
+  2   the run is VALID but nothing in it could be compared with ours, for a reason that is a property of
+      the machine: a different processor-set shape, thread count or input clip. Not a failure to reproduce
+      -- a measurement that was never in a position to test the claim. evaluate.sh reports it apart.
+  64  usage error (EX_USAGE, as bench_one.sh already uses 65 and 66 for its cell gates). This was 2 until
+      22 Sep 2026; sharing a code with the verdict above would have let a comparator called with no trees
+      at all -- an empty glob, an unset array -- report "not applicable on this machine" and read as a pass.
 
 WHAT IS AND IS NOT JUDGED, because a verdict on a row that cannot be compared is worse than no verdict:
 
@@ -243,11 +251,18 @@ def parse_table(tree, app):
 
 def main():
     if len(sys.argv) < 3:
-        print(__doc__.strip()); return 2
+        print(__doc__.strip()); return 64
     claims_path, trees = sys.argv[1], sys.argv[2:]
     root = os.path.dirname(os.path.abspath(claims_path))
     claims = claims_rows(claims_path)
     outside = judged = unjudged = 0
+    # A row refused because of the MACHINE -- its processor-set shape, its thread count, its input clip --
+    # is counted apart from a row refused for any other reason, because the two earn different exit codes.
+    # A 16- or 32-processor host on which nothing could be compared has still produced a valid measurement,
+    # and telling it "this is not a pass" is the verdict a row OUTSIDE its interval deserves. `stock vs
+    # native` is exempt from both counts: session drift is wider than that interval on every machine, ours
+    # included, so it is never judged anywhere and its presence must not decide the exit code.
+    not_comparable = other_unjudged = 0
     # WHICH FIGURES THESE VERDICTS ARE AGAINST, said before the table rather than left to be inferred.
     # The artifact's intervals are the campaign on the shipped compiler, which is the camera-ready's set of
     # figures; the submitted version's numbers are a separate column in CLAIMS.md and are not what a row is
@@ -378,6 +393,11 @@ def main():
                               "compare_with_claims.py so this row can be compared")
                 else:
                     reason = why or "not in CLAIMS.md for this application at this thread count"
+                if label != "stock vs native":
+                    if why and why.startswith("not comparable") and not label.startswith("(unlabelled) "):
+                        not_comparable += 1
+                    else:
+                        other_unjudged += 1
                 print(f"{app:10} {label[:24]:24} {yours:>22}  {'':22} {reason}")
                 continue
             printed += 1
@@ -386,6 +406,7 @@ def main():
                 # Measured and reported, counted in neither total: the flag is upstream's, so a row about
                 # it is evidence in this artifact and not a claim of this paper.
                 if why:
+                    if why.startswith("not comparable"): not_comparable += 1
                     v = f"measured, not claimed (upstream flag): {why}"
                 else:
                     t, ins = verdict(pt, iv, fiv)
@@ -395,9 +416,11 @@ def main():
             if label == "stock vs native":
                 v = "not judged (session drift is wider than this interval)"
             elif n_here < 2:
-                v = "no verdict (N<2 is not a measurement)"
+                v = "no verdict (N<2 is not a measurement)"; other_unjudged += 1
             elif why:
                 v = why
+                if why.startswith("not comparable"): not_comparable += 1
+                else: other_unjudged += 1
             else:
                 judged += 1
                 v, inside = verdict(pt, iv, ours)
@@ -432,6 +455,18 @@ def main():
         # walkthrough, 19 Sep 2026).
         print(f"{judged} rows judged, {outside} outside their intervals"
               + (f"; {unjudged} tree(s) could not be compared at all (see above)." if unjudged else "."))
+    elif not_comparable and not other_unjudged and not unjudged:
+        # A THIRD OUTCOME, because two were being spelled as one. Every row refused for a property of this
+        # machine is a different event from a row that missed its interval, and both printed "this is not a
+        # pass" and returned 1 -- so every unpinned run on a 16- or 32-processor host, which is most
+        # reviewers and every student, read as a failed reproduction of a paper whose numbers it had never
+        # been in a position to test. The refusal is right and stays; only the verdict on it changes.
+        print("NO ROW COMPARABLE ON THIS MACHINE: every row above carries its ratio against stock and the")
+        print("reason (a different processor-set shape, thread count or input); the run is a valid")
+        print("measurement and its ratios can be read by eye against the intervals, but none is judged.")
+        print("The intervals describe 24 physical cores with both SMT threads (48 logical processors); pin")
+        print("such a set (ART_CPUSET) to be compared.")
+        return 2
     else:
         # NOTHING JUDGED IS NOT A PASS, and this file said so in its own docstring while returning 0 for
         # it: "0 judged, 0 not inside" and "all judged, none outside" shared an exit code, so a run in

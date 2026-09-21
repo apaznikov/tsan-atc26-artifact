@@ -301,7 +301,8 @@ if [ "$perf_tier" = 1 ] && [ "$verdict" != FAIL ]; then
     cmp_rc=${PIPESTATUS[0]}
     # 0: every judged row inside. 2: nothing could be compared for a machine reason (the processor-set shape,
     # a thread count, the input) and nothing was outside: the run is valid and unjudged, which is not a failure
-    # and not a pass. Anything else: a judged row outside, or no table / no shipped data to compare with.
+    # and not a pass. Anything else: a judged row outside, no table / no shipped data to compare with, or 64, the
+    # comparator's usage error (cannot happen here: it is called only with trees), read as not clean on purpose.
     case "$cmp_rc" in 0) ;; 2) compared=NOTAPPLICABLE;; *) compared=OUTSIDE;; esac
   fi
 fi
