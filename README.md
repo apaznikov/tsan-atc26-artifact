@@ -7,14 +7,23 @@ Dynamic Race Detection*. It contains the modified LLVM/ThreadSanitizer compiler 
 describes, the analyses' test suites and audit ledger, the benchmark harness, the data we
 recorded, and one script per experiment.
 
+**Which version of the paper this artifact reproduces.** The camera-ready, whose performance section was
+re-measured with the compiler released here: it incorporates 23 soundness fixes made while preparing the
+artifact and keeps every race stock ThreadSanitizer finds (`CLAIMS.md`, section 1). Its campaign (section 5;
+N = 5, 95 % intervals) is what the Reproduced tier compares against. The submitted version's figures, measured
+before the fixes, are kept in `CLAIMS.md`'s "Paper" column for the record. What the campaign establishes:
+DynSTC changes performance measurably (FFmpeg +11 %, Redis −5.6 %, confirmed at a second concurrency and on a
+second host); every other configuration lies within its interval of stock ThreadSanitizer, and the static
+instrumentation removed is 2 to 8 per cent (section 3).
+
 ## Start here
 
 ```
 git clone https://github.com/apaznikov/tsan-atc26-artifact.git && cd tsan-atc26-artifact
-./evaluate.sh check          # does it all run here? 5 minutes, plus the image build the first time (15-25 min). Not a badge.
+./evaluate.sh check          # does it all run here? about 2 minutes, plus the image build the first time (15-25 min). Not a badge.
 ./evaluate.sh functional     # the Functional badge: the full correctness set, under an hour (23 min on 64 processors, 30 min on this host, 48 min on 8; before the 21 Sep lit fix it was two to four times that)
 ./evaluate.sh reproduced     # the Reproduced badge: the whole functional tier, then the performance subset; about 3 hours on 48 idle processors
-./evaluate.sh                # prints the tiers and their steps, runs nothing
+./evaluate.sh                # prints the tiers and runs nothing (exit 2); <tier> --plan prints a tier's steps
 ```
 
 Each tier contains the one before it: `reproduced` runs the whole `functional` tier first, so one command per
@@ -33,21 +42,24 @@ step said, and ends with one verdict line and a sentence saying what it establis
 - The **Reproduced** tier ends with a table: one line per configuration row of your run against the
   interval `CLAIMS.md` ships for it, marked IN, OUT (with the distance), not judged, or not comparable,
   then "N rows judged". What counts as reproduced, what an OUT row can mean, and the five-run re-check for
-  it are in `CLAIMS.md`, section 5, under "Match criterion". FFmpeg's two rows come back "not comparable"
-  unless `ART_FFMPEG_CLIP_URL` names the reference clip (`docs/ffmpeg-input.md`); the run itself is valid.
+  it are in `CLAIMS.md`, section 5, under "Match criterion". FFmpeg's two rows are compared when the clip came
+  from the artifact's release, which is the default; on a regenerated clip they come back "not comparable" and
+  the run itself is valid (`docs/ffmpeg-input.md`).
 
 What the end of a run looks like, from our own runs. No graphs: the verdict and the numbers are the deliverable,
-and the per-application tables with every subtest are in `results/perf-<app>-<stamp>/perf_<app>.md`.
+and the per-application tables with every subtest are in `results/perf-<app>-<stamp>/perf_<app>.md`. In the
+tables, N is the number of measured runs per configuration: our campaign's rows are N = 5 with a 95 % bootstrap
+interval; an evaluator's default run is N = 2, a point compared against that interval.
 
 ```
-evaluate.sh: PASS  (tier check, 0h1m; full log in results/evaluate-check-20260919-144059.log)
+evaluate.sh: PASS  (tier check, 1m22s; full log in results/evaluate-check-20260921-044031.log)
 Every step ran and passed: the image is our compiler built from the patch series, each analysis removes what it
 claims and the race is still reported, and the shipped tables follow from the shipped runs. This is the check,
 not the Functional badge: the regression suite (no configuration loses a race) runs in ./evaluate.sh functional.
 ```
 
 ```
-evaluate.sh: PASS  (tier functional, 1h57m; full log in results/evaluate-functional-20260919-055431.log)
+evaluate.sh: PASS  (tier functional, 48m22s; full log in results/evaluate-functional-20260921-055254.log)
 Every step ran and passed: the image is our compiler built from the patch series, the analyses, the regression
 suite and the shipped tables (what each step established is CLAIMS.md sections 1 to 4). This tier says nothing
 about speed.
@@ -55,11 +67,13 @@ about speed.
 
 The Reproduced tier ends with the comparison. This one is our own run of 20 Sep 2026 from a fresh clone on our
 host, the set chosen by the script (the stock-against-native lines and the "rows not produced by this run"
-lines left out); FFmpeg is not compared because the reference clip is not yet downloadable and the run
-regenerated it:
+lines left out); FFmpeg is not compared in this run, which predates the release of the reference clip and regenerated it:
 
 ```
     pinning ART_CPUSET=4-27,60-83: 24 physical cores with both SMT threads of each (48 logical processors), the campaign's shape
+Verdicts are against the intervals in CLAIMS.md section 5: the campaign on the shipped compiler,
+the camera-ready's figures. The submitted version's figures are in that file's 'Paper' column.
+
 app        row                                       yours  ours (N=5)             verdict
 ----------------------------------------------------------------------------------------------------
 ffmpeg     AllOpt with peeling                 1.010 (N=2)  1.006 [0.990, 1.024]   not comparable: not the reference clip
@@ -95,16 +109,18 @@ The tables name configurations as the harness does:
 | `tsan-sound-wp`, `tsan-dom_peeling-ea-lo-st-swmr-wp` | the four analyses STC, SWMR, LO and EA (without DE), and AllOpt with peeling, each with whole-program summaries |
 
 The network is needed twice: the image build (a shallow clone of upstream LLVM and Ubuntu packages) and
-FFmpeg's input clip (a 557 MB download from the Blender Foundation, or `ART_FFMPEG_CLIP_URL`). The
+FFmpeg's input clip (78 MB from this repository's GitHub release, or the 557 MB Blender source when
+`ART_FFMPEG_CLIP_URL` is exported empty). The
 application sources ship in `third-party/sources/` and are verified against pinned hashes before use; only
 MySQL's 421 MB archive is fetched, by the `everything` tier.
 
 `CLAIMS.md` is the contract: every claim the paper makes, the script that produces it, and what counts
 as a match. Nothing outside that file is claimed here. Read it once the quick tier has passed.
 
-> Status: prepared for the artifact submission of 22 September 2026. Every claim in `CLAIMS.md` is measured
-> on the shipped compiler, all five applications included; nothing is pending. The "Paper" column of each
-> performance table is the submitted manuscript's figure, kept so that the change is visible; the
+> Status: prepared for the artifact submission of 22 September 2026. Every performance row is measured on the
+> shipped compiler, all five applications included; three recorded results (the report-key replay, the
+> executed-access counters, the eviction data) are from earlier compilers and say so where they are cited.
+> The "Paper" column of each performance table is the submitted manuscript's figure, kept for the record; the
 > camera-ready reports the numbers in `CLAIMS.md`.
 
 ## What is in here
@@ -115,7 +131,7 @@ as a match. Nothing outside that file is claimed here. Read it once the quick ti
 | `docker/` | The container recipe that builds and installs that compiler | Section 8.1 |
 | `scripts/` | One script per experiment, numbered in the order a reader would run them | Section 8 |
 | `data/` | Every run we recorded: per-run metadata with compiler stamp, binary hash, processor set, governor and load, plus the aggregates | Section 8 |
-| `docs/` | The method document, the known confounds, and the one experiment (Chromium) that is documented rather than runnable here | Section 8, appendices |
+| `docs/` | The method document, the known confounds, the one experiment (Chromium) that is documented rather than runnable here, and `artifact-appendix.md`, the appendix submitted with the paper | Section 8, appendices |
 
 Third-party code is unmodified except where noted in `THIRD-PARTY.md`, which also records the
 licence of every vendored component.
@@ -126,7 +142,10 @@ The compiler is not here as a binary and there is no copy of LLVM. There are 29 
 upstream LLVM commit `c609043dd009`, which is text. The container fetches upstream itself with a
 shallow clone, applies the patches, checks that the reconstructed source tree hashes to ours, and
 builds the compiler inside itself. The recorded runs are text too, logs and JSON, so about 140 MB of data
-packs into a few megabytes of git history.
+packs into a few megabytes of git history. Every third-party archive the harness unpacks ships in
+`third-party/sources/` (MySQL's 421 MB is fetched) and is verified against the sha256 pinned in
+`third-party/SOURCES.md` before use; that file names each component's origin URL, and `THIRD-PARTY.md` its
+licence.
 
 ## The environment we used
 
@@ -181,10 +200,9 @@ awarded separately. The same steps, one at a time:
 ./docker/run.sh scripts/10-minimal-example.sh
 ```
 
-On the host, Docker is the only requirement. `00-prereqs.sh` run on the host reports the compiler,
-`llvm-lit` and the benchmark clients as missing: that is expected, they live inside the container and
-`docker/build.sh` builds them, and nothing is to be installed for them. Run it again inside the container
-(`./docker/run.sh scripts/00-prereqs.sh`) and it passes.
+On the host, Docker is the only requirement. `00-prereqs.sh` run on the host checks Docker, its daemon, the
+ASLR-off re-exec and the disk, and says so; the compiler, `llvm-lit` and the benchmark clients live inside the
+container image and are checked there (`./docker/run.sh scripts/00-prereqs.sh`).
 
 Start the container through `docker/run.sh`. It does four things a hand-written `docker run` will
 not: it passes `--security-opt seccomp=unconfined`, because the ThreadSanitizer runtime re-executes
@@ -233,8 +251,8 @@ check is one not made, and it counts as neither a pass nor a failure.
 
 The correctness tests themselves are 62 IR tests of our own (`tests/ir`: 50 removal tests and 11 negative
 controls covering the 23 lost-race shapes, plus one multi-step summary test) and ThreadSanitizer's own regression suite vendored from compiler-rt under
-`tests/tsan`, run in each of 12 configurations. `lit` discovers 383 tests there and marks 91
-unsupported on this platform before anything is compiled, so 292 execute; our own run of them ships as
+`tests/tsan`, run in each of 12 configurations. `lit` discovers 383 tests there and marks 90
+unsupported on this platform before anything is compiled, so 293 execute; our own run of them ships as
 `data/suite/`, with the command to re-derive each count. One test, `getline_nohang.cpp`, is unsupported on the image's glibc (2.39, as upstream marks it) and is
 skipped. Until 21 Sep 2026 the vendored lit configuration failed to detect glibc under Python 3.12, so the
 test ran and stalled to its two-minute timeout in most repeats, and the correctness set took about twice as

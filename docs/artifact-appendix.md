@@ -24,12 +24,24 @@ Supported by the artifact:
   test can tell a removal from an absence.
 - **Static instrumentation removed**, per application and configuration, exactly reproducible.
 - **Compile-time cost**, including the case the paper's largest application turns on.
-- **Runtime performance**, as a table with confidence intervals, reproducible in direction on
-  comparable hardware.
+- **Runtime performance**, as a table with confidence intervals. On the shipped compiler DynSTC's two
+  directional effects (FFmpeg above stock, Redis below) reproduce on comparable hardware, and every other
+  configuration lies within its interval of stock ThreadSanitizer.
 
 Not supported, and stated in `CLAIMS.md` as not claimed: Chromium (a checkout exceeds a terabyte and
 our only build predates the shipped compiler), and any number from before the campaign of
 15-17 September 2026.
+
+## Which version of the paper the artifact reproduces
+
+**Which version of the paper this artifact reproduces.** The camera-ready, whose performance section was
+re-measured with the compiler released here: it incorporates 23 soundness fixes made while preparing the
+artifact and keeps every race stock ThreadSanitizer finds (`CLAIMS.md`, section 1). Its campaign (section 5;
+N = 5, 95 % intervals) is what the Reproduced tier compares against. The submitted version's figures, measured
+before the fixes, are kept in `CLAIMS.md`'s "Paper" column for the record. What the campaign establishes:
+DynSTC changes performance measurably (FFmpeg +11 %, Redis −5.6 %, confirmed at a second concurrency and on a
+second host); every other configuration lies within its interval of stock ThreadSanitizer, and the static
+instrumentation removed is 2 to 8 per cent (section 3).
 
 ## Contents, hosting and requirements
 
