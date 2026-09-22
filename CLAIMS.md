@@ -657,6 +657,18 @@ AllOpt over four runs; 0.851, 0.968, 0.959 and 1.123 for DynSTC), wider than on 
 is one that only an N = 5 run can decide; the resolvable-subtest column, which the shipped tables carry, is
 the one to read there.
 
+The same host again on 22 Sep 2026, the tree of the day (`8e63965`, the 16-thread FFmpeg default, the release
+clip), the set chosen by the script (0-23,32-55, the campaign's shape), no cell retired, 2 h 39 min: nine rows
+judged, three inside (FFmpeg DynSTC 1.115; memcached 0.987 and 1.017) and six outside. FFmpeg's two AllOpt rows
+2 to 3 points below theirs on the same side of 1.0 (1.024 against [1.050, 1.079]; 1.155 against [1.171, 1.201]);
+Redis 10 points above on both (AllOpt with peeling 1.121; DynSTC 1.066, on the gain side, where the same host
+and set read 0.939 two days earlier); SQLite 4 to 5 points above (1.113 and 1.122, where the same host read
+0.913 and 1.123 two days earlier). So on that host an N = 2 point on Redis or SQLite moves by ten to twenty
+points between days, in either direction, and the Redis DynSTC row has now been on both sides of 1.0 there;
+what holds across every run on both hosts is FFmpeg's DynSTC gain (1.11 to 1.13 everywhere) and memcached's
+rows. The intervals in this file describe our host; a second machine of the same shape is judged by the tool,
+as this one was, and what its outside rows mean is this paragraph, not a verdict on the compiler.
+
 The four configurations decide everything the paper's figure turns on, and Redis, memcached and
 FFmpeg together, about an hour and a quarter, cover what this campaign found: DynSTC's cost on Redis and its
 gain on FFmpeg (with the sound bundle, about 19 per cent at 16 threads), and the absence of a measurable
