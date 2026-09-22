@@ -27,8 +27,11 @@
 [ ! -f "$MYSQL_DIR/mysqld" ] && echo "No file [.../]mysqld in standart paths." && exit 1
 
 
-# MYSQLD REFUSES TO RUN AS ROOT without being told so, and `mysqld --initialize-insecure` refuses alike,
-# so an evaluator whose container maps them to uid 0 loses the datadir init and every cell after it.
+# MYSQLD REFUSES TO RUN AS ROOT without being told so: measured on this build (8.0.39, 22 Sep 2026), the
+# SERVER exits 1 with `Fatal error: Please read "Security" section of the manual to find out how to run
+# mysqld as root!` and starts normally with --user=root. `--initialize-insecure` does NOT refuse -- it
+# exits 0 either way -- so the flag is passed there for symmetry and against a future version that does,
+# not because today's needs it; the comment says so rather than implying a refusal we did not observe.
 # --user=root keeps mysqld running as root, which is the option's documented meaning; below uid 0 it must
 # NOT be passed, or the server tries to drop to a user we are not. Decided here, in the file both
 # launchers source, so the two cannot drift. (Students' runs, 22 Sep 2026.)

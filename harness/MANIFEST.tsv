@@ -1,4 +1,4 @@
-# vendored from /home/alexey/tsan-experiments on 2026-09-22T11:19:57+08:00
+# vendored from /home/alexey/tsan-experiments on 2026-09-22T11:46:03+08:00
 sha256	bytes	path
 02f84908c1130634220de08e42567e7cbe52c9c25f3e4e83e5078df7e74afa9e	3963	config_definitions.sh
 e45334db43c2bbabb02620792c6f18ba0a2f93bacbbc49f869524b18f3b1001b	12072	nosql/memcached/build_memcached.sh
@@ -40,7 +40,7 @@ ebc17844a6ac312659dd952c826ab5bb888328df3439a03a3ac3d7197359480f	297	projects/ff
 271592727ef80627e4d4d569f59649033260845c72d0557d5e4c55f1ef49b965	105	sql/mysql/benchmysql/bench-cleanup.sh
 f51cba39147ca760f25836735ca2229e3f875be0e09d5e33d581c3925f624e9d	649	sql/mysql/benchmysql/bench-init.sh
 5d4aa5ad2cf3f93abe817889e983f15267d343971009aa35e9bd12642e04f284	673	sql/mysql/benchmysql/bench-run.sh
-a64b9860c7a3002dc022a4a62e4548201a85b28042e8e7bac85713a56da6b214	3163	sql/mysql/benchmysql/callmysql-export-main-vars.sh
+831efd3dc877251c7b6f88297bf479ceeb5912d3e32f13d5fab2486af328f402	3477	sql/mysql/benchmysql/callmysql-export-main-vars.sh
 0998c19891ce432dd6213446adbcb01f85624434cf2c6c16f3151a4a6d1d7797	1744	sql/mysql/benchmysql/run-one.sh
 8a96d83d3cbc5a9533f1891cd5eea6c1d67f35f637cb2b7ee791cd437efd0c19	132	sql/mysql/benchmysql/server-check-connection.sh
 beb639649de09a4b670732b99a54fb96226c3a1cfd6a353a0e06a7a98573c6c3	438	sql/mysql/benchmysql/server-datadir-init.sh
