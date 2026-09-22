@@ -165,3 +165,12 @@ that set itself, elsewhere set `ART_CPUSET` to a set of that shape if the machin
 read the ratios beside the intervals by eye: the two directional results (DynSTC above stock on FFmpeg, below on
 Redis) are what `CLAIMS.md` says reproduces across hardware. Exit status 3 distinguishes this from a clean
 comparison (0) and from a judged row outside its interval (1).
+
+## The image build stops in an `apt-get install` layer with "did not complete successfully: exit code: 100"
+
+The package download was interrupted (a network blink; one evaluator's build on 21 Sep 2026 died this way in the
+runtime stage's package layer). Since 22 Sep the two `apt-get` steps retry each fetch five times on their own
+(`Acquire::Retries`). If the build still fails there, run the same command again: Docker keeps the layers that
+completed, so a second `./evaluate.sh <tier>` (or `./docker/build.sh`) resumes at the failed layer rather than
+rebuilding the compiler. Nothing about the artifact's content depends on when the packages were fetched; the
+compiler's identity is asserted by the source-tree hash and the stamp, not by the base image's package versions.

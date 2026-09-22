@@ -6,7 +6,9 @@
 
 FROM ubuntu:24.04 AS build
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Acquire::Retries: a package fetch that drops mid-way (a student's build on 21 Sep 2026 died in this layer with
+# apt exit code 100 when the network blinked) is retried by apt itself instead of failing the whole build.
+RUN apt-get -o Acquire::Retries=5 update && apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
       git ca-certificates cmake ninja-build python3 g++ gcc libstdc++-13-dev \
       zlib1g-dev libzstd-dev libxml2-dev binutils file \
     && rm -rf /var/lib/apt/lists/*
@@ -87,7 +89,7 @@ RUN /opt/tsan-llvm/bin/llvm-lit --version
 
 FROM ubuntu:24.04
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get -o Acquire::Retries=5 update && apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
       python3 python3-numpy python3-psutil git make cmake ninja-build binutils file util-linux \
       libstdc++-13-dev gcc g++ pkg-config ca-certificates wget unzip ffmpeg \
       libevent-dev libssl-dev libx264-dev libx265-dev libgnutls28-dev nasm yasm \
