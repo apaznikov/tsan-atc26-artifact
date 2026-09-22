@@ -21,6 +21,10 @@ interval of stock ThreadSanitizer, and the static instrumentation removed is 2 t
 The artifact's own code and documents are under the MIT licence (`LICENSE`); vendored third-party components keep
 their own licences (`THIRD-PARTY.md`).
 
+The submission is the tag `atc26-ae`. It was re-pointed on 22 Sep 2026, before the submission, from `6fb9916` to
+the commit that carries this sentence (documents only, no code); a checkout that fetched the tag earlier that day
+needs `git fetch --tags --force` to see this tree. The tag does not move again.
+
 ## Start here
 
 ```
