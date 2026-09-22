@@ -1,8 +1,11 @@
 # Unsupported count for the vendored TSan suite
 
-`lit -q` never prints an Unsupported line, so the preservation suite's own logs cannot
-establish how many of the 383 discovered tests actually ran. This is that one run, kept so
-the executed count is checkable.
+**The current figures: 383 discovered, 90 unsupported, 293 executed** (`lit-show-unsupported-after-fix.log`,
+21 Sep 2026). That is what `CLAIMS.md` states and what the suite runs today.
+
+`lit -q` never prints an Unsupported line, so the preservation suite's own logs cannot establish how many of
+the 383 discovered tests ran; these two runs establish it. The rest of this file is how the figure was
+corrected twice, kept because both wrong numbers were quoted before they were checked.
 
     lit-show-unsupported.log   llvm-lit --show-unsupported -j48, image tsan-atc26,
                                compiler f3deebfbab60, 2026-09-19 04:26, 60 s
@@ -25,7 +28,7 @@ outside those three directories:
     Linux/clockwait_double_lock.c   debug_alloc_stack.cpp   pthread_mutex_clocklock.cpp
     shadow_evictions.c              signal_recursive.cpp    sunrpc.cpp
 
-The correct figures for that image and lit configuration are 91 unsupported and 292 executed. The failure
+The figures for that image and lit configuration were 91 unsupported and 292 executed (superseded by the fix below). The failure
 count is unaffected: zero, in all 60 repeats of the 2026-09-17 run.
 
 ## After the glibc-detection fix of 2026-09-21
