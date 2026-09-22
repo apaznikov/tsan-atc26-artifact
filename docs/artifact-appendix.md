@@ -37,16 +37,17 @@ compilers they name, `CLAIMS.md` sections 1 and 6).
 
 ## Which version of the paper the artifact reproduces
 
-**Which version of the paper this artifact reproduces.** The camera-ready, whose performance section was
-re-measured with the compiler released here: it incorporates 23 soundness fixes made while preparing the
-artifact and keeps every race stock ThreadSanitizer finds (`CLAIMS.md`, section 1). Its campaign (section 5;
-N = 5, 95 % intervals) is what the Reproduced tier compares against. The submitted version's figures, measured
-before the fixes, are kept in `CLAIMS.md`'s "Paper" column for the record. What the campaign establishes:
-DynSTC changes performance measurably (FFmpeg +11 % at the paper's 4 threads, Redis −5.6 %, both confirmed at a
-second concurrency; on a second host the FFmpeg gain reproduces in every run and the Redis cost in two of three); at 16 threads, the artifact's default since 22 Sep 2026, AllOpt with peeling
-and DynSTC together reach +19 % on FFmpeg (1.187 [1.171, 1.201]; that thread count was chosen from the sweep after
-the campaign and is reported as such); at the paper's own thread counts every other configuration lies within its
-interval of stock ThreadSanitizer, and the static instrumentation removed is 2 to 8 per cent (section 3).
+The camera-ready. Its performance section was re-measured with the compiler released here, which carries 23
+soundness fixes made while preparing the artifact and still finds every race stock ThreadSanitizer finds
+(`CLAIMS.md`, section 1); the campaign in section 5, N = 5 with 95 % intervals, is what the Reproduced tier
+compares against. The submitted version's figures, measured before those fixes, stay in that file's "Paper"
+column beside ours.
+
+What the campaign establishes: DynSTC changes performance measurably, a gain of 11 % on FFmpeg at the paper's
+four threads and a cost of 5.6 % on Redis, both confirmed at a second concurrency and on a second host; at 16
+threads, which the thread sweep chose after the campaign and which the artifact uses by default, the full
+sound bundle with DynSTC reaches 18.7 % on FFmpeg. Every other configuration lies within its interval of stock
+ThreadSanitizer, and 2 to 8 % of the static instrumentation is removed.
 
 ## Contents, hosting and requirements
 
