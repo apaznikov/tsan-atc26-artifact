@@ -1,0 +1,25 @@
+mysql orig run1 rc=0 925.8s outside_busy=0.0409 inside_busy=0.5241 foreign_cpu_share=0.594 (warmup, discarded)
+mysql tsan run1 rc=0 1018.0s outside_busy=0.0401 inside_busy=0.2026 foreign_cpu_share=0.2717 (warmup, discarded)
+mysql tsan-nofe run1 rc=0 994.2s outside_busy=0.0087 inside_busy=0.2497 foreign_cpu_share=0.2642 (warmup, discarded)
+mysql tsan-dom_peeling-ea-lo-st-swmr-nofe run1 rc=0 983.4s outside_busy=0.0071 inside_busy=0.25 foreign_cpu_share=0.2619 (warmup, discarded)
+mysql orig run1 rc=0 923.7s outside_busy=0.0096 inside_busy=0.5292 foreign_cpu_share=0.5468
+mysql tsan run1 rc=0 1017.2s outside_busy=0.0076 inside_busy=0.2094 foreign_cpu_share=0.2219
+mysql tsan-nofe run1 rc=0 993.9s outside_busy=0.0107 inside_busy=0.2656 foreign_cpu_share=0.2821
+mysql tsan-dom_peeling-ea-lo-st-swmr-nofe run1 rc=0 991.1s outside_busy=0.0084 inside_busy=0.241 foreign_cpu_share=0.2544
+mysql orig run2 rc=0 924.7s outside_busy=0.0106 inside_busy=0.5314 foreign_cpu_share=0.5507
+mysql tsan run2 rc=0 1013.7s outside_busy=0.0086 inside_busy=0.2299 foreign_cpu_share=0.2435
+mysql tsan-nofe run2 rc=0 988.4s outside_busy=0.0127 inside_busy=0.199 foreign_cpu_share=0.2204
+mysql tsan-dom_peeling-ea-lo-st-swmr-nofe run2 rc=0 991.5s outside_busy=0.0091 inside_busy=0.1925 foreign_cpu_share=0.2071
+mysql orig run3 rc=0 923.6s outside_busy=0.0085 inside_busy=0.5341 foreign_cpu_share=0.5506
+mysql tsan run3 rc=0 1012.3s outside_busy=0.0122 inside_busy=0.2075 foreign_cpu_share=0.2264
+mysql tsan-nofe run3 rc=0 987.1s outside_busy=0.0121 inside_busy=0.2185 foreign_cpu_share=0.238
+mysql tsan-dom_peeling-ea-lo-st-swmr-nofe run3 rc=0 984.6s outside_busy=0.0175 inside_busy=0.2507 foreign_cpu_share=0.279
+mysql orig run4 rc=0 924.8s outside_busy=0.0336 inside_busy=0.5345 foreign_cpu_share=0.5946
+mysql tsan run4 rc=0 1011.2s outside_busy=0.0104 inside_busy=0.2737 foreign_cpu_share=0.2906
+mysql tsan-nofe run4 rc=0 991.4s outside_busy=0.0095 inside_busy=0.1885 foreign_cpu_share=0.2035
+mysql tsan-dom_peeling-ea-lo-st-swmr-nofe run4 rc=0 982.3s outside_busy=0.0087 inside_busy=0.2531 foreign_cpu_share=0.2669
+mysql orig run5 rc=0 922.7s outside_busy=0.0128 inside_busy=0.5336 foreign_cpu_share=0.5555
+mysql tsan run5 rc=0 1017.5s outside_busy=0.0097 inside_busy=0.1881 foreign_cpu_share=0.203
+mysql tsan-nofe run5 rc=0 996.8s outside_busy=0.0084 inside_busy=0.2694 foreign_cpu_share=0.2827
+mysql tsan-dom_peeling-ea-lo-st-swmr-nofe run5 rc=0 981.4s outside_busy=0.0087 inside_busy=0.241 foreign_cpu_share=0.2548
+DONE mysql

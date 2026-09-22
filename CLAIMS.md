@@ -464,8 +464,9 @@ measure.
 
 Rows (N = 5, 95% intervals, the campaign's set and shape, the legs of 21-22 Sep described under FFmpeg
 above; the Redis leg had two cells retired by the disturbance gate, `outside_busy` 0.107 against the bar
-of 0.10, and re-run to completion; the memcached and SQLite legs, 25 measured cells (five configurations) each, none
-retired; "stock" is stock ThreadSanitizer; the SQLite "resolvable" figures are over the 4 of 7 subtests whose pooled
+of 0.10, and re-run to completion; the memcached and SQLite legs, 25 measured cells (five configurations) each, and the MySQL leg, 20 cells
+(four configurations, run on 22 Sep from a fresh clone at the tree of that day, after the MySQL workload
+directory was restored to the artifact), none retired; "stock" is stock ThreadSanitizer; the SQLite "resolvable" figures are over the 4 of 7 subtests whose pooled
 run-to-run variation in this leg is at most 5 per cent (the campaign's set was 5 of 7; the set is a property of the
 leg); runs under
 `data/perf/campaign-f3deebfbab60/flag-<application>/` and, for FFmpeg, `ffmpeg-t16/`):
@@ -486,7 +487,8 @@ leg); runs under
 | SQLite | stock with the flag | 1.022 [0.919, 1.134] | 1.022 | the flag alone; resolvable subtests 1.021 [0.994, 1.040] |
 | SQLite | AllOpt with peeling | 1.058 [0.935, 1.120] | 1.062 | ours alone, this leg; resolvable 1.005 [0.980, 1.029] |
 | SQLite | AllOpt with peeling and the flag | 1.020 [0.918, 1.083] | 1.023 | resolvable 1.023 [0.991, 1.049]; nothing resolved |
-| MySQL (36 threads) | not measured before the tag: the leg of 21-22 Sep found the MySQL workload directory missing from the artifact (fixed the same night), and its re-run on 22 Sep died before its first cell because a script it was executing was edited (ours, not the harness's); the leg is run again after the tag from a fresh clone and its rows are added during the evaluation window with their own provenance | | | |
+| MySQL (36 threads) | stock with the flag | 1.094 [1.068, 1.154] | 1.102 | the flag alone, and the largest effect it has on any application here |
+| MySQL (36 threads) | AllOpt with peeling and the flag | 1.090 [1.057, 1.157] | 1.101 | ours on top of it: the same, within the intervals |
 
 **Does the flag gain more with our analyses than on stock?** No more than the product of the two, on both
 applications where anything is resolved. Redis: the flag alone 1.107, AllOpt with peeling alone 1.008, their product
@@ -497,12 +499,15 @@ data supports is that the flag's gain is the flag's, and our analyses gain the s
 it: the two are independent, as their mechanisms say they should be. memcached resolves nothing either way:
 the flag alone 1.000 [0.914, 1.040], the combination 1.019 [0.925, 1.058], intervals twelve to thirteen points
 wide as in the campaign (its memtier workload varies that much run to run), every one containing 1.0 and the
-product. SQLite likewise: on the resolvable subtests the flag alone is 1.021 [0.994, 1.040], ours alone 1.005
+product. MySQL is the flag's best application and shows the same independence: 1.094 [1.068, 1.154] for the
+flag alone against 1.090 [1.057, 1.157] with AllOpt and peeling on top of it, two intervals that overlap almost
+exactly, beside the campaign's 1.042 [0.985, 1.062] for AllOpt with peeling without the flag. SQLite likewise: on the resolvable subtests the flag alone is 1.021 [0.994, 1.040], ours alone 1.005
 [0.980, 1.029], the two together 1.023 [0.991, 1.049], each interval containing 1.0 and the product; the previous
 compiler's leg had the flag on the sound bundle at 1.044 [1.025, 1.060] on SQLite, which this leg does not
 reproduce (a different session and a different resolvable set). Stock ThreadSanitizer with the flag against native, for the record: Redis 7.60x [7.41, 7.81] against
 8.42x without; FFmpeg at 16 threads 2.84x [2.75, 2.87] against 2.88x; memcached 3.68x [3.59, 3.92] against
-3.68x [3.54, 3.77], the flag buying nothing measurable there; SQLite 3.27x [2.90, 3.54] against 3.34x [2.97, 3.60].
+3.68x [3.54, 3.77], the flag buying nothing measurable there; SQLite 3.27x [2.90, 3.54] against 3.34x [2.97, 3.60];
+MySQL 9.04x [8.44, 9.37] against 9.90x [9.31, 10.43].
 
 The earlier leg on the previous compiler (`data/perf/nofe-d3bf9f8c39fe`, 15 Sep 2026, the sound bundle
 with and without the flag: Redis 1.233 [1.183, 1.254], MySQL 1.136 [1.081, 1.188], SQLite 1.044 [1.025,
