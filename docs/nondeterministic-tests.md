@@ -33,7 +33,7 @@ reported a site stock never did; not a loss, and labelled rather than dropped, b
 shadow-eviction effect can produce exactly this. Only LOST fails the script. This is the same
 rule the regression suite uses, applied where the schedule is the workload's own.
 
-# Regression-suite tests that are non-deterministic under stock ThreadSanitizer
+## Regression-suite tests that are non-deterministic under stock ThreadSanitizer
 
 The report-level comparison (every test's race report under each configuration against the report
 under stock, keyed by `tsan_reports.py`) was made in the K = 5 replay recorded under

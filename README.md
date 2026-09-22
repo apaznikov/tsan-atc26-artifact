@@ -132,7 +132,7 @@ twice is safe: every run writes a new directory, and the tables are regenerated 
 
 | Script | What it checks | Time |
 |---|---|---|
-| `10-minimal-example.sh` | one small program per analysis: what the analysis removes, and that a real race is still reported | under a minute |
+| `10-minimal-example.sh` | one small program per analysis: what the analysis removes, and that a real race is still reported (`scripts/minimal/README.md` says how to add a case of your own) | under a minute |
 | `11-soundness-shapes.sh` | 23 fixed lost-race shapes, each against its negative control | 2 min |
 | `12-compiler-equivalence.sh` | the image's compiler emits the instrumentation our measurements were taken on | 3 min |
 | `20-static-counts.sh` | static instrumentation per application and configuration | 5 min |
