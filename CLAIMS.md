@@ -657,9 +657,44 @@ AllOpt over four runs; 0.851, 0.968, 0.959 and 1.123 for DynSTC), wider than on 
 is one that only an N = 5 run can decide; the resolvable-subtest column, which the shipped tables carry, is
 the one to read there.
 
+**The comparison condition, fixed since 22 Sep 2026.** A run is compared with these intervals when it is pinned to
+24 physical cores with both SMT threads of each (48 logical processors; `evaluate.sh` chooses such a set itself where
+the machine has one, 4-27,60-83 here and 0-23,32-55 on the second host), the machine is otherwise quiet, and the
+thread counts follow the campaign's rule (memcached one per logical processor, sysbench three quarters, FFmpeg an
+absolute 16). At the reviewer's default N = 2 the criterion is that the point falls inside our interval; at N = 5 it
+is that the intervals overlap. The two runs of 22 Sep 2026 under exactly that condition, ours and the second host's,
+side by side (N = 2 each, no cell retired anywhere):
+
+| Row | This host | The second host | Shipped interval (N = 5) |
+|---|---|---|---|
+| FFmpeg, AllOpt with peeling | 1.068 | 1.024 | 1.067 [1.050, 1.079] |
+| FFmpeg, DynSTC | 1.130 | 1.115 | 1.133 [1.114, 1.146] |
+| FFmpeg, AllOpt with peeling and DynSTC | 1.186 | 1.155 | 1.187 [1.171, 1.201] |
+| memcached, AllOpt with peeling | 1.038 | 0.987 | 1.019 [0.951, 1.079] |
+| memcached, DynSTC | 0.974 | 1.017 | 0.986 [0.944, 1.063] |
+| Redis, AllOpt with peeling | 1.005 | 1.121 | 1.000 [0.983, 1.026] |
+| Redis, DynSTC | 0.979 | 1.066 | 0.944 [0.927, 0.970] |
+| SQLite, AllOpt with peeling | 1.032 | 1.113 | 1.023 [0.942, 1.061] |
+| SQLite, DynSTC | 0.930 | 1.122 | 0.995 [0.928, 1.082] |
+
+Eight of nine inside on this host, three of nine on the second. What the second host's outside rows are is the
+next paragraph, and the reading rule they establish is this: when several judged rows of one application fall
+outside on the same side in one run, suspect the shared denominator before the configurations. The check is each
+configuration's own slowdown against native, the column the table already prints, and native being unchanged is
+what tells a moved baseline from a slower machine. A ratio of cell wall times is not that check and is not quoted:
+it weights an application's subtests by their duration where the headline weights them equally, and on Redis it
+reads 4.07 where the table reads 8.01.
+
 The same host again on 22 Sep 2026, the tree of the day (`8e63965`, the 16-thread FFmpeg default, the release
 clip), the set chosen by the script (0-23,32-55, the campaign's shape), no cell retired, 2 h 39 min: nine rows
-judged, three inside (FFmpeg DynSTC 1.115; memcached 0.987 and 1.017) and six outside. FFmpeg's two AllOpt rows
+judged, three inside and six outside (the table above). Which side moved, read in the headline estimator from
+that run's own summary table, slowdown against native: stock ThreadSanitizer 8.54 on 20 Sep and 9.59 on 22 Sep,
+DynSTC 9.09 and 9.00, AllOpt with peeling 8.66 and 8.55. Stock is the only configuration that moved, by 12.3 per
+cent, and the four printed ratios follow from those six numbers exactly (8.54/9.09 = 0.939, 9.59/9.00 = 1.066,
+8.54/8.66 = 0.986, 9.59/8.55 = 1.121). So both of that host's outside Redis rows are one baseline event rather than
+two configuration effects, and DynSTC took the same time on both nights; the static instrumentation counts are
+identical across every run on that host and equal to ours (37 922 sites under stock, 37 863 under DynSTC), so the
+same program was measured. FFmpeg's two AllOpt rows
 2 to 3 points below theirs on the same side of 1.0 (1.024 against [1.050, 1.079]; 1.155 against [1.171, 1.201]);
 Redis 10 points above on both (AllOpt with peeling 1.121; DynSTC 1.066, on the gain side, where the same host
 and set read 0.939 two days earlier); SQLite 4 to 5 points above (1.113 and 1.122, where the same host read
