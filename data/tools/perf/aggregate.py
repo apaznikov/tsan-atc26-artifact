@@ -303,7 +303,12 @@ def report_app(root, app, per_cfg, hib, statics, out_rows, suffix="", expect_n=5
 def label(cfg):
     return {"tsan-dom-ea-lo-st-swmr": "AllOpt-peel", "tsan-dom_peeling-ea-lo-st-swmr": "AllOpt+peel",
             "tsan-dom_peeling-ea-lo-st-swmr-wp": "AllOpt+peel (WP summaries)", "tsan-sound-wp": "sound (WP summaries)",
-            "tsan-dom_peeling-ea-lo-st-swmr-stmt": "AllOpt+peel+DynSTC",
+            # -stmt DELIBERATELY HAS NO ENTRY. Adding one is cosmetic -- the comparator keys on the
+            # configuration in column 0 and never reads this -- but it rewrites the label column of every
+            # shipped table that carries the configuration, which would force a regeneration of the shipped
+            # .md and .csv set to keep the tool and the evidence in agreement. That is a large diff on
+            # shipped files for a nicer word, and it was proposed the night before a deadline. The new
+            # -stmt-wp entry below appears in no shipped table, so it costs nothing. (22 Sep 2026.)
             "tsan-dom_peeling-ea-lo-st-swmr-stmt-wp": "AllOpt+peel+DynSTC (WP summaries)"}.get(cfg, cfg)
 
 def main():
