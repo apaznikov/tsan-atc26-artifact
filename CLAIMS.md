@@ -297,7 +297,13 @@ disturbance gate (a transient load outside the set) and re-run to completion, th
 beside their replacements. Runs under `data/perf/campaign-f3deebfbab60/ffmpeg-t16/` (this table's leg, which also
 carries the two FFmpeg rows of the upstream-flag section below) and the sweep root above;
 `scripts/90-tables.sh` regenerates both tables byte-identically and `scripts/91-verify-provenance.sh`
-checks both strictly against the shipped compiler.
+checks both strictly against the shipped compiler. The legs ran from that clone at `c280f2b`, not from the tree
+tagged for submission; between the two, the code a Redis, memcached, SQLite or FFmpeg cell executes is the same
+(the per-application workload lines and the aggregator are byte-identical; the whole difference on the measurement
+path is FFmpeg's default thread count, which these legs set explicitly and each cell records as an override), and
+the runner later gained a stopping rule for cells that fail at once and the cell record a `failed` field, which
+change no recorded value (checked on every shipped cell). The MySQL flag leg of 22 Sep ran from the tagged tree's
+own checkout after those changes, because the MySQL workload directory was missing from the artifact until then.
 
 ### FFmpeg 4.3.9 (libx264, libx265, mjpeg, stream copy at `-threads 4`; the Tears of Steel clip; session of 16 Sep 22:02, pinned; the paper's thread count)
 
