@@ -302,7 +302,9 @@ def report_app(root, app, per_cfg, hib, statics, out_rows, suffix="", expect_n=5
 
 def label(cfg):
     return {"tsan-dom-ea-lo-st-swmr": "AllOpt-peel", "tsan-dom_peeling-ea-lo-st-swmr": "AllOpt+peel",
-            "tsan-dom_peeling-ea-lo-st-swmr-wp": "AllOpt+peel (WP summaries)", "tsan-sound-wp": "sound (WP summaries)"}.get(cfg, cfg)
+            "tsan-dom_peeling-ea-lo-st-swmr-wp": "AllOpt+peel (WP summaries)", "tsan-sound-wp": "sound (WP summaries)",
+            "tsan-dom_peeling-ea-lo-st-swmr-stmt": "AllOpt+peel+DynSTC",
+            "tsan-dom_peeling-ea-lo-st-swmr-stmt-wp": "AllOpt+peel+DynSTC (WP summaries)"}.get(cfg, cfg)
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
