@@ -9,6 +9,7 @@ LAUNCH_COMMAND_PID=
 # Base command
 declare -a mysql_cmd=(
     "$MYSQL_DIR/mysqld"
+    ${MYSQL_RUN_AS_ROOT:+"$MYSQL_RUN_AS_ROOT"}
     "--datadir=$MYSQL_DATA_DIR"
 )
 

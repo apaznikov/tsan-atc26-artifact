@@ -347,8 +347,13 @@ class Memcached(App):
     def run_once(self, cfg, run):
         wl = self.workload()
         self.ctx.require_port_free(self.port, "memcached")
-        srv = self.ctx.start_server([str(self.binary(cfg)), "-c", "4096", "-t", str(wl["server_threads"]),
-                                     "-p", str(self.port), "-U", "0"],
+        # -u root only as root: memcached refuses to start as root without it, and below uid 0 it would
+        # ask the OS to drop to a user we are not. Same fix as bench_one.sh's memcached launch.
+        cmd = [str(self.binary(cfg)), "-c", "4096", "-t", str(wl["server_threads"]),
+               "-p", str(self.port), "-U", "0"]
+        if os.getuid() == 0:
+            cmd += ["-u", "root"]
+        srv = self.ctx.start_server(cmd,
                                     cfg=cfg, run=run, tag="memcached", cwd=self.root, env=self.ctx.tsan_env(cfg, run))
         try:
             if not self.ctx.wait_port(self.port, srv):

@@ -111,7 +111,14 @@ case "$APP" in
   memcached)
     # paper workload: server -c 4096 -t <cpus> -p $MC_PORT; memtier -t 10 -x 5 --pipeline 16 -P memcache_text --random-data
     (echo > /dev/tcp/127.0.0.1/$MC_PORT) 2>/dev/null && p5_die "port $MC_PORT busy (set ART_MEMCACHED_PORT to use another)"
-    $TSPIN "$BIN" -c 4096 -t "$THREADS_EFFECTIVE" -p $MC_PORT -U 0 > "$D/server.out" 2>&1 &   # MC_THREADS: thread-policy pilot
+    # MEMCACHED REFUSES TO START AS ROOT without -u, and docker/run.sh maps the container user to the
+    # CALLER: an evaluator at a root prompt gets uid 0 inside, every server exits with "can't run as
+    # root without the -u switch", memtier measures nothing, and the cell dies at the throughput gate.
+    # `-u root` means "keep running as root", which is what we want; passing it below uid 0 would ask
+    # the OS to drop to a user we are not. (A student's run on Debian 13, 22 Sep 2026: every memcached
+    # cell lost this way, and the old rule filed each as DISTURBED and retried it.)
+    if [ "$(id -u)" = 0 ]; then MC_AS_ROOT=(-u root); else MC_AS_ROOT=(); fi
+    $TSPIN "$BIN" -c 4096 -t "$THREADS_EFFECTIVE" -p $MC_PORT -U 0 "${MC_AS_ROOT[@]}" > "$D/server.out" 2>&1 &   # MC_THREADS: thread-policy pilot
     spid=$!
     for i in $(seq 1 60); do (echo > /dev/tcp/127.0.0.1/$MC_PORT) 2>/dev/null && break; sleep 1; done; sleep 1
     $TIMEF -f "%U %S %M" -o "$OURS" $TSPIN "$APPDIR/memtier_benchmark-2.1.1/memtier_benchmark" --hide-histogram \
@@ -246,6 +253,7 @@ meta = {
   "cpuset_intruders": ${INTRUDERS:-0}, "cpuset_intruder_peak_pcpu": ${INTRUDER_PEAK:-0},
   # The EFFECTIVE value, never the override: an empty string here used to mean "defaulted", which is
   # indistinguishable in the record from "not applicable", and both read as nothing worth checking.
+  "uid": $(id -u),
   "threads_setting": "${THREADS_EFFECTIVE:-}",
   "threads_from_env": ${THREADS_FROM_ENV:-False},
 }

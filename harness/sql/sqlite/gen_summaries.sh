@@ -19,7 +19,14 @@ SUMMARY_ID="${SUMMARY_ID:-$HEAD}"
 OUT="${1:-summaries-$HEAD}"; [[ "$OUT" = /* ]] || OUT="$PWD/$OUT"
 SQLITE_SRC_DIR="sqlite-src-3500200"
 eval "$(grep -E '^FLAGS_(TSAN_COMMON|COMMON_BASE)_VAL=' build_sqlite_test.sh)"   # the build's own base flags
-FLAGS="$FLAGS_TSAN_COMMON_VAL $FLAGS_COMMON_BASE_VAL -DSQLITE_THREADSAFE=1 -I $SQLITE_SRC_DIR/test/ -I $SQLITE_SRC_DIR/src/"
+# -I build/ COMES FIRST, for the same reason build_sqlite_test.sh:131 gives: threadtest3.c includes
+# <sqlite3.h> with angle brackets, the amalgamation writes that header into build/ beside sqlite3.c, and
+# without the -I the compile falls through to whatever /usr/include holds. On this host libsqlite3-dev
+# supplied one and the generator worked; on a host without it the summaries step dies with
+# "threadtest3.c:80:10: fatal error: 'sqlite3.h' file not found" after building twelve configurations.
+# The build script was fixed on 17 Sep and the SUMMARIES GENERATOR, which compiles the same sources with
+# the same flags, was not. (Student's `evaluate.sh everything`, 22 Sep 2026.)
+FLAGS="$FLAGS_TSAN_COMMON_VAL $FLAGS_COMMON_BASE_VAL -DSQLITE_THREADSAFE=1 -I build/ -I $SQLITE_SRC_DIR/test/ -I $SQLITE_SRC_DIR/src/"
 NOINSTR="-w -mllvm -tsan-instrument-memory-accesses=0 -mllvm -tsan-instrument-func-entry-exit=0 -mllvm -tsan-instrument-atomics=0 -mllvm -tsan-instrument-memintrinsics=0"
 WORK=$PWD/sqlite-summaries-work; rm -rf "$WORK"; mkdir -p "$WORK"
 echo "compiler: $CLANG ($("$CLANG" --version | head -1)); summary id $SUMMARY_ID"

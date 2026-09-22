@@ -27,6 +27,13 @@
 [ ! -f "$MYSQL_DIR/mysqld" ] && echo "No file [.../]mysqld in standart paths." && exit 1
 
 
+# MYSQLD REFUSES TO RUN AS ROOT without being told so, and `mysqld --initialize-insecure` refuses alike,
+# so an evaluator whose container maps them to uid 0 loses the datadir init and every cell after it.
+# --user=root keeps mysqld running as root, which is the option's documented meaning; below uid 0 it must
+# NOT be passed, or the server tries to drop to a user we are not. Decided here, in the file both
+# launchers source, so the two cannot drift. (Students' runs, 22 Sep 2026.)
+if [ "$(id -u)" = 0 ]; then export MYSQL_RUN_AS_ROOT="--user=root"; else export MYSQL_RUN_AS_ROOT=""; fi
+
 [ -z "$SYSBENCH_SCRIPTS_DIR" ] 		&& export SYSBENCH_SCRIPTS_DIR="/usr/share/sysbench"
 [ -z "$SYSBENCH_CONNECTION_ARGS" ] 	&& export SYSBENCH_CONNECTION_ARGS="--mysql-user=root --mysql-socket=/tmp/mysql.sock "
 [ -z "$SYSBENCH_RUN_THREADS" ] 		&& export SYSBENCH_RUN_THREADS="$(( $(nproc) * 3 / 4 ))"

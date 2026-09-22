@@ -486,7 +486,7 @@ leg); runs under
 | SQLite | stock with the flag | 1.022 [0.919, 1.134] | 1.022 | the flag alone; resolvable subtests 1.021 [0.994, 1.040] |
 | SQLite | AllOpt with peeling | 1.058 [0.935, 1.120] | 1.062 | ours alone, this leg; resolvable 1.005 [0.980, 1.029] |
 | SQLite | AllOpt with peeling and the flag | 1.020 [0.918, 1.083] | 1.023 | resolvable 1.023 [0.991, 1.049]; nothing resolved |
-| MySQL (36 threads) | measured the night of 21-22 Sep; rows added when the leg ends | | | |
+| MySQL (36 threads) | not measured before the tag: the leg of 21-22 Sep found the MySQL workload directory missing from the artifact (fixed the same night), and its re-run on 22 Sep died before its first cell because a script it was executing was edited (ours, not the harness's); the leg is run again after the tag from a fresh clone and its rows are added during the evaluation window with their own provenance | | | |
 
 **Does the flag gain more with our analyses than on stock?** No more than the product of the two, on both
 applications where anything is resolved. Redis: the flag alone 1.107, AllOpt with peeling alone 1.008, their product
