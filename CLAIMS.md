@@ -573,9 +573,14 @@ cores, 24 complete SMT pairs; 2 h 23 min; no cell disturbed), put four of six in
 with the 16-thread FFmpeg default and the reference clip from the release, pinned to the campaign's set, 2 h 39 min
 in all (the correctness set 31 min; Redis 15, memcached 27, FFmpeg 21, SQLite 66 minutes; no cell retired): nine
 rows judged, eight inside, FFmpeg's three rows at 16 threads 1.068, 1.130 and 1.186 against 1.067, 1.133 and 1.187,
-and Redis DynSTC 0.979 outside by 0.009 on the same side of 1.0, the third time in four runs on this host that this
-row lies one to four points above its interval, which is the drift condition stated with every Redis row and is
-why an outside row is a question and not a verdict. The two are different cases, and both are derivable from shipped data
+and Redis DynSTC 0.979 outside by 0.009 on the same side of 1.0. That row is worth reading across every run: on
+this host 0.968 (17 Sep), 0.961 and 0.984 (20 Sep) and 0.979 (22 Sep), two inside and two outside by 0.014 and
+0.009; on the second host 0.971 and 0.977 (19 and 20 Sep, rows the comparator does not judge there). Every
+independent observation lies between 0.961 and 0.984 against the campaign's own point of 0.944 and upper bound of
+0.970, all on the cost side of 1.0: the sign and the 2 to 4 per cent band reproduce on both hosts and in every run,
+and the shipped interval, one session's N = 5, is narrower than the spread between sessions. That is what an
+evaluator who lands at 0.975 should read, a documented pattern and not a failure, and why an outside row is a
+question and not a verdict. The two are different cases, and both are derivable from shipped data
 with `harness/tools/perf/subset_spread.py`, which recomputes the headline statistic over every two-run subset
 of an N = 5 leg through the aggregator's own estimator. SQLite AllOpt: over the ten two-run subsets of the
 N = 5 leg of 18 Sep (shipped as `data/perf/n2-spread-sqlite-n5-20260918`, claimed for nothing) the point
