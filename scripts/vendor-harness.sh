@@ -81,6 +81,25 @@ LAB_ONLY=(
   # the rest of the directory is the lab's launcher and its result analysis (computed 22 Sep 2026).
   benchmarks-launch.sh benchmarks-launch-progress.sh benchmarks-launch.md server-run-ap.sh server-cli.sh
   analyze_mysql_results.py test_analyze_mysql_results.py bench-post-logs2csv.sh
+  # The campaign drivers of 13-17 Sep 2026: they hard-code one compiler hash and the lab's directory layout,
+  # reach files that are not in the artifact (pilot_interference.sh, ../../chromium, tools/notes/), and are
+  # reachable from nothing under scripts/. The packaging guide is explicit that an artifact "must not include
+  # obsolete or unrelated code nor data", and a reviewer reading them would be reading our campaign's
+  # scaffolding rather than the artifact (audit against the guide, 22 Sep 2026).
+  stageA_pipeline.sh stageA_apps.sh stageA_after_apps.sh stageA_baseline_after.sh stageA_close.sh
+  stageA_cpuscale_after.sh stageA_finish.sh stageA_last.sh stageA_layout_after.sh stageA_reruns.sh
+  stageB_launch.sh stageB_sweep.sh stageB_rest.sh stageB_topup.sh stageB_yield.sh stageB_thread_pilot.sh
+  stageB_accept_hash2.sh
+  # The three remaining unverified downloads: each wgets an application archive with no sha256 check, and each
+  # was superseded by tools/fetch_archive.sh, which verifies. Reachable from nothing; dropped so that the tree
+  # contains no download path that skips verification.
+  download-and-extract-mysql.sh download-and-unpack.sh redis-for-trace-analyzer.sh
+)
+# PATH-SPECIFIC exclusions, for files whose BASENAME is too common to put in LAB_ONLY (which matches by
+# basename and would have taken every README.md in the harness, including the two that document the
+# preservation and eviction tools).
+LAB_ONLY_PATHS=(
+  tools/perf/README.md   # the lab's method notebook; its content ships as data/notes/perf-method.md
 )
 EXCLUDES=(
   --exclude='results/' --exclude='old-builds/' --exclude='.scratch/' --exclude='installs/'
@@ -197,10 +216,16 @@ for d in "${APP_DIRS[@]}"; do
     while IFS= read -r f; do
       skip=0
       for lo in "${LAB_ONLY[@]}"; do [ "$(basename "$f")" = "$lo" ] && skip=1 && break; done
+      for lp in "${LAB_ONLY_PATHS[@]}"; do [ "${f#$SRC/}" = "$lp" ] && skip=1 && break; done
       [ "$skip" = 1 ] || cp -p "$f" "$DST/$d/"
     done < <(find "$SRC/$d" -maxdepth 1 -type f -name "$g" ! -name '*.log')
   done
 done
+
+# The path-specific exclusions, applied after both copy paths rather than as rsync patterns: the rsync runs
+# once per source directory, so a pattern would have to know which root it is relative to, and a wrong
+# pattern fails silently by copying the file. Removing the file by its full path cannot fail that way.
+for lp in "${LAB_ONLY_PATHS[@]}"; do rm -f "$DST/$lp"; done
 
 {
   printf '# vendored from %s on %s\n' "$SRC" "$(date -Iseconds)"
