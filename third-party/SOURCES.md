@@ -19,9 +19,11 @@ application. A hash mismatch is a stop, not a warning.
 | Boost 1.77 (MySQL's build dependency) | `boost_1_77_0.tar.bz2`, fetched by MySQL's own CMake (`-DDOWNLOAD_BOOST=1`) during the `everything` tier only | the URL in MySQL 8.0.39's `cmake/boost.cmake` | 108 MB | verified by that file's own MD5 check, not by this list |
 | FFmpeg input clip | `TearsOfSteel-1366x768-100s.mkv` | https://github.com/apaznikov/tsan-atc26-artifact/releases/download/inputs-v1/TearsOfSteel-1366x768-100s.mkv (an asset of this repository's release `inputs-v1`, CC BY 3.0, Blender Foundation; the Zenodo deposit made when evaluation finishes will carry the same file); derivable from the Blender source by the command in `docs/ffmpeg-input.md` | 78 MB | `43b0fba97eb05a0e44d7518fe9d6993c140680531a17a240ea6d53582fbe9985` |
 
-The container's base image is `ubuntu:24.04` by tag, not by digest: the compiler's identity is asserted by the
-tree hash and the stamp above, and the correctness set depends on the base only for the packages
-`docker/Dockerfile` installs, whose presence the image verification checks.
+The container's base image is pinned by digest, `ubuntu@sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54`
+(Ubuntu 24.04): the tag moves, and an evaluator building a month from now would otherwise start from a
+different image than we did. The compiler's identity does not rest on it in any case, being asserted by the
+reconstructed source tree hash and the stamp the build writes into the image; the base supplies the toolchain
+and the runtime libraries, whose package versions `apt-get` still resolves on the day of the build.
 
 Four of the five hashes were taken from the archives the campaign of 15-17 September 2026 was built
 from, on the machine that built it, and verified against them afterwards. The SQLite value is the
