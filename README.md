@@ -2,362 +2,161 @@
 
 *Русская версия: [README.ru.md](README.ru.md).*
 
-This artifact accompanies the ATC '26 paper *Instrumentation Optimization for Practical
-Dynamic Race Detection*. It contains the modified LLVM/ThreadSanitizer compiler the paper
-describes, the analyses' test suites and audit ledger, the benchmark harness, the data we
-recorded, and one script per experiment.
+This is the artifact for the ATC '26 paper *Instrumentation Optimization for Practical Dynamic Race
+Detection*. It contains the modified LLVM/ThreadSanitizer compiler the paper describes, its test suites and
+audit ledger, the benchmark harness, every run we recorded, and one script per experiment.
 
-**Which version of the paper this artifact reproduces.** The camera-ready, whose performance section was
-re-measured with the compiler released here: it incorporates 23 soundness fixes made while preparing the
-artifact and keeps every race stock ThreadSanitizer finds (`CLAIMS.md`, section 1). Its campaign (section 5;
-N = 5, 95 % intervals) is what the Reproduced tier compares against. The submitted version's figures, measured
-before the fixes, are kept in `CLAIMS.md`'s "Paper" column for the record. What the campaign establishes:
-DynSTC changes performance measurably (FFmpeg +11 % at the paper's 4 threads, Redis −5.6 %, both confirmed at a
-second concurrency; on a second host the FFmpeg gain reproduces in every run and the Redis cost in two of three); at 16 threads, the artifact's default since 22 Sep 2026, AllOpt with peeling
-and DynSTC together reach +19 % on FFmpeg (1.187 [1.171, 1.201]; that thread count was chosen from the sweep after
-the campaign and is reported as such); at the paper's own thread counts every other configuration lies within its
-interval of stock ThreadSanitizer, and the static instrumentation removed is 2 to 8 per cent (section 3).
+`CLAIMS.md` is the contract: each claim the paper makes, the script that produces it, and what counts as a
+match. Nothing outside that file is claimed here.
 
-The artifact's own code and documents are under the MIT licence (`LICENSE`); vendored third-party components keep
-their own licences (`THIRD-PARTY.md`).
+## What you need
 
-The submission is the tag `atc26-ae`. It was re-pointed on 22 Sep 2026, before the submission, from `6fb9916` to
-the commit that carries this sentence (documents only, no code); a checkout that fetched the tag earlier that day
-needs `git fetch --tags --force` to see this tree. The tag does not move again.
+Docker on an x86-64 Linux host, with your user in the `docker` group; we have run this on Docker 28.5 and
+29.1, and `docker/run.sh` sets the container's file-descriptor limit itself because the two versions default
+it differently. Nothing else is installed on the host: the compiler, `llvm-lit` and the benchmark clients
+live inside the image, which the first command builds in 15 to 25 minutes.
 
-## Start here
+| For | Processors | Memory | Disk |
+|---|---|---|---|
+| the correctness set | 8 | 16 GB | 20 GB |
+| performance, compared with our intervals | 48 logical, being 24 physical cores with both SMT threads, and otherwise idle | 16 GB | 20 GB |
+| performance including MySQL | the same | 16 GB | 100 GB |
+
+We measured on an Intel Xeon w9-3495X (56 cores, 112 threads), 250 GB, Ubuntu 24.04, kernel 6.8.0-40-generic,
+with 24 cores and both SMT threads of each pinned, and repeated the whole evaluation on an AMD EPYC 9115
+(32 cores, 64 threads). On fewer processors, or on a set of another shape, every step still runs and the
+performance rows are reported rather than judged; `CLAIMS.md` section 5 says why.
+
+The network is used twice: while the image builds (Ubuntu packages and a shallow clone of upstream LLVM) and
+for FFmpeg's input clip, 78 MB from this repository's GitHub release. The other application sources ship in
+`third-party/sources/` and are checked against pinned sha256 digests; MySQL's 421 MB archive is fetched only
+by the `everything` tier.
+
+## Run it
 
 ```
 git clone https://github.com/apaznikov/tsan-atc26-artifact.git && cd tsan-atc26-artifact
-./evaluate.sh check          # does it all run here? about 2 minutes, plus the image build the first time (15-25 min). Not a badge.
-./evaluate.sh functional     # the Functional badge: the full correctness set, under an hour (23 min on 64 processors, 30 min on this host, 48 min on 8; before the 21 Sep lit fix it was two to four times that)
-./evaluate.sh reproduced     # the Reproduced badge: the whole functional tier, then the performance subset; about 3 hours on 48 idle processors
-./evaluate.sh                # prints the tiers and runs nothing (exit 2); <tier> --plan prints a tier's steps
+./evaluate.sh check          # does this machine work at all? about 2 minutes, plus the image build
+./evaluate.sh functional     # Functional badge: the correctness set. 23 min on 64 processors, 48 min on 8
+./evaluate.sh reproduced     # Reproduced badge: the above, then the performance subset. About 3 hours
 ```
 
-Each tier contains the one before it: `reproduced` runs the whole `functional` tier first, so one command per
-badge is the whole job. Docker is the only thing to install. Each command prints one line per step with its time, shows what the
-step said, and ends with one verdict line and a sentence saying what it established:
+Each tier contains the one before it, so one command is the whole job for a badge. `./evaluate.sh` with no
+tier lists them and runs nothing; `<tier> --plan` prints a tier's steps and their expected times; `--rebuild`
+builds the image again from nothing; `everything` adds MySQL and all fourteen configurations, about 14 hours.
+Nothing asks a question once a tier starts.
 
-- **PASS** on the Functional tier means: the container built our compiler from the patch series (the build log
-  shows the reconstructed source tree hashing to ours, and the image's clang carries our commit) and it emits
-  the same instrumentation as the compiler we measured on; every analysis removes what it claims and a real
-  race is still reported; the 23 lost-race shapes stay instrumented; ThreadSanitizer's regression suite loses
-  no race in any of the 12 configurations; every shipped run carries its provenance; and every table follows
-  from the shipped runs. It says nothing about speed.
-- **INCOMPLETE** means nothing failed but a check could not be made here (its prerequisite is absent) and
-  the log names it. Neither a pass nor a failure.
-- **PASS on every step, COMPARISON NOT CLEAN** (Reproduced and Everything) means every step passed and a judged
-  performance row lies outside its shipped interval; `CLAIMS.md` section 5 ("Match criterion") says what that can
-  mean. **PASS on every step; COMPARISON NOT APPLICABLE ON THIS MACHINE** (exit status 3) means every step passed
-  and no row could be compared, each row printing why (this machine's processor-set shape, thread count or input is
-  not the campaign's): the run is valid and its ratios stand beside the intervals, unjudged.
-- **FAIL** names the step that stopped it; `docs/troubleshooting.md` lists the failures we know.
-- The **Reproduced** tier ends with a table: one line per configuration row of your run against the
-  interval `CLAIMS.md` ships for it, marked IN, OUT (with the distance), not judged, or not comparable,
-  then "N rows judged". What counts as reproduced, what an OUT row can mean, and the five-run re-check for
-  it are in `CLAIMS.md`, section 5, under "Match criterion". FFmpeg's three rows are compared when the clip came
-  from the artifact's release, which is the default; on a regenerated clip they come back "not comparable" and
-  the run itself is valid (`docs/ffmpeg-input.md`).
+## What you get
 
-What the end of a run looks like, from our own runs. No graphs: the verdict and the numbers are the deliverable,
-and the per-application tables with every subtest are in `results/perf-<app>-<stamp>/perf_<app>.md`. In the
-tables, N is the number of measured runs per configuration: our campaign's rows are N = 5 with a 95 % bootstrap
-interval; an evaluator's default run is N = 2, a point compared against that interval.
+Every step prints its own result, and the run ends with one verdict line:
+
+- **PASS** — every step did what it claims. On the performance tiers it also means every judged row lies
+  inside the interval `CLAIMS.md` ships for it.
+- **PASS on every step, COMPARISON NOT CLEAN** — the steps passed and a judged row lies outside its interval.
+  `CLAIMS.md` section 5, "Match criterion", says what that can mean and how to re-check it.
+- **PASS on every step; COMPARISON NOT APPLICABLE ON THIS MACHINE** (exit status 3) — the steps passed and no
+  row could be compared, because this machine's processor-set shape, thread count or FFmpeg input is not the
+  one the intervals describe. The run is valid and its ratios are printed beside ours, unjudged.
+- **INCOMPLETE** — nothing failed, but a check could not be made here; the log names it.
+- **FAIL** — the step that stopped it is named, and `docs/troubleshooting.md` lists the failures we have seen.
+
+Results land in `results/`: `evaluate-<tier>-<stamp>.log` is the whole run, `perf-<app>-<stamp>/perf_<app>.md`
+is one application's table with every configuration and subtest, and the performance tiers end with the
+comparison against `CLAIMS.md`. This is one of our own runs, on the machine and processor set the intervals
+describe, with the rows that are not compared left out:
 
 ```
-evaluate.sh: PASS  (tier check, 1m22s; full log in results/evaluate-check-20260921-044031.log)
-Every step ran and passed: the image is our compiler built from the patch series, each analysis removes what it
-claims and the race is still reported, and the shipped tables follow from the shipped runs. This is the check,
-not the Functional badge: the regression suite (no configuration loses a race) runs in ./evaluate.sh functional.
-```
-
-```
-evaluate.sh: PASS  (tier functional, 48m22s; full log in results/evaluate-functional-20260921-055254.log)
-Every step ran and passed: the image is our compiler built from the patch series, the analyses, the regression
-suite and the shipped tables (what each step established is CLAIMS.md sections 1 to 4). This tier says nothing
-about speed.
-```
-
-The Reproduced tier ends with the comparison. This one is our own run of 22 Sep 2026 from a fresh clone of the
-tree submitted, on our host, pinned to the campaign's set (the stock-against-native lines and the "rows not produced
-by this run" lines left out); FFmpeg ran at the 16-thread default on the reference clip fetched from the release, so
-its three rows are compared; the Redis DynSTC row sits 0.009 above its interval on the same side of 1.0, the drift
-condition `CLAIMS.md` states with every Redis row (2 h 39 min in all, the correctness set included):
-```
-     ART_CPUSET=4-27,60-83 (our runs used 48 processors, 4-27 and 60-83 on our host).
-Verdicts are against the intervals in CLAIMS.md section 5: the campaign on the shipped compiler,
-the camera-ready's figures. The submitted version's figures are in that file's 'Paper' column.
-
 app        row                                       yours  ours (N=5)             verdict
 ----------------------------------------------------------------------------------------------------
-----------------------------------------------------------------------------------------------------
 ffmpeg     AllOpt with peeling                 1.068 (N=2)  1.067 [1.050, 1.079]   IN , same side of 1.0
-ffmpeg     AllOpt with peeling and DynSTC            1.186 (N=2)  1.187 [1.171, 1.201]   IN , same side of 1.0
+ffmpeg     AllOpt with peeling and DynSTC      1.186 (N=2)  1.187 [1.171, 1.201]   IN , same side of 1.0
 ffmpeg     DynSTC                              1.130 (N=2)  1.133 [1.114, 1.146]   IN , same side of 1.0
-memcached  AllOpt with peeling                 1.038 (N=2)  1.019 [0.951, 1.079]   IN 
-memcached  DynSTC                              0.974 (N=2)  0.986 [0.944, 1.063]   IN 
-redis      AllOpt with peeling                 1.005 (N=2)  1.000 [0.983, 1.026]   IN 
+memcached  AllOpt with peeling                 1.038 (N=2)  1.019 [0.951, 1.079]   IN
+memcached  DynSTC                              0.974 (N=2)  0.986 [0.944, 1.063]   IN
+redis      AllOpt with peeling                 1.005 (N=2)  1.000 [0.983, 1.026]   IN
 redis      DynSTC                              0.979 (N=2)  0.944 [0.927, 0.970]   OUT by 0.009 above, same side of 1.0
-sqlite     AllOpt with peeling                 1.032 (N=2)  1.023 [0.942, 1.061]   IN 
-sqlite     DynSTC                              0.930 (N=2)  0.995 [0.928, 1.082]   IN 
+sqlite     AllOpt with peeling                 1.032 (N=2)  1.023 [0.942, 1.061]   IN
+sqlite     DynSTC                              0.930 (N=2)  0.995 [0.928, 1.082]   IN
 ----------------------------------------------------------------------------------------------------
 9 rows judged, 1 outside their intervals.
-evaluate.sh: PASS on every step, COMPARISON NOT CLEAN  (tier reproduced, 2h39m; full log in results/evaluate-reproduced-20260921-213619.log)
+evaluate.sh: PASS on every step, COMPARISON NOT CLEAN  (tier reproduced, 2h39m)
 ```
 
-Two rows outside is what this run reads at N = 2, and `CLAIMS.md` section 5 says what each means: the
-SQLite row lands above its bound in 3 of the 10 two-run subsets of our own N = 5 leg (a figure an evaluator
-can recompute with `harness/tools/perf/subset_spread.py`), and the Redis row keeps the sign of the claim
-with a smaller cost, the size of the documented between-session drift on that application.
+A reviewer's run is N = 2, a point compared against our N = 5 interval; our own campaign is N = 5 with 95 %
+bootstrap intervals. The Redis row above is 0.009 outside on the same side of 1.0, which is the between-session
+drift `CLAIMS.md` states with every Redis row.
 
-The tables name configurations as the harness does:
+## What is claimed
 
-| Name | Meaning |
-|---|---|
-| `orig` | native build, no ThreadSanitizer |
-| `tsan` | stock ThreadSanitizer; every configuration row is a ratio against it, above 1.0 = faster than stock |
-| `tsan-st`, `tsan-swmr`, `tsan-lo`, `tsan-ea`, `tsan-dom` | one analysis each: single-threaded context (STC), single-writer multiple-reader (SWMR), lock ownership (LO), escape analysis (EA), dominance-based elimination (DE) |
-| `tsan-dom_peeling` | DE with loop peeling |
-| `tsan-dom-ea-lo-st-swmr` | AllOpt without peeling: all five analyses |
-| `tsan-dom_peeling-ea-lo-st-swmr` | **AllOpt with peeling**, the paper's AllOpt |
-| `tsan-stmt` | **DynSTC**, the dynamic single-threaded-context transformation |
-| `tsan-dom_peeling-ea-lo-st-swmr-stmt` | AllOpt with peeling plus DynSTC |
-| `tsan-sound-wp`, `tsan-dom_peeling-ea-lo-st-swmr-wp` | the four analyses STC, SWMR, LO and EA (without DE), and AllOpt with peeling, each with whole-program summaries |
-
-The regression-suite matrix (`data/preservation/lit-configurations.txt`, printed by `30-preservation-suite.sh`) names
-the same configurations by short labels: `EA`, `LO`, `STC`, `SWMR`, `DE`, `DE+peel`, `sound` (the four analyses
-without DE), `AllOpt-peel` (AllOpt without peeling), `AllOpt+peel` (with peeling), `AllOpt-peel+DynSTC` and
-`AllOpt+peel+DynSTC`.
-
-The network is needed twice: the image build (a shallow clone of upstream LLVM and Ubuntu packages) and
-FFmpeg's input clip (78 MB from this repository's GitHub release, or the 557 MB Blender source when
-`ART_FFMPEG_CLIP_URL` is exported empty). The
-application sources ship in `third-party/sources/` and are verified against pinned hashes before use; only
-MySQL's 421 MB archive is fetched, by the `everything` tier.
-
-`CLAIMS.md` is the contract: every claim the paper makes, the script that produces it, and what counts
-as a match. Nothing outside that file is claimed here. Read it once the quick tier has passed.
-
-> Status: prepared for the artifact submission of 22 September 2026. Every performance row is measured on the
-> shipped compiler, all five applications included; three recorded results (the report-key replay, the
-> executed-access counters, the eviction data) are from earlier compilers and say so where they are cited.
-> The "Paper" column of each performance table is the submitted manuscript's figure, kept for the record; the
-> camera-ready reports the numbers in `CLAIMS.md`.
+The camera-ready's performance section was re-measured with the compiler released here, which carries 23
+soundness fixes made while preparing the artifact and still finds every race stock ThreadSanitizer finds. What
+the campaign establishes: DynSTC changes performance measurably (FFmpeg +11 % at the paper's four threads,
+Redis −5.6 %), and at 16 threads the full sound bundle with DynSTC reaches +19 % on FFmpeg; every other
+configuration lies within its interval of stock ThreadSanitizer, and 2 to 8 per cent of the static
+instrumentation is removed. The submitted paper's figures, measured before those fixes, stay in `CLAIMS.md`'s
+"Paper" column beside ours. `CLAIMS.md` section 7 lists what this artifact does not support, Chromium and the
+ReX comparison among them.
 
 ## What is in here
 
-| Path | What it is | Where it appears in the paper |
+| Path | What it is | In the paper |
 |---|---|---|
-| `compiler/` | The compiler as a patch series over a pinned upstream LLVM commit, plus `TSanAnalysesAudit.md`, the per-function ledger of contracts, verdicts and covering tests | Sections 4 to 7 |
-| `docker/` | The container recipe that builds and installs that compiler | Section 8.1 |
-| `scripts/` | One script per experiment, numbered in the order a reader would run them | Section 8 |
-| `data/` | Every run we recorded: per-run metadata with compiler stamp, binary hash, processor set, governor and load, plus the aggregates | Section 8 |
-| `docs/` | The method document, the known confounds, the one experiment (Chromium) that is documented rather than runnable here, and `artifact-appendix.md`, the appendix submitted with the paper | Section 8, appendices |
+| `compiler/` | the compiler as 29 patches over a pinned upstream LLVM commit, plus the per-function audit ledger of contracts, verdicts and covering tests | sections 4 to 7 |
+| `docker/` | the container recipe that applies those patches, checks the reconstructed source tree against its hash, and builds the compiler | section 8.1 |
+| `scripts/` | one script per experiment, numbered in the order a reader would run them | section 8 |
+| `harness/` | the benchmark harness: build, run, aggregate, compare | section 8 |
+| `data/` | every run we recorded, each with its compiler stamp, binary hash, processor set, governor and load, plus the aggregates | section 8 |
+| `tests/` | the IR suite for the analyses and the vendored ThreadSanitizer regression suite | sections 4 to 7 |
+| `docs/` | the method, the known confounds, the experiment that is documented rather than runnable here, and the artifact appendix | section 8, appendices |
 
-Third-party code is unmodified except where noted in `THIRD-PARTY.md`, which also records the
-licence of every vendored component.
+Third-party code is unmodified except where `THIRD-PARTY.md` says otherwise; that file also records each
+component's licence, and `third-party/SOURCES.md` its origin and digest.
 
-## Why the repository is small
+## What the artifact does to your machine
 
-The compiler is not here as a binary and there is no copy of LLVM. There are 29 patches over the
-upstream LLVM commit `c609043dd009`, which is text. The container fetches upstream itself with a
-shallow clone, applies the patches, checks that the reconstructed source tree hashes to ours, and
-builds the compiler inside itself. The recorded runs are text too, logs and JSON; a clone is about 65 MB of
-history plus the 31 MB of application archives under `third-party/sources/`. Every third-party archive the harness unpacks ships in
-`third-party/sources/` (MySQL's 421 MB is fetched) and is verified against the sha256 pinned in
-`third-party/SOURCES.md` before use; that file names each component's origin URL, and `THIRD-PARTY.md` its
-licence.
+Everything runs in a container started by `docker/run.sh`, which writes only under `results/` and `build/` of
+the checkout. Inside that container the benchmark scripts start and stop servers **by name** — `memcached`,
+`redis-server`, `mysqld` — which is why they must be run through `docker/run.sh` and not directly on a host
+that runs those services. Nothing else on the machine is touched, nothing is installed outside the image, and
+the artifact contains no destructive or malicious code.
 
-## The environment we used
+Two container options are worth knowing: `--security-opt seccomp=unconfined`, because ThreadSanitizer
+re-executes every program with ASLR off and Docker's default profile refuses that system call, and
+`--shm-size=1g`, because FFmpeg's workload writes each codec's output to `/dev/shm` and two of the four
+outputs exceed Docker's 64 MB default.
 
-Intel Xeon w9-3495X, 56 cores and 112 threads, 250 GB RAM, Ubuntu 24.04, kernel 6.8.0-40-generic.
-Performance runs are pinned to 24 physical cores with both SMT threads of each (48 logical processors, CPUs 4-27
-and 60-83), one measurement at a time. Nothing here needs that
-machine: the container runs anywhere, and the deterministic experiments give identical results on
-any x86-64 Linux host. The performance experiments run on any processor count; the comparison with our intervals is made with
-the campaign's shape pinned, 24 physical cores with both SMT threads (48 logical processors; memcached's thread
-count follows the logical count): on a machine of another shape the run is unpinned and valid, every row is
-reported with its ratio against stock and the reason it is not compared, none is judged, and the tier ends
-"COMPARISON NOT APPLICABLE ON THIS MACHINE" (exit status 3), which is neither a failure nor a pass. `docs/confounds.md`
-says what varies and why. The minimum for the correctness set is 8 processors (the regression suite refuses
-fewer), 16 GB of memory (`ART_MEMORY=16g` caps the container so that the derived job count respects it) and
-20 GB of disk; the performance set needs up to 100 GB of disk with MySQL.
+## Running one experiment at a time
 
-## Getting started, in detail
+Each script prints what it will do, how long it takes and how much disk it needs, then does it. Running one
+twice is safe: every run writes a new directory, and the tables are regenerated from whichever runs you name.
 
-`./evaluate.sh everything` is `reproduced` at all fourteen configurations, plus MySQL (about 14 hours). On a
-checkout where `./evaluate.sh functional` already ended in PASS, `./evaluate.sh reproduced --performance-only`
-runs the performance subset alone (about 2 h 30 min); `./evaluate.sh <tier> --plan` prints a tier's steps and
-their expected times without running anything.
-Nothing asks a question: a tier starts when named, after printing what to know about it (`--plan` lists the
-steps without starting anything). `--rebuild` builds the image again from nothing (15-25 min).
-The build asserts that the patch series reproduces our source tree and stamps the measured tree hash into the
-image, where every tier checks it; an image built from a checkout older than 20 Sep 2026 has no such stamp,
-and a tier run against it is INCOMPLETE until `--rebuild`. On a machine that never had the image, the first
-command builds it and this never arises.
-
-Where the results are: `results/evaluate-<tier>-<stamp>.log` holds every step's full output;
-each performance run writes `results/perf-<app>-<stamp>/perf_<app>.md` (the table for that
-application, one row per configuration, with the point estimate or the interval) and
-`perf_summary.md`; the correctness steps write their own directories under `results/` (the
-preservation suite's `report.txt` and `manifest.txt`, the soundness shapes' lit logs). The
-performance tiers end with `harness/tools/perf/compare_with_claims.py`, which prints one line per
-configuration row against the interval `CLAIMS.md` ships for it (inside or outside, not judged, not
-comparable) and a count of rows judged; read that count first, since a row it cannot judge is reported,
-never passed, and its silence is never a pass. On a machine with 48 or more processors the performance tier pins the campaign's shape from the processors
-the Docker daemon grants to containers, the first 24 complete SMT sibling pairs, and prints the set (on a
-machine without 24 such pairs, the first 48 granted, printed as a different shape) unless `ART_CPUSET` says
-which; on a smaller one it runs unpinned and says so.
-
-`evaluate.sh` runs the scripts below in the documented order, prints one line per step with its time,
-writes the full log under `results/`, and ends with one verdict: PASS, INCOMPLETE (a check whose
-prerequisite is absent here was skipped, which is neither a pass nor a failure) or FAIL with the step
-that stopped it. The tiers are separate because the correctness set runs anywhere in under an hour while
-the performance set needs a quiet 32-processor machine for four to fourteen hours, and the badges are
-awarded separately. The same steps, one at a time:
-
-```
-./scripts/00-prereqs.sh          # says what is missing, changes nothing; on the host only Docker matters
-./docker/build.sh                # builds the image, including the compiler
-./docker/run.sh scripts/10-minimal-example.sh
-```
-
-On the host, Docker is the only requirement. `00-prereqs.sh` run on the host checks Docker, its daemon, the
-ASLR-off re-exec and the disk, and says so; the compiler, `llvm-lit` and the benchmark clients live inside the
-container image and are checked there (`./docker/run.sh scripts/00-prereqs.sh`).
-
-Start the container through `docker/run.sh`. It does four things a hand-written `docker run` will
-not: it passes `--security-opt seccomp=unconfined`, because the ThreadSanitizer runtime re-executes
-programs with address-space randomization off and Docker's default seccomp profile refuses that call,
-so without the flag every instrumented program dies with a segmentation fault; it runs the container as
-your own user, because memcached refuses to start as root and its benchmark then measures a client
-talking to nothing (and root-owned results cannot be deleted without sudo); it gives `/dev/shm` 1 GB,
-because two of FFmpeg's four codecs write outputs larger than Docker's 64 MB default and the row would
-silently measure two codecs instead of four; and it computes the build parallelism on the host from the
-memory the Docker daemon actually has, a cap that is invisible from inside the container and that an
-unbounded build does not fail against but thrashes (`docs/troubleshooting.md`). It also forwards every
-knob in `env.sh` into the container.
-
-The minimal example compiles one small program per analysis, shows which instrumentation each
-analysis removes and why, then compiles and runs a program with a real race to show the race is
-still reported. It needs no special hardware. On our image it prints, per analysis, stock/enabled/removed
-counts of 8/6/2 (STC), 56/8/48 (SWMR), 6/4/2 (LO), 21/1/20 (EA) and 9/8/1 (DE), then `data race reported`
-under stock and under AllOpt; the step fails if stock shows no instrumentation, if any analysis removed
-nothing, or if the race goes unreported (the exact counts include a little libc glue and are what our image
-prints, not the criterion). The container build, if you have not run it before, takes about
-15 minutes at the default job count on a machine like ours and about 25 minutes at 8 jobs (both measured
-with `--no-cache` on 18 Sep 2026: 14m52s at 25 jobs, 24m38s at 8); the example itself is a few minutes. The two build times are
-not a scaling curve: three times fewer jobs cost 1.7 times the wall time, because the apt install, the
-shallow clone, the patch series, the CMake configure and the runtime stage are a fixed serial head that
-the job count does not touch.
-
-## The correctness set: one command, no performance
-
-For the Functional badge, and for anyone who wants to know the artifact does what it says without
-spending a day on measurements:
-
-```
-./docker/run.sh scripts/01-functional.sh            # 23 min on 64 processors, 30 min on this host, 48 min on 8
-./docker/run.sh scripts/01-functional.sh --quick    # about 5 minutes, without the regression suite
-```
-
-It runs the deterministic checks in order and prints one verdict per step: the minimal example, the
-23 lost-race shapes with their vacuity control, the compiler's equivalence to the one we measured on,
-the provenance of the shipped runs, the identity of the two copies of the table code, the self-test of the
-rule that decides a lost race, the ThreadSanitizer regression suite in 12 configurations preceded by its
-self-test, and the regeneration of every table from the shipped data (`--quick` omits the two
-regression-suite steps and its verdict says so). It stops at the
-first failure, because each later step assumes the compiler is the one the earlier steps identified.
-A step whose prerequisite is absent is reported as SKIP and the set is declared incomplete: a skipped
-check is one not made, and it counts as neither a pass nor a failure.
-
-The correctness tests themselves are 62 IR tests of our own (`tests/ir`: 50 removal tests and 11 negative
-controls covering the 23 lost-race shapes, plus one multi-step summary test) and ThreadSanitizer's own regression suite vendored from compiler-rt under
-`tests/tsan`, run in each of 12 configurations. `lit` discovers 383 tests there and marks 90
-unsupported on this platform before anything is compiled, so 293 execute; our own run of them ships as
-`data/suite/`, with the command to re-derive each count. One test, `getline_nohang.cpp`, is unsupported on the image's glibc (2.39, as upstream marks it) and is
-skipped. Until 21 Sep 2026 the vendored lit configuration failed to detect glibc under Python 3.12, so the
-test ran and stalled to its two-minute timeout in most repeats, and the correctness set took two to four times as
-long as it does now (about twice on 8 processors, four times on 32) (`docs/nondeterministic-tests.md`).
-
-## Running the experiments
-
-Each measurement script prints what it will do, roughly how long it takes and how much disk it needs, then
-does it; the quick checks print only their verdicts.
-Running one twice is safe: results are written to a new directory per run and the tables are
-regenerated from whichever runs you point them at.
-
-| Script | What it checks | Time | Hardware |
-|---|---|---|---|
-| `10-minimal-example.sh` | the analyses do what Sections 4 to 6 say | under a minute | any |
-| `11-soundness-shapes.sh` | 23 fixed lost-race shapes, each against its negative test | 2 min | any |
-| `12-compiler-equivalence.sh` | the shipped compiler emits the instrumentation our measurements were taken on | 3 min | any |
-| `20-static-counts.sh` | static instrumentation per application and configuration, counted on the binaries `40-perf.sh` built | 5 min | any |
-| `21-compile-time.sh <app>` | compile-time overhead, three clean builds per configuration | 20 min to 3 h per application (MySQL 5 to 10 h) | 8 cores |
-| `30-preservation-suite.sh` | 12 configurations over ThreadSanitizer's regression suite, pass or fail per test (the report-level comparison is recorded, not re-run; `CLAIMS.md` section 1) | about 20 min on 64 processors, 25 min on this host, 40 min on 8 | 8 cores |
-| `31-preservation-apps.sh <app> 10` | races reported on the applications, against stock; N = 10 runs for a verdict (the default N = 2 prints the per-site frequencies without one) | 1.5 to 3 h per application | 16 cores |
-| `40-perf.sh <app>` | the performance table, one application at a time | default (4 configurations, N = 2), measured: Redis 13-15 min, memcached 28-36, FFmpeg 21-25 (five configurations at 16 threads), SQLite 65-68; MySQL about 3.4 h; everything at N = 2 about 14 h with builds; `ART_RUNS=5` for intervals, twice as long | 32 cores |
-| `50-eviction-stress.sh` | the bounded-shadow experiments | 15 min to 1 h | any |
-| `13-verify-image.sh` | the image an evaluator built is the compiler we measured: version, stamp, self-containedness, and the reconstructed tree hash from the build log | about 35 min (a minute with `--static`); runs on the host, it starts its own container | any |
-| `90-tables.sh` | regenerates every performance table, the results ledger and the eviction tables, from your runs or from ours | 1 min | any |
-
-Everything, every application at all fourteen configurations, is about 14 hours on 48 processors; the reviewer's
-subset of the performance table, four configurations on the four cheaper applications (five on FFmpeg), is about two and a half
-hours. Our own campaign used five runs per configuration and took 32 hours of measurement after about 7 hours
-of builds; that setting is one variable away (`ART_RUNS=5`, twice the default's time) and `CLAIMS.md` says
-what each mode can and cannot conclude.
-
-Every performance-side script also has a smoke mode, `ART_SMOKE=1`: one run, short workloads, reduced
-test lists, output marked NOT A MEASUREMENT. It answers one question, whether the pipeline runs end to end
-on your machine, and nothing about the numbers. The preservation smoke (`31-preservation-apps.sh`) attempts
-no verdict at that scale: a single short run cannot show a race site that stock itself reports in only
-two or three of ten paper-scale runs, so the script prints that no verdict was attempted and exits on the
-plumbing alone; the positive control that refuses to certify a run in which stock found nothing applies
-unchanged at the paper scale.
-
-`90-tables.sh` works without running anything else: run with no argument, it re-derives every performance
-table, the results ledger and the eviction tables from the runs we recorded (the static-count and preservation
-tables have their own scripts, `20-static-counts.sh` and `tools/preservation/tsan_reports.py`). That is the fastest way to check that our tables follow
-from our data.
-
-### The three checks that make a clean result mean something
-
-Every claim in this artifact is a negative -- instrumentation removed, races still found --
-and a broken check produces negatives for free. Each of these scripts therefore carries a
-control that must fire, and each refuses to run beside another `llvm-lit` (concurrent lit
-runs share `Output/` and fail for reasons that are not the compiler's):
-
-| Script | What it answers | The control that makes it evidence |
+| Script | What it checks | Time |
 |---|---|---|
-| `scripts/11-soundness-shapes.sh` | Does the compiler still instrument every access the audit says it must? | Re-runs each test with its `-tsan-*` flags stripped. A test claiming a removal must then fail; one asserting instrumentation stays is expected to pass either way. Currently 50 removal tests, 11 controls, 0 vacuous; the 62nd, `ipa-summary-external.ll`, is a multi-step test with no FileCheck pipe, which the vacuity tool reports as skipped because it cannot strip a flag from it. |
-| `scripts/12-compiler-equivalence.sh` | Does this compiler instrument the IR corpus exactly as the campaign compiler did? | Checks the reference table can separate the configurations at all (24 of 28 modules do), and reports the provenance stamp separately -- the corpus alone cannot identify the commit. |
-| `scripts/30-preservation-suite.sh` | Does any configuration lose a race stock reports? | `--self-test` runs a detector with load/store instrumentation switched off and requires the harness to report the losses. A suite that reports nothing looks identical whether races are preserved or the harness is blind. |
+| `10-minimal-example.sh` | one small program per analysis: what the analysis removes, and that a real race is still reported | under a minute |
+| `11-soundness-shapes.sh` | 23 fixed lost-race shapes, each against its negative control | 2 min |
+| `12-compiler-equivalence.sh` | the image's compiler emits the instrumentation our measurements were taken on | 3 min |
+| `20-static-counts.sh` | static instrumentation per application and configuration | 5 min |
+| `21-compile-time.sh <app>` | compile-time overhead, three clean builds per configuration | 20 min to 3 h (MySQL 5 to 10 h) |
+| `30-preservation-suite.sh` | ThreadSanitizer's regression suite in 12 configurations: no configuration may lose a race | 25 min on 64 processors, 1 h 30 min on 32, 3 h on 8 |
+| `31-preservation-apps.sh <app> 10` | races reported on an application against stock, N = 10 for a verdict | 1.5 to 3 h |
+| `40-perf.sh <app>` | the performance table for one application | Redis 15 min, memcached 30, FFmpeg 25, SQLite 1 h, MySQL 3.5 h |
+| `50-eviction-stress.sh` | the bounded-shadow experiments | 15 min to 1 h |
+| `90-tables.sh` | regenerates the performance tables, the results ledger and the eviction tables from recorded runs | 1 min |
 
-```
-./docker/run.sh scripts/11-soundness-shapes.sh
-./docker/run.sh scripts/12-compiler-equivalence.sh
-./docker/run.sh scripts/30-preservation-suite.sh --self-test    # first, always
-./docker/run.sh scripts/30-preservation-suite.sh 5              # then the real matrix
-```
-
-These are the invocations `evaluate.sh` runs inside the correctness set; after a PASS there is nothing to
-repeat.
-
-## What this artifact does not contain
-
-Chromium performance. It is documented in `docs/chromium.md`, with our recorded data, the exact
-configuration and the reason: a Chromium checkout is over a terabyte and our only build predates the
-compiler shipped here. It is not claimed in `CLAIMS.md`.
-
-MySQL is claimed, and its table ships with the recorded runs, but it is the expensive row: about
-3.4 hours of runs at the default settings on top of four builds, which is why it is not part of the
-two-hour reviewer's subset and why `CLAIMS.md` says so beside the row rather than leaving it to be
-discovered.
+`90-tables.sh` needs nothing else to have run: with no argument it re-derives those tables from the data we
+ship, which is the fastest way to check that our tables follow from our runs. Every performance script also
+takes `ART_SMOKE=1`: one short run, output marked NOT A MEASUREMENT, which answers only whether the pipeline
+works on your machine. `env.sh` holds every knob, `ART_RUNS=5` among them.
 
 ## If something does not work
 
-`docs/troubleshooting.md` lists the failures we have seen, including the ones that look like our
-bugs and are not: ThreadSanitizer's own reports on the benchmarks, the tests that are
-non-deterministic under stock ThreadSanitizer as well, and the message the container prints when
-the host has fewer cores than an experiment assumes.
+`docs/troubleshooting.md` lists the failures we have seen, including the ones that look like our bugs and are
+not: a test that waits out a two-minute timeout under stock ThreadSanitizer, a build killed for memory when
+Docker's job count exceeds its memory cap, an image built before the source-tree stamp existed. `docs/confounds.md`
+says what makes a performance number move on a machine that is not ours.
+
+## Licence
+
+The artifact's own code, documents and data are under the MIT licence (`LICENSE`). Vendored third-party
+components keep their own licences, recorded in `THIRD-PARTY.md`; the LLVM patches are under Apache-2.0 with
+the LLVM exception, as upstream.
