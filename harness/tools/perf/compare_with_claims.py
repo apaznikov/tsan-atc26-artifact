@@ -114,6 +114,7 @@ LABEL = {"tsan-sound": "four sound analyses",
          # The three rows that were silently never judged until 19 Sep 2026 (no label, so `continue`).
          "tsan-dom_peeling-ea-lo-st-swmr-stmt": "AllOpt with peeling and DynSTC",
          "tsan-dom_peeling-ea-lo-st-swmr-wp": "AllOpt with peeling, whole-program summaries",
+         "tsan-dom_peeling-ea-lo-st-swmr-stmt-wp": "AllOpt with peeling, DynSTC and whole-program summaries",
          "tsan-sound-wp": "four sound analyses, whole-program summaries"}
 
 def expected_threads(root, app):
