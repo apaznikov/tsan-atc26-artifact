@@ -174,3 +174,13 @@ runtime stage's package layer). Since 22 Sep the two `apt-get` steps retry each 
 completed, so a second `./evaluate.sh <tier>` (or `./docker/build.sh`) resumes at the failed layer rather than
 rebuilding the compiler. Nothing about the artifact's content depends on when the packages were fetched; the
 compiler's identity is asserted by the source-tree hash and the stamp, not by the base image's package versions.
+
+## The image you build is not bit-identical to the one we measured on
+
+The base image is pinned by digest and the compiler's source tree is asserted against its hash, so the
+compiler is the one this artifact describes. What is not pinned is the Ubuntu package set: `apt-get install`
+resolves to whatever the archive holds on the day, so a build months from now links against a slightly
+different libstdc++ or builds with a slightly different g++. That moves neither the instrumentation the
+compiler emits, which `scripts/12-compiler-equivalence.sh` checks against the counts our measurements were
+taken on, nor any claim in `CLAIMS.md`; it can move a wall-clock number by the amount `docs/confounds.md`
+describes for a different machine.

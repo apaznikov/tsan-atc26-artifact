@@ -4,7 +4,12 @@
 # Build:  ./docker/build.sh   (derives JOBS from the daemon's memory; one job per processor thrashes
 #         under a memory cap, docker/build.sh says why). This file is the recipe.
 
-FROM ubuntu:24.04 AS build
+# The base is pinned by DIGEST, not by the tag: `ubuntu:24.04` moves, and two builds a month apart would then
+# start from different images (one evaluator's build on 21 Sep 2026 started from 008173c2..., this host's from
+# the digest below). The compiler's own identity is asserted by the reconstructed source tree hash further
+# down, so the base only supplies the toolchain and the runtime libraries; pinning it removes one way for two
+# builds of this artifact to differ. Package versions inside the image can still move (docs/troubleshooting.md).
+FROM ubuntu@sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54 AS build
 ARG DEBIAN_FRONTEND=noninteractive
 # Acquire::Retries: a package fetch that drops mid-way (a student's build on 21 Sep 2026 died in this layer with
 # apt exit code 100 when the network blinked) is retried by apt itself instead of failing the whole build.
@@ -87,7 +92,7 @@ RUN v=$(/opt/tsan-llvm/bin/clang --version | head -1) \
 ENV PYTHONPATH=/opt/tsan-llvm/lib/python-lit
 RUN /opt/tsan-llvm/bin/llvm-lit --version
 
-FROM ubuntu:24.04
+FROM ubuntu@sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get -o Acquire::Retries=5 update && apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
       python3 python3-numpy python3-psutil git make cmake ninja-build binutils file util-linux \
