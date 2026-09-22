@@ -71,7 +71,7 @@ hash=${hash:0:12}
 # Measured at the defaults (four configurations, N = 2) on 48 pinned processors, 17-19 Sep 2026, on two hosts;
 # --all-configs multiplies by about 3.4 and ART_RUNS=5 by about 2 (one warm-up plus N runs; the campaign's per-cell costs).
 case "$app" in
-  sqlite)    t="1 h";;      memcached) t="30 min";;   ffmpeg) t="30 min for the five configurations, plus the clip's first download";;
+  sqlite)    t="1 h";;      memcached) t="30 min";;   ffmpeg) t="about 25 min for the five configurations, plus the clip's first download";;
   redis)     t="15 min";;   mysql)     t="3.5 h plus a build of about 10 min per configuration";;
 esac
 runs="$ART_RUNS"; warmup="$ART_WARMUP"

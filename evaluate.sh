@@ -86,7 +86,7 @@ if [ "$perf_tier" = 1 ]; then
   all=""; [ "$tier" = everything ] && all=" --all-configs"
   add "performance: Redis"     "15 min${all:+ (all configurations: 1 h)}"        "./docker/run.sh scripts/40-perf.sh redis$all"
   add "performance: memcached" "30 min${all:+ (all configurations: 2 h)}"        "./docker/run.sh scripts/40-perf.sh memcached$all"
-  add "performance: FFmpeg"    "30 min for five configurations, plus the clip's first download${all:+ (all configurations: 1.2 h)}" "./docker/run.sh scripts/40-perf.sh ffmpeg$all"
+  add "performance: FFmpeg"    "about 25 min for five configurations, plus the clip's first download${all:+ (all configurations: 1.2 h)}" "./docker/run.sh scripts/40-perf.sh ffmpeg$all"
   add "performance: SQLite"    "1 h${all:+ (all configurations: 3.4 h)}"          "./docker/run.sh scripts/40-perf.sh sqlite$all"
   [ "$tier" = everything ] && add "performance: MySQL" "3.5 h plus a 10-minute build per configuration" "./docker/run.sh scripts/40-perf.sh mysql"
 fi

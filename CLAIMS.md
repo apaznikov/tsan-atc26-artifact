@@ -371,7 +371,7 @@ are far from 1.0 and both survive the second concurrency point on Redis. The pee
 the tightest of the four at a resolution floor of 2.5%: 0.9941 [0.9753, 1.0125], crossing 1.0 like
 the other three.
 
-Script: `scripts/40-perf.sh ffmpeg` (about 30 minutes at the default N = 2 and five configurations at 16 threads;
+Script: `scripts/40-perf.sh ffmpeg` (about 21 minutes at the default N = 2 and five configurations at 16 threads, measured 22 Sep;
 2.2 hours at N = 5 and twelve). The input is produced before the build by one of three paths, in this
 order: a prepared copy of the reference clip from `ART_FFMPEG_CLIP_URL` (a URL or a local path), checked against
 the sha256 in `docs/ffmpeg-input.md` whichever way it arrived; a local copy of the Blender source in `ART_FFMPEG_SOURCE`, cut with the recorded
@@ -515,7 +515,7 @@ N runs per configuration:
 
 | Mode | Runs | Configurations | Time on 48 processors | What a row yields |
 |---|---|---|---|---|
-| **default** | N = 2 | four: native, stock, AllOpt with peeling, DynSTC (FFmpeg: five, the fifth being the single configuration AllOpt with peeling and DynSTC, at 16 threads) | measured on this host and on a 64-processor AMD host: Redis 13-15 min, memcached 28-36, FFmpeg about 30 (an estimate for the five-configuration 16-thread default from the measured 20-25 for four at 4 threads), SQLite 65-68: **about 2 h 30 min** together; MySQL a further 3.4 h (estimated) | a point estimate, no interval |
+| **default** | N = 2 | four: native, stock, AllOpt with peeling, DynSTC (FFmpeg: five, the fifth being the single configuration AllOpt with peeling and DynSTC, at 16 threads) | measured on this host and on a 64-processor AMD host: Redis 13-15 min, memcached 28-36, FFmpeg 21 (five configurations at 16 threads, measured 22 Sep), SQLite 65-68: **about 2 h 30 min** together; MySQL a further 3.4 h (estimated) | a point estimate, no interval |
 | everything at the default | N = 2 | all fourteen (MySQL four) | Redis 1.0 h, memcached 2.0, FFmpeg 1.2, SQLite 3.4, MySQL 3.4: **about 11 h**, 14 h with the builds | a point estimate, no interval |
 | our campaign | N = 5 | any of the above | twice the figures above (one warm-up plus five runs against one plus two); everything, 32 h of legs plus builds | a 95% interval |
 
@@ -569,7 +569,13 @@ because the reference clip is not yet downloadable and the run regenerated it. A
 the performance subset alone from another fresh clone on the same set, every cell recording its shape (24
 cores, 24 complete SMT pairs; 2 h 23 min; no cell disturbed), put four of six inside (memcached 1.017 and
 0.958, Redis AllOpt 1.023, SQLite DynSTC 1.029) and two outside: SQLite AllOpt 1.063 by 0.002 and Redis DynSTC
-0.984 by 0.014, on the same side of 1.0. The two are different cases, and both are derivable from shipped data
+0.984 by 0.014, on the same side of 1.0. A fourth run on 22 Sep 2026, from a fresh clone of the tree submitted,
+with the 16-thread FFmpeg default and the reference clip from the release, pinned to the campaign's set, 2 h 39 min
+in all (the correctness set 31 min; Redis 15, memcached 27, FFmpeg 21, SQLite 66 minutes; no cell retired): nine
+rows judged, eight inside, FFmpeg's three rows at 16 threads 1.068, 1.130 and 1.186 against 1.067, 1.133 and 1.187,
+and Redis DynSTC 0.979 outside by 0.009 on the same side of 1.0, the third time in four runs on this host that this
+row lies one to four points above its interval, which is the drift condition stated with every Redis row and is
+why an outside row is a question and not a verdict. The two are different cases, and both are derivable from shipped data
 with `harness/tools/perf/subset_spread.py`, which recomputes the headline statistic over every two-run subset
 of an N = 5 leg through the aggregator's own estimator. SQLite AllOpt: over the ten two-run subsets of the
 N = 5 leg of 18 Sep (shipped as `data/perf/n2-spread-sqlite-n5-20260918`, claimed for nothing) the point

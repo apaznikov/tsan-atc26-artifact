@@ -75,28 +75,31 @@ suite and the shipped tables (what each step established is CLAIMS.md sections 1
 about speed.
 ```
 
-The Reproduced tier ends with the comparison. This one is our own run of 20 Sep 2026 from a fresh clone on our
-host, the set chosen by the script (the stock-against-native lines and the "rows not produced by this run"
-lines left out); FFmpeg is not compared in this run, which predates the release of the reference clip and regenerated it:
-
+The Reproduced tier ends with the comparison. This one is our own run of 22 Sep 2026 from a fresh clone of the
+tree submitted, on our host, pinned to the campaign's set (the stock-against-native lines and the "rows not produced
+by this run" lines left out); FFmpeg ran at the 16-thread default on the reference clip fetched from the release, so
+its three rows are compared; the Redis DynSTC row sits 0.009 above its interval on the same side of 1.0, the drift
+condition `CLAIMS.md` states with every Redis row (2 h 39 min in all, the correctness set included):
 ```
-    pinning ART_CPUSET=4-27,60-83: 24 physical cores with both SMT threads of each (48 logical processors), the campaign's shape
+     ART_CPUSET=4-27,60-83 (our runs used 48 processors, 4-27 and 60-83 on our host).
 Verdicts are against the intervals in CLAIMS.md section 5: the campaign on the shipped compiler,
 the camera-ready's figures. The submitted version's figures are in that file's 'Paper' column.
 
 app        row                                       yours  ours (N=5)             verdict
 ----------------------------------------------------------------------------------------------------
-ffmpeg     AllOpt with peeling                 1.010 (N=2)  1.006 [0.990, 1.024]   not comparable: not the reference clip
-ffmpeg     DynSTC                              1.122 (N=2)  1.113 [1.099, 1.129]   not comparable: not the reference clip
-memcached  AllOpt with peeling                 1.017 (N=2)  1.019 [0.951, 1.079]   IN
-memcached  DynSTC                              0.958 (N=2)  0.986 [0.944, 1.063]   IN
-redis      AllOpt with peeling                 1.023 (N=2)  1.000 [0.983, 1.026]   IN
-redis      DynSTC                              0.984 (N=2)  0.944 [0.927, 0.970]   OUT by 0.014 above, same side of 1.0
-sqlite     AllOpt with peeling                 1.063 (N=2)  1.023 [0.942, 1.061]   OUT by 0.002 above
-sqlite     DynSTC                              1.029 (N=2)  0.995 [0.928, 1.082]   IN
 ----------------------------------------------------------------------------------------------------
-6 rows judged, 2 outside their intervals.
-evaluate.sh: PASS on every step, COMPARISON NOT CLEAN  (tier reproduced, 2h23m; full log in results/evaluate-reproduced-20260920-115055.log)
+ffmpeg     AllOpt with peeling                 1.068 (N=2)  1.067 [1.050, 1.079]   IN , same side of 1.0
+ffmpeg     AllOpt with peeling and DynSTC            1.186 (N=2)  1.187 [1.171, 1.201]   IN , same side of 1.0
+ffmpeg     DynSTC                              1.130 (N=2)  1.133 [1.114, 1.146]   IN , same side of 1.0
+memcached  AllOpt with peeling                 1.038 (N=2)  1.019 [0.951, 1.079]   IN 
+memcached  DynSTC                              0.974 (N=2)  0.986 [0.944, 1.063]   IN 
+redis      AllOpt with peeling                 1.005 (N=2)  1.000 [0.983, 1.026]   IN 
+redis      DynSTC                              0.979 (N=2)  0.944 [0.927, 0.970]   OUT by 0.009 above, same side of 1.0
+sqlite     AllOpt with peeling                 1.032 (N=2)  1.023 [0.942, 1.061]   IN 
+sqlite     DynSTC                              0.930 (N=2)  0.995 [0.928, 1.082]   IN 
+----------------------------------------------------------------------------------------------------
+9 rows judged, 1 outside their intervals.
+evaluate.sh: PASS on every step, COMPARISON NOT CLEAN  (tier reproduced, 2h39m; full log in results/evaluate-reproduced-20260921-213619.log)
 ```
 
 Two rows outside is what this run reads at N = 2, and `CLAIMS.md` section 5 says what each means: the
@@ -290,7 +293,7 @@ regenerated from whichever runs you point them at.
 | `21-compile-time.sh <app>` | compile-time overhead, three clean builds per configuration | 20 min to 3 h per application (MySQL 5 to 10 h) | 8 cores |
 | `30-preservation-suite.sh` | 12 configurations over ThreadSanitizer's regression suite, pass or fail per test (the report-level comparison is recorded, not re-run; `CLAIMS.md` section 1) | about 20 min on 64 processors, 25 min on this host, 40 min on 8 | 8 cores |
 | `31-preservation-apps.sh <app> 10` | races reported on the applications, against stock; N = 10 runs for a verdict (the default N = 2 prints the per-site frequencies without one) | 1.5 to 3 h per application | 16 cores |
-| `40-perf.sh <app>` | the performance table, one application at a time | default (4 configurations, N = 2), measured: Redis 13-15 min, memcached 28-36, FFmpeg about 30 (five configurations at 16 threads), SQLite 65-68; MySQL about 3.4 h; everything at N = 2 about 14 h with builds; `ART_RUNS=5` for intervals, twice as long | 32 cores |
+| `40-perf.sh <app>` | the performance table, one application at a time | default (4 configurations, N = 2), measured: Redis 13-15 min, memcached 28-36, FFmpeg 21-25 (five configurations at 16 threads), SQLite 65-68; MySQL about 3.4 h; everything at N = 2 about 14 h with builds; `ART_RUNS=5` for intervals, twice as long | 32 cores |
 | `50-eviction-stress.sh` | the bounded-shadow experiments | 15 min to 1 h | any |
 | `13-verify-image.sh` | the image an evaluator built is the compiler we measured: version, stamp, self-containedness, and the reconstructed tree hash from the build log | about 35 min (a minute with `--static`); runs on the host, it starts its own container | any |
 | `90-tables.sh` | regenerates every performance table, the results ledger and the eviction tables, from your runs or from ours | 1 min | any |

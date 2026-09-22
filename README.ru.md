@@ -83,24 +83,31 @@ about speed.
 машине, набор процессоров выбран скриптом (без строк stock-против-native и без строк «rows not produced by
 this run»); FFmpeg в этом прогоне не сравнивается: он сделан до выхода релиза с эталонным клипом и пересоздал клип:
 
+Уровень Reproduced заканчивается сравнением. Это наш собственный прогон 22 сентября 2026 из свежего клона
+поданного дерева на нашей машине, закреплённый на наборе кампании (строки stock-против-native и строки «rows not
+produced by this run» опущены); FFmpeg шёл на 16 потоках по умолчанию на эталонном клипе из релиза, поэтому его три
+строки сравниваются; строка Redis DynSTC на 0,009 выше своего интервала по ту же сторону от 1,0, условие дрейфа,
+которое `CLAIMS.md` приводит при каждой строке Redis (2 ч 39 мин всего, включая набор корректности):
 ```
-    pinning ART_CPUSET=4-27,60-83: 24 physical cores with both SMT threads of each (48 logical processors), the campaign's shape
+     ART_CPUSET=4-27,60-83 (our runs used 48 processors, 4-27 and 60-83 on our host).
 Verdicts are against the intervals in CLAIMS.md section 5: the campaign on the shipped compiler,
 the camera-ready's figures. The submitted version's figures are in that file's 'Paper' column.
 
 app        row                                       yours  ours (N=5)             verdict
 ----------------------------------------------------------------------------------------------------
-ffmpeg     AllOpt with peeling                 1.010 (N=2)  1.006 [0.990, 1.024]   not comparable: not the reference clip
-ffmpeg     DynSTC                              1.122 (N=2)  1.113 [1.099, 1.129]   not comparable: not the reference clip
-memcached  AllOpt with peeling                 1.017 (N=2)  1.019 [0.951, 1.079]   IN
-memcached  DynSTC                              0.958 (N=2)  0.986 [0.944, 1.063]   IN
-redis      AllOpt with peeling                 1.023 (N=2)  1.000 [0.983, 1.026]   IN
-redis      DynSTC                              0.984 (N=2)  0.944 [0.927, 0.970]   OUT by 0.014 above, same side of 1.0
-sqlite     AllOpt with peeling                 1.063 (N=2)  1.023 [0.942, 1.061]   OUT by 0.002 above
-sqlite     DynSTC                              1.029 (N=2)  0.995 [0.928, 1.082]   IN
 ----------------------------------------------------------------------------------------------------
-6 rows judged, 2 outside their intervals.
-evaluate.sh: PASS on every step, COMPARISON NOT CLEAN  (tier reproduced, 2h23m; full log in results/evaluate-reproduced-20260920-115055.log)
+ffmpeg     AllOpt with peeling                 1.068 (N=2)  1.067 [1.050, 1.079]   IN , same side of 1.0
+ffmpeg     AllOpt with peeling and DynSTC            1.186 (N=2)  1.187 [1.171, 1.201]   IN , same side of 1.0
+ffmpeg     DynSTC                              1.130 (N=2)  1.133 [1.114, 1.146]   IN , same side of 1.0
+memcached  AllOpt with peeling                 1.038 (N=2)  1.019 [0.951, 1.079]   IN 
+memcached  DynSTC                              0.974 (N=2)  0.986 [0.944, 1.063]   IN 
+redis      AllOpt with peeling                 1.005 (N=2)  1.000 [0.983, 1.026]   IN 
+redis      DynSTC                              0.979 (N=2)  0.944 [0.927, 0.970]   OUT by 0.009 above, same side of 1.0
+sqlite     AllOpt with peeling                 1.032 (N=2)  1.023 [0.942, 1.061]   IN 
+sqlite     DynSTC                              0.930 (N=2)  0.995 [0.928, 1.082]   IN 
+----------------------------------------------------------------------------------------------------
+9 rows judged, 1 outside their intervals.
+evaluate.sh: PASS on every step, COMPARISON NOT CLEAN  (tier reproduced, 2h39m; full log in results/evaluate-reproduced-20260921-213619.log)
 ```
 
 Две строки снаружи это то, что этот прогон читает при N = 2, а раздел 5 `CLAIMS.md` говорит, что каждая из них
@@ -294,7 +301,7 @@ ThreadSanitizer в 12 конфигурациях с предшествующей
 | `21-compile-time.sh <app>` | накладные расходы на компиляцию, три чистые сборки на конфигурацию | от 20 мин до 3 ч на приложение (MySQL 5–10 ч) | 8 ядер |
 | `30-preservation-suite.sh` | 12 конфигураций на регрессионном наборе ThreadSanitizer, прошёл или нет по каждому тесту (сравнение на уровне отчётов записано, не перезапускается; `CLAIMS.md`, раздел 1) | около 20 мин на 64 процессорах, 25 мин на нашей машине, 40 мин на 8 | 8 ядер |
 | `31-preservation-apps.sh <app> 10` | гонки, найденные на приложениях, против stock; для вердикта нужно N = 10 прогонов (по умолчанию N = 2 печатает частоты по точкам без вердикта) | 1.5–3 ч на приложение | 16 ядер |
-| `40-perf.sh <app>` | таблица производительности, по одному приложению | по умолчанию (4 конфигурации, для FFmpeg 5, N = 2), измерено: Redis 13–15 мин, memcached 28–36, FFmpeg около 30 (пять конфигураций при 16 потоках), SQLite 65–68; MySQL около 3.4 ч; всё при N = 2 около 14 ч со сборками; `ART_RUNS=5` для интервалов, вдвое дольше | 32 ядра |
+| `40-perf.sh <app>` | таблица производительности, по одному приложению | по умолчанию (4 конфигурации, для FFmpeg 5, N = 2), измерено: Redis 13–15 мин, memcached 28–36, FFmpeg 21–25 (пять конфигураций при 16 потоках), SQLite 65–68; MySQL около 3.4 ч; всё при N = 2 около 14 ч со сборками; `ART_RUNS=5` для интервалов, вдвое дольше | 32 ядра |
 | `50-eviction-stress.sh` | эксперименты с ограниченной shadow-памятью | от 15 мин до 1 ч | любое |
 | `13-verify-image.sh` | собранный образ это тот компилятор, на котором мы измеряли: версия, штамп, самодостаточность и хеш восстановленного дерева из лога сборки | около 35 мин (минута с `--static`); запускается на хосте, сам стартует контейнер | любое |
 | `90-tables.sh` | пересобирает все таблицы, из ваших прогонов или из наших | 1 мин | любое |
