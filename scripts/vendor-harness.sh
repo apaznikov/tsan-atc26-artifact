@@ -94,6 +94,23 @@ LAB_ONLY=(
   # was superseded by tools/fetch_archive.sh, which verifies. Reachable from nothing; dropped so that the tree
   # contains no download path that skips verification.
   download-and-extract-mysql.sh download-and-unpack.sh redis-for-trace-analyzer.sh
+  # Two Stage A drivers named after SQLite that, in their fourth line, `cd ../../chromium` and `setsid nohup`
+  # two Chromium builds: the artifact contains no such directory, and an evaluator running either would
+  # detach two builds against nothing. They survived the sweep that removed the stageA/stageB drivers
+  # because a list catches what someone thought to name, and these are named after the wrong application
+  # (found by tsan-exp with a pattern sweep for `../../chromium` and `setsid|nohup`, 22 Sep 2026).
+  sqlite_dompeel_control.sh sqlite_singles_rebuild.sh
+  # Writes the aggregator's tables into tools/perf/README.md, the lab notebook that no longer ships; in the
+  # container that path is the read-only harness mount, so it can only fail, and it has no evaluator purpose.
+  write_readme_results.py
+  # Three one-off lab probes: they answer questions the campaign asked of this machine (memcached's sticky
+  # slow mode, core placement, an FFmpeg re-run at the paper's thread count), reference no missing file and
+  # write only under an overridable root, so they are untidy rather than dangerous -- but one of them calls
+  # write_readme_results.py above, and an artifact that ships a script calling a script it does not ship is
+  # worse than one that ships neither.
+  layout_probe.sh memcached_placement_probe.sh ffmpeg_rerun_4threads.sh
+  # Superseded by run_sqlite_test.sh, which every live path calls; reachable from nothing and named `_old`.
+  run_sqlite_test_all_old.sh
 )
 # PATH-SPECIFIC exclusions, for files whose BASENAME is too common to put in LAB_ONLY (which matches by
 # basename and would have taken every README.md in the harness, including the two that document the

@@ -34,7 +34,7 @@ rsync -a --delete "${EXCL[@]}" "$src/tools/eviction-counters/results/" "$dst/evi
 # The scripts that turn recorded runs into the paper's tables, unchanged from the harness.
 # aggregate.py computes ROOT as ../.. from its own directory, so it must sit at data/tools/perf/ and the
 # per-application parsers at data/{nosql,sql,projects}/..., mirroring the harness layout.
-for f in aggregate.py report.py results_ledger.py write_readme_results.py meta_tool.py; do
+for f in aggregate.py report.py results_ledger.py meta_tool.py; do
   [ -f "$src/tools/perf/$f" ] && cp "$src/tools/perf/$f" "$dst/tools/perf/"
 done
 cp "$src/tools/preservation/tsan_reports.py" "$dst/tools/preservation/" 2>/dev/null || true
