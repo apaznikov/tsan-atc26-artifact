@@ -107,11 +107,33 @@ def svg(app, ours, yours_list, title_note):
     return "\n".join(out)
 
 
+USAGE = """figures.py [--out DIR] [results tree ...]
+
+  --out DIR   where to write the SVGs (default: ./figures)
+  trees       results/perf-<app>-<stamp> directories, drawn as points beside our bars
+
+With no tree it draws the shipped campaign alone. Called by scripts/92-figures.sh, which picks the output
+directory under results/ for you."""
+
+
 def main():
     args = sys.argv[1:]
     out_dir = "figures"
+    # ARGUMENTS ARE CHECKED BEFORE ANYTHING IS WRITTEN. Until 22 Sep 2026 every argument was taken for a
+    # results tree, so `figures.py --help` wrote five files into the current directory instead of printing
+    # this; inside the container that directory is the read-only harness mount and it would have died on the
+    # write rather than explaining itself. (Found by tsan-exp running --help.)
+    if any(a in ("-h", "--help") for a in args):
+        print(USAGE); return 0
     if args and args[0] == "--out":
+        if len(args) < 2:
+            print("--out needs a directory\n\n" + USAGE, file=sys.stderr); return 64
         out_dir = args[1]; args = args[2:]
+    for a in args:
+        if a.startswith("-"):
+            print(f"unknown option {a!r}\n\n" + USAGE, file=sys.stderr); return 64
+        if not os.path.isdir(a):
+            print(f"not a directory: {a}\n\n" + USAGE, file=sys.stderr); return 64
     here = os.path.dirname(os.path.abspath(__file__))
     root = os.environ.get("ART_ROOT") or os.path.abspath(os.path.join(here, "..", "..", ".."))
     shipped = os.path.join(root, "data", "perf", "campaign-f3deebfbab60")

@@ -1,4 +1,4 @@
-# vendored from /home/alexey/tsan-experiments on 2026-09-22T18:54:51+08:00
+# vendored from /home/alexey/tsan-experiments on 2026-09-22T18:55:41+08:00
 sha256	bytes	path
 02f84908c1130634220de08e42567e7cbe52c9c25f3e4e83e5078df7e74afa9e	3963	config_definitions.sh
 e45334db43c2bbabb02620792c6f18ba0a2f93bacbbc49f869524b18f3b1001b	12072	nosql/memcached/build_memcached.sh
@@ -80,7 +80,7 @@ deeb69f28a168a28106d988ab425d4f36325eeddfdba6ebfc6acb6487fc25acd	29870	tools/per
 e04995d3b260594386253bd42438f84f04666f55caee744cafff160d8d6574ba	2647	tools/perf/configs.sh
 6bf12cdb801606ad61dea4a75387ccc3e9e75db542e673c1c6e5db21c3fca8dd	3479	tools/perf/counters_read.py
 a872d0a9276aa24d62aac74e332a7a68e5ad53a82801f0c9f76a198a7e21f65d	4329	tools/perf/cpu_snapshot.py
-3310e84fb029bc557d0a62e8ad4e8de76402d2c4a293b4c7686ffe6b0601a1d5	7706	tools/perf/figures.py
+595e98cfc7bd2b29e509cab1c96873aaf069c347654a8a767960f9ac4bfd8a19	8890	tools/perf/figures.py
 f29403969c2d504d4855f42ca03d90ab2e391a8eb1c29180d71ea2504e355ba2	2993	tools/perf/final_aggregate.sh
 6dc6cbaa6006ab874e49255f74e0d4019a59ac70ec772540cdf600c9d4d56b08	3553	tools/perf/foreign_build_ab.py
 2fec1e371a076ebf79d97a82d5e0e66f34ac340b61471a13b2ad2daa281c3e7f	564	tools/perf/ignore_cpus
