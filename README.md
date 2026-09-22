@@ -142,6 +142,7 @@ twice is safe: every run writes a new directory, and the tables are regenerated 
 | `40-perf.sh <app>` | the performance table for one application | Redis 15 min, memcached 30, FFmpeg 25, SQLite 1 h, MySQL 3.5 h |
 | `50-eviction-stress.sh` | the bounded-shadow experiments | 15 min to 1 h |
 | `90-tables.sh` | regenerates the performance tables, the results ledger and the eviction tables from recorded runs | 1 min |
+| `92-figures.sh` | the paper's presentation: one bar chart per application, our campaign with its intervals, and your own run's points beside it when you name a results directory | 1 min |
 
 `90-tables.sh` needs nothing else to have run: with no argument it re-derives those tables from the data we
 ship, which is the fastest way to check that our tables follow from our runs. Every performance script also
