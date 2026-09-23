@@ -15,10 +15,23 @@ RAM, Ubuntu 24.04, kernel 6.8.
 
 ## Terms used below
 
-- **Configuration**: one compiler setting per build. The tables name them as the harness does: `orig`
-  native, `tsan` stock ThreadSanitizer, `tsan-dom_peeling-ea-lo-st-swmr` AllOpt with peeling (the paper's
-  AllOpt), `tsan-stmt` DynSTC; the full legend is in `README.md`. Every configuration row is a ratio
-  against `tsan` on the same machine in the same session; above 1.0 is faster than stock.
+- **Configuration**: one compiler setting per build, named as the harness names it. Names compose per
+  hyphen token, so any subset can be built and measured. Every configuration row is a ratio against `tsan`
+  on the same machine in the same session; above 1.0 is faster than stock.
+
+  | Name | What it builds |
+  |---|---|
+  | `orig` | native, no ThreadSanitizer |
+  | `tsan` | stock ThreadSanitizer, the baseline of every ratio |
+  | `tsan-st`, `tsan-swmr`, `tsan-lo`, `tsan-ea`, `tsan-dom` | one analysis alone: STC, SWMR, LO, EA, DE |
+  | `tsan-dom_peeling` | DE with loop peeling |
+  | `tsan-stmt` | DynSTC, the dynamic single-threaded-context transformation |
+  | `tsan-sound` | the four sound analyses together: STC, SWMR, LO, EA |
+  | `tsan-dom-ea-lo-st-swmr` | those four with DE, no peeling; the tables label it `AllOpt-peel` |
+  | `tsan-dom_peeling-ea-lo-st-swmr` | the same with peeling: the paper's AllOpt, labelled `AllOpt+peel` |
+  | `tsan-dom_peeling-ea-lo-st-swmr-stmt` | AllOpt with peeling and DynSTC; the tables print the name itself, for the reason recorded in `data/tools/perf/aggregate.py` |
+  | suffix `-wp` | with whole-program summaries; defined for memcached, Redis and SQLite only |
+  | suffix `-nofe` | with the upstream flag `-tsan-instrument-func-entry-exit=false`, not this paper's contribution (its own section below) |
 - **Cell, leg, root**: a cell is one application, one configuration, one run; a leg is one application's
   sequence of cells in run-major order; a root is a directory of legs recorded under one compiler
   (`data/perf/campaign-f3deebfbab60/primary`).
@@ -289,7 +302,7 @@ is flat between 8 and 16 threads and the choice of 16 over 8 is libx265's ceilin
 AllOpt with peeling carries more static sites than stock at every count (535 690 against 507 825: peeling
 duplicates loop bodies), so the gain is a runtime effect and not a static-count one.
 
-Legs: a fresh clone of the artifact at `c280f2b` on this host, `ART_CPUSET=4-27,60-83 ART_RUNS=5
+Legs: a fresh clone of the artifact taken on this host on the evening of 21 Sep, `ART_CPUSET=4-27,60-83 ART_RUNS=5
 ART_WARMUP=1`, the campaign's set and shape, the machine quiet by announcement, the evening and night of 21-22 Sep on this host's clock (the trees' UTC
 stamps read 21 Sep, 13:58 to 17:33). The 16-thread leg: 35
 measured cells beside their warm-ups, none retired. The 8-thread leg: 20 cells, two retired by the
@@ -297,8 +310,9 @@ disturbance gate (a transient load outside the set) and re-run to completion, th
 beside their replacements. Runs under `data/perf/campaign-f3deebfbab60/ffmpeg-t16/` (this table's leg, which also
 carries the two FFmpeg rows of the upstream-flag section below) and the sweep root above;
 `scripts/90-tables.sh` regenerates both tables byte-identically and `scripts/91-verify-provenance.sh`
-checks both strictly against the shipped compiler. The legs ran from that clone at `c280f2b`, not from the tree
-tagged for submission; between the two, the code a Redis, memcached, SQLite or FFmpeg cell executes is the same
+checks both strictly against the shipped compiler. The legs ran from that clone, not from the tree
+tagged for submission (this repository's history is one commit, so the clone's own hash no longer exists);
+between the two, the code a Redis, memcached, SQLite or FFmpeg cell executes is the same
 (the per-application workload lines and the aggregator are byte-identical; the whole difference on the measurement
 path is FFmpeg's default thread count, which these legs set explicitly and each cell records as an override), and
 the runner later gained a stopping rule for cells that fail at once and the cell record a `failed` field, which

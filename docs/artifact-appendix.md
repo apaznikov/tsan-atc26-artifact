@@ -26,7 +26,8 @@ Supported by the artifact:
 - **Compile-time cost**: the script and the criterion (same order of magnitude as stock); the shipped control
   is memcached, whose build is too short to resolve the effect; MySQL's run is the evaluator's option (5-10 h).
 - **Runtime performance**, as a table with confidence intervals. On the shipped compiler DynSTC's two
-  directional effects (FFmpeg above stock, Redis below) reproduce on comparable hardware; at the paper's thread
+  directional effects (FFmpeg above stock, Redis below) reproduce on comparable hardware, which is the
+  condition `CLAIMS.md` section 5 states; FFmpeg's also reproduces off it and Redis's does not; at the paper's thread
   counts every other configuration lies within its interval of stock ThreadSanitizer, and at 16 threads the full
   sound bundle with DynSTC reaches +19 % on FFmpeg.
 
@@ -44,9 +45,13 @@ compares against. The submitted version's figures, measured before those fixes, 
 column beside ours.
 
 What the campaign establishes: DynSTC changes performance measurably, a gain of 11 % on FFmpeg at the paper's
-four threads and a cost of 5.6 % on Redis, both confirmed at a second concurrency and on a second host; at 16
-threads, which the thread sweep chose after the campaign and which the artifact uses by default, the full
-sound bundle with DynSTC reaches 18.7 % on FFmpeg. Every other configuration lies within its interval of stock
+four threads and a cost of 5.6 % on Redis. The two results are not equally portable, and the appendix says so
+rather than averaging them. FFmpeg's gain holds at 2, 4, 8 and 16 encoder threads, every interval excluding
+1.0, and on the second host at 1.115. Redis's cost holds at four client counts on the campaign's host, 50
+through 512, every interval excluding 1.0 — and it does not reproduce on the second host, where the same
+configuration reads 0.985, 1.035, 1.008 and 0.971 across those counts, resolving nothing and changing sign.
+At 16 threads, which the thread sweep chose after the campaign and which the artifact uses by default, the
+full sound bundle with DynSTC reaches 18.7 % on FFmpeg. Every other configuration lies within its interval of stock
 ThreadSanitizer, and 2 to 8 % of the static instrumentation is removed.
 
 ## Contents, hosting and requirements

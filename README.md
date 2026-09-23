@@ -11,9 +11,10 @@ match. Nothing outside that file is claimed here.
 
 ## What you need
 
-Docker on an x86-64 Linux host, with your user in the `docker` group; we have run this on Docker 28.5 and
-29.1, and `docker/run.sh` sets the container's file-descriptor limit itself because the two versions default
-it differently. Nothing else is installed on the host: the compiler, `llvm-lit` and the benchmark clients
+Docker on an x86-64 Linux host, with your user in the `docker` group. Engine 24 or later should do — every
+option the artifact passes is older than that — and what we have actually run it on is 28.5 and 29.1;
+`docker/run.sh` sets the container's file-descriptor limit itself, because those two versions default it
+differently. Nothing else is installed on the host: the compiler, `llvm-lit` and the benchmark clients
 live inside the image, which the first command builds in 15 to 25 minutes.
 
 | For | Processors | Memory | Disk |
@@ -142,6 +143,7 @@ twice is safe: every run writes a new directory, and the tables are regenerated 
 | `40-perf.sh <app>` | the performance table for one application | Redis 15 min, memcached 30, FFmpeg 25, SQLite 1 h, MySQL 3.5 h |
 | `50-eviction-stress.sh` | the bounded-shadow experiments | 15 min to 1 h |
 | `90-tables.sh` | regenerates the performance tables, the results ledger and the eviction tables from recorded runs | 1 min |
+| `91-verify-provenance.sh` | every recorded run against its own metadata: one compiler, one processor set, one mode per leg, and the campaign's compiler hash where a claim rests on it | 2 min |
 | `92-figures.sh` | the paper's presentation: one bar chart per application, our campaign with its intervals, and your own run's points beside it when you name a results directory | 1 min |
 
 `90-tables.sh` needs nothing else to have run: with no argument it re-derives those tables from the data we
