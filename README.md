@@ -151,8 +151,9 @@ ship, which is the fastest way to check that our tables follow from our runs. Ev
 takes `ART_SMOKE=1`: one run, no warm-up, output marked NOT A MEASUREMENT, answering only whether the
 pipeline works on your machine. What it shortens differs by application, so know before you start one: the
 workload itself is cut only for memcached (2 000 requests) and MySQL (20-second sysbench runs); Redis and
-FFmpeg run their full workload once, which is a few minutes for Redis and rather longer for FFmpeg; MySQL's
-build dominates whatever the run costs; and **SQLite is not shortened at all** — it runs the whole
+FFmpeg run their full workload once, so their smoke is four or five cells at the campaign's own cost per
+cell — about 90 seconds each for Redis, about two minutes each for FFmpeg, plus that application's builds;
+MySQL's build dominates whatever its run costs; and **SQLite is not shortened at all** — it runs the whole
 seven-subtest suite on each build, so its smoke costs about what its measurement costs. Smoke Redis or
 memcached to test the pipeline. `env.sh` holds every knob, `ART_RUNS=5` among them.
 
