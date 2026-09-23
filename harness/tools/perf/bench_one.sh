@@ -75,9 +75,9 @@ case "$APP" in
   # count that was never chosen, and 0 is a value a caller could legitimately pass. The knob is still
   # named, so "named with a null value" reads as "this application has the knob and did not use it",
   # distinct from memcached's "no such knob". (tsan-paper's question, 23 Sep 2026.)
-  sqlite) KNOB_JSON='"sqlite_w1_threads"'; KNOB_EFF="${SQLITE_W1_THREADS:-null}"
+  sqlite) KNOB_JSON='"sqlite_w1_threads"'; KNOB_EFF="${SQLITE_W1_THREADS:-None}"   # None: this block is Python
           case "${SQLITE_W1_THREADS:-}" in "") KNOB_FROM_ENV=False;; *) KNOB_FROM_ENV=True;; esac;;
-  *)      KNOB_JSON=null; KNOB_EFF=null; KNOB_FROM_ENV=False;;
+  *)      KNOB_JSON=None; KNOB_EFF=None; KNOB_FROM_ENV=False;;   # None, not null: the meta block is Python
 esac
 # THE CAMPAIGN'S RULE, NOT A FIXED NUMBER AND NOT NCPU/2. The campaign's parameter was a RULE -- threads
 # equal to the PINNED PROCESSORS, three quarters of them for sysbench (campaign-parameters.md R1) -- and on

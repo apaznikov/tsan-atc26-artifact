@@ -148,10 +148,13 @@ twice is safe: every run writes a new directory, and the tables are regenerated 
 
 `90-tables.sh` needs nothing else to have run: with no argument it re-derives those tables from the data we
 ship, which is the fastest way to check that our tables follow from our runs. Every performance script also
-takes `ART_SMOKE=1`: one run, output marked NOT A MEASUREMENT, which answers only whether the pipeline works
-on your machine. It is a few minutes for Redis, memcached, FFmpeg and MySQL. **It does not shorten SQLite's
-workload**, which is the whole seven-subtest run either way, so a SQLite smoke takes about as long as a
-SQLite measurement; use another application to test the pipeline. `env.sh` holds every knob, `ART_RUNS=5` among them.
+takes `ART_SMOKE=1`: one run, no warm-up, output marked NOT A MEASUREMENT, answering only whether the
+pipeline works on your machine. What it shortens differs by application, so know before you start one: the
+workload itself is cut only for memcached (2 000 requests) and MySQL (20-second sysbench runs); Redis and
+FFmpeg run their full workload once, which is a few minutes for Redis and rather longer for FFmpeg; MySQL's
+build dominates whatever the run costs; and **SQLite is not shortened at all** — it runs the whole
+seven-subtest suite on each build, so its smoke costs about what its measurement costs. Smoke Redis or
+memcached to test the pipeline. `env.sh` holds every knob, `ART_RUNS=5` among them.
 
 ## If something does not work
 
