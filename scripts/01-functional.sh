@@ -3,7 +3,7 @@
 # one verdict at the end. This is the path for the Functional badge; nothing here depends on the
 # machine, and the results are identical on any x86-64 Linux host.
 #
-#   scripts/01-functional.sh            all of it: 23 min on 64 processors, 30 min on 112, 48 min on 8 (measured 21 Sep 2026)
+#   scripts/01-functional.sh            all of it: 23 min on 64 processors, 30 min on 112, 48 min on 8 (measured)
 #   scripts/01-functional.sh --quick    everything except the regression suite, about 2 to 5 minutes
 #
 # Run it inside the container: docker/run.sh scripts/01-functional.sh

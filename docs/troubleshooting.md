@@ -24,8 +24,7 @@ newgrp docker
 ```
 
 Running the scripts with `sudo` also works but leaves `results/` and `build/` owned by root.
-`00-prereqs.sh` reports this as "docker daemon access" missing; a version before 18 Sep 2026 checked only
-that the `docker` command existed, and a run on a second server passed the check and failed the build.
+`00-prereqs.sh` reports this as "docker daemon access" missing.
 
 Two warnings from Docker itself are not failures: "DEPRECATED: The legacy builder is deprecated" means the
 BuildKit plugin (`docker-buildx`) is not installed, and the image builds with the legacy builder all the
@@ -56,18 +55,16 @@ is the smallest of `MemAvailable`, the cgroup's `memory.max` when finite, and th
 where the daemon's cap is visible, and print the number with its reason. The same value drives the
 application builds and the test suites inside the container. `ART_JOBS=n` overrides it. A container
 started by hand rather than through `docker/run.sh` cannot see the daemon's cap and derives a larger
-number from the host's memory: on our machine 78 jobs from 197 GiB available, against a 64 GiB
-ceiling, which is exactly the thrash described above. The wrapper is where the right number can be
-computed, not a convenience; if you bypass it, set `ART_JOBS` yourself from the daemon's cap. Measured with `--no-cache` on our host: 14m52s at
-the derived default of 25 jobs, 24m38s at 8 jobs. We found this on our own machine, 112 threads
-under a 64 GiB cap, when the script still defaulted to one job per thread.
+number from the host's memory (on our machine 78 jobs from 197 GiB available, against a 64 GiB
+ceiling, which is exactly the thrash described above); if you bypass the wrapper, set `ART_JOBS` yourself
+from the daemon's cap. Measured with `--no-cache` on our host: 14m52s at the derived default of 25 jobs,
+24m38s at 8 jobs.
 
 ## A performance leg ran to the end and then failed before printing its table
 
 The runs and the table are separate: every cell is written to its own directory as it completes, and the
-table is computed afterwards by `aggregate.py`. A failure at that last step (we produced one ourselves by
-editing `40-perf.sh` while it was executing; a full disk or an interrupted container would do the same)
-loses the table and not the runs. Regenerate it from the tree without re-running anything:
+table is computed afterwards by `aggregate.py`. A failure at that last step (a full disk or an interrupted
+container, for example) loses the table and not the runs. Regenerate it from the tree without re-running anything:
 
 ```
 ./docker/run.sh scripts/90-tables.sh results/perf-<app>-<stamp>
@@ -84,17 +81,11 @@ tests that pass by reporting nothing can pass for want of an interleaving.
 
 ## `ART_SMOKE=1 scripts/40-perf.sh sqlite` is not short
 
-It is not hung: SQLite is the one application whose smoke run is not shortened. Smoke mode exports
-`SQLITE_TESTS=walthread1`, and `run_sqlite_test.sh` reads that variable only on its `--w1-threads`
-contention path; with the thread knob unset, which is the default, threadtest3 is invoked with no test
-argument and runs the whole seven-subtest suite on each of the four builds. Expect roughly the time of a
-SQLite measurement rather than a few minutes: we timed one on 23 September 2026 and the FIRST cell, the
-uninstrumented `orig` build, took 7 minutes 40 seconds on its own. The four instrumented configurations are
-slower, so nothing is written for well over half an hour. Smoke mode shortens the workload itself only for memcached
-and MySQL; Redis and FFmpeg run theirs once in full. To check that the pipeline works on your machine,
-smoke memcached: its smoke cells ran in twelve seconds each when we measured one on 23 September 2026. (Found 23 September 2026 by running one; the
-repair changes the command threadtest3 receives on the path every shipped SQLite number came from, so it
-is deliberately not in this release.)
+It is not hung: SQLite is the one application whose smoke run is not shortened
+(`docs/campaign-parameters.md`, "Smoke mode"): threadtest3 runs the whole seven-subtest suite on each build.
+Expect roughly the time of a SQLite measurement rather than a few minutes: the first cell, the uninstrumented
+`orig` build, takes 7 minutes 40 seconds on its own, and the instrumented configurations are slower. To check
+that the pipeline works on your machine, smoke memcached, whose smoke cells take about twelve seconds each.
 
 ## "Instrumentation counts differ from CLAIMS.md by a few calls"
 
@@ -106,8 +97,6 @@ cause is named: Redis auto-detects libsystemd at build time and the image has no
 the container build compiles out `redisCommunicateSystemd` and the branches in its four callers, 19
 memory-access sites; the same 19 will appear on every evaluator's image. The differences between
 configurations are the claim; an offset on every row alike is the build environment, not the compiler.
-Making both sides independent of the host (`USE_SYSTEMD=no` in the harness) is a post-submission
-change, since it would also change the campaign's binaries.
 
 ## "DE removed nothing from my own test program"
 
@@ -124,11 +113,9 @@ reporting cost does not enter the timing.
 
 ## Tests that are non-deterministic under stock ThreadSanitizer too
 
-`race_on_barrier2.c` reports its race from either thread (18/20 one way, 2/20 the other, under
-stock and every configuration); `fd_location_closed.cpp` varies its location descriptor line;
-`fork_atexit.cpp` reports in roughly one run in five under stock and every configuration alike. The
-recorded report-level comparison (`CLAIMS.md`, section 1) names these three; the suite script compares
-pass and fail per test.
+`race_on_barrier2.c`, `fd_location_closed.cpp` and `fork_atexit.cpp` vary under stock and every
+configuration alike; `docs/nondeterministic-tests.md` says how. The suite script compares pass and fail per
+test, so they do not affect its verdict.
 
 ## "The container has fewer cores than a script assumes"
 
@@ -140,7 +127,7 @@ too small for the comparison. Smoke-mode output carries a "not a measurement" ma
 ## A filtered, timed-out pipeline printing nothing
 
 `timeout 5 ./prog | grep something` can print nothing because `grep` is killed before it flushes,
-not because nothing matched. Redirect to a file and inspect it. This cost us an hour once.
+not because nothing matched. Redirect to a file and inspect it.
 
 ## A test binary spins for minutes in `close()` returning EBADF
 
@@ -150,8 +137,8 @@ from `sysconf(_SC_OPEN_MAX)` down to 3 before exec (compiler-rt, `sanitizer_posi
 `StartSubprocess`), so the first race report of a process costs one `close()` per descriptor of the soft
 open-files limit. At 1024 or 1048576 that is milliseconds; at 1073741816, the limit a container inherits from
 a Docker daemon with `LimitNOFILE=infinity` on a host whose `fs.nr_open` is that, it is minutes, and the
-test times out. `docker/run.sh` pins the limit to 1048576 (our campaign's) since 19 Sep 2026, so the loop
-cannot be long inside it; running a test binary by hand outside `docker/run.sh` with a huge `ulimit -n` is
+test times out. `docker/run.sh` pins the limit to 1048576 (our campaign's), so the loop cannot be long
+inside it; running a test binary by hand outside `docker/run.sh` with a huge `ulimit -n` is
 where it can still be seen. Same under stock ThreadSanitizer; nothing of ours.
 
 ## "fetch_archive: download failed for https://..."
@@ -159,15 +146,12 @@ where it can still be seen. Same under stock ThreadSanitizer; nothing of ours.
 The application archives ship in `third-party/sources/` and are used from there, so this line can only
 come from MySQL's archive (fetched by the `everything` tier, 421 MB from GitHub) or from a checkout whose
 `third-party/sources/` is missing. Obtain the file by any means and place it at the path the message names;
-it is verified against the pinned sha256 before use, so where it came from does not matter. Until 20 Sep
-2026 every archive was fetched at build time, and a host that could not reach download.redis.io lost the
-performance tier at Redis within a second.
+it is verified against the pinned sha256 before use, so where it came from does not matter.
 
 ## The log's stamp and the results directories' stamps differ by hours
 
-Both are UTC since 19 Sep 2026 (`results/evaluate-<tier>-<stamp>.log` and the `perf-<app>-<stamp>`
-directories the container writes); the "started HH:MM:SS" lines on the console are local time. A log
-from an earlier checkout carries a local-time stamp.
+Both are UTC (`results/evaluate-<tier>-<stamp>.log` and the `perf-<app>-<stamp>` directories the
+container writes); the "started HH:MM:SS" lines on the console are local time.
 
 ## "COMPARISON NOT APPLICABLE ON THIS MACHINE" at the end of a Reproduced run
 
@@ -176,15 +160,14 @@ processor-set shape (physical cores and complete SMT sibling pairs, recorded per
 input is not the campaign's, and the comparator says which on each row. The intervals in `CLAIMS.md` section 5
 describe 24 physical cores with both SMT threads (48 logical processors); on such a machine `evaluate.sh` pins
 that set itself, elsewhere set `ART_CPUSET` to a set of that shape if the machine has one. On any other shape
-read the ratios beside the intervals by eye: the two directional results (DynSTC above stock on FFmpeg, below on
-Redis) are what `CLAIMS.md` says reproduces across hardware. Exit status 3 distinguishes this from a clean
+read the ratios beside the intervals by eye: FFmpeg's DynSTC gain appeared on both hosts we ran, while Redis's
+DynSTC cost did not reproduce on the second one (`CLAIMS.md` section 5). Exit status 3 distinguishes this from a clean
 comparison (0) and from a judged row outside its interval (1).
 
 ## The image build stops in an `apt-get install` layer with "did not complete successfully: exit code: 100"
 
-The package download was interrupted (a network blink; one evaluator's build on 21 Sep 2026 died this way in the
-runtime stage's package layer). Since 22 Sep the two `apt-get` steps retry each fetch five times on their own
-(`Acquire::Retries`). If the build still fails there, run the same command again: Docker keeps the layers that
+The package download was interrupted. The two `apt-get` steps retry each fetch five times
+(`Acquire::Retries`); if the build still fails there, run the same command again: Docker keeps the layers that
 completed, so a second `./evaluate.sh <tier>` (or `./docker/build.sh`) resumes at the failed layer rather than
 rebuilding the compiler. Nothing about the artifact's content depends on when the packages were fetched; the
 compiler's identity is asserted by the source-tree hash and the stamp, not by the base image's package versions.

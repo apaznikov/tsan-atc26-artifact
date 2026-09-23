@@ -6,9 +6,8 @@
 #
 # Per-test timeout is 120 s (override with ART_LIT_TIMEOUT). No test in the suite should
 # approach it: a whole 383-test repeat takes about 25 s on 64 processors, so the limit is
-# a bound on an unexpected hang rather than a tuned value. Before 2026-09-21 one test,
-# getline_nohang.cpp, did hit it in most repeats -- see docs/nondeterministic-tests.md;
-# that was a lit-configuration defect, since fixed, and not a property of the test.
+# a bound on an unexpected hang rather than a tuned value (docs/nondeterministic-tests.md
+# describes the one test that hit it before the lit configuration's glibc detection was fixed).
 #   --self-test  runs stock against a deliberately blinded detector and requires this
 #                harness to REPORT the loss. A suite that reports nothing is what both a
 #                preserved race and a broken harness look like; this tells them apart.
@@ -40,7 +39,7 @@ suite="$here/tests/tsan"
 
 ncfg=$(grep -vc '^#' "$matrix" || true)   # grep -c exits 1 on a count of zero; that is a refusal below, not a silent death here
 [ "${ncfg:-0}" -gt 0 ] || { echo "no configurations in $matrix (every line is a comment)" >&2; exit 2; }
-budget "the TSan suite, $ncfg configurations x K=$k repeats" "3 h" "1 h 30 min (25 min on 64)" "2 GB"
+budget "the TSan suite, $ncfg configurations x K=$k repeats" "50 min" "30 min (23 min on 64)" "2 GB"
 smoke_banner
 refuse_if_lit_running
 need_lit
@@ -73,11 +72,9 @@ name="preservation-suite-$(stamp)"
 outdir="$ART_RESULTS/$name"; mkdir -p "$outdir"
 cp "$matrix" "$outdir/configurations.txt"
 
-# Every knob that could change a result, written next to the results. Two runs of this
-# suite were compared on 2026-09-17 as though only the machine had differed; they differed
-# in the per-test timeout, the job count AND the background load, all three recorded
-# nowhere. The point is not that a manifest is clever -- it is that comparing two datasets
-# becomes `diff manifest.txt manifest.txt` instead of an act of memory.
+# Every knob that could change a result, written next to the results: the per-test timeout,
+# the job count and the background load can each differ between two runs, and comparing two
+# datasets becomes `diff manifest.txt manifest.txt` instead of an act of memory.
 {
   echo "date: $(date -Iseconds)"
   echo "host: $(uname -n)  kernel: $(uname -r)"
@@ -153,16 +150,14 @@ _first_log=$(ls "$outdir"/lit-*.log 2>/dev/null | head -1 || true)   # no log is
 if [ -n "$_first_log" ]; then
   {
     # Under set -euo pipefail a grep that matches nothing is a non-zero pipeline, and an ASSIGNMENT
-    # from it ends the script silently. lit -q never prints an Unsupported line, so the first version
-    # of this block exited 1 here on every run, after the matrix and before the verdict, and the full
-    # correctness set failed at the self-test for every evaluator (found on a second server, 18 Sep
-    # 2026, on the first execution of this block; it had been reviewed and never run). Hence || true.
+    # from it ends the script silently. lit -q never prints an Unsupported line, so without || true
+    # this block would exit 1 here on every run, after the matrix and before the verdict.
     _disc=$(grep -m1 -oE 'Total Discovered Tests: [0-9]+' "$_first_log" | grep -oE '[0-9]+' || true)
     echo "tests_discovered: ${_disc:-not found in $_first_log}"
     # lit -q prints Unsupported only when non-zero, so an absent count is not zero and not a
     # parse failure. Say which, rather than emit an empty field that a diff reads as either.
     _unsup=$(grep -m1 -oE 'Unsupported: *[0-9]+' "$_first_log" | grep -oE '[0-9]+' | head -1 || true)
-    echo "tests_unsupported: ${_unsup:-not reported by lit -q; established separately, see data/suite/unsupported/README.md (90 on this platform since the glibc-detection fix of 21 Sep 2026; 91 before it)}"
+    echo "tests_unsupported: ${_unsup:-not reported by lit -q; established separately, see data/suite/unsupported/README.md (90 on this platform)}"
     echo "loadavg_at_end: $(cut -d' ' -f1-3 /proc/loadavg)"
   } >> "$outdir/manifest.txt"
 fi

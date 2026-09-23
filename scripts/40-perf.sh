@@ -11,8 +11,9 @@
 # THE DEFAULT IS A SUBSET BECAUSE THE FULL TABLE IS NOT A REVIEWER-SIZED JOB. At ART_RUNS=2 plus a warm-up,
 # measured on two hosts: Redis 13-15 min, memcached 28-36 min, FFmpeg 20-25 min, SQLite 65-68 min,
 # MySQL about 3.4 h for the four; all fourteen at N=2 is about 11 h. The four carry the paper's claims --
-# the overhead over native, the sound bundle with peeling, and the one analysis that moves a number.
-#   ART_SMOKE=1  -> one run, short workloads, output marked NOT A MEASUREMENT
+# the overhead over native, AllOpt with peeling, and DynSTC.
+#   ART_SMOKE=1  -> one run, no warm-up, output marked NOT A MEASUREMENT; the workload is shortened only
+#                   for memcached and MySQL (SQLite runs its whole suite; Redis and FFmpeg run theirs once)
 #   ART_CPUSET   -> taskset pinning (we used 4-27,60-83); leave empty to use every CPU the container has
 set -euo pipefail
 . "$(dirname "$0")/_lib.sh"
@@ -42,7 +43,7 @@ done
 # --all-configs means the campaign's fourteen (twelve for FFmpeg, which has no whole-program rows; four for
 # MySQL), named here. An EMPTY list would mean the harness's own default set, which is the six of its Stage A
 # and has no DynSTC row at all, so `evaluate.sh everything` measured six configurations and never the one
-# whose interval excludes 1.0 (found by the script audit, 19 Sep 2026).
+# whose interval excludes 1.0.
 ALL14="orig tsan tsan-st tsan-swmr tsan-lo tsan-ea tsan-dom tsan-dom_peeling tsan-dom-ea-lo-st-swmr tsan-dom_peeling-ea-lo-st-swmr tsan-dom_peeling-ea-lo-st-swmr-stmt tsan-stmt tsan-dom_peeling-ea-lo-st-swmr-wp tsan-sound-wp"
 if [ "$all_configs" = 1 ]; then
   case "$app" in
@@ -68,7 +69,7 @@ fi
 [ -n "${hash:-}" ] || { echo "cannot determine the compiler's commit: $TSAN_LLVM_ROOT has no TSAN_AUDIT_HASH and clang --version prints no 40-hex string" >&2; exit 2; }
 hash=${hash:0:12}
 
-# Measured at the defaults (four configurations, N = 2) on 48 pinned processors, 17-19 Sep 2026, on two hosts;
+# Measured at the defaults (four configurations, N = 2) on 48 pinned processors, on two hosts;
 # --all-configs multiplies by about 3.4 and ART_RUNS=5 by about 2 (one warm-up plus N runs; the campaign's per-cell costs).
 case "$app" in
   sqlite)    t="1 h";;      memcached) t="30 min";;   ffmpeg) t="about 25 min for the five configurations, plus the clip's first download";;
@@ -77,17 +78,18 @@ esac
 runs="$ART_RUNS"; warmup="$ART_WARMUP"
 if [ "$ART_SMOKE" = 1 ]; then
   runs=1; warmup=0
-  # Smoke mode shortens the WORKLOAD as well as the repetition count. A single full-length run is still
-  # hours on some applications, and a reader checking that the plumbing works should not pay for that.
+  # Smoke mode drops to one unwarmed run. It shortens the WORKLOAD only for memcached (MC_REQUESTS) and
+  # MySQL (MYSQL_SECONDS): SQLITE_TESTS takes effect only on run_sqlite_test.sh's --w1-threads path, so
+  # SQLite runs its whole suite, and FF_THREADS=16 restates FFmpeg's default thread count.
   export MYSQL_SECONDS=20 MC_REQUESTS=2000 SQLITE_TESTS=walthread1 FF_THREADS="${FF_THREADS:-16}"
 fi
-printf 'Expected: performance for %s, %s warm-up + %s runs per configuration -- about %s at the defaults on 48 pinned processors (--all-configs about 3.4x, ART_RUNS=5 about 2x, smoke mode a few minutes), 20-100 GB of disk.\n' "$app" "$warmup" "$runs" "$t"
+printf 'Expected: performance for %s, %s warm-up + %s runs per configuration -- about %s at the defaults on 48 pinned processors (--all-configs about 3.4x, ART_RUNS=5 about 2x, smoke mode one run, with a shortened workload for memcached and MySQL only), 20-100 GB of disk.\n' "$app" "$warmup" "$runs" "$t"
 smoke_banner
 [ "$ART_SMOKE" = 1 ] || refuse_if_building
 
 out="$ART_RESULTS/perf-$app-$(stamp)"; mkdir -p "$out"
-# Everything the harness would otherwise take from our lab's filesystem. Each of these has a lab default
-# compiled into tools/perf/lib.sh; the artifact overrides all of them so nothing reaches outside ART_ROOT.
+# Everything the harness would otherwise take from its built-in defaults in tools/perf/lib.sh; the artifact
+# overrides all of them so nothing reaches outside ART_ROOT.
 export LLVM_TSAN_ROOT="$TSAN_LLVM_ROOT"
 export P5_OUT="$out"
 export P5_INSTALL_ROOT="$ART_BUILD/installs"

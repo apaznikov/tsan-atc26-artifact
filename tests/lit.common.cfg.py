@@ -673,7 +673,7 @@ if config.host_os == "Linux":
         if config.android:
             return
 
-        # ARTIFACT MODIFICATION (21 Sep 2026, the only change to this vendored file): upstream compared
+        # ARTIFACT MODIFICATION (the only change to this vendored file): upstream compared
         # versions with distutils.version.LooseVersion, and distutils is gone in Python 3.12 (the image's
         # Ubuntu 24.04). The ImportError was swallowed by the bare `except` below, so no glibc-* feature
         # was ever added: getline_nohang.cpp (UNSUPPORTED: glibc-2.38) ran on glibc 2.39 and stalled to its

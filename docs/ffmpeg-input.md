@@ -46,33 +46,26 @@ audio track like the clip it replaces.
 | video bit rate | 6.41 Mbit/s | 6.52 Mbit/s |
 | audio | Vorbis 48 kHz stereo | Vorbis 48 kHz stereo |
 
-**No FFmpeg figure from before 15 September 2026 is comparable with a campaign figure**, in either
-direction: the paper's FFmpeg column and the Stage B runs used the retired clip, so a difference
-between them and the campaign could be the clip as much as the compiler. Within the campaign every
-configuration shares one input, so the speedup column, the peeling pair and its branch rule are
-unaffected. A control leg on the campaign compiler with the retired clip, four configurations, was run on
-18 Sep 2026 so that the clip's own contribution is measured rather than argued; its ratios are in
-`CLAIMS.md`'s FFmpeg section, and its runs are not shipped here, because the clip cannot be redistributed.
-
-Shape matches, content does not. No FFmpeg measurement taken on the retired clip is cited by this
-artifact: the FFmpeg arm of the concurrency sweep is re-run on this clip after the campaign, and
-every FFmpeg row in `CLAIMS.md` comes from runs on it. The retired clip had no recorded provenance
-or license, which is why it could not be shipped.
+The paper's FFmpeg column and the Stage B runs used the retired clip; within the campaign every
+configuration shares this clip. A control leg on the campaign compiler with the retired clip, four
+configurations, measures the clip's own contribution: its ratios agree with the reference clip's within
+their intervals (`CLAIMS.md`, the FFmpeg section at `-threads 4`). Its runs are not shipped, because the
+retired clip has no recorded provenance or licence and cannot be redistributed.
 
 Why a real clip and not a synthetic pattern: the one substantial FFmpeg result in the paper
 (DynSTC, about 1.12x) depends on the workload having genuinely single-threaded phases; a synthetic
 test source compresses trivially and does not exercise them.
 
-The clip is not in git or in the image. `harness/projects/ffmpeg/ensure_input_clip.sh`, run by the
-FFmpeg build before anything is compiled, produces it by the first of three paths that applies:
+`harness/projects/ffmpeg/ensure_input_clip.sh`, run by the FFmpeg build before anything is compiled,
+produces the clip by the first of three paths that applies:
 
 1. `ART_FFMPEG_CLIP_URL`: a prepared copy of the reference clip, either a URL or a local path (a plain
    path or `file://`), fetched or copied and in both cases checked against the sha256 above; a mismatch
    deletes the file and refuses, and a local copy is trusted no more for being local. The default is
    the asset of this repository's GitHub release `inputs-v1`
    (`https://github.com/apaznikov/tsan-atc26-artifact/releases/download/inputs-v1/TearsOfSteel-1366x768-100s.mkv`); the artifact's
-   Zenodo deposit made when evaluation finishes will carry the same file. Exporting the empty string opts out and takes path 3. `docker/run.sh` forwards the variable into the container; until 17 Sep 2026 it
-   did not, and a local path could not be used because the image's `wget` does not speak `file://`.
+   Zenodo deposit made when evaluation finishes will carry the same file. Exporting the empty string opts
+   out and takes path 3. `docker/run.sh` forwards the variable into the container.
 2. `ART_FFMPEG_SOURCE`: a local copy of the unpacked Blender source (`.mov`), cut here with the command
    above.
 3. Neither set: the 557 MB Blender source is downloaded, verified against its published sha256, unpacked

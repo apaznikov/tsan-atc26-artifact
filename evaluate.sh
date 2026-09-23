@@ -3,17 +3,18 @@
 #
 #   ./evaluate.sh check          Does it all run here? Prerequisites, the image (built the first time, 15-25 min),
 #                                the image's identity, the minimal example, the correctness set without the
-#                                regression suite, the tables. About 5 minutes. Not a badge: the kick-the-tires check.
+#                                regression suite, the tables. About 2 minutes once the image exists. Not a badge:
+#                                the kick-the-tires check.
 #   ./evaluate.sh functional     The Functional badge: everything in check, plus the regression suite in 12
 #                                configurations. Under an hour on any x86-64 Linux host with Docker (23 min on
 #                                64 processors, 48 min on 8).
 #   ./evaluate.sh reproduced     The Reproduced badge: the whole functional tier first, then the performance
 #                                subset, Redis, memcached, FFmpeg and SQLite at the defaults (four configurations,
-#                                two runs), compared with the intervals CLAIMS.md ships. About 3 hours (measured 2 h 56 min
-#                                and 2 h 48 min on two hosts). Runs on
-#                                any processor count; the comparison with our intervals needs the campaign's
-#                                shape pinned, 24 physical cores with both SMT threads (48 logical processors,
-#                                chosen here when the machine has them), and a machine that is otherwise idle.
+#                                two runs), compared with the intervals CLAIMS.md ships. About 3 hours (2 h 38 min
+#                                measured on our host). Runs on any processor count; the comparison with our
+#                                intervals needs the campaign's shape pinned, 24 physical cores with both SMT
+#                                threads (48 logical processors, chosen here when the machine has them), and a
+#                                machine that is otherwise idle.
 #   ./evaluate.sh everything     reproduced at all fourteen configurations, plus MySQL. About 14 hours.
 #
 # Each tier contains the one before it, so one command per badge is the whole job. Without a tier name this
@@ -23,13 +24,13 @@
 # asks a question, a tier starts when named), --rebuild (build the image again from nothing,
 # without Docker's layer cache, which is the only build that re-runs the reconstructed-tree assertion; 15-25 min),
 # --performance-only (reproduced or everything without repeating the functional tier, for a checkout on which
-# ./evaluate.sh functional already ended in PASS; about 2 h 20 min for reproduced). --quick is the old name of check.
+# ./evaluate.sh functional already ended in PASS; about 2 h 30 min for reproduced). --quick is the old name of check.
 #
-# Why tiers and not one command for all of it: the correctness set runs anywhere in two hours; the performance
-# set runs only on a quiet, large machine and takes four to fourteen hours, which is a decision a person makes;
-# the badges are awarded separately; and a fourteen-hour command that fails in its ninth hour is worse than
-# steps that can be repeated one at a time. Every step is one of the scripts the README documents, called in
-# the documented order; this file adds nothing else.
+# Why tiers and not one command for all of it: the correctness set runs anywhere in under an hour; the performance
+# set runs only on a quiet, large machine and takes hours (about 2.5 for the subset, 14 for everything), which is
+# a decision a person makes; the badges are awarded separately; and a fourteen-hour command that fails in its
+# ninth hour is worse than steps that can be repeated one at a time. Every step is one of the scripts the
+# README documents, called in the documented order; this file adds nothing else.
 # Environment: ART_CPUSET (pin the performance runs; our runs used 48 processors; unset, the script pins 48 of
 # the processors the Docker daemon grants when there are that many), ART_RUNS (2 by default, 5 for intervals),
 # ART_FFMPEG_CLIP_URL (the reference clip; without it FFmpeg's rows are timed but not compared), ART_JOBS
@@ -56,8 +57,7 @@ if [ "$quick" = 1 ]; then
   case "$tier" in ""|check|functional) tier=check ;; *) echo "evaluate.sh: --quick is the old name of the check tier and does not combine with $tier" >&2; exit 2 ;; esac
 fi
 if [ -z "$tier" ]; then
-  # No silent default: a bare ./evaluate.sh used to run the functional tier, and a reader could not tell
-  # from the command what it was or that reproduced contained it (19 Sep 2026).
+  # No silent default: a bare ./evaluate.sh runs nothing, so the command always names what it runs.
   usage; echo; echo "evaluate.sh: name the tier: check | functional | reproduced | everything. Nothing was run." >&2; exit 2
 fi
 perf_tier=0; case "$tier" in reproduced|everything) perf_tier=1 ;; esac
@@ -120,9 +120,9 @@ if [ "$perf_tier" = 1 ]; then
   # (docs/campaign-parameters.md). So, unless the caller chose a set, pin that shape when the machine has it:
   # the first 24 complete sibling pairs among the processors the Docker daemon actually grants to containers
   # (asked of the image once it exists, because a daemon confined by systemd grants fewer than the host has,
-  # and a request outside the grant is clipped). "The first 48 granted" was the rule until 20 Sep 2026, and on
-  # our host that was 4-51: 48 distinct cores with no SMT contention, twice the campaign's compute under the
-  # same logical count (tsan-exp). Without 24 such pairs, the first 48 granted, labelled as a different shape.
+  # and a request outside the grant is clipped). The first 48 granted would be 4-51 on our host: 48 distinct
+  # cores with no SMT contention, twice the campaign's compute under the same logical count. Without 24 such
+  # pairs, the first 48 granted, labelled as a different shape.
   # A smaller machine runs unpinned, not gate-checked, memcached's rows reported rather than compared.
   if [ -z "${ART_CPUSET:-}" ]; then
     ncpu_here=$(nproc 2>/dev/null || echo 0)
@@ -155,9 +155,8 @@ if [ "$perf_tier" = 1 ]; then
   echo "  4. The end. The tier ends with one line per configuration row of this run against the interval CLAIMS.md"
   echo "     ships for it (IN; OUT with the distance; not judged; not comparable) and 'N rows judged'. What an OUT"
   echo "     row can mean, and the five-run re-check for it, is CLAIMS.md section 5, 'Match criterion'."
-  # No question: a reviewer who named a four-hour tier meant it, --plan exists for looking first, and a prompt
-  # broke every run under nohup, tmux scripts and CI (a student asked why the script was interactive, 19 Sep
-  # 2026). --yes is still accepted, for instructions written before this.
+  # No question: a reader who named a tier meant it, --plan exists for looking first, and a prompt breaks
+  # every run under nohup, tmux scripts and CI. --yes is accepted and ignored.
   : "$yes"
 fi
 
@@ -231,13 +230,13 @@ for s in "${steps[@]}"; do
   # LIVE PROGRESS. The step's full output goes to the step file and the log; the lines that say what is
   # happening (a sub-step's verdict, a build starting or failing, a measured cell, an image layer, a fetch)
   # are echoed to the console as they appear, prefixed with a bar, so a reader watching a two-hour step sees
-  # it move and sees what it is doing (two evaluators asked for exactly this, 20 Sep 2026). Everything else
+  # it move and sees what it is doing. Everything else
   # stays in the log.
   : > "$step_out"
   { echo "=== $label: $cmd"; bash -c "$cmd"; } > "$step_out" 2>&1 & steppid=$!
   # The reader follows the step's own process (tail --pid) and ends by itself when the step ends; killing
-  # a subshell around the pipeline left tail, grep and sed alive on a deleted file and held the console
-  # open for whoever was piping this script (found on the first run, 21 Sep 2026).
+  # a subshell around the pipeline would leave tail, grep and sed alive on a deleted file and hold the
+  # console open for whoever was piping this script.
   tail -n +1 -F --pid="$steppid" "$step_out" 2>/dev/null \
       | grep --line-buffered -E '^(PASS|FAIL|SKIP)  |^== |^Expected:|^ *configurations RUN|^  [A-Za-z+-]+ +always-fail=|^\[[0-9-]+ [0-9:]+\] .*( run[0-9]+ rc=| build |BUILD FAILED|builds of |done: |ERROR|-> )|^#[0-9]+ (\[|DONE)|^fetch_archive:|^ensure_input_clip:|^  (ok|FAIL|MISSING|WARNING|later) |^(analysis|STC|SWMR|LO|EA|DE) |^  race-|^app  |^[a-z]+  +(AllOpt|DynSTC|DE|EA|LO|STC|SWMR|four|stock)|rows judged|replayed |Regenerating|identical to the shipped' \
       | sed -u 's/^/      | /' & readerpid=$!
@@ -248,8 +247,8 @@ for s in "${steps[@]}"; do
   printf '    %-38s rc=%d  finished %s, %dm%02ds elapsed\n' "$label" "$rc" "$(date +%H:%M:%S)" $((dt/60)) $((dt%60))
   # A skipped check is neither a pass nor a failure, and it must not be reported as a pass: 01-functional
   # prints "the correctness set is INCOMPLETE" when a step's prerequisite is absent and exits 0, because
-  # nothing failed. The first version of this script tested the text only on a non-zero exit and reported
-  # PASS over an INCOMPLETE set (found on a second server, 18 Sep 2026). The test is on THIS step's output.
+  # nothing failed. Testing the text only on a non-zero exit would report PASS over an INCOMPLETE set.
+  # The test is on THIS step's output.
   if /usr/bin/grep -q 'correctness set is INCOMPLETE' "$step_out"; then
     [ "$verdict" = FAIL ] || verdict=INCOMPLETE
     echo "    INCOMPLETE: a check could not be made here and was skipped (its prerequisite is absent); see $log"
@@ -288,7 +287,7 @@ if [ "$perf_tier" = 1 ] && [ "$verdict" != FAIL ]; then
   if [ -z "$trees" ]; then
     # The comparison is why this tier exists. If the run produced no performance tree to compare, that
     # is a failure of the tier and not a silent skip: without this the whole tier could report PASS
-    # having compared nothing at all (found 19 Sep 2026).
+    # having compared nothing at all.
     echo
     echo "No performance results were produced by this run, so nothing could be compared with CLAIMS.md."
     echo "Looked for directories named perf-* under results/ created after the run began."
@@ -327,7 +326,7 @@ elif [ "$verdict" = PASS ] && [ -n "${compared:-}" ]; then
 else
   vline="$verdict"
   # Both facts when both hold: a skipped check and a comparison that did not come back clean are two answers,
-  # and the last line must not drop the second (found by the reviewer walkthrough, 21 Sep 2026).
+  # and the last line must not drop the second.
   [ "$verdict" = INCOMPLETE ] && [ "${compared:-}" = OUTSIDE ] && vline="INCOMPLETE, and COMPARISON NOT CLEAN"
   [ "$verdict" = INCOMPLETE ] && [ "${compared:-}" = NOTAPPLICABLE ] && vline="INCOMPLETE; COMPARISON NOT APPLICABLE ON THIS MACHINE"
   echo "evaluate.sh: $vline  $where"

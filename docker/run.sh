@@ -40,7 +40,7 @@ fi
 # StartSubprocess), so the first race report of every process costs time in proportion to the soft limit:
 # measured on the minimal example's report, 0.19 s at 1024, 0.27 s at 1048576, and a limit of 1073741816
 # (what a container inherits from a daemon with LimitNOFILE=infinity on a host whose fs.nr_open is that) means
-# a test binary spinning for minutes in close() = EBADF, which a student saw under strace (19 Sep 2026).
+# a test binary spinning for minutes in close() = EBADF.
 # Docker's own default moved between versions (28: the daemon's 1048576; 29: 1024 soft), so the value is
 # fixed here rather than inherited: 1048576, the soft limit our campaign ran under, capped by the kernel's
 # nr_open so that the container can always start.

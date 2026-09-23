@@ -5,8 +5,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # The measurement harness is vendored read-only at harness/ (a sha256 manifest, MANIFEST.tsv, checks it
 # against the live tree). Its build scripts build IN-TREE, and inside the container that tree is a
 # read-only mount, so every script works from a writable copy under $ART_BUILD/harness, made on first
-# use and refreshed whenever the vendored manifest changes. The shipped tree is never written to, so
-# `scripts/vendor-harness.sh --check` still reports drift only when the source moved.
+# use and refreshed whenever the vendored manifest changes. The shipped tree is never written to.
 harness_src="$here/harness"
 harness="$ART_BUILD/harness"
 need_harness() {
@@ -14,9 +13,8 @@ need_harness() {
   if [ ! -f "$harness/MANIFEST.tsv" ] || ! cmp -s "$harness_src/MANIFEST.tsv" "$harness/MANIFEST.tsv"; then
     # An OVERLAY, never a wipe. The working copy also holds every application's fetched source and build
     # tree (they live beside the scripts that build them), so "rm -rf and copy again" on a manifest change
-    # threw away the MySQL tarball, the clip and every build, and made each re-vendor cost a full re-fetch
-    # from five upstream hosts: on 17 Sep 2026 that was 37 minutes and a SQLite leg lost to one transient
-    # SSL failure. Copying the vendored files over the working copy refreshes every shipped script and
+    # would throw away the MySQL tarball, the clip and every build, and make each re-vendor cost a full
+    # re-fetch from five upstream hosts. Copying the vendored files over the working copy refreshes every shipped script and
     # leaves everything else in place; a file that left the manifest lingers harmlessly, since every
     # shipped script is invoked by name.
     mkdir -p "$harness" && cp -a "$harness_src"/. "$harness"/ \
@@ -74,8 +72,7 @@ lit_run() {
 }
 
 # need_lit: llvm-lit is a Python script that imports the `lit` package. Installing the
-# driver without the package ships something that cannot start -- both the artifact image
-# and the frozen copies under /extra/alexey/builds did exactly that. Testing the
+# driver without the package ships something that cannot start. Testing the
 # executable bit does not catch it; only starting it does. If the package is findable
 # nearby, point PYTHONPATH at it rather than failing.
 need_lit() {

@@ -1,6 +1,6 @@
 # The preservation suite on the shipped compiler, after the glibc-detection fix (2026-09-21)
 
-The run CLAIMS row 22 cites. Same command and image as `../preservation-suite-20260917T075005Z`
+The run `CLAIMS.md` section 1, first row, cites. Same command and image as `../preservation-suite-20260917T075005Z`
 (compiler f3deebfbab60, 12 configurations, K = 5, 60 repeats, per-test timeout 120 s), made on this
 host with the checkout's `tests/` mounted over the image's copy, so `tests/lit.common.cfg.py` carries
 the fix: glibc is detected without `distutils`, `getline_nohang.cpp` is unsupported on the image's

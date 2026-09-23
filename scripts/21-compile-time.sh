@@ -23,7 +23,7 @@ fi
 [ -n "${hash:-}" ] || { echo "cannot determine the compiler's commit from $TSAN_LLVM_ROOT" >&2; exit 2; }
 hash=${hash:0:12}
 
-budget "compile-time cost for $app, 3 clean builds per configuration" "1-3 h (MySQL: ~10 h)" "20-60 min (MySQL: ~5 h)" "10-100 GB"
+budget "compile-time cost for $app, 3 clean builds per configuration" "1-3 h (MySQL: ~10 h)" "20-60 min (MySQL: about 1 h 30 min)" "10-100 GB"
 smoke_banner
 [ "$ART_SMOKE" = 1 ] || refuse_if_building
 

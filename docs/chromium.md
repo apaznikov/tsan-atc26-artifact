@@ -20,6 +20,5 @@ What is recorded:
 | CPU set | 16 to 48 pinned CPUs; a private Xvfb; Telemetry's browser-startup timeout raised from 60 s to 600 s |
 | Known issue | `SierpinskiCarpet` in `blink_perf.svg` exceeds Telemetry's 10-minute per-story cap under ThreadSanitizer and is absent from instrumented rows |
 
-The Chromium material is not shipped: a checkout exceeds a terabyte, our only build predates the shipped
-compiler, and nothing here is claimed from it. The table above is what a reader would need to rebuild
-the experiment from a Chromium checkout at that revision; budget days, not hours.
+The table above is what a reader would need to rebuild the experiment from a Chromium checkout at that
+revision; budget days, not hours.

@@ -4,7 +4,7 @@
 # build runs inside the Docker daemon's own memory cgroup (docker.slice on a systemd host, often capped
 # far below the machine's RAM; ours: 64 GiB of 250). Too many jobs under that cap does not fail cleanly:
 # with no swap the cgroup thrashes on page-cache reclaim, the compiles stall, and the daemon stops
-# answering, which only root can undo. Found on 17 Sep 2026 by running this script at its former default.
+# answering, which only root can undo.
 # env.sh derives the default (80% of the processors, bounded by memory at 2.5 GiB per job, the daemon's
 # cap included) and ART_JOBS overrides it. Twenty-four jobs build the compiler in about fifteen minutes.
 set -euo pipefail

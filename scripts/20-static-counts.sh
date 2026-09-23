@@ -18,7 +18,7 @@ while read -r bin; do
   app="$(basename "$(dirname "$(dirname "$bin")")")"; cfg="$(basename "$(dirname "$bin")")"
   # The counter has no --csv option and never had one: asking for it made argparse exit 2 with nothing on
   # stdout, the substitution yielded "", the row was skipped, and this script wrote a header and no data on
-  # every run while reporting success (found 19 Sep 2026). Parse its actual output, as the harness does.
+  # every run while reporting success. Parse its actual output, as the harness does.
   read -r sites total <<< "$(python3 "$ART_DATA/tools/static_count_tsan_instrumentation.py" "$bin" 2>/dev/null \
       | awk '/Memory accesses/ {s=$NF} /GRAND TOTAL/ {t=$NF} END {print (s==""?"":s), (t==""?"":t)}')"
   if [ -n "$sites" ] && [ -n "$total" ]; then

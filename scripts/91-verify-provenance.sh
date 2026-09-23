@@ -29,12 +29,12 @@ fi
 [ ${#roots[@]} -gt 0 ] || { echo "no results roots found under $ART_DATA/perf"; exit 2; }
 strict=(); legacy=()
 # Strict roots: the campaign and the thread sweep on the reference clip, both taken on the shipped compiler.
-# sweep-apollo-* is the second host's concurrency arms of 22-23 Sep 2026. They were taken on the shipped
+# sweep-amd-* is the second host's concurrency arms. They were taken on the shipped
 # compiler with the harness that writes every field this checks, so they are held to the same standard as
-# our own -- one compiler, one processor set, one mode per arm. The processor set is apollo's and not ours,
+# our own -- one compiler, one processor set, one mode per arm. The processor set is the second host's and not ours,
 # which is what the root name says and is not something this script judges: it refuses a leg that MIXES
 # two sets, and each arm has one.
-for r in "${roots[@]}"; do case "$(basename "$r")" in campaign-*|ffmpeg-threadsweep-*|sweep-apollo-*) strict+=("$r") ;; *) legacy+=("$r") ;; esac; done
+for r in "${roots[@]}"; do case "$(basename "$r")" in campaign-*|ffmpeg-threadsweep-*|sweep-amd-*) strict+=("$r") ;; *) legacy+=("$r") ;; esac; done
 
 budget "provenance of ${#strict[@]} root(s) on the shipped compiler, ${#legacy[@]} earlier tree(s) for information" "2 min" "1 min" "none"
 rc=0

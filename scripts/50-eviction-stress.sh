@@ -35,7 +35,7 @@ if [ -f "$rep" ]; then
   fi
 else
   # No report means the control could not be made, and a control not made must not read as one passed:
-  # the script used to fall straight through to its closing line with status 0 (found 19 Sep 2026).
+  # without this the script would fall straight through to its closing line with status 0.
   echo "NO REPORT at $rep: the run produced no table, so the control that the stock build reports the" >&2
   echo "planted race was not made. Nothing here is a result." >&2
   exit 4

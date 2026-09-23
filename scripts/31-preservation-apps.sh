@@ -47,13 +47,11 @@ out="$ART_RESULTS/preservation-$app-$(stamp)"
 # The binaries come from the same builds 40-perf.sh makes, in the same places (run_preservation.py looks in
 # the application trees under the harness working copy). Build them first, idempotently: tsan-sound is not
 # in the performance subset, so the build cannot be assumed to have happened as a side effect of 40-perf.sh.
-# The rehearsal of 17 Sep found this script pointing --build-root at a directory nothing ever wrote to, so
-# every invocation failed in one second with "missing binaries"; that flag was for A/B builds against
-# another compiler and is gone.
+# (There is no --build-root: the binaries are always the ones 40-perf.sh builds.)
 "$here/scripts/40-perf.sh" "$app" --build-only --configs "$(printf '%s' "$configs" | tr ',' ' ')" || exit $?
-# --llvm-root defaults to OUR lab worktree (/home/alexey/dev/llvm-project-focs-lab/llvm/build), which does
-# not exist here and must never be measured from anyway -- it is a working build that is relinked without
-# notice. Pass the artifact's compiler explicitly; every run's manifest then records what it was built with.
+# --llvm-root defaults to a development build tree, which does not exist here and must never be measured
+# from anyway -- it is relinked without notice. Pass the artifact's compiler explicitly; every run's
+# manifest then records what it was built with.
 python3 "$harness/tools/preservation/run_preservation.py" \
   --app "$app" --configs "$configs" --runs "$n" --scale "$scale" \
   --llvm-root "$TSAN_LLVM_ROOT" \
@@ -76,9 +74,8 @@ rc=$?
 # above (a run in which stock found nothing certifies nothing) decides the exit code. In smoke mode the
 # question is only whether the pipeline ran end to end: one short run cannot show a site that stock itself
 # reports in two or three of ten paper-scale runs (CLAIMS.md), so the verdict script's refusal is expected,
-# is printed above as information, and is not the step's result. The rehearsal of 17 Sep 2026 found the
-# smoke exiting 1 for every evaluator on exactly this refusal, the fourth case that day of an absent check
-# and a failed one sharing a channel.
+# is printed above as information, and is not the step's result: an absent check and a failed one must
+# not share an exit code.
 if [ "$ART_SMOKE" = 1 ]; then
   echo
   echo "VERDICT NOT ATTEMPTED: smoke scale, N=1. The pipeline ran end to end (builds, $n run per configuration,"

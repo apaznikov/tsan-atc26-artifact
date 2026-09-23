@@ -44,18 +44,16 @@ export ART_SMOKE="${ART_SMOKE:-0}"
 # with attribution in the release notes; the artifact's Zenodo record carries the same file). The `${VAR-default}`
 # form, not `${VAR:-default}`: an evaluator who exports the EMPTY string opts out and regenerates the clip from
 # the Blender source, whose rows are then reported and not compared. docker/run.sh forwards both variables into
-# the container; until 17 Sep 2026 it forwarded neither, so a setting made by an evaluator was silently dropped
-# at the container boundary (defect 11 of the rehearsal).
+# the container, so a setting made on the host reaches the harness.
 export ART_FFMPEG_CLIP_URL="${ART_FFMPEG_CLIP_URL-https://github.com/apaznikov/tsan-atc26-artifact/releases/download/inputs-v1/TearsOfSteel-1366x768-100s.mkv}"
 export ART_FFMPEG_SOURCE="${ART_FFMPEG_SOURCE:-}"
 
 # Workload thread counts. Empty means the campaign's rule (docs/campaign-parameters.md): one memcached server
-# thread per processor of the pinned set, three quarters of that for sysbench, FFmpeg at an absolute 16 since
-# 22 Sep 2026 (libx265's ceiling, where the thread sweep found the paper's transforms gain most; the paper's
+# thread per processor of the pinned set, three quarters of that for sysbench, FFmpeg at an absolute 16
+# (libx265's ceiling, where the thread sweep found the paper's transforms gain most; the paper's
 # own count was 4, and FF_THREADS=4 is compared with the 4-thread rows of CLAIMS.md). Set
 # one to measure a different point; every cell records the value it ran with (threads_setting) and whether
-# it was overridden (threads_from_env). docker/run.sh forwards all three; until 18 Sep 2026 it forwarded none,
-# so the documented override could not reach the container (the same defect as the clip variables).
+# it was overridden (threads_from_env). docker/run.sh forwards all three.
 export MC_THREADS="${MC_THREADS:-}"
 export MYSQL_THREADS="${MYSQL_THREADS:-}"
 export FF_THREADS="${FF_THREADS:-}"
@@ -63,7 +61,7 @@ export FF_THREADS="${FF_THREADS:-}"
 # The port memcached's benchmark uses; change it if 7777 is taken on your host. Redis's port is not a
 # knob: its benchmark reaches the server through redis.conf and the default 6379, and threading a port
 # through that path is a change to the workload script rather than a substitution, so the variable is
-# not offered rather than offered and ignored (19 Sep 2026; it had been declared here and read nowhere).
+# not offered rather than offered and ignored.
 export ART_MEMCACHED_PORT="${ART_MEMCACHED_PORT:-7777}"
 
 # Parallelism for builds and test suites. The default is derived from what the machine can carry, not
@@ -73,7 +71,7 @@ export ART_MEMCACHED_PORT="${ART_MEMCACHED_PORT:-7777}"
 # docker.slice's MemoryMax when systemd reports one. docker/run.sh evaluates this on the host and passes
 # the result into the container, because the daemon's cap is invisible from inside. One job per
 # processor on a shared or memory-capped machine does not fail, it thrashes: 112 jobs under a 64 GiB
-# cap wedged our Docker daemon on 17 Sep 2026. ART_JOBS overrides; ART_JOBS_WHY says where it came from.
+# cap can wedge the Docker daemon. ART_JOBS overrides; ART_JOBS_WHY says where it came from.
 art_default_jobs() {  # prints "<jobs><TAB><reason>"
   local cpus mem_kib lim src by_mem
   cpus=""

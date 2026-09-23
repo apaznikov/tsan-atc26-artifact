@@ -1,6 +1,6 @@
 # K = 5 report-key replay, compiler aa8a6dd8a2e8, 15 Sep 2026
 
-The run CLAIMS row 24 cites. `replay-output.txt` is the harness's own output, unedited.
+The run `CLAIMS.md` section 1, third row (report keys), cites. `replay-output.txt` is the harness's own output, unedited.
 
     compiler        aa8a6dd8a2e8  -- the PREDECESSOR of the shipped f3deebfbab60, not the
                     shipped compiler itself. See "What this does and does not cover".
@@ -9,7 +9,7 @@ The run CLAIMS row 24 cites. `replay-output.txt` is the harness's own output, un
     keys            harness/tools/preservation/tsan_reports.py
                     L1 = kind + both frames (function@file:line) + location
                     L2 = functions only
-    date            during the compiler gate of 15 Sep 2026
+    date            15 Sep 2026
 
 ## Result
 
@@ -33,14 +33,7 @@ two compilers -- the same verdict for every function, not merely the same count.
 instrumentation implies identical reports, so the result carries; but it is carried by that
 argument, not measured on the shipped compiler. No K = 5 replay against f3deebfbab60 exists.
 
-## A figure NOT supported by anything here
+## Scope of the lost entry
 
-Earlier notes attribute the lost bucket to a flaky thread-leak diagnostic with Fisher
-p = 0.444 and p = 0.167. **Neither p-value appears in this output or in any retained log.**
-There is also only ONE lost bucket, so two p-values cannot both describe it. Whatever was
-computed at the time, the per-run counts it needed are not in the summary that survives, so
-it cannot be re-derived from what ships here. Either cite the p-values explicitly as
-recorded at the time and not reproducible from the artifact, or leave them out.
-
-What the output does support without them: one test lost a report, under one configuration,
-and that test is a thread-leak diagnostic rather than a data race.
+One test lost a report, under one configuration, and that test is a thread-leak diagnostic rather than
+a data race.

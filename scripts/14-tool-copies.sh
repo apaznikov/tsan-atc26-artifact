@@ -1,18 +1,16 @@
 #!/bin/bash
 # The artifact ships two copies of the aggregation tools: harness/tools/perf, which the measurement path
 # runs, and data/tools/perf, which 90-tables.sh runs because aggregate.py derives the harness root from
-# its own location and must therefore sit inside a data tree. Two copies of load-bearing code diverge. On
-# 19 Sep 2026 they had: the data copy predated both the --runs option and the fix that stops the stability
-# column claiming "all subtests within 5%" when nothing was measured, so the documented table check ran an
-# older aggregator than the one that produced the measurements, and said the tables matched. This refuses
-# that state: any file present in both directories must be byte-identical.
+# its own location and must therefore sit inside a data tree. Two copies of load-bearing code diverge, and
+# a stale data copy would make the documented table check run an older aggregator than the one that produced
+# the measurements and still say the tables matched. This refuses that state: any file present in both
+# directories must be byte-identical.
 set -uo pipefail
 here="$(cd "$(dirname "$0")/.." && pwd)"
 [ $# -eq 0 ] || { echo "$(basename "$0") takes no arguments (got: $*)"; exit 2; }
 # EVERY file that exists in both trees, not only the tools: aggregate.py loads the per-application
 # parsers from data/nosql, data/sql and data/projects, which are copies of the harness ones, and a check
-# that looked only at data/tools would have said "identical" while a parser drifted (found 19 Sep 2026
-# by auditing this very script, one hour after it was written to stop exactly that).
+# that looked only at data/tools would say "identical" while a parser drifted.
 a="$here/harness"; b="$here/data"
 [ -d "$a" ] && [ -d "$b" ] || { echo "one of $a, $b is absent; nothing to compare" >&2; exit 2; }
 diverged=0; compared=0

@@ -3,9 +3,8 @@
 #
 # On the host it checks the host's part only: Docker, its daemon, the ASLR-off re-exec, disk. The compiler,
 # llvm-lit and the benchmark clients live inside the container image and are checked there
-# (./docker/run.sh scripts/00-prereqs.sh). Until 20 Sep 2026 the host run listed those as MISSING with a note
-# that this was expected on a host, and every reader took the word MISSING for a failure, on the first
-# screen of the first command, in the tail evaluate.sh shows when a step fails.
+# (./docker/run.sh scripts/00-prereqs.sh); the host run does not list them, so that MISSING on the host
+# always means a failure.
 set -u
 here="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=../env.sh
@@ -37,9 +36,8 @@ if [ "$in_container" = 0 ]; then
   need docker docker "install Docker Engine; everything else runs inside the image it builds"
   # Having the docker command is not having Docker: the daemon must be running and must accept this user.
   # Two different failures, two different remedies, told apart by what docker itself says: a user outside
-  # the docker group gets "permission denied while trying to connect" (18 Sep 2026, a second server); a
-  # daemon that is installed but not started gets "Is the docker daemon running?" (20 Sep 2026, a student
-  # after a reboot, whom the first version of this line told to fix his group membership).
+  # the docker group gets "permission denied while trying to connect"; a daemon that is installed but not
+  # started gets "Is the docker daemon running?".
   if command -v docker >/dev/null 2>&1; then
     err=$(docker info 2>&1 >/dev/null); drc=$?
     if [ "$drc" -eq 0 ]; then
@@ -97,7 +95,7 @@ echo
 echo "Performance:"
 need taskset taskset
 # memtier is not a prerequisite: 40-perf.sh memcached builds it from the pinned tarball when it is absent, so it is
-# reported and not counted (counted, it made this check exit 1 inside every image, and README said it passes there).
+# reported and not counted.
 if command -v memtier_benchmark >/dev/null 2>&1; then printf '  ok       %-22s %s\n' memtier_benchmark "$(command -v memtier_benchmark)"; ok=$((ok+1))
 else printf '  later    %-22s %s\n' memtier_benchmark "built by scripts/40-perf.sh memcached when first needed"; fi
 need sysbench sysbench "MySQL only; optional"

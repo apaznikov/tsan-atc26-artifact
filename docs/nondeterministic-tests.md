@@ -47,29 +47,19 @@ compiler; they are named here so that a reader of the replay does not take them 
 | `fd_location_closed.cpp` | the wording of the location descriptor line, not the race or its stacks | one L2 key 20/20 | one L2 key 20/20 |
 | `fork_atexit.cpp` | whether the report appears at all in a given run | about one run in five | about one run in five |
 
-One further test, `getline_nohang.cpp`, is not a report-level variation but a test that should not have
-been running. It checks that ThreadSanitizer does not deadlock on a stdio stream lock at exit while a
-detached thread blocks in `getline()` (its own comment; google/sanitizers issues 454 and 1733), and upstream
-marks it `UNSUPPORTED: glibc-2.38`, which lit reads as "2.38 and later"; the image's Ubuntu 24.04 carries
-glibc 2.39. Until 21 Sep 2026 it ran anyway, because the vendored lit configuration detected the glibc
-version through `distutils.version.LooseVersion`, which Python 3.12 no longer has, inside a bare `except`
-that swallowed the import error: no `glibc-*` feature was ever added, so this test ran, and two tests that
-`REQUIRES: glibc-2.30` (`pthread_mutex_clocklock.cpp`, `Linux/clockwait_double_lock.c`) were skipped. The
-fix is one comparison in `tests/lit.common.cfg.py` (a tuple of integers in place of `LooseVersion`, marked in
-the file as the artifact's only modification of the vendored suite); exactly three tests in the suite are
-gated on glibc, so the fix moves exactly those three: 91 unsupported and 292 executed before it, 90 and 293
-after, measured on 21 Sep 2026 (`data/suite/`), with 0 failures and 0 timeouts in 60 repeats on both hosts.
-
-What the defect had cost, so that the earlier figures in this repository's history read correctly: a run in
-which the deadlock occurred waited out the per-test timeout (120 s), and since `lit` runs tests in name order
-the stalled repeat outlived the rest of its configuration's run and the machine sat idle for up to two minutes
-per stalled repeat. The shipped-compiler run of 17 Sep (`data/suite/preservation-suite-20260917T075005Z`)
-stalled in 48 of 60 repeats; a run on 8 processors on 19 Sep in 40 of 60, most of its two hours; a run on 112
-unpinned processors on 20 Sep in 1 of 60. Earlier text here called the test flaky and its stall rate
-load-dependent; both are withdrawn: the stall was a test running on a glibc it is unsupported on, and the
-runs whose rates were compared differed in four recorded ways, so no dependence on load was established.
-Under the counting rule the stalls were timeouts, never failures, and could not have become a candidate
-lost race. Nothing else in the suite failed across any of these runs.
+One further test, `getline_nohang.cpp`, is not a report-level variation but a test that should not run
+here. It checks that ThreadSanitizer does not deadlock on a stdio stream lock at exit while a detached
+thread blocks in `getline()` (google/sanitizers issues 454 and 1733), and upstream marks it
+`UNSUPPORTED: glibc-2.38`, which lit reads as "2.38 and later"; the image's Ubuntu 24.04 carries glibc 2.39.
+The vendored lit configuration detected the glibc version through `distutils.version.LooseVersion`, which
+Python 3.12 no longer has, inside a bare `except`, so no `glibc-*` feature was added. The artifact's one
+modification of the vendored suite, in `tests/lit.common.cfg.py`, compares versions as tuples of integers
+instead. Exactly three tests in the suite are gated on glibc, and the fix moves exactly those three: 90
+unsupported and 293 executed, with 0 failures and 0 timeouts in 60 repeats on both hosts
+(`data/suite/preservation-suite-20260921T052239Z`). The earlier run shipped beside it
+(`data/suite/preservation-suite-20260917T075005Z`, 91 unsupported, 292 executed) predates the fix, and there
+`getline_nohang.cpp` waited out its per-test timeout in 48 of 60 repeats: timeouts, never failures, so never
+a candidate lost race.
 
 Everything else in the suite is deterministic: it reports the same race with the same stacks
 (function, file, line) under every configuration, or reports nothing under every configuration.

@@ -20,12 +20,10 @@ we measured:
 - **First execution.** Without a warm-up run, the first run of a binary deviates: measured on an
   earlier campaign that had none, the median shift of a speedup from dropping run 1 was 0.70
   points and the maximum 3.77, in a direction set by the baseline's own first run (memcached up,
-  Redis down). The artifact's scripts run one discarded warm-up per configuration and report
-  steady state, and the campaign shows that this works rather than assuming it: with the warm-up
+  Redis down). The artifact's scripts run one discarded warm-up per configuration. With the warm-up
   in place, run 1 is above the median of runs 2 to 5 in 9 of 14 Redis configurations (median
-  difference +0.63%) and 6 of 14 memcached configurations (median difference -1.47%), which is a
-  coin toss around zero. The point estimate over runs 2 to 5 lies inside the all-five interval on every row, for the
-  same reason; overlap of the two intervals was never the test, since the two share four runs.
+  difference +0.63%) and 6 of 14 memcached configurations (median difference -1.47%), a coin toss
+  around zero, and the point estimate over runs 2 to 5 lies inside the all-five interval on every row.
 - **Between sessions.** Byte-identical Redis binaries measured six days apart on the same host
   gave stock ThreadSanitizer 14% less throughput on the later date and an uninstrumented build 5%
   less, so eight of thirteen Redis rows changed verdict between the two sessions. The cause was not
@@ -35,13 +33,14 @@ we measured:
 
 ## Concurrency
 
-The sweep in `data/perf/contention-d3bf9f8c39fe`, taken with the submitted compiler (`d3bf9f8c39fe`,
-not the shipped one), shows the speedup flat from 2 to 112 threads on SQLite's walthread1 and flat from
-50 to 512 clients on Redis, and rising on FFmpeg's AllOpt+peel from 1.007 at 2 threads to 1.055 at 16
-(libx265's ceiling). The FFmpeg arm re-measured on the shipped compiler
-(`data/perf/ffmpeg-threadsweep-f3deebfbab60`) is in `CLAIMS.md`'s FFmpeg section: AllOpt with peeling
-1.005 and 1.010 at 2 and 4 threads, 1.063 and 1.065 at 8 and 16, DynSTC about 1.11 at every count. The
-point plots use the paper's own thread counts; the curves are shipped so no point is hidden.
+The sweep in `data/perf/contention-d3bf9f8c39fe`, taken with an earlier compiler, shows the speedup flat
+from 2 to 112 threads on SQLite's walthread1 and from 50 to 512 clients on Redis, and rising on FFmpeg's
+AllOpt with peeling from 1.007 at 2 threads to 1.055 at 16 (libx265's ceiling). The curves on the shipped
+compiler are in `CLAIMS.md` section 5: FFmpeg's thread sweep (AllOpt with peeling 1.005 and 1.010 at 2 and 4
+threads, 1.063 and 1.065 at 8 and 16; DynSTC about 1.11 at every count) and, measured after the campaign,
+memcached's server threads, Redis's clients and SQLite's walthread1 threads. FFmpeg's rows are compared at
+16 threads by default and at the paper's 4 with `FF_THREADS=4`; the other applications at the campaign's
+concurrency.
 
 ## Application-specific noise
 
@@ -54,32 +53,21 @@ point plots use the paper's own thread counts; the curves are shipped so no poin
   (`docs/campaign-parameters.md`, "The shape of the processor set").
 - **MySQL**: intervals 7 to 8 points wide on the campaign (AllOpt with peeling 1.042 [0.985, 1.062], with
   DynSTC 1.018 [0.967, 1.037]). Same reading. Its EA-bearing configurations took about 2.2 hours each to
-  build with the previous compiler and about half an hour with the shipped one.
-
-A rule that drops a cell for its value, an outlier filter, can always be accused of choosing its data. The
-provenance rule cannot be used that way, and it buys a statement a reviewer can check instead of an argument: no
-cell in the dataset overlapped a known foreign-work window.
-
-What the provenance rule is not: an outlier filter. The retired cell turned out to be an ordinary
-measurement. SQLite's run-to-run spread within one configuration is 17.2% of the median (maximum
-37.9%, on the uninstrumented build), so the 14% gap that drew attention to that cell is below the
-workload's normal spread, and the value-dependent rule would have kept it. Provenance removed an
-unremarkable cell and does not claim it was bad; the price is one cell in seventy, refilled inside
-the same leg.
+  build with the previous compiler and take about 8 minutes (459 s at 56 jobs) with the shipped one.
+- **SQLite**: the seven subtests are heterogeneous; two of them carry about 15 per cent run-to-run
+  variation, and the uninstrumented build varies by 37.9 % run to run. The resolvable-subtest column exists
+  for this.
 - **FFmpeg**: `-threads` is an input to the encoder, not a count of contending threads; libx265
   sizes its own worker pool and refuses more than 16 frame threads, above which the h265 codec
   silently disappears from the results. Check that all four codecs produced output.
-- **Redis**: throughput declines monotonically with client count from the tool's default of 50;
-  there is no saturation knee.
 
 ## Pinning is a pin for the workload, not an exclusion for everything else
 
 The benchmark is confined to its processor set; nothing stops other processes being scheduled there,
-and in our campaign our own interactive sessions, a remote-development backend and `sshd` all were.
+and in our campaign interactive sessions and `sshd` were.
 
 How much they consumed, computed per run from each run's own accounting as measured busy time on the
-pinned processors minus the workload's own CPU time, over the 211 measured runs of the completed
-legs:
+pinned processors minus the workload's own CPU time, over 211 of the campaign's measured runs:
 
 | | share of the 48 pinned processors |
 |---|---|
@@ -88,14 +76,13 @@ legs:
 | maximum | 1.13% |
 | runs whose estimate is negative | a third of them |
 
-A third of the estimates come out below zero, which is the honest measure of this method's
-precision: the foreign share sits at the limit of what the accounting resolves, about one per cent.
-So the defensible statement is a bound and not a value: **foreign consumption on the pinned
-processors is under roughly one per cent of their capacity, and this accounting cannot resolve it
-more finely.**
+A third of the estimates come out below zero, which is the measure of this method's precision: the
+foreign share sits at the limit of what the accounting resolves, about one per cent. So the statement
+is a bound and not a value: **foreign consumption on the pinned processors is under roughly one per
+cent of their capacity, and this accounting cannot resolve it more finely.**
 
-Whether it is correlated with configuration was tested rather than assumed, by comparing the spread
-between configuration means with the scatter between runs of one configuration:
+Whether it is correlated with configuration was tested by comparing the spread between configuration
+means with the scatter between runs of one configuration:
 
 | | between configurations | within a configuration | reading |
 |---|---|---|---|
@@ -105,29 +92,27 @@ between configuration means with the scatter between runs of one configuration:
 
 On memcached the estimator is dominated by accounting error: its estimates are negative for every
 configuration, because the server runs outside the timed region and its ticks are added back by
-hand. The comparable spreads there are more likely that error tracking configuration than foreign
-load doing so, and the question cannot be answered on that application. It also does not arise
-there: the quantity bounded above is under one point, while the narrowest speedup interval among
-memcached's twelve instrumented configurations is 11.9 points, more than ten times wider.
+hand. The question cannot be answered on that application, and it does not arise there: the quantity
+bounded above is under one point, while the narrowest speedup interval among memcached's twelve
+instrumented configurations is 11.9 points. Where the question can be answered, foreign activity adds
+to run-to-run variation rather than shifting configurations relative to one another, and that variation
+is already contained in the reported intervals. One weak coupling is known: foreign share correlates
+with run duration at r = 0.18 over the same 211 runs, and configurations differ slightly in duration.
 
-Where the question can be answered, foreign activity adds to run-to-run variation rather than
-shifting configurations relative to one another, and that variation is already contained in the
-reported intervals. One mechanism by which it could couple to configuration is known and weak:
-foreign share correlates with run duration at r = 0.18 over the 211 runs, and configurations differ
-slightly in duration.
-
-**The per-process file records presence, not consumption.** Each run ships
-`cpuset-intruders.txt` and the `cpuset_intruders` fields of `meta.json`, listing the processes seen
-on the pinned CPUs. They come from `ps -eo psr,pcpu,comm`, where `pcpu` is a process's average CPU
-over its whole lifetime and `psr` is merely the processor it was last seen on. A row reading 1002%
-therefore means "a process whose lifetime average is ten cores was, at one sampling instant, last
-seen on one of our processors" -- it says nothing about what that process took during the run. Use
-the file to answer "was anything else on these cores", and the table above to answer "how much".
+**The intruder fields record presence, not consumption.** Each run's `meta.json` carries
+`cpuset_intruders` (how many foreign processes were seen on the pinned CPUs) and
+`cpuset_intruder_peak_pcpu`; the per-sample list of process names behind them is written during a run
+but not shipped. The counts come from `ps -eo psr,pcpu,comm`, sampled every two seconds. They come from `ps -eo psr,pcpu,comm`, where `pcpu` is a process's average CPU
+over its whole lifetime and `psr` is merely the processor it was last seen on. A peak reading 2586
+therefore means "a process whose lifetime average is about 26 cores was, at one sampling instant, last
+seen on one of our processors"; it says nothing about what that process took during the run. Use the
+fields to answer "was anything else on these cores", and the table above to answer "how much"; the
+disturbance gate that retires cells reads busy time, not these fields.
 
 ## Builds and benchmarks on one machine
 
 A full LLVM build correctly pinned away from the benchmark CPUs still puts them four to five times
-over our foreign-activity gate and invalidates every run in flight. Do not build anything while
+over the foreign-activity gate and invalidates every run in flight. Do not build anything while
 `40-perf.sh` runs; the script refuses to start if it detects a compiler build and records foreign
 CPU share per run so a disturbed run is dropped, not averaged in.
 
@@ -136,54 +121,35 @@ CPU share per run so a disturbed run is dropped, not averaged in.
 The gate does not distinguish your builds from anyone else's. On a shared machine, a colleague's
 compilation, an IDE's background build, or a scheduled job on the processors outside your `ART_CPUSET`
 raises `outside_busy_share` above the 0.10 threshold, and every cell measured under it is marked
-DISTURBED, re-run once, marked again if the load persists, and dropped; a leg can take its full two
-hours and end with one usable run per configuration. That is the gate working, not the artifact
-failing: no number taken under foreign load reaches a table. What to do: read `outside_busy_share` in
-each cell's `meta.json` (or the "DISTURBED" marks in the run log), find what was running on the other
-processors, and re-run the leg on a quiet machine; a leg with retired cells is not a result to
-interpret. Our own rehearsal of 17 Sep 2026 lost a SQLite leg this way to an unrelated LLVM build
-pinned to the processors outside the bench set, at `outside_busy_share` 0.50 for seventy minutes.
+DISTURBED in the run log, re-run once at the end of the leg, retired again if the load persists, and
+dropped; the aggregate then reports the configuration with fewer runs than requested or with no data,
+never with a number taken under the load. A leg with retired cells is not a result to interpret: read
+`outside_busy_share` in each cell's `meta.json`, find what was running on the other processors, and re-run
+the leg on a quiet machine.
 
-The gate is demanding, by design, and it is worth knowing how demanding before starting a leg on a
-machine you do not control. With 48 processors pinned on a 112-thread host, 64 processors are watched,
-and 0.10 of them is about six cores of anything at all: a colleague's build, an IDE indexing, a backup.
-Pinning fewer processors does not help, it enlarges the watched set. Our own campaign watched 56 rather
-than 64: `harness/tools/perf/ignore_cpus` then excluded eight processors this lab reserves for other
-users, which is why every campaign cell records `n_outside: 56`. That file now excludes nothing by
-default, so an evaluator's gate watches every processor outside the set; the exclusion was recorded in
-each cell rather than hidden, and it is stated here because a gate that stops watching part of the
-machine is a condition of the measurement, not a detail of it. A retired cell looks like this in
-the run log: the cell's line ends in `DISTURBED`, it is re-run once at the end of the leg, and if the load
-persists the re-run is retired too; the aggregate then reports the configuration with fewer runs than
-requested or with no data, and never with a number taken under the load. The threshold is the campaign's
-(`P5_FOREIGN_MAX`, 0.10) and every session records the value in force as `foreign_max` in `session.json`;
-if a shared machine leaves you no quiet window, you can run at a looser threshold knowingly, and the
-record then says so beside every cell, which is the condition under which such a row should be read.
+With 48 processors pinned on a 112-thread host, 64 processors are watched, and 0.10 of them is about six
+cores of anything at all. Pinning fewer processors does not help; it enlarges the watched set. The
+campaign's cells record `n_outside: 56` because `harness/tools/perf/ignore_cpus` then excluded eight
+processors from the watched set; that file now excludes nothing, so an evaluator's gate watches every
+processor outside the set. The threshold is the campaign's (`P5_FOREIGN_MAX`, 0.10), and every session
+records the value in force as `foreign_max` in `session.json`; a run at a looser threshold is possible,
+and the record then says so beside every cell.
 
 ## The container sees the processors the daemon allows
 
 Inside the container `nproc` reports the processors the Docker daemon's own cgroup allows, which can be
-fewer than the host has (104 of 112 on our machine, stable across every container we started). With
-`ART_CPUSET` empty that number is what the thread rule and `ART_JOBS` derive from, and it is recorded
-in each session as `ncpu`; it is a property of the host's Docker configuration, not of the artifact.
+fewer than the host has (104 of 112 on our machine). With `ART_CPUSET` empty that number is what the
+thread rule and `ART_JOBS` derive from, and it is recorded in each session as `ncpu`; it is a property of
+the host's Docker configuration, not of the artifact.
 
 ## An unpinned run is not gate-checked
 
-The disturbance gate reads busy time on the CPUs outside `ART_CPUSET`. With `ART_CPUSET` empty, the
-artifact's default on a machine that is not ours, there are no CPUs outside the set and nothing to
-measure; the harness records `outside_busy_share` as null with `gate_checked: false` beside it and prints
-"not gate-checked" rather than a zero that would read as a quiet machine. Pin 48 CPUs, the size of our set (which also fixes memcached's thread count), and leave the rest idle if
-you want a run that can be compared with ours.
-
-The absence of a check and a passed check must not take the same channel. A cell for which no gate was
-applied looks, in a naive summary, exactly like a cell that passed one; the difference is only in
-`gate_applied`/`gate_checked`, and a reader who does not consult that field would read an unmeasured
-condition as a clean one. Two things follow, and we hold to both. The absence is recorded explicitly,
-as a false flag beside the cell rather than as a missing field, so it is visible in the record and not
-inferred from what is not there. And the decision that a number which cannot be compared will not be
-quoted is made before the run, not after: once the number exists, discarding it has become
-inconvenient, and a rule adopted then is worth nothing. Our own unpinned rehearsal leg is run only to
-exercise this contract, and its table is quoted nowhere.
+The disturbance gate reads busy time on the CPUs outside `ART_CPUSET`. With `ART_CPUSET` empty there are
+no CPUs outside the set and nothing to measure; the harness records `outside_busy_share` as null with
+`gate_checked: false` beside it and prints "not gate-checked" rather than a zero that would read as a
+quiet machine. The absence is recorded as a false flag beside the cell, not as a missing field. Pin 48
+CPUs of the campaign's shape (which also fixes memcached's thread count) and leave the rest idle if you
+want a run that can be compared with ours.
 
 ## Lower N is not a smaller interval
 
@@ -195,13 +161,11 @@ is compared with `CLAIMS.md` as a point against the shipped interval, never as a
 
 ## Foreign load inside the pinned set is invisible from inside the container
 
-The disturbance gate measures the processors outside the pinned set, so a foreign process whose affinity covers
-the whole machine and that the scheduler places inside the set is not seen by it: the cell reads clean and is
-slower. The per-cell intruder record (`cpuset_intruders`, `cpuset_intruder_peak_pcpu`) exists for that case, but
-the artifact's runs execute inside a container with its own pid namespace, where `ps` lists the container's
-processes only, so from the evaluator path the record can name nothing on the host. During the verification run
-of 22 Sep 2026 another user's two-process job (about 2.7 cores, affinity 0-111) ran on this host for its first
-forty minutes with one process on a processor inside the set; every cell of the run records zero intruders. The
-condition is therefore stated here and not in the data: keep the whole host quiet during a timed leg, and read
-an outside row first against the leg's own `inside_busy_share` distribution. Sampling `/proc/<pid>/stat` deltas
-on the host, with the host's pid namespace, is the post-submission fix.
+The disturbance gate measures the processors outside the pinned set, so a foreign process whose affinity
+covers the whole machine and that the scheduler places inside the set is not seen by it: the cell reads
+clean and is slower. The per-cell intruder record (`cpuset_intruders`, `cpuset_intruder_peak_pcpu`) exists
+for that case, but the artifact's runs execute inside a container with its own pid namespace, where `ps`
+lists the container's processes only, so from the evaluator path the record can name nothing on the host;
+we have seen a foreign job run inside the set while every cell recorded zero intruders. Keep the whole host
+quiet during a timed leg, and read an outside row first against the leg's own `inside_busy_share`
+distribution.

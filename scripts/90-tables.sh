@@ -43,8 +43,7 @@ regen_perf() { # regen_perf <results tree>
       echo "    identical to the shipped tables"
     else
       # A shipped table that does not follow from the shipped runs is the one thing this script exists to
-      # detect, so it is a failure and not a remark. Until 19 Sep 2026 it printed the line and exited 0,
-      # and the correctness set reported PASS over it.
+      # detect, so it is a failure and not a remark.
       echo "    the shipped tables do not follow from the shipped runs (regenerated copies in $copy)" >&2
       return 1
     fi
@@ -53,11 +52,9 @@ regen_perf() { # regen_perf <results tree>
 
 if [ $# -eq 0 ]; then
   echo "Regenerating the performance tables from the shipped runs:"
-  # The campaign roots first: they are what every performance claim rests on. Until 19 Sep 2026 this
-  # regenerated only the two Stage B trees, which are shipped as data and support no claim, so the
-  # documented one-command check re-derived the retired numbers and not the paper's.
+  # The campaign roots first: they are what every performance claim rests on.
   rc=0
-  for r in "$ART_DATA"/perf/campaign-*/*/ "$ART_DATA"/perf/ffmpeg-threadsweep-*/*/ "$ART_DATA"/perf/sweep-apollo-*/*/; do
+  for r in "$ART_DATA"/perf/campaign-*/*/ "$ART_DATA"/perf/ffmpeg-threadsweep-*/*/ "$ART_DATA"/perf/sweep-amd-*/*/; do
     [ -d "$r" ] && { regen_perf "${r%/}" || rc=1; }
   done
   regen_perf "$ART_DATA/perf/stageB-d3bf9f8c39fe" || rc=1
@@ -86,8 +83,7 @@ if [ $# -eq 0 ]; then
   else printf '%s\n' "$out" | tail -4 | sed 's/^/  /'; rc=1; fi
   # And the refusal that makes the comparison mean something: a tree whose clip is not the reference one must
   # be reported as not comparable, never judged. Built here from copies of the shipped FFmpeg cells' metadata
-  # with input_is_reference set to false; nothing shipped is touched. Until 20 Sep 2026 a chain-ordering
-  # defect judged exactly such trees, which this control would have caught.
+  # with input_is_reference set to false; nothing shipped is touched.
   ctl=$(mktemp -d); src="$ART_DATA/perf/campaign-f3deebfbab60/primary"; t="$ctl/perf-ffmpeg-control"
   mkdir -p "$t" && cp "$src/perf_ffmpeg.md" "$t/"
   while IFS= read -r m; do

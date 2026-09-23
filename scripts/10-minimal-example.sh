@@ -12,7 +12,7 @@ CC="$TSAN_LLVM_ROOT/bin/clang"; OBJDUMP="$TSAN_LLVM_ROOT/bin/llvm-objdump"
 [ -x "$CC" ] || { echo "no TSan clang at $CC (set TSAN_LLVM_ROOT or run inside the container)"; exit 2; }
 # The counter below greps llvm-objdump's output, so a missing or broken objdump yields 0 for every
 # column and a table in which every analysis appears to have removed nothing, while the script still
-# exits 0 on the race check alone. Refuse instead (found 19 Sep 2026).
+# exits 0 on the race check alone. Refuse instead.
 [ -x "$OBJDUMP" ] || { echo "no llvm-objdump at $OBJDUMP; the instrumentation counts below would all read 0"; exit 2; }
 out="$ART_RESULTS/minimal-example-$(date +%Y%m%d-%H%M%S)"; mkdir -p "$out"
 src="$here/scripts/minimal"

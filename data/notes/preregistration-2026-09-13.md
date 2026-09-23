@@ -1,8 +1,8 @@
 # Pre-registration: the concurrency sweep and the combinations leg
 
 Written 2026-09-13 **before either leg produced a number**, so that "we would have named this configuration in
-advance" is checkable rather than asserted. Requested by the tsan-paper lane, whose constraint was: no
-configuration chosen after seeing its result, and one aggregation for every row.
+advance" is checkable rather than asserted. The constraint: no configuration chosen after seeing its result,
+and one aggregation for every row.
 
 ## Aggregation, fixed for every row in both legs
 
@@ -31,7 +31,7 @@ rises monotonically with the knob. A flat curve refutes it on this machine; a fa
 strongly.
 
 **Run-1 cross-check, fixed before the sweep's numbers exist (added 2026-09-13 20:20).** The harness has no
-warm-up and run 1 is now known to deviate systematically (`run1-cold-start-2026-09-13.md`). The sweep's curve
+warm-up and run 1 is now known to deviate systematically (`docs/confounds.md`, "First execution"). The sweep's curve
 is therefore reported on **all five runs** — the pre-registered aggregation, unchanged — and cross-checked on
 **runs 2-5**. If the two disagree in the direction of the trend, **neither is reported as a result** and the
 sweep is repeated with a discarded warm-up. The harness is not modified while the sweep is in flight, because a
@@ -47,7 +47,7 @@ memcached is **excluded and the reason is not cost alone**: its cell is 6.6 minu
 11 machine-hours, and its Stage B speedup interval is ±12 points, so the arm could only resolve an effect
 larger than that. It would be a separate leg with its own decision, not a silent addition.
 
-## Leg 2 — the combinations, in the order I would spend the hours
+## Leg 2 — the combinations, in order of priority
 
 Priors are bets on whether the hours are worth spending, recorded before the numbers exist. They are not
 predictions of the value, and a null on (1) is a publishable result rather than a wasted leg.
@@ -65,7 +65,7 @@ predictions of the value, and a null on (1) is a publishable result rather than 
 5. **Anything with loop peeling as the variable.** Lowest; do not buy. Peeling is now a null on static reach,
    on timing, and on executed accesses (opposite signs below the noise floor on both applications).
 
-## What would make me withdraw a row
+## What withdraws a row
 
 A configuration whose binary fails the provenance gate; a leg whose runs are retired above `P5_FOREIGN_MAX`
 faster than the top-up can replace them; or an aggregation that had to be changed to make the row readable. In

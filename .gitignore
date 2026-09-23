@@ -11,3 +11,4 @@ __pycache__/
 perf.data*
 test.db*
 .env
+local/
