@@ -9,7 +9,7 @@
 # Configuration
 #------------------------------------------------------------------------------
 # Compiler: tools/tsan_compiler.sh (sourced below, after SCRIPT_DIR is known) selects the
-# hardened prototype in ~/dev/llvm-project-focs-lab unless LLVM_TSAN_ROOT is set.  The old
+# hardened prototype in the prototype tree unless LLVM_TSAN_ROOT is set.  The old
 # LLVM_BUILD_DIR="$LLVM_PATH" is gone: ~/.bashrc exports LLVM_PATH=~/dev/llvm-project/llvm/build,
 # which since 2026-05 is a symlink to the unrelated llvm-capstone tree.
 LLVM_BUILD_DIR=""
@@ -475,7 +475,7 @@ if [ "$COMPILE" = true ]; then
             TSAN_FLAGS="${TSAN_EXTRA_MLLVM:-}"
             SUMMARY_NOTE="summaries: none (per-TU analyses only)"
             if [ "$USE_SUMMARIES" = 1 ]; then
-                # Sound summaries interface (tsan-dev fafbebedb41e+): files are tagged with
+                # Sound summaries interface (fafbebedb41e+): files are tagged with
                 # "# tsan-summary-id: <tag>", read from -tsan-summary-dir with the matching
                 # -tsan-summary-id, never overwritten by a seeded compile.
                 SUMMARY_ID=$(sed -n 's/^# tsan-summary-id: *//p' "$SUMMARIES_DIR/st_summary.txt" | head -1)
@@ -497,7 +497,7 @@ if [ "$COMPILE" = true ]; then
                     ea)          TSAN_FLAGS="$TSAN_FLAGS -mllvm -tsan-use-escape-analysis-global" ;;
                     dom)         TSAN_FLAGS="$TSAN_FLAGS -mllvm -tsan-use-dominance-analysis" ;;
                     dom_peeling) TSAN_FLAGS="$TSAN_FLAGS -mllvm -tsan-use-dominance-analysis -mllvm -tsan-use-loop-peeling=true" ;;
-                    # Rebuttal (plan P2/P3): the four sound analyses, i.e. AllOpt without DE.
+                    # The four sound analyses, i.e. AllOpt without DE.
                     sound)       TSAN_FLAGS="$TSAN_FLAGS -mllvm -tsan-use-escape-analysis-global -mllvm -tsan-use-lock-ownership -mllvm -tsan-use-single-threaded -mllvm -tsan-use-swmr" ;;
                     tfn)         TSAN_FLAGS="$TSAN_FLAGS -mllvm -tsan-thread-free-names=sd_notify,__isoc23_strtol,__isoc23_strtoul,__isoc23_strtoll,__isoc23_strtoull,__isoc23_sscanf,getsubopt,__getdelim,preadv" ;;   # vouched thread-free externals (sd_notify + glibc 2.38 __isoc23_* aliases)
                     # yoff: the yield copy's seven changes turned off inside the same compiler, so that a

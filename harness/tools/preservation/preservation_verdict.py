@@ -23,7 +23,7 @@ An earlier draft keyed UNDETERMINED on stock's frequency ALONE, so a site stock 
 the configuration 7 times in 10 came back UNDETERMINED. That rule can never say KEPT on any workload whose
 detection is schedule-dependent, and **a check that cannot certify anything is not conservative, it is
 uninformative**. Stock's frequency matters only when the configuration reports nothing, where it is what
-separates a loss from an unlucky schedule. (tsan-paper, 2026-09-16.)
+separates a loss from an unlucky schedule. (2026-09-16.)
 
 Exit status: non-zero ONLY if some site is LOST. UNDETERMINED never fails the run — a criterion that
 fails on noise would fail on a good compiler, and a reviewer cannot tell those apart from the exit code.

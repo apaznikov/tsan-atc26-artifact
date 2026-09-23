@@ -63,7 +63,7 @@ if [[ "$CONFIG_TYPE" == "orig" ]]; then
     # Let's stick to your version's compiler logic for now, which means 'orig' also uses LLVM clang.
     # If you want 'orig' to use GCC, this section needs adjustment.
     # Same compiler as the TSan builds (tools/tsan_compiler.sh: hardened prototype in
-    # ~/dev/llvm-project-focs-lab unless LLVM_TSAN_ROOT is set; $LLVM_ROOT_PATH is only
+    # the prototype tree unless LLVM_TSAN_ROOT is set; $LLVM_ROOT_PATH is only
     # honoured if it really is that tree).
     source "$(dirname "$0")/../../tools/tsan_compiler.sh" || exit 1
     TARGET_CC="$TSAN_CC"

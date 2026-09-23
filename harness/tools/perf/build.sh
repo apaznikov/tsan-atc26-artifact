@@ -28,7 +28,7 @@ build_scope() {  # <app> -> systemd-run prefix with a per-application cap, or no
   # Caps must bind below user.slice's shared MemoryHigh (110 GiB for every account together, no swap; crossing
 # it stalls every session — diag, 2026-09-07): MySQL 48G (56 jobs; the largest single compile is 3.4 GB),
 # FFmpeg 24G, others 8G, and MySQL is launched on its own, so the concurrent total stays well under the
-# 50 GiB budget agreed with tsan-dev.
+# 50 GiB budget.
   local cap; case "$1" in mysql) cap=${P5_BUILD_MEM_MYSQL:-48G};; ffmpeg) cap=${P5_BUILD_MEM_FFMPEG:-24G};; *) cap=${P5_BUILD_MEM:-8G};; esac
   command -v systemd-run >/dev/null && systemd-run --user --scope --quiet -p MemoryMax=1M -- true 2>/dev/null && echo "systemd-run --user --scope --quiet -p MemoryMax=$cap --"
 }
@@ -89,7 +89,7 @@ build_one() {  # cfg
 # builds of different apps run concurrently (shared lock); a benchmark holds the lock exclusively, so no
 # build starts while one of our benchmarks runs and no benchmark starts while a build runs
 exec 9>"$P5_LOCK"; flock -s 9
-# Machine-wide job lock (rule agreed across lanes, 2026-09-07, revised the same afternoon): /home/alexey/bin/logs/machine-memory.lock
+# Machine-wide job lock (rule agreed across lanes, 2026-09-07, revised the same afternoon): the machine memory lock
 # (the name is historical; never recreate the file). EXCLUSIVE for any job that (a) is capped >= 20 GiB, or
 # (b) runs >= 8 sustained cores, or (c) is a timing measurement; shared or unlocked otherwise. Every build of
 # this lane is (b) (jobs 8..56), so all builds are exclusive; measurements (bench_one.sh) are (c), per run.

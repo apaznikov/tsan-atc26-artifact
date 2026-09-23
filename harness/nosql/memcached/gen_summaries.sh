@@ -2,10 +2,10 @@
 # gen_summaries.sh — whole-program analysis summaries for memcached, hardened-compiler edition.
 #
 # Replaces the paper-era pair llvm-link-memcached.sh + build_summaries.sh for the
-# tsan-dev compiler, where the summary mechanism is opt-in (-mllvm -tsan-use-analysis-summaries)
+# prototype compiler, where the summary mechanism is opt-in (-mllvm -tsan-use-analysis-summaries)
 # and lives in tsan-logs/ of the compiler's CWD.
 #
-# Differences from the paper-era pipeline (kept for provenance, do not use with tsan-dev):
+# Differences from the paper-era pipeline (kept for provenance, do not use with the prototype):
 #   * Modules are emitted WITHOUT TSan instrumentation (the old scripts emitted `.ll`
 #     with -fsanitize=thread, i.e. every access already carried a __tsan_* call — an
 #     external call that makes the pointer escape, so the old EA summary contained no
@@ -20,12 +20,12 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-# tools/tsan_compiler.sh picks the hardened prototype (focs-lab) unless LLVM_TSAN_ROOT is set;
+# tools/tsan_compiler.sh picks the hardened prototype unless LLVM_TSAN_ROOT is set;
 # $LLVM_ROOT_PATH / $LLVM_PATH from ~/.bashrc point at the unrelated llvm-capstone tree.
 source ../../tools/tsan_compiler.sh
 CLANG="$TSAN_CC"; OPT="$TSAN_OPT"; LLVM_LINK="$TSAN_LLVM_ROOT/bin/llvm-link"
 for t in "$CLANG" "$OPT" "$LLVM_LINK"; do [ -x "$t" ] || { echo "missing $t"; exit 1; }; done
-# Frozen per-hash copies (/extra/alexey/builds/<name>/) are not git trees: take the id from TSAN_AUDIT_HASH or the version string.
+# Frozen per-hash copies (a frozen per-hash copy) are not git trees: take the id from TSAN_AUDIT_HASH or the version string.
 if [ -f "$TSAN_LLVM_ROOT/TSAN_AUDIT_HASH" ]; then
   TREE="$TSAN_LLVM_ROOT"; HEAD=$(head -1 "$TSAN_LLVM_ROOT/TSAN_AUDIT_HASH" | grep -oE "[0-9a-f]{12}" | head -1)
 else

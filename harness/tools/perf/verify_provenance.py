@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """verify_provenance.py <results-root> [...] — assert what every run RECORDED, not what it was told to do.
 
-tsan-paper's standard of 2026-09-16: the proof belongs in the log, not in the intention. A flag passed to a
+the standard of 2026-09-16: the proof belongs in the log, not in the intention. A flag passed to a
 script, a clip named in an environment variable and a compiler chosen by a hash are all intentions; what a
 reviewer can check is the metadata the run wrote down. This checks the artefacts and nothing else, so it can
 be run on legs that finished hours ago and on scripts nobody may edit while they are running.

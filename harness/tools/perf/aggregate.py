@@ -150,7 +150,7 @@ def collect(root, app, run_range=None):
 
     The default is every run. The variant that exists for it is (2, 5): run1 of a leg is the first execution
     of that configuration after the warm-up, and before the warm-up existed it carried a cold-start penalty
-    large enough to be visible (see tools/notes/run1-cold-start-2026-09-13.md). Reporting both is how we say
+    large enough to be visible (docs/confounds.md states the effect). Reporting both is how we say
     whether the warm-up actually removed it, rather than assuming it did — the two tables agreeing IS the
     evidence, and they can only agree if both are computed."""
     parser, hib = PARSERS[app]; adir = os.path.join(root, app)
@@ -246,7 +246,7 @@ def report_app(root, app, per_cfg, hib, statics, out_rows, suffix="", expect_n=5
                      + ". Report the all-subtest column as the headline and this one as what the data can resolve.\n")
     # A BOOTSTRAP OVER ONE RUN CANNOT PRODUCE AN INTERVAL. Resampling a single value gives that value back,
     # so a mid-leg table printed "0.991 [0.991, 0.991]" -- zero width, which reads as extreme precision to
-    # anyone who does not check the N column, and is how a stale table gets quoted (tsan-paper, 2026-09-16).
+    # anyone who does not check the N column, and is how a stale table gets quoted (2026-09-16.).
     # Below the expected N the interval is not narrowed, it is ABSENT, and the row says so where the number
     # is rendered rather than leaving the N column to be noticed.
     # THREE RENDERING STATES, keyed on what the data can support rather than on what was asked for.

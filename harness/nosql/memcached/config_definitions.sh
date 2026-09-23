@@ -28,7 +28,7 @@ CONFIG_DETAILS["tsan-all_stmt"]="-mllvm -tsan-use-dominance-analysis -mllvm -tsa
                                  -mllvm -tsan-use-escape-analysis-global \
                                  -mllvm -tsan-use-active-thread-count"
 
-# Rebuttal (plan P2/P3): the four sound analyses only (EA+LO+STC+SWMR), i.e. AllOpt without
+# The four sound analyses only (EA+LO+STC+SWMR), i.e. AllOpt without
 # dominance elimination.  Same name in every app so that results are comparable.
 CONFIG_DETAILS["tsan-tfn"]="-mllvm -tsan-thread-free-names=event_get_version,event_config_new,event_config_set_flag,event_base_new_with_config,event_config_free,__isoc23_strtol,__isoc23_strtoul,__isoc23_strtoll,__isoc23_strtoull,__isoc23_sscanf,getsubopt,__getdelim,preadv"
 CONFIG_DETAILS["tsan-sound"]="-mllvm -tsan-use-escape-analysis-global \
@@ -36,11 +36,11 @@ CONFIG_DETAILS["tsan-sound"]="-mllvm -tsan-use-escape-analysis-global \
                               -mllvm -tsan-use-single-threaded \
                               -mllvm -tsan-use-swmr"
 # tsan-sound-tfn: the sound bundle plus user-vouched thread-free externals (-tsan-thread-free-names; exact
-# symbol names, outside the linked IR, no threads, no callbacks — list from the tsan-dev lane, 2026-09-05):
+# symbol names, outside the linked IR, no threads, no callbacks — list of 2026-09-05):
 # memcached's libevent setup calls before the first thread, plus glibc 2.38's __isoc23_* conversion aliases
 # and getsubopt/__getdelim/preadv, which neither TargetLibraryInfo nor the built-in list knows yet.
 # tsan-yoff: turn the yield copy's seven changes off inside the same compiler
-# (/extra/alexey/builds/tsan-yield-d98873cda906, where all six switches default to on). A "-yoff" row is the
+# (a frozen copy of d98873cda906, where all six switches default to on). A "-yoff" row is the
 # A/B partner of the same configuration without the suffix: same compiler, same binary layout, only the yield
 # changes differ, so the pair isolates them from the stage-b2 changes underneath.
 CONFIG_DETAILS["tsan-yoff"]="-mllvm -tsan-dynstc-runs-across-thread-free-calls=false \

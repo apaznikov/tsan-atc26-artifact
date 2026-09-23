@@ -2,7 +2,7 @@
 # gen_summaries.sh — whole-program analysis summaries for redis-server, hardened-compiler edition.
 #
 # Replaces the summary block of the paper-era redis.sh (build_single_ll + three
-# `opt -passes=print<...> -debug-only=...` runs) for the tsan-dev compiler, where the summary
+# `opt -passes=print<...> -debug-only=...` runs) for the prototype compiler, where the summary
 # mechanism is opt-in (-mllvm -tsan-use-analysis-summaries) and lives in tsan-logs/ of the
 # compiler's CWD.
 #
@@ -27,12 +27,12 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-# tools/tsan_compiler.sh picks the hardened prototype (focs-lab) unless LLVM_TSAN_ROOT is set;
+# tools/tsan_compiler.sh picks the hardened prototype unless LLVM_TSAN_ROOT is set;
 # $LLVM_ROOT_PATH / $LLVM_PATH from ~/.bashrc point at the unrelated llvm-capstone tree.
 source ../../tools/tsan_compiler.sh
 CLANG="$TSAN_CC"; OPT="$TSAN_OPT"; LLVM_LINK="$TSAN_LLVM_ROOT/bin/llvm-link"
 for t in "$CLANG" "$OPT" "$LLVM_LINK"; do [ -x "$t" ] || { echo "missing $t"; exit 1; }; done
-# Frozen per-hash copies (/extra/alexey/builds/<name>/) are not git trees: take the id from TSAN_AUDIT_HASH.
+# Frozen per-hash copies (a frozen per-hash copy) are not git trees: take the id from TSAN_AUDIT_HASH.
 if [ -f "$TSAN_LLVM_ROOT/TSAN_AUDIT_HASH" ]; then
   TREE="$TSAN_LLVM_ROOT"; HEAD=$(head -1 "$TSAN_LLVM_ROOT/TSAN_AUDIT_HASH" | grep -oE "[0-9a-f]{12}" | head -1)
 else

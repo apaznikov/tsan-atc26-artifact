@@ -16,7 +16,7 @@
 //                 selects the random replacement slot at the bottom of CheckRaces.
 //   phase 4  B  : s.a = 2             <- races A's write of `a`; reported iff A's record for `a` survived
 //
-// PRE-REGISTERED DIRECTION (fixed before the first run, agreed with the tsan-dev lane): at any given burst the
+// PRE-REGISTERED DIRECTION (fixed before the first run, agreed before the first run): at any given burst the
 // merge-on arm should lose NO MORE races than merge-off, and plausibly fewer. Verified in CheckRaces
 // (tsan_rtl_access.cpp): a same-thread access whose mask differs from the stored one does NOT overwrite in
 // place — `cur.access() == old.access()` fails, it `continue`s, and it ends at the random-slot replacement.

@@ -2,7 +2,7 @@
 """
 Parse ThreadSanitizer reports and compare race sets across build configurations.
 
-Used by the P2 (benchmark-level preservation) experiment of the ATC'26 rebuttal:
+Used by the benchmark-level race-report preservation experiment:
 each application is run N times per configuration with
     TSAN_OPTIONS="log_path=<dir>/<app>.<cfg>.<run> exitcode=0"
 (TSan appends ".<pid>" to log_path), and this script

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """counters_read.py <run-dir> <app> <config> — read the access-stats counter files for one run.
 
-Conventions agreed with the tsan-dev lane and carried in the frozen copy's CONSOLIDATED_HASH:
+Conventions agreed before the first run and carried in the frozen copy's CONSOLIDATED_HASH:
   * each line of a file is a RUNNING TOTAL, so take the LAST line of a file, never the sum of its lines;
   * sum ACROSS <path>.<pid> files, since each process's totals genuinely add (FFmpeg runs several encodes);
   * counts are not costs — a fast-path hit and a function entry are not the same number of cycles, so nothing

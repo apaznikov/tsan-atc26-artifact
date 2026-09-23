@@ -143,7 +143,7 @@ echo "Target build directory: $BUILD_DIR_NAME"
 echo "Compiler: $TARGET_CC"
 echo "Final CFLAGS: $FINAL_CFLAGS"
 
-# Clean up.  A previous build without build_info.txt predates the rebuttal work (paper-era
+# Clean up.  A previous build without build_info.txt predates this work (paper-era
 # binary, compiler no longer available): archive it instead of deleting it.
 if [ -d "$BUILD_DIR_NAME" ]; then
   if [ ! -f "$BUILD_DIR_NAME/build_info.txt" ]; then

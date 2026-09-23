@@ -3,13 +3,13 @@
 #
 #   source "<repo>/tools/tsan_compiler.sh"     # sets TSAN_LLVM_ROOT, TSAN_CC, TSAN_CXX, TSAN_OPT
 #
-# Priority: $LLVM_TSAN_ROOT (explicit) > $LLVM_ROOT_PATH if it really is a focs-lab TSan tree >
-# the default focs-lab build.  ~/.bashrc exports LLVM_ROOT_PATH=~/dev/llvm-project/llvm/build,
+# Priority: $LLVM_TSAN_ROOT (explicit) > $LLVM_ROOT_PATH if it really is a prototype TSan tree >
+# the default prototype build.  A shell profile may export LLVM_ROOT_PATH at an unrelated tree,
 # which since 2026-05 is a symlink to the unrelated llvm-capstone tree, so that value is verified
 # instead of trusted.
 TSAN_LLVM_DEFAULT="${TSAN_LLVM_DEFAULT:-/home/alexey/dev/llvm-project-focs-lab/llvm/build}"
 # WHAT MAKES A COMPILER THE PROTOTYPE IS THE FLAGS IT ACCEPTS, NOT THE URL IT PRINTS. This tested
-# --version for "focs-lab/llvm-project", which our container satisfies only because the Dockerfile forces
+# --version for the prototype's own string, which the container satisfies only because the Dockerfile forces
 # that string -- so a reviewer who builds the patched LLVM themselves, which the artifact tells them they
 # may, had every application build refused for a reason they could not act on. The version string stays as
 # the fast path because it is true of our own builds; a compiler that fails it is now asked whether it

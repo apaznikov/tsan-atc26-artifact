@@ -508,7 +508,7 @@ def compiler_info(llvm_root: Path, check_ninja: bool) -> dict:
         info["git_dirty_files"] = len(sh(["git", "-C", str(tree), "status", "--porcelain", "--untracked-files=no"]).splitlines())
         info["compiler_head_source"] = "git rev-parse in the source tree"
     # A FROZEN COPY HAS NO .git AND IS THE MANDATED WAY TO MEASURE. `tree` is llvm_root.parent.parent, which
-    # for /extra/alexey/builds/<lane>-<hash> resolves to /extra/alexey/builds — no repository, so git_head
+    # for a frozen per-hash copy resolves to its parent — no repository, so git_head
     # came out EMPTY on exactly the copies the rules require. Four of seven manifests on disk are empty for
     # this reason, and the directory name happened to carry the hash, which is luck rather than provenance.
     # Fall back to the two stamps a frozen copy does carry, in order of directness.

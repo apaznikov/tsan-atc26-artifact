@@ -20,7 +20,7 @@ p5_taskset() { [ -n "${P5_CPUSET_DEFAULT:-}" ] && echo "taskset -c $P5_CPUSET_DE
 p5_log() { echo "[$(date '+%F %T')] $*"; }
 p5_die() { p5_log "ERROR: $*" >&2; exit 1; }
 # verify_compiler <hash>: prints the frozen root; dies if the stamp does not match
-p5_compiler_root() {  # <hash> -> /extra/alexey/builds/<lane>-<hash>; any lane prefix (tsan-dev-, tsan-audit-, tsan-perf-, tsan-yield-)
+p5_compiler_root() {  # <hash> -> $P5_BUILDS/<prefix>-<hash>; any prefix (tsan-dev-, tsan-audit-, tsan-perf-, tsan-yield-)
   local hash=$1 root
   # An explicit LLVM_TSAN_ROOT from the caller wins, provided it stamps the hash asked for. Two copies can
   # share a hash — tsan-merge-<h> and tsan-merge-<h>-astats differ only by the counters option — and the glob

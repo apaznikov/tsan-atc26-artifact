@@ -122,7 +122,7 @@ def main():
     # ARGUMENTS ARE CHECKED BEFORE ANYTHING IS WRITTEN. Until 22 Sep 2026 every argument was taken for a
     # results tree, so `figures.py --help` wrote five files into the current directory instead of printing
     # this; inside the container that directory is the read-only harness mount and it would have died on the
-    # write rather than explaining itself. (Found by tsan-exp running --help.)
+    # write rather than explaining itself. (found by running --help.)
     if any(a in ("-h", "--help") for a in args):
         print(USAGE); return 0
     if args and args[0] == "--out":

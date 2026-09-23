@@ -6,7 +6,7 @@
 # artifact can detect on its own, without a machine and without measuring anything.
 #
 # THE ROOT IS NOT NAMED perf-<app>-<stamp>, which is how the tool resolves the application, so five
-# symlinks in a temp directory point at the same root under the five names it understands. (tsan-paper's
+# symlinks in a temp directory point at the same root under the five names it understands. (raised in
 # construction, 2026-09-20.)
 #
 # WHAT IS ASSERTED, AND WHY NOT THE ROW COUNT. Two conditions: at least one row was judged, and none was
@@ -39,7 +39,7 @@ ROOT=$(ls -d "$ART"/data/perf/campaign-*/primary 2>/dev/null | head -1)
 # way and can have the same number of cells. If aggregate.py ever renames that header, every shipped table
 # becomes "NO TABLE (the leg produced none)" -- loud, but indistinguishable from an empty tree, and the
 # reader would look at the data rather than at the header. Checked here so a rename is reported as a
-# rename. (tsan-paper's suggestion, 2026-09-22.)
+# rename. (suggested in review, 2026-09-22.)
 HDR='| config | label |'
 missing=0
 for app in redis memcached sqlite ffmpeg mysql; do

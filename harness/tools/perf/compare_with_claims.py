@@ -45,7 +45,7 @@ def _heading_threads(line):
     measured under, so it belongs beside the interval. shape.json is per-application and cannot express
     "these rows at 16, those at 4", which is what FFmpeg needs from 2026-09-22. Parsing prose is the weak
     point, so this is strict rather than clever: an ambiguous heading is treated as unannotated and its
-    rows behave exactly as before. (Design agreed with tsan-paper, 2026-09-21.)"""
+    rows behave exactly as before. (design settled 2026-09-21.)"""
     for pat in (r"-threads (\d+)", r"server at (\d+) threads", r"(\d+) threads"):
         m = re.search(pat, line)
         if m:
@@ -207,7 +207,7 @@ def parse_table(tree, app):
     ratio when it was the second subtest's throughput: `tsan` was carried as an unlabelled configuration,
     and every labelled row was read once with a wrong point and then OVERWRITTEN by the summary row,
     which is later in the file. The printed values were right by table order alone. FFmpeg escaped only
-    because four subtests make six cells. (Found by tsan-paper on the SQLite flag leg.)
+    because four subtests make six cells. (found in review)
 
     N is the row's own (column 3 of the summary): a tree-wide N derived from clean runs over
     configurations read one disturbed cell in one configuration as N = 1 for every row (19 Sep 2026)."""
@@ -267,7 +267,7 @@ def main():
     # WHICH FIGURES THESE VERDICTS ARE AGAINST, said before the table rather than left to be inferred.
     # The artifact's intervals are the campaign on the shipped compiler, which is the camera-ready's set of
     # figures; the submitted version's numbers are a separate column in CLAIMS.md and are not what a row is
-    # judged against. A reader who assumes the wrong one misreads every line below. (Alexey, 2026-09-21.)
+    # judged against. A reader who assumes the wrong one misreads every line below. (2026-09-21.)
     print("Verdicts are against the intervals in CLAIMS.md section 5: the campaign on the shipped compiler,")
     print("the camera-ready's figures. The submitted version's figures are in that file's 'Paper' column.")
     print()
@@ -303,8 +303,7 @@ def main():
         # meant the row-three case -- shape unrecorded, cpuset ours -- SATISFIED the chain and stopped it,
         # so the thread and clip checks below were never reached: FFmpeg rows on a REGENERATED clip were
         # judged IN/OUT although every cell said input_is_reference false. A guard that silently disables
-        # the guards after it is worse than the bug it was added for. (Found by tsan-paper running the
-        # vendored copy on real trees before committing, 2026-09-20.)
+        # the guards after it is worse than the bug it was added for. (found in review)
         ours_shape, mine_shape = expected_shape(root), run_shape(tree, app)
         why = None; basis = None
         if ours_shape and mine_shape and ours_shape[:2] != mine_shape:
@@ -472,7 +471,7 @@ def main():
         # NOTHING JUDGED IS NOT A PASS, and this file said so in its own docstring while returning 0 for
         # it: "0 judged, 0 not inside" and "all judged, none outside" shared an exit code, so a run in
         # which every row was not-comparable reported PASS to evaluate.sh. The rule the file exists to
-        # enforce, broken by the file. (Found by the three-agent audit, 2026-09-19.)
+        # enforce, broken by the file. (Found by the audit of 2026-09-19.)
         print("NO ROWS COULD BE JUDGED — this is not a pass. Nothing above was compared with the shipped")
         print("intervals; read the reasons on each line (not comparable, no table, no verdict below N=2,")
         print("no shipped campaign data) and fix the cause before reading any number as reproduction.")

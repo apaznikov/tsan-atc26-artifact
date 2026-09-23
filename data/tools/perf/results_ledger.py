@@ -346,7 +346,7 @@ def build():
     cnt = os.path.join(HERE, "results/profile-2026-09-09-counters")
     if os.path.isdir(cnt):
         L.append("Counts, not costs — a fast-path hit and a function entry are not the same number of cycles. "
-                 "A miss costs about 19.6 cycles and a hit 5.8 (tsan-dev lane, lower bound).\n")
+                 "A miss costs about 19.6 cycles and a hit 5.8 (measured, lower bound).\n")
         L.append("| application | executed accesses | fast-path hits | func entries / access | mean range bytes |")
         L.append("|---|---|---|---|---|")
         for app in APPS:

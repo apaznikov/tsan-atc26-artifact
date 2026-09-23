@@ -24,7 +24,7 @@ fi
 exec 9>"$P5_LOCK"; flock -x 9 || p5_die "lock"      # exclusive: no builds, no other benchmark meanwhile
 # "pinned" was written whatever the cpuset held, so an UNPINNED session recorded mode "pinned" beside
 # cpuset "" -- a label contradicting the field next to it, and the one a reader trusts first. Three states,
-# named for what they are. (tsan-paper spotted it in the contract smoke, 2026-09-18.)
+# named for what they are. (spotted in the contract smoke, 2026-09-18.)
 if [ "$INBENCH" = 1 ]; then export P5_MODE=bench
 elif [ -n "${CPUSET:-}" ]; then export P5_MODE=pinned
 else export P5_MODE=unpinned; fi
@@ -64,7 +64,7 @@ for c in $CFGS; do [ -x "$(p5_binary "$APP" "$c")" ] || p5_die "missing binary f
 export P5_HASH="$HASH"   # bench_one.sh refuses binaries built by another compiler
 bench_and_mark() {  # cfg run [suffix]
   local c=$1 run=$2 d="$OUT/$APP/$1/${P5_RUN_PREFIX:-run}$2" line
-  # Common machine lock (rule of 2026-09-07): a timing measurement holds /home/alexey/bin/logs/machine-memory.lock
+  # Common machine lock (rule of 2026-09-07): a timing measurement holds the machine memory lock
   # exclusively per run; the wrapper writes the sidecar, runs the measurement in a 32G scope pinned to the
   # bench set, and reports memory.peak. Expected minutes per application are the observed run lengths.
   mins=$(case "$APP" in mysql) echo 15;; ffmpeg) echo 8;; sqlite) echo 6;; *) echo 3;; esac)
@@ -106,7 +106,7 @@ bench_and_mark() {  # cfg run [suffix]
   fi
 }
 # Discarded warm-up, before the measured runs and once per configuration. The campaign reports STEADY-STATE
-# performance (campaign-parameters.md): the warm-up builds SQLite's database and leaves it, warms FFmpeg's
+# performance (docs/campaign-parameters.md): the warm-up builds SQLite's database and leaves it, warms FFmpeg's
 # input into page cache, warms the allocator and connection path for memcached and Redis, and leaves MySQL's
 # server initialised with its buffer pool populated. Its numbers are never read — aggregate.py matches
 # run\d+ exactly — but its state is exactly what the measured runs are supposed to start from.

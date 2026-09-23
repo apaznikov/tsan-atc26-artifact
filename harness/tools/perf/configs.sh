@@ -5,7 +5,7 @@ P5_STAGE_A="orig tsan tsan-sound tsan-dom-ea-lo-st-swmr tsan-dom_peeling-ea-lo-s
 P5_STAGE_B_EXTRA="tsan-st tsan-stmt tsan-swmr tsan-lo tsan-ea tsan-dom tsan-dom_peeling tsan-sound-wp tsan-sound-tfn tsan-sound-tfn-wp"
 P5_TFN_APPS="memcached"   # -tsan-thread-free-names rows; Redis dropped: its list changes 0 sites per unit and 0 beyond the WP summaries (both built on d3bf9f8c39fe)
 P5_ALL="$P5_STAGE_A $P5_STAGE_B_EXTRA"
-# Yield stage: the A/B pairs measured inside /extra/alexey/builds/tsan-yield-d98873cda906, where the seven yield
+# Yield stage: the A/B pairs measured inside a frozen copy of d98873cda906, where the seven yield
 # changes default to on and "-yoff" turns all six switches off. Both halves of a pair come from the one compiler,
 # so the pair isolates the yield changes from the stage-b2 changes underneath them. No -wp rows here.
 P5_YIELD="orig tsan tsan-yoff tsan-stmt tsan-stmt-yoff tsan-sound tsan-sound-yoff tsan-dom_peeling-ea-lo-st-swmr tsan-dom_peeling-ea-lo-st-swmr-yoff"

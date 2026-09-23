@@ -13,7 +13,7 @@ escape analysis, not from taste:
              but that establishes the direction a departure would take, NOT that any particular departure is
              sound. A departure from a verdict-identity claim is a departure whichever way it points, and it
              is the compiler lane's to explain rather than this lane's to accept. (Superseding an earlier
-             reading here that treated LOWER as good news on sight; corrected by tsan-paper, 2026-09-15.)
+             reading here that treated LOWER as good news on sight; corrected 2026-09-15.)
   HIGHER     stop everything. Nothing in this series should increase instrumentation.
 
 ORDER OF CHECKS MATTERS AND IS THE POINT. A fired budget also changes instrumentation — upward, because
@@ -68,7 +68,7 @@ def main():
         # An instrumented configuration with ZERO sites is an instrument failure, not a result — a build that
         # produced nothing, a flag name that silently did nothing, a log the parser could not read. It would
         # otherwise score as the largest possible LOWER, which is the direction we are least suspicious of.
-        # (tsan-dev lane, 2026-09-15: a mistyped DE flag gave empty output "that a naive differ would have
+        # (2026-09-15: a mistyped DE flag gave empty output "that a naive differ would have
         # scored as a real difference", and an empty md5 d41d8cd98f00 from an unresolved symlink mount.)
         if cfg != "orig" and (n[0] == 0 or o[0] == 0):
             buckets["instrument_failure"].append((k, o, n)); continue

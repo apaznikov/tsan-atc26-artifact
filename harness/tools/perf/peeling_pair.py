@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """peeling_pair.py <results-root> — the pre-registered AllOpt+peel vs AllOpt-peel comparison.
 
-Registered 2026-09-15 19:02, before any leg finished (tools/notes/preregistration-2026-09-13.md): per
+Registered 2026-09-15 19:02, before any leg finished (data/notes/preregistration-2026-09-13.md in the artifact): per
 application, the ratio of the two configurations' per-test medians, geomean over the resolvable subtests,
 95 % bootstrap interval, B = 2000, seed = 1. Ratio > 1 means peeling is FASTER. No Bonferroni: the branch
 rule counts applications rather than testing them jointly.
@@ -12,7 +12,7 @@ So each row carries the half-width of its own interval as a resolution floor: an
 is indistinguishable from no effect *in this data*, and a crossing interval on a row with a wide floor says
 nothing at all. memcached is the case in point: one metric, ops_sec, and a floor near 5 %.
 
-That is tsan-dev-f's rule of 2026-09-16 -- every result line should have to say what it would look like if
+The rule of 2026-09-16 -- every result line should have to say what it would look like if
 the thing it measures were absent -- applied to the one comparison this campaign registered in advance.
 """
 import importlib.util, os, statistics, sys

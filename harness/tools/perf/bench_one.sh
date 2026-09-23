@@ -65,7 +65,7 @@ case "${MC_THREADS:-}${MYSQL_THREADS:-}${FF_THREADS:-}" in "") THREADS_FROM_ENV=
 # such knob, because "" already had to stop meaning two things once (threads_setting, below). Each flag is
 # decided from its own variable so a stray export for another application cannot set it. The 50 and the 0
 # are redis.sh:338's and run_sqlite_test.sh's own defaults, repeated here on purpose: if either moves, this
-# moves with it. (tsan-paper found the gap, 23 Sep 2026.)
+# moves with it. (found in review, 23 Sep 2026.)
 case "$APP" in
   redis)  KNOB_JSON='"redis_clients"';     KNOB_EFF="${REDIS_BENCH_CLIENTS:-50}"
           case "${REDIS_BENCH_CLIENTS:-}" in "") KNOB_FROM_ENV=False;; *) KNOB_FROM_ENV=True;; esac;;
@@ -74,13 +74,13 @@ case "$APP" in
   # seven-subtest run, not walthread1 at some thread count -- so any number here would assert a thread
   # count that was never chosen, and 0 is a value a caller could legitimately pass. The knob is still
   # named, so "named with a null value" reads as "this application has the knob and did not use it",
-  # distinct from memcached's "no such knob". (tsan-paper's question, 23 Sep 2026.)
+  # distinct from memcached's "no such knob". (raised in review, 23 Sep 2026.)
   sqlite) KNOB_JSON='"sqlite_w1_threads"'; KNOB_EFF="${SQLITE_W1_THREADS:-None}"   # None: this block is Python
           case "${SQLITE_W1_THREADS:-}" in "") KNOB_FROM_ENV=False;; *) KNOB_FROM_ENV=True;; esac;;
   *)      KNOB_JSON=None; KNOB_EFF=None; KNOB_FROM_ENV=False;;   # None, not null: the meta block is Python
 esac
 # THE CAMPAIGN'S RULE, NOT A FIXED NUMBER AND NOT NCPU/2. The campaign's parameter was a RULE -- threads
-# equal to the PINNED PROCESSORS, three quarters of them for sysbench (campaign-parameters.md R1) -- and on
+# equal to the PINNED PROCESSORS, three quarters of them for sysbench (docs/campaign-parameters.md) -- and on
 # the 48-CPU bench set the rule yields exactly the 48 and 36 the cells record. The defaults here had an
 # erroneous extra /2 and produced 24 and 18 on that same set: documented figures the code could not produce
 # (defect 13, 2026-09-17).
@@ -97,7 +97,7 @@ esac
 # ceiling. The paper's runs used 4, and FF_THREADS=4 reproduces the paper's count against CLAIMS's
 # 4-thread section. The rule lives HERE rather than in env.sh because env.sh exporting FF_THREADS would
 # flip threads_from_env to True on every run of every application -- line 60 concatenates the three knobs --
-# turning the record of "a human chose this" into noise. (tsan-paper, 2026-09-22.)
+# turning the record of "a human chose this" into noise. (2026-09-22.)
 case "$APP" in
   memcached) THREADS_EFFECTIVE="${MC_THREADS:-$NCPU}";;
   mysql)     THREADS_EFFECTIVE="${MYSQL_THREADS:-$((NCPU * 3 / 4))}";;

@@ -17,7 +17,7 @@ CONFIG_DETAILS["tsan-ea"]="-mllvm -tsan-use-escape-analysis-global"
 CONFIG_DETAILS["tsan-dom"]="-mllvm -tsan-use-dominance-analysis"
 CONFIG_DETAILS["tsan-dom_peeling"]="-mllvm -tsan-use-dominance-analysis -mllvm -tsan-use-loop-peeling=true"
 
-# Rebuttal (plan P2/P3): the four sound analyses only (EA+LO+STC+SWMR), i.e. AllOpt without
+# The four sound analyses only (EA+LO+STC+SWMR), i.e. AllOpt without
 # dominance elimination.  Same name in every app so that results are comparable.
 CONFIG_DETAILS["tsan-sound"]="-mllvm -tsan-use-escape-analysis-global \
                               -mllvm -tsan-use-lock-ownership \
@@ -25,7 +25,7 @@ CONFIG_DETAILS["tsan-sound"]="-mllvm -tsan-use-escape-analysis-global \
                               -mllvm -tsan-use-swmr"
 
 # tsan-yoff: turn the yield copy's seven changes off inside the same compiler
-# (/extra/alexey/builds/tsan-yield-d98873cda906, where all six switches default to on). A "-yoff" row is the
+# (a frozen copy of d98873cda906, where all six switches default to on). A "-yoff" row is the
 # A/B partner of the same configuration without the suffix: same compiler, same binary layout, only the yield
 # changes differ, so the pair isolates them from the stage-b2 changes underneath.
 CONFIG_DETAILS["tsan-yoff"]="-mllvm -tsan-dynstc-runs-across-thread-free-calls=false \

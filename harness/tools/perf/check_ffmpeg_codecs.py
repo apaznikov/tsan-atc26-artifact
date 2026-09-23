@@ -87,7 +87,7 @@ def main():
         if missing: bad.append((j["config"], b, "missing " + ", ".join(sorted(missing))))
     print(f"ffmpeg runs checked: {n}")
     if not n:
-        # SKIP, not PASS (tsan-paper's distinction, 2026-09-16). "No runs exist yet" and "every run carries
+        # SKIP, not PASS (a distinction drawn 2026-09-16). "No runs exist yet" and "every run carries
         # all four codecs" are opposite states, and returning 0 for both means an automated caller treats an
         # unmeasured leg as a verified one -- the same shape as the leg that reported complete having run
         # nothing. Exit 3 so a caller can tell absence of evidence from evidence.
