@@ -58,7 +58,7 @@ ThreadSanitizer, and 2 to 8 % of the static instrumentation is removed.
 
 `https://github.com/apaznikov/tsan-atc26-artifact`, under the MIT licence (`LICENSE`; vendored third-party code
 under its own licences, `THIRD-PARTY.md`), and archived on Zenodo with a DOI when evaluation finishes.
-About 140 MB of data: the compiler is 29 patch files, and the recorded runs are text.
+About 190 MB, nearly all of it recorded runs in plain text; the compiler itself is 29 patch files.
 
 Any x86-64 Linux host with Docker, 8 processors, 16 GB of memory and 20 GB of disk runs everything deterministic. The
 container build fetches upstream LLVM with a shallow clone and compiles it: measured with `--no-cache`,
@@ -93,7 +93,7 @@ It covers: the basic test; the 23 shapes against 62 IR tests with their vacuity 
 compiler's equivalence to the one the measurements were taken on, over 112 corpus rows, with a
 control showing the comparison can separate configurations; the provenance of every shipped run; the
 regression suite in 12 configurations, preceded by a self-test that requires the harness to detect
-deliberately lost races; and the regeneration of every table in the paper from the recorded runs.
+deliberately lost races; and the regeneration of the performance tables and the results ledger from the recorded runs, each compared with the shipped copy byte for byte.
 Measured on 21 Sep 2026, after the lit-configuration fix that stopped one unsupported test from stalling
 every repeat: 23 minutes on a 64-processor host, 30 minutes on ours and 48 minutes pinned to 8 processors with 16 GB,
 most of it the regression suite in 12 configurations.

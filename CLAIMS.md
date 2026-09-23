@@ -532,10 +532,13 @@ session only.
 ### Concurrency curves and whole-program summaries, measured after the campaign (not claims)
 
 **What these are.** The campaign fixed each application's concurrency before any number was seen
-(`data/notes/preregistration-2026-09-13.md`), and two of those values were single points rather than points on
-a curve: memcached's server threads and Redis's client count. After the artifact was complete we measured the
-curves, on both hosts, and the one combination of our own analyses the campaign never tried, whole-program
-summaries together with DynSTC. **No row below is a claim, no badge rests on one, and the comparator does not
+(`data/notes/preregistration-2026-09-13.md`), and measured each at that value: one point per application, two
+for memcached and Redis counting the `r2` leg. Curves existed only for FFmpeg on this compiler, and for
+SQLite and Redis on the earlier one (`data/perf/contention-d3bf9f8c39fe`), which is a different compiler and
+therefore a different question. After the artifact was complete we measured the missing curves on the shipped
+compiler — memcached's server threads and Redis's client count on both hosts, SQLite's walthread1 threads
+here — and the one combination of our own analyses the campaign never tried, whole-program summaries together
+with DynSTC. **No row below is a claim, no badge rests on one, and the comparator does not
 judge against these tables** — by construction, not by convention: `compare_with_claims.py` reads a table
 only when its header line begins `| Configuration |` or `| Application |` and carries a column named
 "All five runs [95%]", and none of the tables below does. The first column of the last table is headed
