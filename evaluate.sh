@@ -8,7 +8,7 @@
 #   ./evaluate.sh functional     The Functional badge: everything in check, plus the regression suite in 12
 #                                configurations. Under an hour on any x86-64 Linux host with Docker (23 min on
 #                                64 processors, 48 min on 8).
-#   ./evaluate.sh reproduced     The Reproduced badge: the whole functional tier first, then the performance
+#   ./evaluate.sh reproduced     Optional: the whole functional tier first, then the performance
 #                                subset, Redis, memcached, FFmpeg and SQLite at the defaults (four configurations,
 #                                two runs), compared with the intervals CLAIMS.md ships. About 3 hours (2 h 38 min
 #                                measured on our host). Runs on any processor count; the comparison with our

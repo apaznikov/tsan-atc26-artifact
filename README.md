@@ -36,7 +36,7 @@ by the `everything` tier.
 git clone https://github.com/apaznikov/tsan-atc26-artifact.git && cd tsan-atc26-artifact
 ./evaluate.sh check          # does this machine work at all? about 2 minutes, plus 15-25 min to build the image the first time
 ./evaluate.sh functional     # Functional badge: the correctness set. 23 min on 64 processors, 48 min on 8
-./evaluate.sh reproduced     # Reproduced badge: the above, then the performance subset. About 3 hours (2 h 38 min on our host)
+./evaluate.sh reproduced     # optional: the above, then the performance measurements. About 3 hours (2 h 38 min here)
 ```
 
 Each tier contains the one before it, so run the one for your badge and not the others after it: chaining them repeats the correctness set each time. `./evaluate.sh` with no
