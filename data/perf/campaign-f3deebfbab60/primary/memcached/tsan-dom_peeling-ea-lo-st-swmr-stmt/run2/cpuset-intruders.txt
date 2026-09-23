@@ -1,3 +1,0 @@
-claude samples=96 peak_pcpu=3.9
-memtier_benchma samples=79 peak_pcpu=882.0
-Rider.Backend samples=3 peak_pcpu=5.5

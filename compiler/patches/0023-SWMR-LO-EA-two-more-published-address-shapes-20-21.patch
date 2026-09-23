@@ -1,0 +1,769 @@
+From 07bf7f2c598e7d0e81498612434e26a63757da5e Mon Sep 17 00:00:00 2001
+From: Alexey Paznikov <apaznikov@gmail.com>
+Date: Mon, 14 Sep 2026 19:59:35 +0800
+Subject: SWMR, LO, EA: two more published-address shapes (20, 21)
+
+---
+ llvm/docs/TSanAnalysesAudit.md                |  37 ++--
+ llvm/include/llvm/Analysis/EscapeAnalysis.h   |   6 +
+ llvm/include/llvm/Analysis/SingleThreaded.h   |   9 +-
+ .../include/llvm/Analysis/TargetLibraryInfo.h |   9 +
+ llvm/lib/Analysis/EscapeAnalysis.cpp          |  58 +++++-
+ llvm/lib/Analysis/LockOwnership.cpp           |   7 +-
+ llvm/lib/Analysis/SingleThreaded.cpp          |  30 +++-
+ llvm/lib/Analysis/TargetLibraryInfo.cpp       |  39 +++-
+ .../Instrumentation/ThreadSanitizer.cpp       |  10 ++
+ .../LockOwnership/address-in-initializer.ll   |  46 +++++
+ .../escape-libcall-result-alias.ll            | 166 ++++++++++++++++++
+ .../swmr-address-in-initializer.ll            |  55 ++++++
+ 12 files changed, 446 insertions(+), 26 deletions(-)
+ create mode 100644 llvm/test/Analysis/LockOwnership/address-in-initializer.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/escape-libcall-result-alias.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/swmr-address-in-initializer.ll
+
+diff --git a/llvm/docs/TSanAnalysesAudit.md b/llvm/docs/TSanAnalysesAudit.md
+index 56e27bf0728d..73d4010b028a 100644
+--- a/llvm/docs/TSanAnalysesAudit.md
++++ b/llvm/docs/TSanAnalysesAudit.md
+@@ -41,6 +41,8 @@ commit and a positive control that still elides. Reach is measured per commit
+ | 17 | a store after `__kmpc_fork_call` counted as protected although the microtask, which the fork runs on the calling thread too, released the lock (found in the STC-3 design review; reproduced on 3d70ff61f640 by `fork-call-runs-on-caller.ll`) | LO's callback exemption assumed every known thread creator runs its routine only on the new thread | LO-7 — fixed 729521af8965 |
+ | 18 | `f(&local, &slot)` where `f` stores its first argument through its second; the caller publishes the slot's content and starts a thread that writes through it; the caller's later store to `local` was elided (found in the performance-pass design review; reproduced on 729521af8965 by `escape-callee-out-param.ll`) | the bottom-up summary recorded the stored argument as escaping only by the seed bit `PTR_ARG_ALIASING`, which callers mask out as "merely an argument" | EA-10 — fixed on the performance branch (commit `EA: a pointer stored through an argument has escaped to the caller`) |
+ | 19 | `%r = call ptr @f(ptr %local)` where `f` stores its argument to a global and returns an escaped pointer; a thread writes through the global; the caller's later store to `local` was elided (found while writing the budget test; reproduced on 729521af8965 by `escape-arg-of-escaped-result-call.ll`; the void-returning callee was handled) | `getEscInfoCall` answered "the result escapes" for every pointer operand of such a call, so its arguments were never classified; **fixed:EA-11** (shape 19: the escaped-result answer only on the callee operand; arguments classified) | EA-11 — fixed on the performance branch (commit `EA: the arguments of a call whose result escapes are analysed too`), escape-arg-of-escaped-result-call |
++| 20 | `@slot = global ptr @g` — the address of a local-linkage global in another global's initializer (directly, inside a constant aggregate, or through `llvm.used`); a thread loads the pointer and writes through it; SWMR counted `g` read-only and elided main's read of it after the thread started, LO counted it protected (found while sizing the read-only-argument rule; reproduced on 94764fe839df by `swmr-address-in-initializer.ll` and `LockOwnership/address-in-initializer.ll`) | `collectAccessingInstrs` listed instruction users and recursed into constant expressions and aliases, dropping every other user silently; **fixed:SWMR-2, LO-8** (the walk reports an address it cannot follow to an instruction; both consumers treat the global as escaped) | SWMR-2, LO-8 — fixed on the performance branch (commit `SWMR, LO, EA: two more published-address shapes (20, 21)`), swmr-address-in-initializer, address-in-initializer |
++| 21 | `%r = strchr(%b, c); store %r, @g` — any library call that returns a pointer into its argument (strchr, strstr, memchr, strcpy, memcpy, fgets, realloc, …); a thread writes `b` through the published pointer; `b`'s accesses were elided — after the publication by the per-point verdict, before it by the later-escape rule, which did not follow the result either (found while guarding the interceptor toggle; reproduced on 94764fe839df by `escape-libcall-result-alias.ll`) | the result of such a call was an object of its own, an "escaped call" register unrelated to the argument; **fixed:EA-12** (`TargetLibraryInfo::returnsPointerIntoArg`; the object walk continues from the argument at the whole-object path; `collectLaterEscapes` walks the result's uses; realloc's argument no longer "escapes" through the call since the result stands for the block; realloc(NULL) stays an object of its own) | EA-12 — fixed on the performance branch (same commit), escape-libcall-result-alias |
+ 
+ ## Design versus paper
+ 
+@@ -110,7 +112,9 @@ context.
+ instruction writes — reads and writes; the writes so elided are ST by the
+ same verdict, so this is a restriction of the proposition, not an extension —
+ `sound`. Address escape ⇒ not read-only — `sound`. Externally linked globals
+-qualified — `fixed:SWMR-1`. Inherits STC's verdict for the writes, so STC-1/2/3
++qualified — `fixed:SWMR-1`. An address in another global's
++initializer (directly, in a constant aggregate, `llvm.used`) is an escape the
++access list cannot show — `fixed:SWMR-2` (performance branch; shape 20). Inherits STC's verdict for the writes, so STC-1/2/3
+ also gate it.
+ 
+ ### LO — lock ownership (`3a-3-lo.tex`, `appendix/lo-proof.tex`)
+@@ -125,7 +129,9 @@ over-approximation of the accesses to each location.
+ goes once the "over-approximation of accesses" premise holds: the variable
+ must be a local-linkage definition (another unit cannot name it) and every
+ use of its address the pointer operand of a load or store (nothing reaches
+-it through a path the scan does not see) — `fixed:LO-4/4b` (12399f969130).
++it through a path the scan does not see) — `fixed:LO-4/4b` (12399f969130). The
++address in another global's initializer is such a path; the access walk now
++reports it — `fixed:LO-8` (performance branch; shape 20).
+ Lock identity by global + constant offset — `sound` (51c96792787b).
+ Acquisition recognised by name substring ("block" contains "lock") —
+ `fixed:LO-1` (12399f969130; exact tables, pthread/mtx/omp). Callee
+@@ -165,7 +171,7 @@ a field of an escaped object" only in one order (`fixed:EA-3`), reason bits
+ lost (`fixed:EA-1`, `fixed:EA-4`), unknown objects dropped (`fixed:EA-5`),
+ unlisted opcodes and loaded pointers with no recorded pointee
+ (`fixed:EA-6`), argument escape for functions reached other than by a direct
+-call (`fixed:EA-7`), library retention table (`fixed:EA-8`). A pointee stored through a pointer that is external only by being an argument now carries `GPTR_ALIASING` beside the seed bit, so the callers' mask cannot erase the escape — `fixed:EA-10` (performance branch; shape 18). The escaped-result answer of a call is now given once, on the callee operand, so the argument operands of a call whose returned pointer escapes go through the ordinary classification — `fixed:EA-11` (performance branch; shape 19).
++call (`fixed:EA-7`), library retention table (`fixed:EA-8`). A pointee stored through a pointer that is external only by being an argument now carries `GPTR_ALIASING` beside the seed bit, so the callers' mask cannot erase the escape — `fixed:EA-10` (performance branch; shape 18). The escaped-result answer of a call is now given once, on the callee operand, so the argument operands of a call whose returned pointer escapes go through the ordinary classification — `fixed:EA-11` (performance branch; shape 19). A library call that returns a pointer into its argument (strchr, strcpy, memcpy, fgets, realloc, …) no longer yields an object of its own: the object walk continues from the argument, at the whole-object path, and the later-escape walk follows the result — `fixed:EA-12` (performance branch; shape 21).
+ 
+ ### DE — dominance elimination (`3b-redundancy.tex`, `appendix/de-proofs.tex`)
+ 
+@@ -358,7 +364,7 @@ Lines as of b4bf8b8f4613.
+ | `isCallNotReturnEscaped` | library call returns fresh memory? | — | fixed:EA-8 (bfaa2b859100): by prototype, `TLI.has`, no name list; realloc escaping | tli-retention · lines 100.00%, branches 83.33% |
+ | `isSafeExternalCall` | summary whitelist | — | fixed:EA-8 (bfaa2b859100): no summary ⇒ nothing safe; empty line ⇒ nothing known | — · lines 90.91%, branches 83.33% |
+ | `isCallMayEscape` (536) | may the call's result be non-fresh memory | — | sound for indirect/external; inherits `getIPAFuncRetEscStatus` | ipa-passing-func-ptr.ll · lines 94.44%, branches 75.00% |
+-| `EscapeAnalysisInfo` ctor (588) | RPO worklist fixpoint over blocks | monotone transfer, finite lattice | sound; only reachable blocks seeded (see `findObjInBBEscState`) | loops-and-if.ll · lines 100.00%, branches 43.75% |
++| `EscapeAnalysisInfo` ctor (588) | RPO worklist fixpoint over blocks | transfer deterministic in the in-state; escapedness monotone, the map's keys not (an empty-path escape erases the field entries) | sound; only reachable blocks seeded (see `findObjInBBEscState`); **compile time** (performance branch): a block is evaluated only when a predecessor's out-state changed, with the pop sequence kept (a different order could reach a different fixpoint) and returning blocks never skipped (their transfer reads their own previous out-state); budgets with `abandon()` fail closed; verdicts identical (see the performance pass) | loops-and-if.ll · lines 100.00%, branches 43.75%, escape-budget, escape-worklist-large-switch |
+ | `updRetEscStatus` (646) | mark return-escape from the in-progress state | clause 4 | sound (compensates for stale committed state) | ipa-return.ll · lines 100.00%, branches 62.50% |
+ | `addEscapedPtrArgs` (672) | seed entry state with escaped pointer args | clause 3 | sound | func-arguments.ll · lines 100.00%, branches 70.00% |
+ | `compBBEscapeState` (690) | transfer function | all clauses | fixed:EA-5 (incomplete operand skipped); duplicated add at :729/:743 hygiene | escape-incomplete-walk · lines 100.00%, branches 0.00% |
+@@ -397,7 +403,7 @@ Lines as of b4bf8b8f4613.
+ | `isEscapedUndrlObjOrPointee` (1683) | TSan entry: object or pointee escaped at block | — | sound (incomplete ⇒ escaped; escape-unidentified.ll) | escape-unidentified · lines 100.00%, branches 57.14% |
+ | `isEscapedForBBTSan` (1713) | per object, then pointees | — | fixed:EA-4 (reason clobbered); loaded slot with no pointee — fixed:EA-6 | escape-loaded-from-escaped-slot, escape-loaded-unknown-pointee · lines 100.00%, branches 0.00% |
+ | `isEscapedUndrlObjOrPointeeAnywhere` (1740) | per-object variant | sound-FS rule | fixed:EA-4 | escape-later-through-loaded-pointer · lines 100.00%, branches 0.00% |
+-| `isStructFieldGEP` (1867), `getUnderlyingObjectWithPath` (1903) | object + field path | field lattice | sound (non-struct GEP resets to whole) | field-sensitive.ll · lines 76.47%, branches 80.00% |
++| `isStructFieldGEP` (1867), `getUnderlyingObjectWithPath` (1903) | object + field path | field lattice | sound (non-struct GEP resets to whole); a library call that returns into its argument is looked through, to the argument at the whole-object path (**fixed:EA-12**, performance branch; shape 21) | field-sensitive.ll · lines 76.47%, branches 80.00% |
+ | `getUnderlObjThroughLoads` (1970) | look through loads (unbounded) | — | precision; bound with MaxLookup (hygiene) | — · lines 100.00%, branches 100.00% |
+ | `getUnderlObjsWithoutPHIInvCheck` (1986) | phi/select fan-out | — | fixed:EA-2 (path reset to empty) | escape-field-lattice · lines 100.00%, branches 100.00% |
+ | `getUnderlyingObjectFromInt` (2026) | integer→object | — | sound (ValueTracking copy) | escape-incomplete-walk · lines 100.00%, branches 64.29% |
+@@ -409,8 +415,9 @@ Lines as of b4bf8b8f4613.
+ 
+ | function | contract | verdict | tests |
+ |---|---|---|---|
+-| `doesArgEscape` (1417) | does libc retain the argument | fixed:EA-8 (bfaa2b859100: `setbuf/setvbuf` retain arg 1, realloc arg 0 aliases the result); default true sound | tli-retention |
++| `doesArgEscape` (1417) | does libc retain the argument | fixed:EA-8 (bfaa2b859100: `setbuf/setvbuf` retain arg 1, realloc arg 0 aliases the result); default true sound | tli-retention |; realloc's argument no longer escapes through the call — the result stands for the block (EA-12)
+ | `isReturnValueEscaping` (1723) | does libc return non-fresh memory | fixed:EA-8 (bfaa2b859100: `realloc` family escaping; section III left as is, unreachable for pointer returns) | tli-retention |
++| `returnsPointerIntoArg` (new) | does libc return a pointer into an argument: strchr/strrchr/strstr/strpbrk/memchr/memrchr, the copy family and its `_chk` variants, fgets/gets, realloc | **fixed:EA-12** (performance branch; shape 21): the object walk and the later-escape walk look through such calls; strtok, ctermid and realpath excluded (static or earlier memory) | escape-libcall-result-alias |
+ | `isSyncFree` (1836) | libc function synchronises? | fixed:DE-5 (450fc39a8545: fd I/O not sync-free); fixed:DE-6 (92f2b95e9d83: an explicit sync-free list, unlisted ⇒ not sync-free; the blocklist kept and tested first) | elim-by-dominance-across-fd-io, elim-by-dominance-tli-sync-free-table |
+ | `isLockAcquireFunction` / `isLockReleaseFunction` (2123/2148) | exact-name lock tables | sound; LO now has the same exact-name discipline (LO-1) | elim-by-dominance-across-acq-rel-* |
+ 
+@@ -418,7 +425,7 @@ Lines as of b4bf8b8f4613.
+ 
+ | function | contract | preserves | verdict | tests |
+ |---|---|---|---|---|
+-| `collectAccessingInstrs` (45) | users of a global through ConstantExpr/alias | over-approximation of accesses | sound | aggregate-and-st-only.ll · lines 90.00%, branches 60.00% |
++| `collectAccessingInstrs` (45) | users of a global through ConstantExpr/alias | over-approximation of accesses; false for a user not followed to an instruction (another global's initializer, `llvm.used`) | **fixed:SWMR-2, LO-8** (performance branch; shape 20) | aggregate-and-st-only.ll, swmr-address-in-initializer, address-in-initializer · lines 90.00%, branches 60.00% |
+ | `isKnownThreadCreator` (58) | creator by exact name / mangled prefix (`__kmpc_fork_call_if` added) | rule 2 | sound; single list after NAMES-1 | thread-creators.ll · lines 100.00%, branches 100.00% |
+ | `isKnownThreadFree`, `callbackParams`, `isStdNamespaceName`, `intrinsicWrapsCall` (new) | is a bodiless function known not to start a thread: intrinsic, TLI-recognised library function, carrier, exact allowlist, closed prefix families, namespace std minus thread starters | rule 2 | fixed:STC-3 (198e1b5c1332): tables, unlisted ⇒ creator; recorded assumption: a libc/libstdc++ name binds to that library | unknown-external.ll, thread-free-names.ll · lines 96.30%, branches 86.36% |
+ | `isSingleThreaded(Function*)` (67) | wholesale ST; `main` never | — | sound at the query | single-threaded.ll · lines 100.00%, branches 87.50% |
+@@ -430,7 +437,7 @@ Lines as of b4bf8b8f4613.
+ | `markFuncAndAllCalleesAsMultithreaded` (175) | mark F and callees MT | rule 4 | **fixed:STC-1** (no-op at its call site) | single-threaded-creator-callee · lines 100.00%, branches 75.00% |
+ | `runSTMTAnalysis` (199) | fixpoint over the call graph; `mayCreateThread` at every call-site edge | rules 1-5 | fixed:STC-2 (default ST for unseen functions); fixed:STC-3 (198e1b5c1332: indirect calls and callbacks judged in every function, not only `main`) | single-threaded-linkage, unknown-external.ll · lines 98.65%, branches 50.00% |
+ | ctor (286) | driver; ignores `runSTMTAnalysis`'s return | — | hygiene | — |
+-| `findSWMRGlobals` (314) | globals never written in MT | Prop. swmr | **fixed:SWMR-1** | swmr.ll, swmr-linkage · lines 100.00%, branches 62.50% |
++| `findSWMRGlobals` (314) | globals never written in MT | Prop. swmr | **fixed:SWMR-1, SWMR-2** | swmr.ll, swmr-linkage, swmr-address-in-initializer · lines 100.00%, branches 62.50% |
+ | `print` (369), `createLogDir` (416), `writeSummary` (424), `readSummary` (451) | printer, summaries | whole-program mode | pending:S | (planned) · lines 100.00%, branches 100.00% |
+ | `SingleThreaded::run` (502), printer (516) | plumbing | — | sound | — |
+ 
+@@ -453,7 +460,7 @@ Lines as of b4bf8b8f4613.
+ | `isAnnotationFunc`, `isTryLockFunc`, `isSharedLockFunc` | name predicates | — | fixed:LO-6: a conditional acquisition (try, timed, clock variants) holds nothing on the failure path the runtime does not record | annotations.ll, locks.ll · lines 100.00%, branches 75.00% |
+ | `findLockUnlockFunctions` | recognise lock/unlock functions | — | fixed:LO-1 (12399f969130; exact names) | exact-names · lines 100.00%, branches 78.57% |
+ | `getLocksProtecting` (592) | held set at an instruction | — | sound | — · lines 100.00%, branches 50.00% |
+-| `findProtectedGlobalVariables`, `isDirectAccessOf` | intersection over MT accesses of a private, unescaped global | Prop. protection | fixed:LO-4/4b (12399f969130) | linkage-and-escape · lines 100.00%, branches 58.57% |
++| `findProtectedGlobalVariables`, `isDirectAccessOf` | intersection over MT accesses of a private, unescaped global | Prop. protection | fixed:LO-4/4b (12399f969130), **LO-8** (performance branch; shape 20) | linkage-and-escape, address-in-initializer · lines 100.00%, branches 58.57% |
+ | `print` (676), `LockOwnership::run` (781), printer (794) | plumbing | — | hygiene (dead commented body) | — · lines 100.00%, branches 100.00% |
+ 
+ ### ThreadSanitizer.cpp / .h
+@@ -471,7 +478,7 @@ Lines as of b4bf8b8f4613.
+ | `isThreadCreatorName` (1085) | second creator list | — | fixed:NAMES-1 pending | — |
+ | `allLoadsAcquire` (1095) | every load of G is acquire | release-like publication | fixed:EA-9 pending (no linkage check) | escape-later-through-loaded-pointer · lines 92.86%, branches 75.00% |
+ | `LaterEscapes::allReleaseLike` (1136) | nothing non-release-like reachable | — | sound given a correct `Seen` | escape-adversarial |
+-| `collectLaterEscapes` (1146) | reachable escape sites of the access's object | sound-FS rule | **fixed:EA-9 pending** (wrong object; memcpy source) | escape-later-through-loaded-pointer · lines 100.00%, branches 75.00% |
++| `collectLaterEscapes` (1146) | reachable escape sites of the access's object | sound-FS rule | **fixed:EA-9 pending** (wrong object; memcpy source); follows the result of a call that returns into the argument (**fixed:EA-12**, shape 21) | escape-later-through-loaded-pointer · lines 100.00%, branches 75.00% |
+ | `attributeFlowSensitiveElision` (1236) | statistics | — | hygiene | — · lines 41.67%, branches 41.67% |
+ | `chooseInstructionsToInstrument` (1273) | the elision pipeline | all propositions | sound in order; each step's analysis verdict is what this ledger audits; LO/STC/SWMR steps gain counters (STATS-1) | ThreadSanitizerNew/* |
+ | `createInstrIndexMap` (1458), `getReverseReachable` (1467) | indices; predecessor closure (memoised) | — | sound | elim-by-dominance-paths |
+@@ -641,6 +648,16 @@ carries its own tests, static-count delta and frozen copy.
+ | `perf/runtime-counters` | RT-3: counters behind `COMPILER_RT_TSAN_EVICTION_STATS` (OFF), per-thread when ON | objdump per-symbol identity with upstream (above); check-tsan OFF/ON: <RT3-CHECK> |
+ | `perf/ea-compile-time` (first commit) | EA-10, shape 18: the out-parameter escape | `escape-callee-out-param.ll` fails on 729521af8965 at both checks |
+ | `perf/ea-compile-time` (second commit) | EA-11, shape 19: arguments of an escaped-result call | `escape-arg-of-escaped-result-call.ll` fails on 729521af8965 |
++| `perf/ea-compile-time` (third commit) | the escape analysis's fixpoint: a block is evaluated only when a predecessor's out-state changed (returning blocks always), the object's entries are erased by range, merges insert with a hint; a fail-closed budget (`-tsan-ea-max-blocks`, `-tsan-ea-max-evals-per-block`, `-tsan-ea-max-state-entries`; abandoned = everything escaped) | verdict identity: `-tsan-ea-verify-skips` re-evaluates every skipped block and asserts it a no-op — 0 failures over both lit suites and the 28-module corpus (sqlite3.c, shell.c, memcached) in all three modes; static counts equal to the branch without the change in all nine configurations (memcached / sqlite3.c / shell.c); canonical printed states <CANON>; compile time <EATIME> |
++| `perf/ea-compile-time` (fourth commit) | `unknown-external-summary.ll`: overlapping CHECK-DAG patterns anchored (the flake) | 3/3 |
++| `perf/ea-compile-time` (fifth commit) | SWMR-2/LO-8, shape 20 and EA-12, shape 21 — both found on 94764fe839df | the three tests fail on 94764fe839df; static counts (opt on the `sanitize_thread`-patched corpus, EA / SWMR / LO / sound bundle): memcached and sqlite3.c unchanged in all four, shell.c −10 under EA and the bundle — accesses through never-published realloc'd buffers in `main` and `process_input` (the argument no longer escapes at the call; the result stands for the block); five suites 123/0 |
++| `yield/dynstc-runs` c877c6eca80b | C1 (Y4): a DynSTC guard run spans calls that cannot create a thread (`SingleThreadedInfo::callMayCreateThread`); guards hoisted to loop preheaders; the vtable paths guarded; switch `-tsan-dynstc-runs-across-thread-free-calls` | `dynstc-runs.ll`, `dynstc-hoist.ll`, `dynstc-vptr.ll` fail on the parent; `__tsan_read/write` counts unchanged; `NumThreadCountLoads` (DynSTC alone) sqlite3.c 30 932 → 28 908 (−6.5 %), shell.c 4 360 → 3 742 (−14.2 %), memcached 4 313 → 3 771 (−12.6 %); three compiler-rt tests, run under the integrated build |
++| `yield/de-atomic-ordering` eede63e4e9b5 | C2 (Y2): an atomic on a DE path counts by its ordering, exactly as the runtime does (relaxed = no synchronisation; a seq_cst load acquires only); `force_seq_cst_atomics` recorded as incompatible | tests fail on the parent; the classification fires 2 502 times on sqlite3.c but static counts are unchanged on the corpus (every such path has another blocker); two compiler-rt tests |
++| `yield/de-cover-containment` 80a25d4ae80a | C3 (Y1): a cover is any access whose byte range contains the covered one (one SSA base with constant offsets, or a re-verified partial alias) | tests fail on the parent; sqlite3.c 6–12 accesses; compiler-rt test |
++| `yield/swmr-stc-small` 3c29e065da21 | C4 (Y5b, Y5c): a global read only through nocapture readonly call arguments stays read-only (`callEffectOnGlobal`, switch `-tsan-swmr-readonly-call-args`); a declaration that promises not to write memory starts no thread | three tests fail on the parent; corpus yield 0 (one memcpy source on sqlite3.c, verdict unchanged) |
++| `yield/ea-later-escape-summaries` 7fdae665f93f | C5 (Y3): a later call whose summary proves the argument non-retaining is not an escape site (`mayArgEscapeThroughCallee`: one summary, two consumers); switch `-tsan-ea-later-escape-uses-summaries` | tests fail on the parent; sqlite3.c −17, shell.c −2, memcached −3 (EA and the bundle); the sizing's ceiling (173 internal-call sites on sqlite3.c) was never reachable — 156 of those callees do retain the pointer |
++| `yield/interceptor-table` 529d7f481ac0 | C6 (Y5a): the interceptor toggle for 18 string/memory functions keyed by `LibFunc` and bound by prototype; the toggle prologue in 15 more interceptors; memchr's toggle repaired (its int argument went through the pointer test); a result-pointer guard for the eight entries returning into the buffer; switch `-tsan-intercepted-call-table` | `intercepted-call-table.ll` fails on the parent; toggles sqlite3.c 3 → 5, shell.c 0 → 5, memcached 0 → 1; the two compiler-rt tests run under the integrated build (check-tsan not run on the branch) |
++| `yield/lo-widening-note` ebbf79366181 | C7 (Y6): design note only (`tools/notes/lo-widening-design.md`) — recommends against widening now | — |
+ 
+ ## Commit map after the history consolidation (2026-09-03)
+ 
+diff --git a/llvm/include/llvm/Analysis/EscapeAnalysis.h b/llvm/include/llvm/Analysis/EscapeAnalysis.h
+index 485a30b53653..654aa0f678a7 100644
+--- a/llvm/include/llvm/Analysis/EscapeAnalysis.h
++++ b/llvm/include/llvm/Analysis/EscapeAnalysis.h
+@@ -140,6 +140,12 @@ public:
+       std::shared_ptr<IPABottomTopMap> IPAFuncEscInfo = nullptr,
+       bool *IsComplete = nullptr);
+ 
++  /// The argument a library call returns a pointer into
++  /// (TargetLibraryInfo::returnsPointerIntoArg, the callee vouched for by
++  /// prototype and availability); null when \p Call is not such a call.
++  static const Value *getLibCallArgReturnedInto(const CallBase *Call,
++                                                const TargetLibraryInfo &TLI);
++
+   /// Is Value V is escaping somewhere in the function
+   bool isEscapedForFunc(const ObjAndPath &OAP,
+                         EscReasonTy *EscReason = nullptr) const;
+diff --git a/llvm/include/llvm/Analysis/SingleThreaded.h b/llvm/include/llvm/Analysis/SingleThreaded.h
+index 3e27b70cc33c..b7397535c3ea 100644
+--- a/llvm/include/llvm/Analysis/SingleThreaded.h
++++ b/llvm/include/llvm/Analysis/SingleThreaded.h
+@@ -117,7 +117,14 @@ ArrayRef<unsigned> callbackParams(const Function &F);
+ /// every access to an aggregate global -- while the instrumentation pass still
+ /// resolves those accesses back to the global and acts on whatever was
+ /// concluded about it.
+-void collectAccessingInstrs(const Value *V,
++///
++/// Returns false when the address reaches a user the walk cannot follow to
++/// an instruction -- another global's initializer, directly or inside a
++/// constant aggregate (`@slot = global ptr @g`, llvm.used). The address then
++/// sits in memory any thread can load, and the accesses through the loaded
++/// pointer are ones \p Out never lists; the caller must treat the object as
++/// escaped.
++bool collectAccessingInstrs(const Value *V,
+                             SmallVectorImpl<const Instruction *> &Out,
+                             SmallPtrSetImpl<const Value *> &Visited);
+ 
+diff --git a/llvm/include/llvm/Analysis/TargetLibraryInfo.h b/llvm/include/llvm/Analysis/TargetLibraryInfo.h
+index 024a04f45e22..574cbdd6edbc 100644
+--- a/llvm/include/llvm/Analysis/TargetLibraryInfo.h
++++ b/llvm/include/llvm/Analysis/TargetLibraryInfo.h
+@@ -445,6 +445,15 @@ public:
+   static bool doesArgEscape(LibFunc F, unsigned ArgNo);
+   static bool isReturnValueEscaping(LibFunc F);
+ 
++  /// True when a call to \p F returns either null or a pointer into the
++  /// memory its argument \p ArgNo points to -- strchr, strcpy, memcpy,
++  /// fgets, realloc, ... -- and never into anything else. The escape
++  /// analysis then treats the result as an alias of that argument at an
++  /// unknown offset rather than as an object of its own. Not listed: a
++  /// function whose result may also lie in a static buffer or in memory an
++  /// earlier call was given (strtok, ctermid, realpath with a null buffer).
++  static bool returnsPointerIntoArg(LibFunc F, unsigned &ArgNo);
++
+   static bool isLockAcquireFunction(const Function &F);
+   static bool isLockReleaseFunction(const Function &F);
+ 
+diff --git a/llvm/lib/Analysis/EscapeAnalysis.cpp b/llvm/lib/Analysis/EscapeAnalysis.cpp
+index c249ad0f9321..b4126f03c866 100644
+--- a/llvm/lib/Analysis/EscapeAnalysis.cpp
++++ b/llvm/lib/Analysis/EscapeAnalysis.cpp
+@@ -568,6 +568,25 @@ static bool isCallNotReturnEscaped(const Function &F,
+          !TLI.isReturnValueEscaping(Func);
+ }
+ 
++const Value *
++EscapeAnalysisInfo::getLibCallArgReturnedInto(const CallBase *Call,
++                                              const TargetLibraryInfo &TLI) {
++  const Function *Callee = Call->getCalledFunction();
++  LibFunc Func;
++  unsigned ArgNo;
++  if (!Callee || !TLI.getLibFunc(*Callee, Func) || !TLI.has(Func) ||
++      !TargetLibraryInfo::returnsPointerIntoArg(Func, ArgNo) ||
++      ArgNo >= Call->arg_size())
++    return nullptr;
++  const Value *Arg = Call->getArgOperand(ArgNo);
++  // realloc(NULL, n) is an allocation: there is no object to continue from,
++  // and null is not one (the walk drops it, and an access whose address
++  // reaches no object is judged local). The call stays an object of its own.
++  if (isa<ConstantPointerNull>(Arg->stripPointerCasts()))
++    return nullptr;
++  return Arg;
++}
++
+ static bool isSafeExternalCall(
+     StringRef FuncName, const TargetLibraryInfo &TLI, unsigned ArgIndex,
+     std::shared_ptr<EscapeAnalysisInfo::NonEscapingFuncsMap> NonEscapingFuncs =
+@@ -907,7 +926,12 @@ EscapeAnalysisInfo::getEscInfoCall(const Use &U, const Instruction *I) const {
+     // to a global and returned a global pointer reported nothing about the
+     // argument, and the caller's later store to that local was elided while
+     // a thread wrote it through the global (shape 19).
+-    if (Call->getType()->isPointerTy() && Call->isCallee(&U))
++    // A library call that returns a pointer into its argument has no
++    // result object: the object walk continues from that argument
++    // (getUnderlyingObjectWithPath), so the register is never looked up and
++    // recording it as an escaped object would only grow the state.
++    if (Call->getType()->isPointerTy() && Call->isCallee(&U) &&
++        !getLibCallArgReturnedInto(Call, TLI))
+       return {EscKindTy::MAY_ESCAPE, EscReasonBits::ESCAPED_CALL};
+   }
+ 
+@@ -2113,7 +2137,8 @@ static bool isStructFieldGEP(const GEPOperator *GEP) {
+ /// Get underlying object and record the path to the accessed field (if exists)
+ static const Value *getUnderlyingObjectWithPath(const Value *V,
+                                                 unsigned MaxLookup,
+-                                                SmallVector<unsigned> &Path) {
++                                                SmallVector<unsigned> &Path,
++                                                const TargetLibraryInfo &TLI) {
+   if (!V->getType()->isPointerTy())
+     return V;
+ 
+@@ -2169,6 +2194,21 @@ static const Value *getUnderlyingObjectWithPath(const Value *V,
+           V = RP;
+           continue;
+         }
++        // A library call that returns a pointer into one of its arguments
++        // (strchr, strcpy, memcpy, fgets, realloc, ...) is not an object of
++        // its own: the result is that argument's memory at an offset the
++        // analysis does not know, so the walk continues from the argument
++        // and the path is the whole object. Left as an object, the result
++        // was an "escaped call" register: storing it to a global published
++        // nothing, and the buffer's later accesses were elided while a
++        // thread wrote it through the published pointer (shape 21).
++        if (const Value *Arg =
++                EscapeAnalysisInfo::getLibCallArgReturnedInto(Call, TLI)) {
++          V = Arg;
++          Path = EmptyFieldPath;
++          IsAllStructFieldIndices = false;
++          continue;
++        }
+       }
+ 
+       return V;
+@@ -2180,11 +2220,12 @@ static const Value *getUnderlyingObjectWithPath(const Value *V,
+ 
+ /// Wrapper around getUnderlyingObject to look through loads
+ static UnderlObjTy getUnderlObjThroughLoads(const Value *&P,
+-                                            const unsigned MaxLookup) {
++                                            const unsigned MaxLookup,
++                                            const TargetLibraryInfo &TLI) {
+   SmallVector<unsigned> Path;
+   bool LoadInstFlag = false;
+   while (true) {
+-    P = getUnderlyingObjectWithPath(P, MaxLookup, Path);
++    P = getUnderlyingObjectWithPath(P, MaxLookup, Path, TLI);
+     if (const auto *Load = dyn_cast<LoadInst>(P)) {
+       P = Load->getPointerOperand();
+       LoadInstFlag = true;
+@@ -2203,13 +2244,14 @@ static UnderlObjTy getUnderlObjThroughLoads(const Value *&P,
+ static void
+ getUnderlObjsWithoutPHIInvCheck(const Value *V,
+                                 SmallVectorImpl<UnderlObjTy> &Objects,
+-                                const unsigned MaxLookup) {
++                                const unsigned MaxLookup,
++                                const TargetLibraryInfo &TLI) {
+   SmallPtrSet<const Value *, 4> Visited;
+   SmallVector<UnderlObjTy> Worklist;
+   Worklist.push_back({{V, EmptyFieldPath}, false}); // INFO: Path
+   do {
+     const Value *Obj = Worklist.pop_back_val().Obj;
+-    UnderlObjTy UO = getUnderlObjThroughLoads(Obj, MaxLookup);
++    UnderlObjTy UO = getUnderlObjThroughLoads(Obj, MaxLookup, TLI);
+ 
+     if (!Visited.insert(UO.Obj).second)
+       continue;
+@@ -2275,7 +2317,7 @@ static bool getUnderlObjsForCodeGenWithoutPHIInvCheck(
+     V = Working.pop_back_val();
+ 
+     SmallVector<UnderlObjTy> Objs;
+-    getUnderlObjsWithoutPHIInvCheck(V, Objs, MaxLookup);
++    getUnderlObjsWithoutPHIInvCheck(V, Objs, MaxLookup, TLI);
+ 
+     for (const UnderlObjTy &UO : Objs) {
+       if (!Visited.insert(UO.Obj).second)
+@@ -2286,7 +2328,7 @@ static bool getUnderlObjsForCodeGenWithoutPHIInvCheck(
+ 
+         // Pass through loads
+         const auto UnderlObj =
+-            getUnderlObjThroughLoads(OWithoutCast, MaxLookup);
++            getUnderlObjThroughLoads(OWithoutCast, MaxLookup, TLI);
+ 
+         if (UnderlObj.Obj->getType()->isPointerTy() ||
+             isa<PHINode>(UnderlObj.Obj)) {
+diff --git a/llvm/lib/Analysis/LockOwnership.cpp b/llvm/lib/Analysis/LockOwnership.cpp
+index 6d242e571449..1f8c5a75a67e 100644
+--- a/llvm/lib/Analysis/LockOwnership.cpp
++++ b/llvm/lib/Analysis/LockOwnership.cpp
+@@ -873,7 +873,12 @@ void LockOwnershipInfo::findProtectedGlobalVariables(SingleThreadedInfo &STI) {
+ 
+     SmallVector<const Instruction *, 8> Accesses;
+     SmallPtrSet<const Value *, 8> VisitedUsers;
+-    collectAccessingInstrs(&GV, Accesses, VisitedUsers);
++    // Its address in another global's initializer: accessed through a loaded
++    // pointer, under no lock this scan can see.
++    if (!collectAccessingInstrs(&GV, Accesses, VisitedUsers)) {
++      LLVM_DEBUG(dbgs() << "\tAddress is in a constant initializer\n");
++      AllAccessesProtected = false;
++    }
+ 
+     for (const Instruction *I : Accesses) {
+       // Don't consider accesses in single-threaded functions
+diff --git a/llvm/lib/Analysis/SingleThreaded.cpp b/llvm/lib/Analysis/SingleThreaded.cpp
+index 54de7c3c945f..ca99e880dc3e 100644
+--- a/llvm/lib/Analysis/SingleThreaded.cpp
++++ b/llvm/lib/Analysis/SingleThreaded.cpp
+@@ -106,17 +106,32 @@ const char *SingleThreadedInfo::toString(FuncContext FC) {
+   return "Unknown";
+ }
+ 
+-void llvm::collectAccessingInstrs(const Value *V,
++bool llvm::collectAccessingInstrs(const Value *V,
+                                   SmallVectorImpl<const Instruction *> &Out,
+                                   SmallPtrSetImpl<const Value *> &Visited) {
+   if (!Visited.insert(V).second)
+-    return;
++    return true;
++  bool Complete = true;
+   for (const User *U : V->users()) {
+     if (const auto *I = dyn_cast<Instruction>(U))
+       Out.push_back(I);
+-    else if (isa<ConstantExpr>(U) || isa<GlobalAlias>(U))
+-      collectAccessingInstrs(U, Out, Visited);
++    else if (isa<ConstantExpr>(U) || isa<GlobalAlias>(U) ||
++             isa<ConstantAggregate>(U))
++      // A cast or address computation over the address, an alias of the
++      // global, or a constant struct, array or vector carrying the address:
++      // whatever uses these uses the address.
++      Complete &= collectAccessingInstrs(U, Out, Visited);
++    else
++      // Another global's initializer (`@slot = global ptr @g`, directly or
++      // inside an aggregate; llvm.used) or a constant this walk does not
++      // model. The address is in memory any thread can load, and every
++      // access through the loaded pointer is one this list never sees. Such
++      // users were dropped silently, so a global published this way still
++      // counted as read-only (SWMR) or lock-protected (LO), and a thread's
++      // write through the published pointer raced unreported (shape 20).
++      Complete = false;
+   }
++  return Complete;
+ }
+ 
+ bool llvm::isKnownThreadCreator(const Function &F) {
+@@ -858,7 +873,12 @@ void SingleThreadedInfo::findSWMRGlobals() {
+ 
+     SmallVector<const Instruction *, 8> Accesses;
+     SmallPtrSet<const Value *, 8> VisitedUsers;
+-    collectAccessingInstrs(&GV, Accesses, VisitedUsers);
++    // Its address in another global's initializer: written through a loaded
++    // pointer by code this list never shows.
++    if (!collectAccessingInstrs(&GV, Accesses, VisitedUsers)) {
++      LLVM_DEBUG(dbgs() << "  address is in a constant initializer\n");
++      continue;
++    }
+ 
+     for (const Instruction *I : Accesses) {
+       // A plain load never writes.
+diff --git a/llvm/lib/Analysis/TargetLibraryInfo.cpp b/llvm/lib/Analysis/TargetLibraryInfo.cpp
+index cf61461b9a1f..ce18d017a0f4 100644
+--- a/llvm/lib/Analysis/TargetLibraryInfo.cpp
++++ b/llvm/lib/Analysis/TargetLibraryInfo.cpp
+@@ -1638,8 +1638,13 @@ bool TargetLibraryInfo::doesArgEscape(LibFunc F, unsigned ArgNo) {
+     return false; // No pointer arguments that could escape.
+   case LibFunc_free: case LibFunc_vec_free:
+     return ArgNo != 0; // arg 0 (ptr) does not escape.
++  // realloc keeps or frees the block it is given and returns the block that
++  // now holds its bytes; nothing else retains the old pointer. The result
++  // stands for the same object as the argument (returnsPointerIntoArg), so
++  // the block's status is decided by what is done with the result. This
++  // answered "escapes" while the result was an object of its own.
+   case LibFunc_realloc: case LibFunc_reallocf: case LibFunc_vec_realloc:
+-    return true; // The old block may be the returned block: one object.
++    return false;
+   case LibFunc_strdup: case LibFunc_strndup:
+   case LibFunc_dunder_strdup: case LibFunc_dunder_strndup:
+     return false; // The source pointer argument does not escape.
+@@ -1724,6 +1729,38 @@ bool TargetLibraryInfo::doesArgEscape(LibFunc F, unsigned ArgNo) {
+   }
+ }
+ 
++bool TargetLibraryInfo::returnsPointerIntoArg(LibFunc F, unsigned &ArgNo) {
++  switch (F) {
++  // A pointer to a match inside the first argument, or null.
++  case LibFunc_memchr: case LibFunc_memrchr:
++  case LibFunc_strchr: case LibFunc_strrchr:
++  case LibFunc_strpbrk: case LibFunc_strstr:
++  // The destination buffer: its start, its new end (stpcpy, stpncpy,
++  // mempcpy) or the byte after the stopping character (memccpy, or null).
++  case LibFunc_stpcpy: case LibFunc_stpncpy:
++  case LibFunc_strcpy: case LibFunc_strncpy:
++  case LibFunc_strcat: case LibFunc_strncat:
++  case LibFunc_memcpy: case LibFunc_memmove: case LibFunc_mempcpy:
++  case LibFunc_memset: case LibFunc_memccpy:
++  case LibFunc_memcpy_chk: case LibFunc_memmove_chk: case LibFunc_mempcpy_chk:
++  case LibFunc_memset_chk: case LibFunc_memccpy_chk:
++  case LibFunc_stpcpy_chk: case LibFunc_stpncpy_chk:
++  case LibFunc_strcpy_chk: case LibFunc_strncpy_chk:
++  case LibFunc_strcat_chk: case LibFunc_strncat_chk:
++  // The caller's line buffer, or null.
++  case LibFunc_fgets: case LibFunc_fgets_unlocked: case LibFunc_gets:
++  // The block it was given, or a fresh block holding the same bytes. Either
++  // way the result stands for the object the argument stood for: a moved
++  // block is reachable from exactly the pointers the old one was published
++  // through, no more and no fewer.
++  case LibFunc_realloc: case LibFunc_reallocf: case LibFunc_vec_realloc:
++    ArgNo = 0;
++    return true;
++  default:
++    return false;
++  }
++}
++
+ bool TargetLibraryInfo::isReturnValueEscaping(LibFunc F) {
+   switch (F) {
+   // ===================================================================
+diff --git a/llvm/lib/Transforms/Instrumentation/ThreadSanitizer.cpp b/llvm/lib/Transforms/Instrumentation/ThreadSanitizer.cpp
+index 28a907fc5990..3ceac225cb3e 100644
+--- a/llvm/lib/Transforms/Instrumentation/ThreadSanitizer.cpp
++++ b/llvm/lib/Transforms/Instrumentation/ThreadSanitizer.cpp
+@@ -1270,6 +1270,16 @@ collectLaterEscapes(Instruction *Access, Value *Addr,
+           continue;
+         }
+         const unsigned ArgNo = CB->getArgOperandNo(&U);
++        // A call that returns a pointer into this argument -- a `returned`
++        // parameter, an aliasing intrinsic, strchr, strcpy, fgets, realloc
++        // (TargetLibraryInfo::returnsPointerIntoArg) -- hands the object
++        // back under another name: what is later done with the result is
++        // done with the object, so the result's uses are walked as well.
++        // They were not, so `%r = strchr(%b); store %r, @g` after the
++        // access was no later escape of %b (shape 21).
++        if (getArgumentAliasingToReturnedPointer(CB, false) == U.get() ||
++            EscapeAnalysisInfo::getLibCallArgReturnedInto(CB, TLI) == U.get())
++          Work.push_back(CB);
+         if (CB->doesNotCapture(ArgNo) || !Reachable(CB))
+           continue;
+         const Function *Callee = CB->getCalledFunction();
+diff --git a/llvm/test/Analysis/LockOwnership/address-in-initializer.ll b/llvm/test/Analysis/LockOwnership/address-in-initializer.ll
+new file mode 100644
+index 000000000000..587365670a06
+--- /dev/null
++++ b/llvm/test/Analysis/LockOwnership/address-in-initializer.ll
+@@ -0,0 +1,46 @@
++; A global is protected only if every access to it is visible here and
++; locked. @P is locked at every instruction that names it, but its address
++; sits in another global's initializer, so a thread can load that pointer
++; and write @P under no lock at all -- as @w2 does. The access walk saw only
++; instruction users, so @P was declared protected and the unlocked write
++; raced unreported (shape 20). @K is the control: internal, never
++; address-taken, locked everywhere.
++
++; RUN: opt < %s -passes='print<lock-ownership>' -disable-output 2>&1 | FileCheck %s --implicit-check-not='* P'
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@m = global i64 0, align 8
++@P = internal global i32 0, align 4
++@slot = global ptr @P, align 8
++@K = internal global i32 0, align 4
++declare i32 @pthread_mutex_lock(ptr)
++declare i32 @pthread_mutex_unlock(ptr)
++declare i32 @pthread_create(ptr, ptr, ptr, ptr)
++
++define internal ptr @w1(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @m)
++  store i32 1, ptr @P, align 4
++  store i32 1, ptr @K, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @m)
++  ret ptr null
++}
++
++define internal ptr @w2(ptr %a) {
++  %p = load ptr, ptr @slot, align 8
++  store i32 2, ptr %p, align 4
++  %l = call i32 @pthread_mutex_lock(ptr @m)
++  store i32 2, ptr @K, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @m)
++  ret ptr null
++}
++
++define i32 @main() {
++  %t = alloca i64, align 8
++  %c1 = call i32 @pthread_create(ptr %t, ptr null, ptr @w1, ptr null)
++  %c2 = call i32 @pthread_create(ptr %t, ptr null, ptr @w2, ptr null)
++  ret i32 0
++}
++
++; CHECK: Protected Global Variables
++; CHECK-DAG: * K
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/escape-libcall-result-alias.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/escape-libcall-result-alias.ll
+new file mode 100644
+index 000000000000..b5d0c5494f90
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/escape-libcall-result-alias.ll
+@@ -0,0 +1,166 @@
++; A library call that returns a pointer into its argument -- strchr, strcpy,
++; memchr, fgets, realloc (TargetLibraryInfo::returnsPointerIntoArg) -- hands
++; the caller's object back under another name. The escape analysis treated
++; that result as an object of its own (an "escaped call" register), so
++; storing it to a global published nothing about the buffer, and the
++; buffer's accesses were elided while a thread wrote it through the
++; published pointer (shape 21). Now the object walk continues from the
++; argument, and the later-escape walk follows the result's uses. Controls:
++; a result that is only compared publishes nothing (@strchr_result_private),
++; a local stored through a result that points into a global still escapes
++; (@store_through_result_into_global), a realloc of a private block is
++; still private (@realloc_result_private), and realloc(NULL, n) -- an
++; allocation, no argument object to stand for -- stays an object of its own
++; and, published, is instrumented (@realloc_null_published).
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-escape-analysis-global -S | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@g = global ptr null, align 8
++@gbuf = global [8 x i8] zeroinitializer, align 1
++@str = private constant [2 x i8] c"a\00", align 1
++declare ptr @strchr(ptr, i32)
++declare ptr @strcpy(ptr, ptr)
++declare ptr @memchr(ptr, i32, i64)
++declare ptr @fgets(ptr, i32, ptr)
++declare ptr @realloc(ptr, i64)
++declare noalias ptr @malloc(i64)
++declare void @use(i1)
++
++; The result of strchr is a pointer into %b; storing it publishes %b, so the
++; write after the publication is instrumented.
++define void @strchr_result_published() sanitize_thread {
++; CHECK-LABEL: @strchr_result_published
++; CHECK:       store ptr %r{{[0-9]*}}, ptr @g
++; CHECK:       call void @__tsan_write1(ptr %b)
++; CHECK-NEXT:  store i8 1, ptr %b
++  %b = alloca [8 x i8], align 1
++  store i8 0, ptr %b, align 1
++  %r = call ptr @strchr(ptr %b, i32 0)
++  store ptr %r, ptr @g, align 8
++  store i8 1, ptr %b, align 1
++  ret void
++}
++
++; The publication comes after the access: a later escape through the
++; result, so the access before it is kept as well (the thread's write is
++; not ordered after it).
++define void @strchr_result_published_later() sanitize_thread {
++; CHECK-LABEL: @strchr_result_published_later
++; CHECK:       call void @__tsan_write1(ptr %b)
++; CHECK-NEXT:  store i8 1, ptr %b
++; CHECK:       store ptr %r{{[0-9]*}}, ptr @g
++  %b = alloca [8 x i8], align 1
++  %r = call ptr @strchr(ptr %b, i32 0)
++  store i8 1, ptr %b, align 1
++  store ptr %r, ptr @g, align 8
++  ret void
++}
++
++; strcpy returns its destination.
++define void @strcpy_result_published() sanitize_thread {
++; CHECK-LABEL: @strcpy_result_published
++; CHECK:       store ptr %r{{[0-9]*}}, ptr @g
++; CHECK:       call void @__tsan_write1(ptr %b)
++; CHECK-NEXT:  store i8 1, ptr %b
++  %b = alloca [8 x i8], align 1
++  %r = call ptr @strcpy(ptr %b, ptr @str)
++  store ptr %r, ptr @g, align 8
++  store i8 1, ptr %b, align 1
++  ret void
++}
++
++; A pointer derived from the result still points into the buffer.
++define void @memchr_result_offset_published() sanitize_thread {
++; CHECK-LABEL: @memchr_result_offset_published
++; CHECK:       store ptr %r1{{[0-9]*}}, ptr @g
++; CHECK:       call void @__tsan_write1(ptr %b)
++; CHECK-NEXT:  store i8 1, ptr %b
++  %b = alloca [8 x i8], align 1
++  store i8 0, ptr %b, align 1
++  %r = call ptr @memchr(ptr %b, i32 0, i64 8)
++  %r1 = getelementptr i8, ptr %r, i64 1
++  store ptr %r1, ptr @g, align 8
++  store i8 1, ptr %b, align 1
++  ret void
++}
++
++; fgets returns the caller's line buffer.
++define void @fgets_result_published(ptr %stream) sanitize_thread {
++; CHECK-LABEL: @fgets_result_published
++; CHECK:       store ptr %r{{[0-9]*}}, ptr @g
++; CHECK:       call void @__tsan_write1(ptr %b)
++; CHECK-NEXT:  store i8 1, ptr %b
++  %b = alloca [8 x i8], align 1
++  %r = call ptr @fgets(ptr %b, i32 8, ptr %stream)
++  store ptr %r, ptr @g, align 8
++  store i8 1, ptr %b, align 1
++  ret void
++}
++
++; Control: a result that is only compared does not publish the buffer.
++define void @strchr_result_private() sanitize_thread {
++; CHECK-LABEL: @strchr_result_private
++; CHECK-NOT:   call void @__tsan_write1(ptr %b)
++; CHECK:       ret void
++  %b = alloca [8 x i8], align 1
++  store i8 0, ptr %b, align 1
++  %r = call ptr @strchr(ptr %b, i32 0)
++  %c = icmp eq ptr %r, null
++  call void @use(i1 %c)
++  store i8 1, ptr %b, align 1
++  ret void
++}
++
++; Control: the result points into a global; a local stored through it is
++; published, so the local's write is instrumented.
++define void @store_through_result_into_global() sanitize_thread {
++; CHECK-LABEL: @store_through_result_into_global
++; CHECK:       call void @__tsan_write4(ptr %x)
++; CHECK-NEXT:  store i32 1, ptr %x
++  %x = alloca i32, align 4
++  %r = call ptr @strchr(ptr @gbuf, i32 0)
++  store ptr %x, ptr %r, align 8
++  store i32 1, ptr %x, align 4
++  ret void
++}
++
++; Control: realloc of a private block stands for the same private object;
++; a write through the result is not instrumented.
++define void @realloc_result_private() sanitize_thread {
++; CHECK-LABEL: @realloc_result_private
++; CHECK-NOT:   call void @__tsan_write1(
++; CHECK:       ret void
++  %p = call ptr @malloc(i64 8)
++  %q = call ptr @realloc(ptr %p, i64 16)
++  store i8 1, ptr %q, align 1
++  ret void
++}
++
++; realloc's result published: the block is shared, a later write through
++; the result is instrumented.
++define void @realloc_result_published() sanitize_thread {
++; CHECK-LABEL: @realloc_result_published
++; CHECK:       store ptr %q{{[0-9]*}}, ptr @g
++; CHECK:       call void @__tsan_write1(ptr %q{{[0-9]*}})
++; CHECK-NEXT:  store i8 1, ptr %q{{[0-9]*}}
++  %p = call ptr @malloc(i64 8)
++  %q = call ptr @realloc(ptr %p, i64 16)
++  store ptr %q, ptr @g, align 8
++  store i8 1, ptr %q, align 1
++  ret void
++}
++
++; realloc(NULL, n) allocates; there is no argument object for the result to
++; stand for. Published, the block is shared and the write is instrumented.
++define void @realloc_null_published() sanitize_thread {
++; CHECK-LABEL: @realloc_null_published
++; CHECK:       store ptr %q{{[0-9]*}}, ptr @g
++; CHECK:       call void @__tsan_write1(ptr %q{{[0-9]*}})
++; CHECK-NEXT:  store i8 1, ptr %q{{[0-9]*}}
++  %q = call ptr @realloc(ptr null, i64 16)
++  store ptr %q, ptr @g, align 8
++  store i8 1, ptr %q, align 1
++  ret void
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/swmr-address-in-initializer.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/swmr-address-in-initializer.ll
+new file mode 100644
+index 000000000000..74f54cce9651
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/swmr-address-in-initializer.ll
+@@ -0,0 +1,55 @@
++; A global whose address sits in another global's initializer is published
++; before main runs: any thread may load that pointer and write through it,
++; and no instruction in this module names the global at that write. The
++; access walk saw only instruction users (and the constant expressions and
++; aliases over them), so such a global counted as read-only and main's read
++; of it after the thread started was elided while the thread wrote it
++; through the published pointer (shape 20). Three ways the address gets into
++; an initializer: directly (@g), inside a constant aggregate through a
++; constant getelementptr (@agg), and through llvm.used (@u). @loc is the
++; control: never address-taken, written only before the thread exists,
++; read-only, elided.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-swmr -S | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@g = internal global i32 0, align 4
++@slot = global ptr @g, align 8
++@agg = internal global [2 x i32] zeroinitializer, align 4
++@table = global { i32, ptr } { i32 0, ptr getelementptr ([2 x i32], ptr @agg, i64 0, i64 1) }, align 8
++@u = internal global i32 0, align 4
++@llvm.used = appending global [1 x ptr] [ptr @u], section "llvm.metadata"
++@loc = internal global i32 0, align 4
++declare i32 @pthread_create(ptr, ptr, ptr, ptr)
++
++define internal ptr @writer(ptr %a) sanitize_thread {
++  %p = load ptr, ptr @slot, align 8
++  store i32 1, ptr %p, align 4
++  %q = load ptr, ptr getelementptr ({ i32, ptr }, ptr @table, i64 0, i32 1), align 8
++  store i32 1, ptr %q, align 4
++  ret ptr null
++}
++
++define i32 @main() sanitize_thread {
++; CHECK-LABEL: @main
++; CHECK:       {{call|invoke}} i32 @pthread_create
++; CHECK:       call void @__tsan_read4(ptr @g)
++; CHECK:       call void @__tsan_read4(ptr getelementptr {{.*}}@agg
++; CHECK:       call void @__tsan_read4(ptr @u)
++; CHECK-NOT:   call void @__tsan_read4(ptr @loc)
++; CHECK:       ret i32
++  %t = alloca i64, align 8
++  store i32 1, ptr @g, align 4
++  store i32 1, ptr @u, align 4
++  store i32 1, ptr @loc, align 4
++  %c = call i32 @pthread_create(ptr %t, ptr null, ptr @writer, ptr null)
++  %v = load i32, ptr @g, align 4
++  %w = load i32, ptr getelementptr ([2 x i32], ptr @agg, i64 0, i64 1), align 4
++  %x = load i32, ptr @u, align 4
++  %l = load i32, ptr @loc, align 4
++  %s1 = add i32 %v, %w
++  %s2 = add i32 %s1, %x
++  %s3 = add i32 %s2, %l
++  ret i32 %s3
++}

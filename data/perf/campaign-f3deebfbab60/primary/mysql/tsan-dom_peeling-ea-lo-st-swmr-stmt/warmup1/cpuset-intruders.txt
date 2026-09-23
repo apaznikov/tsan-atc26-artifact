@@ -1,6 +1,0 @@
-claude samples=1353 peak_pcpu=5.4
-sshd samples=53 peak_pcpu=0.8
-Rider.Backend samples=40 peak_pcpu=5.4
-mysqladmin samples=8 peak_pcpu=3.5
-java samples=2 peak_pcpu=58.9
-git samples=1 peak_pcpu=50.0

@@ -1,0 +1,2969 @@
+From d0c837061c92b24d725e865f26eb9a985a88e5b5 Mon Sep 17 00:00:00 2001
+From: Alexey Paznikov <apaznikov@gmail.com>
+Date: Tue, 15 Sep 2026 15:51:39 +0800
+Subject: EA: block states as shared bases plus journals; joins fold journals
+ and update incrementally
+
+---
+ llvm/include/llvm/Analysis/EscapeAnalysis.h   |  270 +++-
+ llvm/lib/Analysis/EscapeAnalysis.cpp          | 1014 +++++++++++--
+ .../ThreadSanitizerNew/escape-join-journal.ll | 1317 +++++++++++++++++
+ 3 files changed, 2477 insertions(+), 124 deletions(-)
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/escape-join-journal.ll
+
+diff --git a/llvm/include/llvm/Analysis/EscapeAnalysis.h b/llvm/include/llvm/Analysis/EscapeAnalysis.h
+index 55dcfb9a962d..77eacf031349 100644
+--- a/llvm/include/llvm/Analysis/EscapeAnalysis.h
++++ b/llvm/include/llvm/Analysis/EscapeAnalysis.h
+@@ -15,6 +15,7 @@
+ 
+ #include "ValueTracking.h"
+ 
++#include "llvm/ADT/STLFunctionalExtras.h"
+ #include "llvm/ADT/SmallSet.h"
+ #include "llvm/Analysis/CallGraph.h"
+ #include "llvm/Analysis/TargetLibraryInfo.h"
+@@ -25,6 +26,10 @@
+ #include <bitset>
+ #include <fstream>
+ #include <functional>
++#include <map>
++#include <memory>
++#include <optional>
++#include <set>
+ #include <variant>
+ 
+ namespace llvm {
+@@ -216,9 +221,15 @@ private:
+   std::string AbandonReason;
+   void abandon(StringRef Reason, unsigned Blocks, unsigned Evals);
+   struct EscapeState;
+-
+-  /// Map of basic blocks to their escape analysis states.
+-  DenseMap<const BasicBlock *, EscapeState> BBEscapeStates;
++  struct StateJournal;
++  struct BlockState;
++  class StateView;
++
++  /// Every block's out-state: a base shared by pointer plus the journal of
++  /// the block's own transfer on it (see BlockState).
++  DenseMap<const BasicBlock *, BlockState> BBEscapeStates;
++  /// The state every block starts from, one object shared by pointer.
++  std::shared_ptr<const EscapeState> EmptyState;
+   /// Per-function union of BBEscapeStates, filled lazily; see
+   /// findObjInFuncEscState.
+   mutable DenseMap<const Function *, EscapeState> FuncEscapeStates;
+@@ -233,24 +244,80 @@ private:
+   TargetLibraryInfo TLI;
+ 
+   class PointsToRelTy {
++  public:
+     using PointeeListTy = SmallSet<ObjAndPath, 4>;
+     using PathToPointeeMap = std::map<FieldPathTy, PointeeListTy>;
++
++  private:
+     DenseMap<const Value *, PathToPointeeMap> PointsToMap;
++    /// The number of (pointer, path, pointee) triples, so that a relation
++    /// can be sized without a walk.
++    unsigned NumPairs = 0;
+ 
+   public:
+     /// Merge with other PointsToRel object (needed in basic data flow analysis)
+     void merge(const PointsToRelTy &Other);
+ 
+-    /// Add an points-to relation between two objects.
+-    void addPointsToPair(const ObjAndPath &Pointer, const ObjAndPath &Pointee);
++    /// Add an points-to relation between two objects; whether it was new.
++    bool addPointsToPair(const ObjAndPath &Pointer, const ObjAndPath &Pointee);
+ 
+     /// Check whether points-to relation contains Pointer-Pointee pair
+     bool containsPointsToPair(const ObjAndPath &Pointer,
+-                              const ObjAndPath &Pointee);
++                              const ObjAndPath &Pointee) const;
+ 
+     /// Traverse the (implicit) tree of aliases and get the list of aliases
+     std::optional<PointeeListTy> getPointees(const ObjAndPath &Pointer) const;
+ 
++    /// Add to \p Out every pointee recorded under a path of \p Pointer.Obj
++    /// that overlaps \p Pointer.Path, in path order.
++    void collectPointees(const ObjAndPath &Pointer, PointeeListTy &Out) const;
++
++    /// The per-path pointee sets of \p Obj; null when it points to nothing.
++    const PathToPointeeMap *pathMap(const Value *Obj) const {
++      const auto It = PointsToMap.find(Obj);
++      return It == PointsToMap.end() ? nullptr : &It->second;
++    }
++
++    /// Visit every (pointer, pointee) pair.
++    template <class Fn> void forEachPair(Fn F) const {
++      for (const auto &[PointerObj, PathToPointee] : PointsToMap)
++        for (const auto &[Path, Pointees] : PathToPointee)
++          for (const ObjAndPath &Pointee : Pointees)
++            F(ObjAndPath{PointerObj, Path}, Pointee);
++    }
++
++    /// Visit every pair that \p Other does not have, with the lookups into
++    /// \p Other done once per pointer and once per path.
++    template <class Fn>
++    void forEachPairNotIn(const PointsToRelTy &Other, Fn F) const {
++      for (const auto &[PointerObj, PathToPointee] : PointsToMap) {
++        const PathToPointeeMap *OtherPaths = Other.pathMap(PointerObj);
++        for (const auto &[Path, Pointees] : PathToPointee) {
++          const PointeeListTy *OtherPointees = nullptr;
++          if (OtherPaths)
++            if (const auto It = OtherPaths->find(Path); It != OtherPaths->end())
++              OtherPointees = &It->second;
++          for (const ObjAndPath &Pointee : Pointees)
++            if (!OtherPointees || !OtherPointees->contains(Pointee))
++              F(ObjAndPath{PointerObj, Path}, Pointee);
++        }
++      }
++    }
++
++    /// Replace the pointee set of (\p Obj, \p Path) by the same elements in
++    /// the order of \p Ordered.
++    void reorderPointees(const Value *Obj, const FieldPathTy &Path,
++                         ArrayRef<ObjAndPath> Ordered) {
++      PointeeListTy &Set = PointsToMap[Obj][Path];
++      assert(Set.size() == Ordered.size() && "reorder changes the set");
++      Set.clear();
++      for (const ObjAndPath &Pointee : Ordered)
++        Set.insert(Pointee);
++    }
++
++    unsigned size() const { return NumPairs; }
++    bool empty() const { return NumPairs == 0; }
++
+     /// We need it to check if something changed in the data-flow analysis
+     bool operator==(const PointsToRelTy &Other) const;
+ 
+@@ -293,12 +360,30 @@ private:
+ 
+     void merge(const EscapeState &OtherES, const EscapeAnalysisInfo *EAI) {
+       PointsTo.merge(OtherES.PointsTo);
+-      mergeEscapedObjects(OtherES);
++      mergeEscapedObjects(OtherES.EscapedObjs);
+     }
+ 
++    /// Replay a journal that was recorded on top of this very state: the
++    /// result is the state the journal stands for.
++    void applyJournal(const StateJournal &J);
++
+     const EscapedObjectsTy &getEscObjs() const { return EscapedObjs; };
+     const PointsToRelTy &getPointsTo() const { return PointsTo; }
+ 
++    /// The primitives the transfer is written over (StateView has the same
++    /// four, plus getEscReason and addEscObjOrReason).
++    std::optional<PointsToRelTy::PointeeListTy>
++    getPointees(const ObjAndPath &Pointer) const {
++      return PointsTo.getPointees(Pointer);
++    }
++    bool containsPointsToPair(const ObjAndPath &Pointer,
++                              const ObjAndPath &Pointee) const {
++      return PointsTo.containsPointsToPair(Pointer, Pointee);
++    }
++    void addPointsToPair(const ObjAndPath &Pointer, const ObjAndPath &Pointee) {
++      PointsTo.addPointsToPair(Pointer, Pointee);
++    }
++
+     /// Try to find object in the EscapedObjects and return escape reason
+     EscReasonTy getEscReason(const ObjAndPath &OAP) const;
+ 
+@@ -310,21 +395,176 @@ private:
+     // Note that a Value may be the alias of multiple Allocas
+     PointsToRelTy PointsTo;
+ 
+-    /// Merge lists of escaped objects for two escape states (BBs)
+-    void mergeEscapedObjects(const EscapeState &OtherES);
++    /// Merge a list of escaped objects into this state's: entries added,
++    /// reasons OR'd, nothing erased -- the join's union.
++    void mergeEscapedObjects(const EscapedObjectsTy &Other);
+   };
+ 
++  /// A state expressed relative to a base: what a block's transfer did to
++  /// the state it ran on, or what a join adds to the first predecessor's
++  /// base -- the effect, not the calls that produced it, and canonical with
++  /// respect to that base --
++  ///   Set      entries whose reason differs from the base's, with the
++  ///            reason the state has (it replaces the base's: new entries,
++  ///            base entries the transfer grew by OR, and base entries a
++  ///            join sets from other predecessors' values alone);
++  ///   Erased   base entries the state does not have: the field entries an
++  ///            escape by the whole object removes, and the entries every
++  ///            predecessor of a join dropped;
++  ///   AddedPT  points-to pairs the base does not have.
++  /// The base with the journal replayed is the state exactly, and two
++  /// journals on one base are equal iff the two states are.
++  struct StateJournal {
++    EscapedObjectsTy Set;
++    std::set<ObjAndPath> Erased;
++    PointsToRelTy AddedPT;
++    /// Entries of Set that are not in the base; the state has
++    /// Base.size() + NumNewKeys - Erased.size() entries.
++    unsigned NumNewKeys = 0;
++
++    bool empty() const {
++      return Set.empty() && Erased.empty() && AddedPT.empty();
++    }
++    unsigned numEntries() const {
++      return Set.size() + Erased.size() + AddedPT.size();
++    }
++    bool operator==(const StateJournal &O) const {
++      return Set == O.Set && Erased == O.Erased && AddedPT == O.AddedPT;
++    }
++    bool operator!=(const StateJournal &O) const { return !(*this == O); }
++
++    /// Fold one predecessor's entry for \p OAP into a join over \p Base
++    /// (mergePredEscapeStates): OR'd with what is there, replacing the base's
++    /// value if every predecessor on the base excluded it.
++    void fold(const EscapeState &Base, const ObjAndPath &OAP,
++              EscReasonTy Reason);
++
++    /// Reads through the journal over \p Base: what the materialised
++    /// out-state answers.
++    std::optional<EscReasonTy> find(const EscapeState &Base,
++                                    const ObjAndPath &OAP) const;
++    EscReasonTy getEscReason(const EscapeState &Base,
++                             const ObjAndPath &OAP) const;
++    void collectPointees(const EscapeState &Base, const ObjAndPath &Pointer,
++                         PointsToRelTy::PointeeListTy &Out) const;
++
++    /// The materialised escaped set, entry by entry in key order, without
++    /// building it.
++    struct Cursor {
++      EscapedObjectsTy::const_iterator BI, BE, SI, SE;
++      const std::set<ObjAndPath> *Erased;
++      Cursor(const EscapeState &Base, const StateJournal &J);
++      const EscapedObjectsTy::value_type *next();
++    };
++  };
++
++  /// A block's out-state: the state its transfer last ran on, shared by
++  /// pointer with whoever else holds that version (the predecessor it was
++  /// taken from, that predecessor's other successors), and the journal of
++  /// the transfer on top of it. Materialised only when a successor with no
++  /// other predecessor takes it as its own base.
++  struct BlockState {
++    std::shared_ptr<const EscapeState> Base;
++    StateJournal Journal;
++    /// The materialised out-state, built on first demand; Base itself
++    /// when the journal is empty.
++    mutable std::shared_ptr<const EscapeState> Materialised;
++    /// Bumped every time the block's out-state changes.
++    unsigned Version = 0;
++
++    size_t numEscObjs() const {
++      return Base->getEscObjs().size() + Journal.NumNewKeys -
++             Journal.Erased.size();
++    }
++    EscReasonTy getEscReason(const ObjAndPath &OAP) const {
++      return Journal.getEscReason(*Base, OAP);
++    }
++    void forEachPointeeDo(
++        const ObjAndPath &OAP,
++        const std::function<void(const ObjAndPath &)> &Action) const;
++    /// Every entry of the out-state in key order.
++    void
++    forEachEscObj(function_ref<void(const ObjAndPath &, EscReasonTy)> F) const;
++    /// Whether the two out-states are equal, without materialising either.
++    bool sameStateAs(const BlockState &O) const;
++  };
++
++  /// The transfer, written once over the state type: EscapeState (a
++  /// materialised state; the reference path of -tsan-ea-verify-journal) or
++  /// StateView (a base and the journal being recorded on it).
+   /// Check if function returns escaped object, and update function return
+   /// escape status
+-  void updRetEscStatus(const EscapeState &ES, const BasicBlock *BB,
++  template <class StateT>
++  void updRetEscStatus(const StateT &ES, const BasicBlock *BB,
+                        const SmallVectorImpl<UnderlObjTy> &UnderlObjs);
+-  void addEscapedPtrArgs(EscapeState &ES) const;
++  template <class StateT> void addEscapedPtrArgs(StateT &ES) const;
+ 
+   /// Compute the resulting escape state for BB
+-  void compBBEscapeState(const BasicBlock *BB, EscapeState &ES);
+-
+-  /// Merges the escape analysis states from multiple incoming blocks.
+-  EscapeState mergePredEscapeStates(const BasicBlock *BB);
++  template <class StateT>
++  void compBBEscapeState(const BasicBlock *BB, StateT &ES);
++
++  /// The transfer's composite mutators, over the same two state types.
++  template <class StateT>
++  static void addEscObjImpl(StateT &S, const ObjAndPath &EscObj,
++                            EscReasonTy EscReason, const Instruction *I);
++  template <class StateT>
++  static void addPointsToImpl(StateT &S, const UnderlObjTy &Pointer,
++                              const UnderlObjTy &Pointee,
++                              const EscapeAnalysisInfo *EAI,
++                              const Instruction *I);
++  template <class StateT>
++  static void checkAndUpdEscStatusImpl(StateT &S, const ObjAndPath &Pointer,
++                                       const ObjAndPath &Pointee,
++                                       const EscapeAnalysisInfo *EAI,
++                                       const Instruction *I);
++
++  /// The in-state of \p BB as a base and a journal: its only predecessor's
++  /// base and journal, the predecessor's materialised state once that
++  /// journal is large, or the join of several predecessors' expressed over
++  /// the first one's base; the empty state for a block with none.
++  BlockState mergePredEscapeStates(const BasicBlock *BB);
++
++  /// A join with many predecessors is evaluated once per predecessor that
++  /// changes; this remembers its in-state and what every predecessor
++  /// contributed, so that the next evaluation folds only the predecessors
++  /// that changed since (see mergePredEscapeStates).
++  struct JoinCache {
++    std::shared_ptr<const EscapeState> Base;
++    StateJournal InJournal;
++    struct PredEntry {
++      /// Strong: a predecessor's superseded base stays alive until the
++      /// predecessor is folded again, for the growth check. A weak pointer
++      /// here saved a quarter of the extract's memory and cost 800 cache
++      /// misses, each a fold over hundreds of bases (2-4x the time).
++      std::shared_ptr<const EscapeState> Base;
++      unsigned Version;
++      StateJournal Journal;
++    };
++    SmallVector<PredEntry, 8> Preds;
++  };
++  DenseMap<const BasicBlock *, JoinCache> JoinCaches;
++  /// The cached join brought up to date, or nothing if a predecessor
++  /// changed in a way the incremental fold does not cover.
++  std::optional<StateJournal>
++  updateJoinCache(JoinCache &C, ArrayRef<const BlockState *> Preds,
++                  unsigned BaseIdx);
++  /// Fold a state's entries into a join over \p B (mergePredEscapeStates):
++  /// the entries B covers and the journal has not touched are skipped by a
++  /// walk over the sorted maps, without lookups; \p Skip names entries to
++  /// leave out. Pairs are added to \p J.AddedPT; \p OnNewPair sees each
++  /// pair that was new to it.
++  static void foldStateInto(StateJournal &J, const EscapeState &B,
++                            const EscapeState &X,
++                            const std::set<ObjAndPath> &Skip,
++                            function_ref<void(const ObjAndPath &)> OnNewPair);
++  /// Whether \p New has every entry of \p Old with at least its reason bits
++  /// and every pair of it.
++  static bool subsumes(const EscapeState &New, const EscapeState &Old);
++  /// The join done the old way -- every predecessor's materialised
++  /// out-state merged in turn -- the reference of -tsan-ea-verify-journal.
++  EscapeState mergePredEscapeStatesFromScratch(const BasicBlock *BB);
++  /// A block's materialised out-state, cached per version of the block.
++  static std::shared_ptr<const EscapeState> materialise(const BlockState &BS);
+ 
+   /// Check if it's non-constant global variable (which can be modified)
+   static bool isNonConstGV(const Value *V);
+diff --git a/llvm/lib/Analysis/EscapeAnalysis.cpp b/llvm/lib/Analysis/EscapeAnalysis.cpp
+index 70c1312f8141..e57a75ba5754 100644
+--- a/llvm/lib/Analysis/EscapeAnalysis.cpp
++++ b/llvm/lib/Analysis/EscapeAnalysis.cpp
+@@ -28,6 +28,7 @@
+ #include "llvm/IR/Function.h"
+ #include "llvm/IR/IntrinsicInst.h"
+ #include "llvm/IR/PassManager.h"
++#include "llvm/Support/ErrorHandling.h"
+ #include "llvm/Support/Signals.h"
+ 
+ #include <deque>
+@@ -72,6 +73,51 @@ static cl::opt<bool> ClEAVerifySkips(
+     cl::desc("Escape analysis: recompute every skipped block evaluation and "
+              "assert it is a no-op (slow; for verification)"));
+ 
++/// Development check for the shared-base representation of the block states
++/// (BlockState, StateJournal): at every block evaluation, also compute the
++/// in-state the old way (every predecessor's materialised out-state merged
++/// in turn) and run the transfer on a copy of it, and check that the
++/// shared-base join and the journal replayed on the base give the same state,
++/// the same return-escape bit and the same change verdict. Off by default;
++/// used by the gate runs.
++static cl::opt<bool> ClEAVerifyJournal(
++    "tsan-ea-verify-journal", cl::init(false), cl::Hidden,
++    cl::desc("Escape analysis: recompute every block evaluation from "
++             "materialised states and assert the journal representation "
++             "agrees (slow; for verification)"));
++
++/// A block with one predecessor takes that predecessor's base and a copy of
++/// its journal, so that a chain of blocks stays relative to the base it
++/// started from (the switch block's state, for a parser's cases) and a join
++/// over the chains sees one base; once the journal is larger than this, the
++/// block takes the predecessor's materialised state instead, so that a
++/// journal does not keep growing along a long chain or around a loop.
++static cl::opt<unsigned> ClEARebaseJournalEntries(
++    "tsan-ea-rebase-journal-entries", cl::init(64), cl::Hidden,
++    cl::desc("Escape analysis: a block with one predecessor copies the "
++             "predecessor's journal when it has at most this many entries "
++             "and takes its materialised state otherwise"));
++
++/// The same for a join: its in-state is materialised when the journal over
++/// the first predecessor's base is larger than this, so that neither its
++/// successors (which copy or fold the journal) nor its own next evaluation
++/// carry it around -- the parser's loop header, whose first predecessor is
++/// the entry block on the empty base and whose other predecessor brings the
++/// whole loop-carried state. Every materialisation is a base of its own,
++/// which the blocks evaluated against it keep alive; without this rule the
++/// extract takes five times longer (the successors re-base one by one).
++static cl::opt<unsigned> ClEARebaseJoinJournalEntries(
++    "tsan-ea-rebase-join-journal-entries", cl::init(64), cl::Hidden,
++    cl::desc("Escape analysis: a join materialises its in-state when its "
++             "journal has more than this many entries (0: never)"));
++
++/// A join with at least this many predecessors keeps its last in-state and
++/// folds only the predecessors that changed since (JoinCache).
++static cl::opt<unsigned> ClEAJoinCacheMinPreds(
++    "tsan-ea-join-cache-min-preds", cl::init(16), cl::Hidden,
++    cl::desc("Escape analysis: a join with at least this many predecessors "
++             "is updated incrementally between evaluations"));
++
+ /// Budgets. A function that exceeds one is not analysed: every object in it
+ /// is treated as escaped (see EscapeAnalysisInfo::abandon), which keeps all
+ /// of its accesses instrumented -- no race lost, only reach. The defaults
+@@ -108,6 +154,29 @@ STATISTIC(NumEAStateChanges, "Escape analysis: block states that changed");
+ STATISTIC(NumEAMaxStateEntries,
+           "Escape analysis: largest escaped set of a block state");
+ STATISTIC(NumEAMaxBlocks, "Escape analysis: most blocks in one function");
++STATISTIC(NumEAJoinPredsDeduped,
++          "Escape analysis: join predecessors whose base was already merged");
++STATISTIC(NumEAJournalReplays, "Escape analysis: journals replayed in joins");
++STATISTIC(NumEASharedBases,
++          "Escape analysis: in-states taken from the predecessor by pointer");
++STATISTIC(NumEAMaterialised,
++          "Escape analysis: out-states materialised (copied) for a successor");
++STATISTIC(NumEAJoinBasesFolded,
++          "Escape analysis: join bases folded in as a difference from the "
++          "first predecessor's");
++STATISTIC(NumEAJournalEntriesFolded,
++          "Escape analysis: journal entries folded in joins");
++STATISTIC(NumEAJoinsIncremental,
++          "Escape analysis: joins brought up to date from the cache");
++STATISTIC(NumEAJoinCacheMisses,
++          "Escape analysis: cached joins recomputed from scratch");
++STATISTIC(NumEAJoinsRebased,
++          "Escape analysis: joins materialised because the journal grew "
++          "past -tsan-ea-rebase-join-journal-entries");
++STATISTIC(NumEAMaxPointsToPairs,
++          "Escape analysis: most points-to pairs in a block state");
++STATISTIC(NumEAMaxJournalEntries,
++          "Escape analysis: largest journal of a block state");
+ STATISTIC(NumEAUnknownOperands,
+           "Escape analysis: operands the object walk could not resolve");
+ STATISTIC(NumEAUnresolvedIntToPtr, "  unresolved: inttoptr");
+@@ -240,11 +309,19 @@ static bool isPointerArgument(const Value *V) {
+ // Alias relation
+ //===----------------------------------------------------------------------===//
+ 
++// The transfer's composite mutators -- checkAndUpdEscStatus, addPointsTo and
++// addEscObj -- are written once, over the state type, and instantiated for
++// EscapeState (a materialised state) and for StateView (a shared base plus
++// the journal of one evaluation's effect on it; see below). They bottom out
++// in getEscReason, getPointees, containsPointsToPair, addEscObjOrReason and
++// addPointsToPair; only the last two mutate, and nothing else does.
++
+ /// If instruction creates an alias to the object which has escaped before
+ /// or escapes "by definition" (e.g. pointer function argument,
+ /// global pointer), then that's not just aliasing, but escaping as well
+-void EscapeAnalysisInfo::EscapeState::checkAndUpdEscStatus(
+-    const ObjAndPath &Pointer, const ObjAndPath &Pointee,
++template <class StateT>
++void EscapeAnalysisInfo::checkAndUpdEscStatusImpl(
++    StateT &S, const ObjAndPath &Pointer, const ObjAndPath &Pointee,
+     const EscapeAnalysisInfo *EAI, const Instruction *I) {
+   LLVM_DEBUG(dbgs() << "\tcheckAndUpdEscStatus: " << *Pointer.Obj << " --> "
+                     << *Pointee.Obj << "\n");
+@@ -254,7 +331,7 @@ void EscapeAnalysisInfo::EscapeState::checkAndUpdEscStatus(
+   // consulted, so `store ptr %s, @sink; store ptr %x, ptr %s` left x local.
+   // Either way the pointee escapes, and so does everything it points to.
+   EscReasonTy PointerReason = EAI->getExtObjStatusIPA(Pointer.Obj);
+-  PointerReason |= getEscReason(Pointer);
++  PointerReason |= S.getEscReason(Pointer);
+   if (PointerReason.any()) {
+     // A pointer that is external only because it is (or reaches) a pointer
+     // argument carries the seed bit PTR_ARG_ALIASING and nothing else. A
+@@ -267,21 +344,27 @@ void EscapeAnalysisInfo::EscapeState::checkAndUpdEscStatus(
+     // memory is GPTR_ALIASING, which survives the mask.
+     if (PointerReason.test(1)) // PTR_ARG_ALIASING
+       PointerReason |= EscReasonTy(EscReasonBits::GPTR_ALIASING);
+-    addEscObj(Pointee, PointerReason, I);
++    S.addEscObj(Pointee, PointerReason, I);
+   }
+ 
+   // Assigning to structures
+   if (const auto *Alloca = dyn_cast<AllocaInst>(Pointer.Obj);
+       Alloca && Alloca->getAllocatedType()->isStructTy()) {
+-    if (const auto Reason = getEscReason(Pointee); Reason.any())
+-      addEscObjOrReason(Pointer, Reason, I);
++    if (const auto Reason = S.getEscReason(Pointee); Reason.any())
++      S.addEscObjOrReason(Pointer, Reason, I);
+ 
+     if (const auto EscReason = EAI->getExtObjStatusIPA(Pointee.Obj);
+         EscReason.any())
+-      addEscObjOrReason(Pointer, EscReason, I);
++      S.addEscObjOrReason(Pointer, EscReason, I);
+   }
+ }
+ 
++void EscapeAnalysisInfo::EscapeState::checkAndUpdEscStatus(
++    const ObjAndPath &Pointer, const ObjAndPath &Pointee,
++    const EscapeAnalysisInfo *EAI, const Instruction *I) {
++  checkAndUpdEscStatusImpl(*this, Pointer, Pointee, EAI, I);
++}
++
+ void EscapeAnalysisInfo::EscapeState::forEachPointeeDo(
+     const ObjAndPath &OAP,
+     const std::function<void(const ObjAndPath &)> &Action) const {
+@@ -293,44 +376,52 @@ void EscapeAnalysisInfo::EscapeState::forEachPointeeDo(
+ }
+ 
+ /// Add the alias: Alias --> PointeeValue
+-void EscapeAnalysisInfo::EscapeState::addPointsTo(const UnderlObjTy &Pointer,
+-                                                  const UnderlObjTy &Pointee,
+-                                                  const EscapeAnalysisInfo *EAI,
+-                                                  const Instruction *I) {
++template <class StateT>
++void EscapeAnalysisInfo::addPointsToImpl(StateT &S, const UnderlObjTy &Pointer,
++                                         const UnderlObjTy &Pointee,
++                                         const EscapeAnalysisInfo *EAI,
++                                         const Instruction *I) {
+   assert(Pointer.Obj->getType()->isPointerTy() && "Alias must be a pointer\n");
+ 
+   if ((Pointer.Obj == Pointee.Obj) || (Pointee.Obj == nullptr) ||
+-      PointsTo.containsPointsToPair(Pointer, Pointee))
++      S.containsPointsToPair(Pointer, Pointee))
+     return;
+ 
+   LLVM_DEBUG(dbgs() << "\taddPointsTo: " << *Pointer.Obj
+                     << dbgPathToStr(Pointer.Path) << " --> " << *Pointee.Obj
+                     << dbgPathToStr(Pointee.Path) << "\n");
+ 
+-  PointsTo.addPointsToPair(Pointer, Pointee);
++  S.addPointsToPair(Pointer, Pointee);
+ 
+   // Considering transitivity: recursively add new alias to all existing aliases
+   // of Pointee
+-  forEachPointeeDo(Pointee, [&](const ObjAndPath &Ptee) {
++  S.forEachPointeeDo(Pointee, [&](const ObjAndPath &Ptee) {
+     // Ptee inherits path of Pointee
+-    addPointsTo(Pointer, {{Ptee.Obj, Pointee.Path}, false}, EAI, I);
++    S.addPointsTo(Pointer, {{Ptee.Obj, Pointee.Path}, false}, EAI, I);
+   });
+ 
+   if (Pointee.Loaded)
+     return;
+ 
+-  checkAndUpdEscStatus(Pointer, Pointee, EAI, I);
++  S.checkAndUpdEscStatus(Pointer, Pointee, EAI, I);
+ 
+   // If pointer value was loaded, we should check whether pointee object is
+   // escaped or not
+   if (Pointer.Loaded) {
+     LLVM_DEBUG(dbgs() << "\t\t\tPointer loaded\n";);
+-    forEachPointeeDo(Pointer, [&](const ObjAndPath &Ptee) {
+-      checkAndUpdEscStatus(Ptee, Pointee, EAI, I);
++    S.forEachPointeeDo(Pointer, [&](const ObjAndPath &Ptee) {
++      S.checkAndUpdEscStatus(Ptee, Pointee, EAI, I);
+     });
+   }
+ }
+ 
++void EscapeAnalysisInfo::EscapeState::addPointsTo(const UnderlObjTy &Pointer,
++                                                  const UnderlObjTy &Pointee,
++                                                  const EscapeAnalysisInfo *EAI,
++                                                  const Instruction *I) {
++  addPointsToImpl(*this, Pointer, Pointee, EAI, I);
++}
++
+ //===----------------------------------------------------------------------===//
+ // PointsToRelTy
+ //===----------------------------------------------------------------------===//
+@@ -344,35 +435,28 @@ void EscapeAnalysisInfo::PointsToRelTy::merge(const PointsToRelTy &Other) {
+ }
+ 
+ /// Add an points-to relation between two objects
+-void EscapeAnalysisInfo::PointsToRelTy::addPointsToPair(
++bool EscapeAnalysisInfo::PointsToRelTy::addPointsToPair(
+     const ObjAndPath &Pointer, const ObjAndPath &Pointee) {
+-  if (Pointer.Path == EmptyFieldPath)
+-    PointsToMap[Pointer.Obj][EmptyFieldPath].insert(Pointee);
+-  else
+-    PointsToMap[Pointer.Obj][Pointer.Path].insert(Pointee);
++  if (!PointsToMap[Pointer.Obj][Pointer.Path].insert(Pointee).second)
++    return false;
++  ++NumPairs;
++  return true;
+ }
+ 
+ /// Check whether points-to relation contains Pointer-Pointee pair
+ bool EscapeAnalysisInfo::PointsToRelTy::containsPointsToPair(
+-    const ObjAndPath &Pointer, const ObjAndPath &Pointee) {
+-
++    const ObjAndPath &Pointer, const ObjAndPath &Pointee) const {
+   const auto It = PointsToMap.find(Pointer.Obj);
+   if (It == PointsToMap.end())
+     return false;
+ 
+-  decltype(It->second)::const_iterator It2;
+-  if (Pointer.Path == EmptyFieldPath)
+-    It2 = It->second.find(EmptyFieldPath);
+-  else
+-    It2 = It->second.find(Pointer.Path);
+-
++  const auto It2 = It->second.find(Pointer.Path);
+   if (It2 == It->second.end())
+     return false;
+ 
+   return It2->second.contains(Pointee);
+ }
+ 
+-/// Get list of pointees for the object
+ /// Whether one field path covers the other: A is a prefix of B or B of A. The
+ /// empty path is the whole object and covers every field; an escaped field
+ /// covers the whole object, since an access to the whole touches that field.
+@@ -384,33 +468,27 @@ static bool pathsOverlap(const FieldPathTy &A,
+   return std::equal(A.begin(), A.begin() + N, B.begin());
+ }
+ 
+-
+-std::optional<EscapeAnalysisInfo::PointsToRelTy::PointeeListTy>
+-EscapeAnalysisInfo::PointsToRelTy::getPointees(
+-    const ObjAndPath &Pointer) const {
++void EscapeAnalysisInfo::PointsToRelTy::collectPointees(
++    const ObjAndPath &Pointer, PointeeListTy &Out) const {
+   const auto It = PointsToMap.find(Pointer.Obj);
+   if (It == PointsToMap.end())
+-    return std::nullopt;
+-
+-  // Helper function to collect all pointees from paths
+-  auto collectAllPointees = [&](const PathToPointeeMap &PathToPointee)
+-      -> std::optional<PointeeListTy> {
+-    PointeeListTy AllPointees;
+-    for (const auto &[Path, Pointees] : PathToPointee)
+-      AllPointees.insert(Pointees.begin(), Pointees.end());
+-    return AllPointees.empty() ? std::nullopt : std::make_optional(AllPointees);
+-  };
++    return;
+ 
+   // Pointees recorded under every path that overlaps the query's: the whole
+   // object's pointees cover every field, a field's cover the whole object,
+   // and two different fields are independent -- the same lattice the escaped
+   // set uses.
+-  const auto &PathToPointee = It->second;
+-  PointeeListTy Result;
+-  for (const auto &[Path, Pointees] : PathToPointee)
++  for (const auto &[Path, Pointees] : It->second)
+     if (pathsOverlap(Path, Pointer.Path))
+-      Result.insert(Pointees.begin(), Pointees.end());
+-  (void)collectAllPointees;
++      Out.insert(Pointees.begin(), Pointees.end());
++}
++
++/// Get list of pointees for the object
++std::optional<EscapeAnalysisInfo::PointsToRelTy::PointeeListTy>
++EscapeAnalysisInfo::PointsToRelTy::getPointees(
++    const ObjAndPath &Pointer) const {
++  PointeeListTy Result;
++  collectPointees(Pointer, Result);
+   return Result.empty() ? std::nullopt : std::make_optional(Result);
+ }
+ 
+@@ -459,6 +537,27 @@ bool EscapeAnalysisInfo::EscapeState::operator==(const EscapeState &ES) const {
+   return ((PointsTo == ES.PointsTo) && (EscapedObjs == ES.EscapedObjs));
+ }
+ 
++/// -debug-only=ea-escaping-callees: the callee an object was passed to.
++static void debugPrintEscapingCallee(const Instruction *I,
++                                     EscapeAnalysisInfo::EscReasonTy EscReason) {
++  DEBUG_WITH_TYPE(PRINT_ESCAPING_CALLEES,
++    if (I && (EscReason == EscapeAnalysisInfo::PASSING_TO_CALL)) {
++      // Print callee function, possible leads to escaping passed arguments
++      if (const auto *CB = dyn_cast<CallBase>(I)) {
++        if (CB->hasName(); const auto *Callee = CB->getCalledFunction()) {
++          EscapeAnalysisGlobalInfo::EscFuncsFile
++              << "Callee Function: " << Callee->getName().str() << "\n";
++
++          if (const auto &DebugLoc = I->getDebugLoc())
++            EscapeAnalysisGlobalInfo::EscFuncsFile
++                << "Source Line: " << DebugLoc.getLine() << "\n";
++        }
++      }
++    });
++  (void)I;
++  (void)EscReason;
++}
++
+ void EscapeAnalysisInfo::EscapeState::addEscObjOrReason(const ObjAndPath &OAP,
+                                                         EscReasonTy EscReason,
+                                                         const Instruction *I) {
+@@ -488,27 +587,14 @@ void EscapeAnalysisInfo::EscapeState::addEscObjOrReason(const ObjAndPath &OAP,
+     }
+     // Object has not escaped before - add it
+     EscapedObjs.insert({OAP, EscReason});
+-
+-    DEBUG_WITH_TYPE(PRINT_ESCAPING_CALLEES,
+-      if (I && (EscReason == PASSING_TO_CALL)) {
+-        // Print callee function, possible leads to escaping passed arguments
+-        if (const auto *CB = dyn_cast<CallBase>(I)) {
+-          if (CB->hasName(); const auto *Callee = CB->getCalledFunction()) {
+-            EscapeAnalysisGlobalInfo::EscFuncsFile
+-                << "Callee Function: " << Callee->getName().str() << "\n";
+-
+-            if (const auto &DebugLoc = I->getDebugLoc())
+-              EscapeAnalysisGlobalInfo::EscFuncsFile
+-                  << "Source Line: " << DebugLoc.getLine() << "\n";
+-          }
+-        }
+-      });
++    debugPrintEscapingCallee(I, EscReason);
+   }
+ }
+ 
+-void EscapeAnalysisInfo::EscapeState::addEscObj(const ObjAndPath &EscObj,
+-                                                const EscReasonTy EscReason,
+-                                                const Instruction *I) {
++template <class StateT>
++void EscapeAnalysisInfo::addEscObjImpl(StateT &S, const ObjAndPath &EscObj,
++                                       const EscReasonTy EscReason,
++                                       const Instruction *I) {
+   LLVM_DEBUG(dbgs() << "\t\taddEscObj: " << dbgObjToStr(EscObj.Obj) << "\n");
+   SmallVector<ObjAndPath> WorkList;
+   SmallSet<ObjAndPath, 4> Visited;
+@@ -521,24 +607,30 @@ void EscapeAnalysisInfo::EscapeState::addEscObj(const ObjAndPath &EscObj,
+     if (!Visited.insert(Curr).second)
+       continue;
+ 
+-    addEscObjOrReason(Curr, EscReason, I);
++    S.addEscObjOrReason(Curr, EscReason, I);
+ 
+-    if (const auto Pointees = PointsTo.getPointees(Curr); Pointees.has_value())
++    if (const auto Pointees = S.getPointees(Curr); Pointees.has_value())
+       for (const auto &OAP : Pointees.value())
+         if (!Visited.contains(OAP))
+           WorkList.push_back(OAP);
+   }
+ }
+ 
++void EscapeAnalysisInfo::EscapeState::addEscObj(const ObjAndPath &EscObj,
++                                                const EscReasonTy EscReason,
++                                                const Instruction *I) {
++  addEscObjImpl(*this, EscObj, EscReason, I);
++}
++
+ void EscapeAnalysisInfo::EscapeState::mergeEscapedObjects(
+-    const EscapeState &OtherES) {
++    const EscapedObjectsTy &Other) {
+   // Here we don't need to look through aliases, because if some object
+   // has been added to EscapedObjects, then all it's aliases
+   // have been added too
+   // Both maps are ordered the same way: walk them together, inserting with
+   // a hint, so a merge is linear in the two sizes rather than n log n.
+   auto Hint = EscapedObjs.begin();
+-  for (const auto &[Obj, EscReason] : OtherES.EscapedObjs) {
++  for (const auto &[Obj, EscReason] : Other) {
+     Hint = EscapedObjs.lower_bound(Obj);
+     if (Hint != EscapedObjs.end() && !(Obj < Hint->first))
+       // Object exists, merge EscReason masks
+@@ -549,6 +641,315 @@ void EscapeAnalysisInfo::EscapeState::mergeEscapedObjects(
+   }
+ }
+ 
++void EscapeAnalysisInfo::EscapeState::applyJournal(const StateJournal &J) {
++  for (const ObjAndPath &OAP : J.Erased)
++    EscapedObjs.erase(OAP);
++  for (const auto &[OAP, Reason] : J.Set)
++    EscapedObjs.insert_or_assign(OAP, Reason);
++  PointsTo.merge(J.AddedPT);
++}
++
++void EscapeAnalysisInfo::StateJournal::fold(const EscapeState &Base,
++                                            const ObjAndPath &OAP,
++                                            EscReasonTy Reason) {
++  const auto &BaseObjs = Base.getEscObjs();
++  if (const auto It = Set.find(OAP); It != Set.end()) {
++    It->second |= Reason;
++    // Back to the base's own value: not an entry of the journal.
++    if (const auto BIt = BaseObjs.find(OAP);
++        BIt != BaseObjs.end() && BIt->second == It->second)
++      Set.erase(It);
++    return;
++  }
++  if (!Erased.empty() && Erased.erase(OAP)) {
++    // A base entry every predecessor on the base excluded: this value
++    // replaces the base's.
++    if (BaseObjs.find(OAP)->second != Reason)
++      Set.emplace(OAP, Reason);
++    return;
++  }
++  if (const auto BIt = BaseObjs.find(OAP); BIt != BaseObjs.end()) {
++    if (const auto Grown = BIt->second | Reason; Grown != BIt->second)
++      Set.emplace(OAP, Grown);
++    return;
++  }
++  Set.emplace(OAP, Reason);
++  ++NumNewKeys;
++}
++
++//===----------------------------------------------------------------------===//
++// StateJournal, BlockState, StateView
++//===----------------------------------------------------------------------===//
++
++std::optional<EscapeAnalysisInfo::EscReasonTy>
++EscapeAnalysisInfo::StateJournal::find(const EscapeState &Base,
++                                       const ObjAndPath &OAP) const {
++  if (const auto It = Set.find(OAP); It != Set.end())
++    return It->second;
++  if (!Erased.empty() && Erased.count(OAP))
++    return std::nullopt;
++  const auto &BaseObjs = Base.getEscObjs();
++  if (const auto It = BaseObjs.find(OAP); It != BaseObjs.end())
++    return It->second;
++  return std::nullopt;
++}
++
++EscapeAnalysisInfo::EscReasonTy
++EscapeAnalysisInfo::StateJournal::getEscReason(const EscapeState &Base,
++                                               const ObjAndPath &OAP) const {
++  // EscapeState::getEscReason over the materialised state: every entry of
++  // the object whose path overlaps the query, OR'd; a base entry the journal
++  // erased or replaced is left out.
++  EscReasonTy Reason;
++  const auto &BaseObjs = Base.getEscObjs();
++  for (auto It = BaseObjs.lower_bound({OAP.Obj, EmptyFieldPath});
++       It != BaseObjs.end() && It->first.Obj == OAP.Obj; ++It)
++    if (pathsOverlap(It->first.Path, OAP.Path) &&
++        (Erased.empty() || !Erased.count(It->first)) &&
++        (Set.empty() || !Set.count(It->first)))
++      Reason |= It->second;
++  for (auto It = Set.lower_bound({OAP.Obj, EmptyFieldPath});
++       It != Set.end() && It->first.Obj == OAP.Obj; ++It)
++    if (pathsOverlap(It->first.Path, OAP.Path))
++      Reason |= It->second;
++  return Reason;
++}
++
++void EscapeAnalysisInfo::StateJournal::collectPointees(
++    const EscapeState &Base, const ObjAndPath &Pointer,
++    PointsToRelTy::PointeeListTy &Out) const {
++  // Path by path in path order, the base's pointees before the journal's
++  // under each: the order the materialised state lists them in (a small
++  // SmallSet iterates in insertion order, and the transfer visits pointees
++  // in the order it is given them).
++  const auto *BM = Base.getPointsTo().pathMap(Pointer.Obj);
++  const auto *JM = AddedPT.pathMap(Pointer.Obj);
++  if (!JM) {
++    if (BM)
++      Base.getPointsTo().collectPointees(Pointer, Out);
++    return;
++  }
++  if (!BM) {
++    AddedPT.collectPointees(Pointer, Out);
++    return;
++  }
++  auto BI = BM->begin(), BE = BM->end(), JI = JM->begin(), JE = JM->end();
++  while (BI != BE || JI != JE) {
++    if (JI == JE || (BI != BE && BI->first < JI->first)) {
++      if (pathsOverlap(BI->first, Pointer.Path))
++        Out.insert(BI->second.begin(), BI->second.end());
++      ++BI;
++    } else if (BI == BE || JI->first < BI->first) {
++      if (pathsOverlap(JI->first, Pointer.Path))
++        Out.insert(JI->second.begin(), JI->second.end());
++      ++JI;
++    } else {
++      if (pathsOverlap(BI->first, Pointer.Path)) {
++        Out.insert(BI->second.begin(), BI->second.end());
++        Out.insert(JI->second.begin(), JI->second.end());
++      }
++      ++BI;
++      ++JI;
++    }
++  }
++}
++
++EscapeAnalysisInfo::StateJournal::Cursor::Cursor(const EscapeState &Base,
++                                                 const StateJournal &J)
++    : BI(Base.getEscObjs().begin()), BE(Base.getEscObjs().end()),
++      SI(J.Set.begin()), SE(J.Set.end()),
++      Erased(J.Erased.empty() ? nullptr : &J.Erased) {}
++
++const EscapeAnalysisInfo::EscapedObjectsTy::value_type *
++EscapeAnalysisInfo::StateJournal::Cursor::next() {
++  while (BI != BE || SI != SE) {
++    if (SI == SE || (BI != BE && BI->first < SI->first)) {
++      const auto *E = &*BI++;
++      if (Erased && Erased->count(E->first))
++        continue;
++      return E;
++    }
++    if (BI == BE || SI->first < BI->first)
++      return &*SI++;
++    // The same key in both: the journal's value.
++    ++BI;
++    return &*SI++;
++  }
++  return nullptr;
++}
++
++void EscapeAnalysisInfo::BlockState::forEachPointeeDo(
++    const ObjAndPath &OAP,
++    const std::function<void(const ObjAndPath &)> &Action) const {
++  LLVM_DEBUG(dbgs() << "\t\t\tforEachPointeeDo: " << *OAP.Obj
++                    << dbgPathToStr(OAP.Path) << "\n";);
++  PointsToRelTy::PointeeListTy Pointees;
++  Journal.collectPointees(*Base, OAP, Pointees);
++  for (const ObjAndPath &Pointee : Pointees)
++    Action(Pointee);
++}
++
++void EscapeAnalysisInfo::BlockState::forEachEscObj(
++    function_ref<void(const ObjAndPath &, EscReasonTy)> F) const {
++  StateJournal::Cursor C(*Base, Journal);
++  while (const auto *E = C.next())
++    F(E->first, E->second);
++}
++
++bool EscapeAnalysisInfo::BlockState::sameStateAs(const BlockState &O) const {
++  // On one base the journals are canonical: equal iff the states are.
++  if (Base == O.Base)
++    return Journal == O.Journal;
++  if (numEscObjs() != O.numEscObjs())
++    return false;
++  StateJournal::Cursor A(*Base, Journal), B(*O.Base, O.Journal);
++  for (;;) {
++    const auto *EA = A.next();
++    const auto *EB = B.next();
++    if (!EA || !EB) {
++      if (EA || EB)
++        return false;
++      break;
++    }
++    if (!(EA->first == EB->first) || EA->second != EB->second)
++      return false;
++  }
++  // Points-to: a journal's pairs are not in its base, so the sizes add, and
++  // equal sizes with one-way containment is equality.
++  const PointsToRelTy &PA = Base->getPointsTo(), &PB = O.Base->getPointsTo();
++  if (PA.size() + Journal.AddedPT.size() != PB.size() + O.Journal.AddedPT.size())
++    return false;
++  bool AllIn = true;
++  auto InO = [&](const ObjAndPath &Pointer, const ObjAndPath &Pointee) {
++    if (AllIn && !PB.containsPointsToPair(Pointer, Pointee) &&
++        !O.Journal.AddedPT.containsPointsToPair(Pointer, Pointee))
++      AllIn = false;
++  };
++  PA.forEachPair(InO);
++  if (AllIn)
++    Journal.AddedPT.forEachPair(InO);
++  return AllIn;
++}
++
++/// The state a block's transfer runs on inside the fixpoint: the block's
++/// base, shared and never written, and the journal that records this
++/// evaluation's effect on it. Reads answer what the materialised state would;
++/// writes go to the journal and keep it canonical (StateJournal).
++class EscapeAnalysisInfo::StateView {
++  const EscapeState &Base;
++  StateJournal &J;
++
++public:
++  StateView(const EscapeState &Base, StateJournal &J) : Base(Base), J(J) {}
++
++  EscReasonTy getEscReason(const ObjAndPath &OAP) const {
++    return J.getEscReason(Base, OAP);
++  }
++  std::optional<PointsToRelTy::PointeeListTy>
++  getPointees(const ObjAndPath &Pointer) const {
++    PointsToRelTy::PointeeListTy Result;
++    J.collectPointees(Base, Pointer, Result);
++    return Result.empty() ? std::nullopt : std::make_optional(Result);
++  }
++  bool containsPointsToPair(const ObjAndPath &Pointer,
++                            const ObjAndPath &Pointee) const {
++    return Base.containsPointsToPair(Pointer, Pointee) ||
++           J.AddedPT.containsPointsToPair(Pointer, Pointee);
++  }
++  void addPointsToPair(const ObjAndPath &Pointer, const ObjAndPath &Pointee) {
++    if (!Base.containsPointsToPair(Pointer, Pointee))
++      J.AddedPT.addPointsToPair(Pointer, Pointee);
++  }
++  void addEscObjOrReason(const ObjAndPath &OAP, EscReasonTy EscReason,
++                         const Instruction *I);
++
++  void addEscObj(const ObjAndPath &EscObj, EscReasonTy EscReason,
++                 const Instruction *I) {
++    addEscObjImpl(*this, EscObj, EscReason, I);
++  }
++  void addPointsTo(const UnderlObjTy &Pointer, const UnderlObjTy &Pointee,
++                   const EscapeAnalysisInfo *EAI, const Instruction *I) {
++    addPointsToImpl(*this, Pointer, Pointee, EAI, I);
++  }
++  void checkAndUpdEscStatus(const ObjAndPath &Pointer,
++                            const ObjAndPath &Pointee,
++                            const EscapeAnalysisInfo *EAI,
++                            const Instruction *I) {
++    checkAndUpdEscStatusImpl(*this, Pointer, Pointee, EAI, I);
++  }
++  void forEachPointeeDo(
++      const ObjAndPath &OAP,
++      const std::function<void(const ObjAndPath &)> &Action) const {
++    LLVM_DEBUG(dbgs() << "\t\t\tforEachPointeeDo: " << *OAP.Obj
++                      << dbgPathToStr(OAP.Path) << "\n";);
++    PointsToRelTy::PointeeListTy Pointees;
++    J.collectPointees(Base, OAP, Pointees);
++    for (const ObjAndPath &Pointee : Pointees)
++      Action(Pointee);
++  }
++};
++
++/// EscapeState::addEscObjOrReason, step for step, over the view.
++void EscapeAnalysisInfo::StateView::addEscObjOrReason(const ObjAndPath &OAP,
++                                                      EscReasonTy EscReason,
++                                                      const Instruction *I) {
++  LLVM_DEBUG(dbgs() << "\t\t\t\taddEscapeObjOrReason: " << dbgObjToStr(OAP.Obj)
++                    << dbgPathToStr(OAP.Path) << "\n\t\t\t\tNew EscReason: ";
++             printEscReason(EscReason););
++
++  const auto &BaseObjs = Base.getEscObjs();
++  if (const auto It = J.Set.find(OAP); It != J.Set.end()) {
++    // Object is already escaped - add the escape reason. A base entry a
++    // join had set below the base's value may grow back to it: then it is
++    // the base's entry again, and the journal stays canonical.
++    It->second |= EscReason;
++    if (const auto BIt = BaseObjs.find(OAP);
++        BIt != BaseObjs.end() && BIt->second == It->second)
++      J.Set.erase(It);
++    return;
++  }
++  const bool WasErased = !J.Erased.empty() && J.Erased.count(OAP);
++  if (!WasErased)
++    if (const auto BIt = BaseObjs.find(OAP); BIt != BaseObjs.end()) {
++      // Already escaped in the base: recorded only if the reason grows, so
++      // that the journal stays canonical.
++      if (const auto Grown = BIt->second | EscReason; Grown != BIt->second)
++        J.Set.emplace(OAP, Grown);
++      return;
++    }
++
++  // If object escapes by empty path, then it escapes by all paths
++  // 1. If the object has already escaped by EmptyFieldPath, do nothing
++  if (J.find(Base, {OAP.Obj, EmptyFieldPath}))
++    return;
++
++  // 2. If EmptyFieldPath is the new (current) path, then leave only it: the
++  // base's entries of the object are recorded erased, the journal's own are
++  // dropped.
++  if (OAP.Path == EmptyFieldPath) {
++    for (auto It = BaseObjs.lower_bound({OAP.Obj, EmptyFieldPath});
++         It != BaseObjs.end() && It->first.Obj == OAP.Obj; ++It)
++      J.Erased.insert(It->first);
++    for (auto It = J.Set.lower_bound({OAP.Obj, EmptyFieldPath});
++         It != J.Set.end() && It->first.Obj == OAP.Obj;) {
++      if (!BaseObjs.count(It->first))
++        --J.NumNewKeys;
++      It = J.Set.erase(It);
++    }
++  }
++  // Object has not escaped before - add it (a base entry can only be absent
++  // because it was erased: it comes back with this reason alone)
++  if (const auto BIt = BaseObjs.find(OAP); BIt != BaseObjs.end()) {
++    J.Erased.erase(OAP);
++    if (BIt->second != EscReason)
++      J.Set.emplace(OAP, EscReason);
++  } else {
++    ++J.NumNewKeys;
++    J.Set.emplace(OAP, EscReason);
++  }
++  debugPrintEscapingCallee(I, EscReason);
++}
++
+ EscapeAnalysisInfo::EscReasonTy
+ EscapeAnalysisInfo::getArgEscBottomTopIPA(const unsigned ArgNo,
+                                           const Function *Func) const {
+@@ -745,9 +1146,10 @@ EscapeAnalysisInfo::EscapeAnalysisInfo(
+   // predecessor that changed, each time re-merging all two thousand.
+   SmallPtrSet<const BasicBlock *, 32> Dirty;
+   unsigned NumBlocks = 0;
++  EmptyState = std::make_shared<const EscapeState>();
+   for (const BasicBlock *BB : RPOT) {
+     WorkList.push_back(BB);
+-    BBEscapeStates[BB] = EscapeState();
++    BBEscapeStates[BB] = BlockState{EmptyState, StateJournal(), nullptr};
+     Dirty.insert(BB);
+     ++NumBlocks;
+   }
+@@ -789,17 +1191,65 @@ EscapeAnalysisInfo::EscapeAnalysisInfo(
+       return;
+     }
+     const bool RetEscapeBefore = IsRetEscape;
+-    EscapeState NewES = mergePredEscapeStates(BB);
+-    compBBEscapeState(BB, NewES);
+-    NumEAMaxStateEntries.updateMax(NewES.getEscObjs().size());
+-    if (NewES.getEscObjs().size() > ClEAMaxStateEntries) {
++    // The in-state -- the only predecessor's out-state by pointer, or the
++    // join -- and the transfer on a view of it that records its journal.
++    // Nothing is copied for a block with one predecessor.
++    BlockState NewBS = mergePredEscapeStates(BB);
++
++    // -tsan-ea-verify-journal: the old computation alongside, compared
++    // below. The reference transfer runs first, on a copy, and the
++    // return-escape bit it computes is put back so that the real transfer
++    // starts from the same bit.
++    std::optional<EscapeState> RefES;
++    bool RefRetEscape = false;
++    if (ClEAVerifyJournal) {
++      RefES.emplace(mergePredEscapeStatesFromScratch(BB));
++      EscapeState InState(*NewBS.Base);
++      InState.applyJournal(NewBS.Journal);
++      if (*RefES != InState)
++        report_fatal_error("escape analysis: the shared-base join differs "
++                           "from the from-scratch join");
++      if (InState.getEscObjs().size() != NewBS.numEscObjs())
++        report_fatal_error("escape analysis: the in-state journal's entry "
++                           "count is off");
++      compBBEscapeState(BB, *RefES);
++      RefRetEscape = IsRetEscape;
++      IsRetEscape = RetEscapeBefore;
++    }
++    {
++      StateView View(*NewBS.Base, NewBS.Journal);
++      compBBEscapeState(BB, View);
++    }
++    const size_t NumEntries = NewBS.numEscObjs();
++    NumEAMaxStateEntries.updateMax(NumEntries);
++    NumEAMaxPointsToPairs.updateMax(NewBS.Base->getPointsTo().size() +
++                                    NewBS.Journal.AddedPT.size());
++    NumEAMaxJournalEntries.updateMax(NewBS.Journal.numEntries());
++    if (NumEntries > ClEAMaxStateEntries) {
+       abandon("state too large", NumBlocks, Evals);
+       return;
+     }
+ 
+     // If something changed, proceed with this BB
+     LLVM_DEBUG(dbgs() << "\n>> Check changes for " << BB->getName() << " -- ");
+-    const bool Changed = NewES != BBEscapeStates[BB];
++    BlockState &OldBS = BBEscapeStates.find(BB)->second;
++    const bool Changed = !NewBS.sameStateAs(OldBS);
++    if (ClEAVerifyJournal) {
++      EscapeState Replayed(*NewBS.Base);
++      Replayed.applyJournal(NewBS.Journal);
++      if (Replayed != *RefES)
++        report_fatal_error("escape analysis: the journal replayed on the "
++                           "base differs from the transfer on a copy");
++      if (IsRetEscape != RefRetEscape)
++        report_fatal_error("escape analysis: the return-escape bit differs "
++                           "between the journal and the reference transfer");
++      if (Replayed.getEscObjs().size() != NumEntries)
++        report_fatal_error("escape analysis: the journal's entry count is "
++                           "off");
++      if (Changed != (Replayed != *materialise(OldBS)))
++        report_fatal_error("escape analysis: the change test on journals "
++                           "differs from the materialised one");
++    }
+     if (CouldSkip) {
+       // Verification mode: the evaluation we would have skipped must be a
+       // no-op, and it must leave the queue as a skip would have.
+@@ -819,7 +1269,8 @@ EscapeAnalysisInfo::EscapeAnalysisInfo(
+         WorkList.push_back(SuccBB);
+         Dirty.insert(SuccBB);
+       }
+-      BBEscapeStates[BB] = std::move(NewES);
++      NewBS.Version = OldBS.Version + 1;
++      OldBS = std::move(NewBS);
+       // The per-function union is stale the moment a block state changes;
+       // the analysis itself asks isEscapedForBBIPA mid-fixpoint, and under
+       // -tsan-ea-flow-insensitive that answer comes from the union.
+@@ -829,14 +1280,18 @@ EscapeAnalysisInfo::EscapeAnalysisInfo(
+     }
+ 
+     LLVM_DEBUG(printEscapingForBB(BB, dbgs());
+-               BBEscapeStates[BB].getPointsTo().print(dbgs());
++               materialise(BBEscapeStates.find(BB)->second)
++                   ->getPointsTo()
++                   .print(dbgs());
+                dbgs() << "******** END of BB " << BB->getName()
+                       << " ******** \n\n";);
+   }
++  JoinCaches.clear();
+ }
+ 
++template <class StateT>
+ void EscapeAnalysisInfo::updRetEscStatus(
+-    const EscapeState &ES, const BasicBlock *BB,
++    const StateT &ES, const BasicBlock *BB,
+     const SmallVectorImpl<UnderlObjTy> &UnderlObjs) {
+   for (const auto &EO : UnderlObjs) {
+     LLVM_DEBUG(dbgs() << "\t\treturn: check: " << *EO.Obj << "\n";);
+@@ -865,7 +1320,8 @@ void EscapeAnalysisInfo::updRetEscStatus(
+   }
+ }
+ 
+-void EscapeAnalysisInfo::addEscapedPtrArgs(EscapeState &ES) const {
++template <class StateT>
++void EscapeAnalysisInfo::addEscapedPtrArgs(StateT &ES) const {
+   // Iterate over the arguments of the function
+   for (const Argument &Arg : AnalyzedFunc.args()) {
+     if (!Arg.getType()->isPointerTy())
+@@ -883,8 +1339,8 @@ void EscapeAnalysisInfo::addEscapedPtrArgs(EscapeState &ES) const {
+ }
+ 
+ /// Compute the resulting escape state for BB
+-void EscapeAnalysisInfo::compBBEscapeState(const BasicBlock *BB,
+-                                           EscapeState &ES) {
++template <class StateT>
++void EscapeAnalysisInfo::compBBEscapeState(const BasicBlock *BB, StateT &ES) {
+   if (BB->isEntryBlock() && IPABottomTopInfo)
+     addEscapedPtrArgs(ES);
+ 
+@@ -982,17 +1438,357 @@ void EscapeAnalysisInfo::compBBEscapeState(const BasicBlock *BB,
+   }
+ }
+ 
+-EscapeAnalysisInfo::EscapeState
++std::shared_ptr<const EscapeAnalysisInfo::EscapeState>
++EscapeAnalysisInfo::materialise(const BlockState &BS) {
++  if (BS.Journal.empty())
++    return BS.Base;
++  if (!BS.Materialised) {
++    auto M = std::make_shared<EscapeState>(*BS.Base);
++    M->applyJournal(BS.Journal);
++    BS.Materialised = std::move(M);
++    ++NumEAMaterialised;
++  }
++  return BS.Materialised;
++}
++
++EscapeAnalysisInfo::BlockState
+ EscapeAnalysisInfo::mergePredEscapeStates(const BasicBlock *BB) {
+-  EscapeState MergedES;
+-  // Merge states of predecessors
+-  for (auto *PredBB : predecessors(BB)) {
+-    // LLVM_DEBUG(dbgs() << "Merge to << " << BB->getName() << " <-- "
+-    // << PredBB->getName() << "\n");
+-    const auto &PredES = BBEscapeStates[PredBB];
++  // A predecessor the traversal never reached has no state; it used to be
++  // given the empty one on first use, and still is.
++  for (const BasicBlock *PredBB : predecessors(BB))
++    BBEscapeStates.try_emplace(PredBB,
++                               BlockState{EmptyState, StateJournal(), nullptr});
++  // Predecessor blocks, once each, in the order of their first edge: the
++  // union is idempotent, so a block reached by two edges of one switch
++  // contributes once.
++  SmallVector<const BlockState *, 8> Preds;
++  SmallPtrSet<const BasicBlock *, 8> SeenBlocks;
++  for (const BasicBlock *PredBB : predecessors(BB)) {
+     ++NumEAPredMerges;
+-    MergedES.merge(PredES, this);
++    if (SeenBlocks.insert(PredBB).second)
++      Preds.push_back(&BBEscapeStates.find(PredBB)->second);
++  }
++  if (Preds.empty())
++    return BlockState{EmptyState, StateJournal(), nullptr};
++  if (Preds.size() == 1) {
++    // The predecessor's out-state as it stands now: the version the block
++    // is evaluated against, which stays in the block's record until the
++    // block is evaluated again -- exactly what the from-scratch join read
++    // from a predecessor that had changed but not yet been re-evaluated.
++    // Its base by pointer and its journal by copy while the journal is
++    // small, so that a chain of blocks stays on the base it started from;
++    // its materialised state once the journal has grown.
++    const BlockState &P = *Preds.front();
++    if (P.Journal.numEntries() <= ClEARebaseJournalEntries) {
++      ++NumEASharedBases;
++      return BlockState{P.Base, P.Journal, nullptr};
++    }
++    return BlockState{materialise(P), StateJournal(), nullptr};
+   }
++
++  // The join, expressed over the first predecessor's base B. Every
++  // predecessor's out-state is Base_p with Journal_p replayed, and the join
++  // is a plain union -- entries added, reasons OR'd, nothing erased -- so
++  // for an entry k, over the distinct bases,
++  //   U_p Out_p[k] = OR over bases B' with a predecessor on B' that
++  //                  neither set nor erased k: B'[k]
++  //                | OR over predecessors p with k in Set_p: Set_p[k]
++  // and the points-to relation is the union of the bases' and the journals'
++  // pairs. A base entry every predecessor on that base touched (Touched_B')
++  // contributes nothing: for B itself it goes into the journal's Erased set
++  // and comes back, if some other value arrives for it, as that value
++  // alone (StateJournal::fold); for the other bases it is skipped. The
++  // other bases are folded in as the difference from B, once each, in the
++  // order of first use and every journal right after its base, so that
++  // each pointee set is filled in the order the from-scratch merge fills it
++  // (a SmallSet of at most four elements iterates in insertion order, and
++  // the transfer visits pointees in the order it is given them).
++  struct BaseGroup {
++    const EscapeState *Base;
++    std::set<ObjAndPath> Touched; // entries every predecessor on it touched
++    bool Folded;
++  };
++  SmallVector<BaseGroup, 4> Groups;
++  SmallDenseMap<const EscapeState *, unsigned, 4> GroupOf;
++  auto Touched = [](const StateJournal &J, const ObjAndPath &OAP) {
++    return J.Set.count(OAP) || J.Erased.count(OAP);
++  };
++  for (const BlockState *P : Preds) {
++    const auto [It, IsNew] = GroupOf.try_emplace(P->Base.get(), Groups.size());
++    if (IsNew) {
++      BaseGroup G{P->Base.get(), {}, false};
++      for (const auto &[OAP, Reason] : P->Journal.Set)
++        G.Touched.insert(OAP);
++      G.Touched.insert(P->Journal.Erased.begin(), P->Journal.Erased.end());
++      Groups.push_back(std::move(G));
++      continue;
++    }
++    ++NumEAJoinPredsDeduped;
++    auto &T = Groups[It->second].Touched;
++    if (T.empty())
++      continue;
++    for (auto TIt = T.begin(); TIt != T.end();)
++      TIt = Touched(P->Journal, *TIt) ? std::next(TIt) : T.erase(TIt);
++  }
++
++  // The base is the first predecessor's -- unless that is the empty state:
++  // then it is the first predecessor's that is not, provided every
++  // predecessor before it is on the empty state and brings no points-to
++  // pair, so that each pointee set is still filled in the from-scratch
++  // order. A stale landing pad from the first round, or a block before the
++  // loop, is often first among a cleanup block's hundreds of predecessors;
++  // taking the empty state as the base there would make the join's journal
++  // the whole loop-carried state, materialised anew at every evaluation.
++  unsigned BaseIdx = 0;
++  if (Preds.front()->Base == EmptyState) {
++    bool NoPairs = true;
++    unsigned K = 0;
++    for (; K < Preds.size() && Preds[K]->Base == EmptyState; ++K)
++      NoPairs &= Preds[K]->Journal.AddedPT.empty();
++    if (K < Preds.size() && NoPairs)
++      BaseIdx = K;
++  }
++  // Optionally, a join whose journal has grown large is materialised here,
++  // once, so that neither its successors nor its own next evaluation carry
++  // it around; see the flag.
++  auto Finish = [&](BlockState In) {
++    if (ClEARebaseJoinJournalEntries &&
++        In.Journal.numEntries() > ClEARebaseJoinJournalEntries) {
++      ++NumEAJoinsRebased;
++      auto M = std::make_shared<EscapeState>(*In.Base);
++      M->applyJournal(In.Journal);
++      In.Base = std::move(M);
++      In.Journal = StateJournal();
++    }
++    return In;
++  };
++  const bool Cached = Preds.size() >= ClEAJoinCacheMinPreds;
++  if (Cached) {
++    if (const auto It = JoinCaches.find(BB); It != JoinCaches.end()) {
++      if (auto J = updateJoinCache(It->second, Preds, BaseIdx)) {
++        ++NumEAJoinsIncremental;
++        return Finish(BlockState{Preds[BaseIdx]->Base, std::move(*J), nullptr});
++      }
++      ++NumEAJoinCacheMisses;
++    }
++  }
++  BlockState In{Preds[BaseIdx]->Base, StateJournal(), nullptr};
++  const EscapeState &B = *In.Base;
++  StateJournal &J = In.Journal;
++  auto AddPair = [&](const ObjAndPath &Pointer, const ObjAndPath &Pointee) {
++    J.AddedPT.addPointsToPair(Pointer, Pointee);
++  };
++  for (const BlockState *P : Preds) {
++    BaseGroup &G = Groups[GroupOf.find(P->Base.get())->second];
++    if (!G.Folded) {
++      G.Folded = true;
++      if (G.Base == &B) {
++        // Only B's own entries can be erased; the rest of Touched are
++        // entries the journals add, folded in below.
++        for (const ObjAndPath &OAP : G.Touched)
++          if (B.getEscObjs().count(OAP))
++            J.Erased.insert(OAP);
++      } else {
++        ++NumEAJoinBasesFolded;
++        foldStateInto(J, B, *G.Base, G.Touched, [](const ObjAndPath &) {});
++      }
++    }
++    if (!P->Journal.empty()) {
++      ++NumEAJournalReplays;
++      NumEAJournalEntriesFolded += P->Journal.numEntries();
++      for (const auto &[OAP, Reason] : P->Journal.Set)
++        J.fold(B, OAP, Reason);
++      P->Journal.AddedPT.forEachPairNotIn(B.getPointsTo(), AddPair);
++    }
++  }
++  if (Cached) {
++    JoinCache &C = JoinCaches[BB];
++    C.Base = In.Base;
++    C.InJournal = J;
++    C.Preds.clear();
++    for (const BlockState *P : Preds)
++      C.Preds.push_back({P->Base, P->Version, P->Journal});
++  }
++  return Finish(std::move(In));
++}
++
++void EscapeAnalysisInfo::foldStateInto(
++    StateJournal &J, const EscapeState &B, const EscapeState &X,
++    const std::set<ObjAndPath> &Skip,
++    function_ref<void(const ObjAndPath &)> OnNewPair) {
++  const auto &XO = X.getEscObjs(), &BO = B.getEscObjs();
++  auto BI = BO.begin();
++  auto SI = J.Set.begin();
++  auto EI = J.Erased.begin();
++  for (const auto &[OAP, Reason] : XO) {
++    if (!Skip.empty() && Skip.count(OAP))
++      continue;
++    while (BI != BO.end() && BI->first < OAP)
++      ++BI;
++    while (SI != J.Set.end() && SI->first < OAP)
++      ++SI;
++    while (EI != J.Erased.end() && *EI < OAP)
++      ++EI;
++    const bool InSet = SI != J.Set.end() && SI->first == OAP;
++    const bool InErased = EI != J.Erased.end() && *EI == OAP;
++    if (!InSet && !InErased && BI != BO.end() && BI->first == OAP &&
++        (Reason & ~BI->second).none())
++      continue;
++    // fold may erase the journal entry the iterators are on.
++    if (InSet)
++      ++SI;
++    if (InErased)
++      ++EI;
++    J.fold(B, OAP, Reason);
++  }
++  X.getPointsTo().forEachPairNotIn(
++      B.getPointsTo(), [&](const ObjAndPath &Pointer, const ObjAndPath &Pointee) {
++        if (J.AddedPT.addPointsToPair(Pointer, Pointee))
++          OnNewPair(Pointer);
++      });
++}
++
++bool EscapeAnalysisInfo::subsumes(const EscapeState &New,
++                                  const EscapeState &Old) {
++  const auto &NO = New.getEscObjs();
++  auto NI = NO.begin();
++  for (const auto &[OAP, Reason] : Old.getEscObjs()) {
++    while (NI != NO.end() && NI->first < OAP)
++      ++NI;
++    if (NI == NO.end() || !(NI->first == OAP) || (Reason & ~NI->second).any())
++      return false;
++  }
++  if (New.getPointsTo().size() < Old.getPointsTo().size())
++    return false;
++  bool AllIn = true;
++  Old.getPointsTo().forEachPairNotIn(
++      New.getPointsTo(),
++      [&](const ObjAndPath &, const ObjAndPath &) { AllIn = false; });
++  return AllIn;
++}
++
++std::optional<EscapeAnalysisInfo::StateJournal>
++EscapeAnalysisInfo::updateJoinCache(JoinCache &C,
++                                    ArrayRef<const BlockState *> Preds,
++                                    unsigned BaseIdx) {
++  // The union of the predecessors' out-states is the union of the last
++  // evaluation's and the out-states that changed since, provided each of
++  // those grew: everything it contributed before, it still contributes, so
++  // nothing has to be taken out. On the same base, growth is read off the
++  // two journals (fewer erasures, more entries and bits, more pairs); on a
++  // new base it is checked on the two materialised states. Anything else
++  // -- an entry or a pair gone, a bit gone, the join's own base changed --
++  // recomputes from scratch.
++  if (C.Preds.size() != Preds.size() || C.Base != Preds[BaseIdx]->Base)
++    return std::nullopt;
++  const EscapeState &B = *C.Base;
++  StateJournal J = C.InJournal;
++  SmallVector<unsigned, 8> Changed;
++  // (pointer, path) sets that received a new element: their order is
++  // rebuilt below from every predecessor's, in predecessor order, as the
++  // from-scratch fold fills them.
++  std::set<std::pair<const Value *, FieldPathTy>> Affected;
++  auto NewPair = [&](const ObjAndPath &Pointer) {
++    Affected.emplace(Pointer.Obj, Pointer.Path);
++  };
++  for (unsigned I = 0; I < Preds.size(); ++I) {
++    const BlockState &P = *Preds[I];
++    const JoinCache::PredEntry &E = C.Preds[I];
++    if (P.Version == E.Version)
++      continue;
++    Changed.push_back(I);
++    const auto &OldBase = E.Base;
++    if (P.Base != OldBase) {
++      EscapeState OldState(*OldBase);
++      OldState.applyJournal(E.Journal);
++      const auto NewState = materialise(P);
++      if (!subsumes(*NewState, OldState))
++        return std::nullopt;
++      foldStateInto(J, B, *NewState, {}, NewPair);
++      continue;
++    }
++    const StateJournal &N = P.Journal, &O = E.Journal;
++    const auto &PBase = P.Base->getEscObjs();
++    // Erasures that went away: those entries are back, with the value the
++    // journal gives them or the base's.
++    for (const ObjAndPath &OAP : O.Erased) {
++      if (N.Erased.count(OAP))
++        continue;
++      const auto NIt = N.Set.find(OAP);
++      J.fold(B, OAP, NIt != N.Set.end() ? NIt->second : PBase.find(OAP)->second);
++    }
++    if (N.Erased.size() > O.Erased.size())
++      return std::nullopt; // a new erasure
++    for (const ObjAndPath &OAP : N.Erased)
++      if (!O.Erased.count(OAP))
++        return std::nullopt;
++    unsigned NewKeys = 0;
++    for (const auto &[OAP, Reason] : N.Set) {
++      if (const auto OIt = O.Set.find(OAP); OIt != O.Set.end()) {
++        if ((OIt->second & ~Reason).any())
++          return std::nullopt; // a reason bit went away
++        if (Reason != OIt->second)
++          J.fold(B, OAP, Reason);
++        continue;
++      }
++      ++NewKeys;
++      // A base entry now in the journal must have grown, not been replaced.
++      if (const auto BIt = PBase.find(OAP);
++          BIt != PBase.end() && (BIt->second & ~Reason).any())
++        return std::nullopt;
++      J.fold(B, OAP, Reason);
++    }
++    if (N.Set.size() - NewKeys != O.Set.size())
++      return std::nullopt; // an entry went away
++    unsigned NewPairs = 0;
++    N.AddedPT.forEachPairNotIn(O.AddedPT, [&](const ObjAndPath &Pointer,
++                                              const ObjAndPath &Pointee) {
++      ++NewPairs;
++      if (!B.containsPointsToPair(Pointer, Pointee) &&
++          J.AddedPT.addPointsToPair(Pointer, Pointee))
++        NewPair(Pointer);
++    });
++    if (N.AddedPT.size() - NewPairs != O.AddedPT.size())
++      return std::nullopt; // a pair went away
++  }
++  for (const auto &[Obj, Path] : Affected) {
++    const PointsToRelTy::PointeeListTy *BSet = nullptr;
++    if (const auto *BM = B.getPointsTo().pathMap(Obj))
++      if (const auto It = BM->find(Path); It != BM->end())
++        BSet = &It->second;
++    SmallVector<ObjAndPath, 8> Ordered;
++    auto Take = [&](const PointsToRelTy &PT) {
++      const auto *PM = PT.pathMap(Obj);
++      if (!PM)
++        return;
++      const auto It = PM->find(Path);
++      if (It == PM->end())
++        return;
++      for (const ObjAndPath &Pointee : It->second)
++        if ((!BSet || !BSet->contains(Pointee)) &&
++            !llvm::is_contained(Ordered, Pointee))
++          Ordered.push_back(Pointee);
++    };
++    // A predecessor's materialised set is its base's followed by its
++    // journal's.
++    for (const BlockState *P : Preds) {
++      if (P->Base.get() != &B)
++        Take(P->Base->getPointsTo());
++      Take(P->Journal.AddedPT);
++    }
++    J.AddedPT.reorderPointees(Obj, Path, Ordered);
++  }
++  for (unsigned I : Changed)
++    C.Preds[I] = {Preds[I]->Base, Preds[I]->Version, Preds[I]->Journal};
++  C.InJournal = J;
++  return J;
++}
++
++EscapeAnalysisInfo::EscapeState
++EscapeAnalysisInfo::mergePredEscapeStatesFromScratch(const BasicBlock *BB) {
++  EscapeState MergedES;
++  for (const BasicBlock *PredBB : predecessors(BB))
++    MergedES.merge(*materialise(BBEscapeStates.find(PredBB)->second), this);
+   return MergedES;
+ }
+ 
+@@ -1007,17 +1803,19 @@ void EscapeAnalysisInfo::abandon(StringRef Reason, unsigned Blocks,
+            << " evaluations); its accesses stay instrumented\n";
+   // Everything escaped, everywhere: Top in every block's state -- the query
+   // paths test it first -- plus every pointer argument, so isEscapedForFunc
+-  // reports the arguments escaped to callers, and the return value.
+-  EscapeState Top;
+-  Top.addEscObjOrReason({UnknownObj, EmptyFieldPath},
+-                        EscReasonTy(EscReasonBits::OTHER), nullptr);
++  // reports the arguments escaped to callers, and the return value. One
++  // object, shared by every block.
++  auto Top = std::make_shared<EscapeState>();
++  Top->addEscObjOrReason({UnknownObj, EmptyFieldPath},
++                         EscReasonTy(EscReasonBits::OTHER), nullptr);
+   for (const Argument &Arg : AnalyzedFunc.args())
+     if (Arg.getType()->isPointerTy())
+-      Top.addEscObjOrReason({&Arg, EmptyFieldPath},
+-                            EscReasonTy(EscReasonBits::OTHER), nullptr);
++      Top->addEscObjOrReason({&Arg, EmptyFieldPath},
++                             EscReasonTy(EscReasonBits::OTHER), nullptr);
+   BBEscapeStates.clear();
++  JoinCaches.clear();
+   for (const BasicBlock &BB : AnalyzedFunc)
+-    BBEscapeStates[&BB] = Top;
++    BBEscapeStates[&BB] = BlockState{Top, StateJournal(), nullptr};
+   IsRetEscape = true;
+   FuncEscapeStates.clear();
+ }
+@@ -1433,8 +2231,9 @@ EscapeAnalysisInfo::findObjInFuncEscState(const Function *F,
+       const auto BIt = BBEscapeStates.find(&BB);
+       if (BIt == BBEscapeStates.end())
+         continue;
+-      for (const auto &[Obj, Reason] : BIt->second.getEscObjs())
++      BIt->second.forEachEscObj([&](const ObjAndPath &Obj, EscReasonTy Reason) {
+         Union.addEscObjOrReason(Obj, Reason, nullptr);
++      });
+     }
+     It = FuncEscapeStates.try_emplace(F, std::move(Union)).first;
+   }
+@@ -1545,22 +2344,19 @@ bool EscapeAnalysisInfo::isEscapedForFunc(const ObjAndPath &OAP,
+ void EscapeAnalysisInfo::printEscapingForBB(const BasicBlock *BB,
+                                             raw_ostream &OS) const {
+   const auto It = BBEscapeStates.find(BB);
+-  if ((It == BBEscapeStates.end()) || (It->second.getEscObjs().empty()))
++  if ((It == BBEscapeStates.end()) || (It->second.numEscObjs() == 0))
+     return;
+ 
+   bool PrintedEscapeHeader = false;
+-  for (const auto &OAP : It->second.getEscObjs()) {
++  It->second.forEachEscObj([&](const ObjAndPath &OAP, EscReasonTy) {
+     if (!PrintedEscapeHeader) {
+       OS << "Escaping objects for BB " << BB->getName() << ":\n";
+       PrintedEscapeHeader = true;
+     }
+ 
+-    if (!isa<GlobalValue>(OAP.first.Obj)) {
+-      // OS << *OAP.first.Obj << "\n";
+-      OS << *OAP.first.Obj << dbgPathToStr(OAP.first.Path) << "\n";
+-      // LLVM_DEBUG(OS << "EscReason: "; printEscReason(V.second); );
+-    }
+-  }
++    if (!isa<GlobalValue>(OAP.Obj))
++      OS << *OAP.Obj << dbgPathToStr(OAP.Path) << "\n";
++  });
+   if (PrintedEscapeHeader)
+     OS << "\n";
+ }
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/escape-join-journal.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/escape-join-journal.ll
+new file mode 100644
+index 000000000000..b41ded198f8d
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/escape-join-journal.ll
+@@ -0,0 +1,1317 @@
++; A loop around a 200-way switch whose join block has that many
++; predecessors, all evaluated on one shared base: the shape of a generated
++; parser, on which the escape analysis stores every block's out-state as a
++; base shared by pointer plus the journal of the block's own transfer, and
++; joins by merging each distinct base once and replaying the journals.
++; -tsan-ea-verify-journal recomputes every block evaluation the old way (every
++; predecessor's materialised state merged in turn, the transfer on a copy) and
++; aborts if the shared-base join, the journal replayed on the base, the
++; return-escape bit or the change verdict differ. The shapes that make the
++; join more than a union of journals are all here:
++;   - every case escapes a local of its own, so the first round's 200
++;     journals are distinct and non-empty and the second round's are empty
++;     (the join reads the switch block's out-state once, by pointer);
++;   - case 1 escapes a field of %t and of %v, the latch then escapes %t as a
++;     whole and both arms of the diamond %v: a journal that erases a base
++;     entry, on a state with one successor, and an erasure every predecessor
++;     of a join agrees on;
++;   - cases 3 and 4 store %u into %slot (points-to pairs in journals) and
++;     case 5 publishes %slot;
++;   - the chain after the loop repeats the two erasure shapes on %w and %x
++;     where no later round can bring the field entries back, so the final
++;     states show them: 'after' holds %w as a whole and not its field, e3
++;     holds %x as a whole and not its field.
++; The printed states are pinned; they are the same as before the
++; representation changed. %l is handed to a thread only after the loop, so
++; its writes in the loop stay uninstrumented and the one after the thread
++; creation does not.
++
++; RUN: opt < %s -passes='print<escape-analysis-global>' -tsan-ea-verify-journal -disable-output 2>&1 | FileCheck %s
++; RUN: opt < %s -passes='print<escape-analysis>' -tsan-ea-verify-journal -disable-output 2>&1 | FileCheck %s
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-escape-analysis-global -tsan-ea-verify-journal -tsan-ea-verify-skips -S | FileCheck %s --check-prefix=TSAN
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++%struct.S = type { i32, i32, i32 }
++
++@gp = global ptr null, align 8
++@out = global i32 0, align 4
++declare void @take(ptr)
++declare i32 @pthread_create(ptr, ptr, ptr, ptr)
++
++define internal ptr @worker(ptr %a) sanitize_thread {
++  store i32 -2, ptr %a, align 4
++  ret ptr null
++}
++
++; CHECK-LABEL: Escaping objects for BB join:
++; CHECK-DAG:     %s = alloca %struct.S, align 4{{$}}
++; CHECK-DAG:     %u = alloca %struct.S, align 4 | Path: 1
++; CHECK-DAG:     %slot = alloca ptr, align 8
++; CHECK-DAG:     %c6 = alloca i32, align 4
++; CHECK-DAG:     %c199 = alloca i32, align 4
++; CHECK-LABEL: Escaping objects for BB done:
++; CHECK-DAG:     %w = alloca %struct.S, align 4 | Path: 1
++; CHECK-DAG:     %x = alloca %struct.S, align 4 | Path: 1
++; CHECK-LABEL: Escaping objects for BB after:
++; CHECK:         %w = alloca %struct.S, align 4{{$}}
++; CHECK-NOT:     %w = alloca %struct.S, align 4 | Path
++; CHECK-LABEL: Escaping objects for BB e3:
++; CHECK:         %x = alloca %struct.S, align 4{{$}}
++; CHECK-NOT:     %x = alloca %struct.S, align 4 | Path
++
++; TSAN-LABEL: @parser
++; TSAN-NOT:     call void @__tsan_write4(ptr %l)
++; TSAN:         {{call|invoke}} i32 @pthread_create
++; TSAN:         call void @__tsan_write4(ptr %l)
++; TSAN:         ret void
++define void @parser(i32 %n) sanitize_thread {
++entry:
++  %l = alloca i32, align 4
++  %th = alloca i64, align 8
++  %s = alloca %struct.S, align 4
++  %t = alloca %struct.S, align 4
++  %u = alloca %struct.S, align 4
++  %v = alloca %struct.S, align 4
++  %w = alloca %struct.S, align 4
++  %x = alloca %struct.S, align 4
++  %slot = alloca ptr, align 8
++  %c6 = alloca i32, align 4
++  %c7 = alloca i32, align 4
++  %c8 = alloca i32, align 4
++  %c9 = alloca i32, align 4
++  %c10 = alloca i32, align 4
++  %c11 = alloca i32, align 4
++  %c12 = alloca i32, align 4
++  %c13 = alloca i32, align 4
++  %c14 = alloca i32, align 4
++  %c15 = alloca i32, align 4
++  %c16 = alloca i32, align 4
++  %c17 = alloca i32, align 4
++  %c18 = alloca i32, align 4
++  %c19 = alloca i32, align 4
++  %c20 = alloca i32, align 4
++  %c21 = alloca i32, align 4
++  %c22 = alloca i32, align 4
++  %c23 = alloca i32, align 4
++  %c24 = alloca i32, align 4
++  %c25 = alloca i32, align 4
++  %c26 = alloca i32, align 4
++  %c27 = alloca i32, align 4
++  %c28 = alloca i32, align 4
++  %c29 = alloca i32, align 4
++  %c30 = alloca i32, align 4
++  %c31 = alloca i32, align 4
++  %c32 = alloca i32, align 4
++  %c33 = alloca i32, align 4
++  %c34 = alloca i32, align 4
++  %c35 = alloca i32, align 4
++  %c36 = alloca i32, align 4
++  %c37 = alloca i32, align 4
++  %c38 = alloca i32, align 4
++  %c39 = alloca i32, align 4
++  %c40 = alloca i32, align 4
++  %c41 = alloca i32, align 4
++  %c42 = alloca i32, align 4
++  %c43 = alloca i32, align 4
++  %c44 = alloca i32, align 4
++  %c45 = alloca i32, align 4
++  %c46 = alloca i32, align 4
++  %c47 = alloca i32, align 4
++  %c48 = alloca i32, align 4
++  %c49 = alloca i32, align 4
++  %c50 = alloca i32, align 4
++  %c51 = alloca i32, align 4
++  %c52 = alloca i32, align 4
++  %c53 = alloca i32, align 4
++  %c54 = alloca i32, align 4
++  %c55 = alloca i32, align 4
++  %c56 = alloca i32, align 4
++  %c57 = alloca i32, align 4
++  %c58 = alloca i32, align 4
++  %c59 = alloca i32, align 4
++  %c60 = alloca i32, align 4
++  %c61 = alloca i32, align 4
++  %c62 = alloca i32, align 4
++  %c63 = alloca i32, align 4
++  %c64 = alloca i32, align 4
++  %c65 = alloca i32, align 4
++  %c66 = alloca i32, align 4
++  %c67 = alloca i32, align 4
++  %c68 = alloca i32, align 4
++  %c69 = alloca i32, align 4
++  %c70 = alloca i32, align 4
++  %c71 = alloca i32, align 4
++  %c72 = alloca i32, align 4
++  %c73 = alloca i32, align 4
++  %c74 = alloca i32, align 4
++  %c75 = alloca i32, align 4
++  %c76 = alloca i32, align 4
++  %c77 = alloca i32, align 4
++  %c78 = alloca i32, align 4
++  %c79 = alloca i32, align 4
++  %c80 = alloca i32, align 4
++  %c81 = alloca i32, align 4
++  %c82 = alloca i32, align 4
++  %c83 = alloca i32, align 4
++  %c84 = alloca i32, align 4
++  %c85 = alloca i32, align 4
++  %c86 = alloca i32, align 4
++  %c87 = alloca i32, align 4
++  %c88 = alloca i32, align 4
++  %c89 = alloca i32, align 4
++  %c90 = alloca i32, align 4
++  %c91 = alloca i32, align 4
++  %c92 = alloca i32, align 4
++  %c93 = alloca i32, align 4
++  %c94 = alloca i32, align 4
++  %c95 = alloca i32, align 4
++  %c96 = alloca i32, align 4
++  %c97 = alloca i32, align 4
++  %c98 = alloca i32, align 4
++  %c99 = alloca i32, align 4
++  %c100 = alloca i32, align 4
++  %c101 = alloca i32, align 4
++  %c102 = alloca i32, align 4
++  %c103 = alloca i32, align 4
++  %c104 = alloca i32, align 4
++  %c105 = alloca i32, align 4
++  %c106 = alloca i32, align 4
++  %c107 = alloca i32, align 4
++  %c108 = alloca i32, align 4
++  %c109 = alloca i32, align 4
++  %c110 = alloca i32, align 4
++  %c111 = alloca i32, align 4
++  %c112 = alloca i32, align 4
++  %c113 = alloca i32, align 4
++  %c114 = alloca i32, align 4
++  %c115 = alloca i32, align 4
++  %c116 = alloca i32, align 4
++  %c117 = alloca i32, align 4
++  %c118 = alloca i32, align 4
++  %c119 = alloca i32, align 4
++  %c120 = alloca i32, align 4
++  %c121 = alloca i32, align 4
++  %c122 = alloca i32, align 4
++  %c123 = alloca i32, align 4
++  %c124 = alloca i32, align 4
++  %c125 = alloca i32, align 4
++  %c126 = alloca i32, align 4
++  %c127 = alloca i32, align 4
++  %c128 = alloca i32, align 4
++  %c129 = alloca i32, align 4
++  %c130 = alloca i32, align 4
++  %c131 = alloca i32, align 4
++  %c132 = alloca i32, align 4
++  %c133 = alloca i32, align 4
++  %c134 = alloca i32, align 4
++  %c135 = alloca i32, align 4
++  %c136 = alloca i32, align 4
++  %c137 = alloca i32, align 4
++  %c138 = alloca i32, align 4
++  %c139 = alloca i32, align 4
++  %c140 = alloca i32, align 4
++  %c141 = alloca i32, align 4
++  %c142 = alloca i32, align 4
++  %c143 = alloca i32, align 4
++  %c144 = alloca i32, align 4
++  %c145 = alloca i32, align 4
++  %c146 = alloca i32, align 4
++  %c147 = alloca i32, align 4
++  %c148 = alloca i32, align 4
++  %c149 = alloca i32, align 4
++  %c150 = alloca i32, align 4
++  %c151 = alloca i32, align 4
++  %c152 = alloca i32, align 4
++  %c153 = alloca i32, align 4
++  %c154 = alloca i32, align 4
++  %c155 = alloca i32, align 4
++  %c156 = alloca i32, align 4
++  %c157 = alloca i32, align 4
++  %c158 = alloca i32, align 4
++  %c159 = alloca i32, align 4
++  %c160 = alloca i32, align 4
++  %c161 = alloca i32, align 4
++  %c162 = alloca i32, align 4
++  %c163 = alloca i32, align 4
++  %c164 = alloca i32, align 4
++  %c165 = alloca i32, align 4
++  %c166 = alloca i32, align 4
++  %c167 = alloca i32, align 4
++  %c168 = alloca i32, align 4
++  %c169 = alloca i32, align 4
++  %c170 = alloca i32, align 4
++  %c171 = alloca i32, align 4
++  %c172 = alloca i32, align 4
++  %c173 = alloca i32, align 4
++  %c174 = alloca i32, align 4
++  %c175 = alloca i32, align 4
++  %c176 = alloca i32, align 4
++  %c177 = alloca i32, align 4
++  %c178 = alloca i32, align 4
++  %c179 = alloca i32, align 4
++  %c180 = alloca i32, align 4
++  %c181 = alloca i32, align 4
++  %c182 = alloca i32, align 4
++  %c183 = alloca i32, align 4
++  %c184 = alloca i32, align 4
++  %c185 = alloca i32, align 4
++  %c186 = alloca i32, align 4
++  %c187 = alloca i32, align 4
++  %c188 = alloca i32, align 4
++  %c189 = alloca i32, align 4
++  %c190 = alloca i32, align 4
++  %c191 = alloca i32, align 4
++  %c192 = alloca i32, align 4
++  %c193 = alloca i32, align 4
++  %c194 = alloca i32, align 4
++  %c195 = alloca i32, align 4
++  %c196 = alloca i32, align 4
++  %c197 = alloca i32, align 4
++  %c198 = alloca i32, align 4
++  %c199 = alloca i32, align 4
++  br label %loop
++loop:
++  %i = phi i32 [ 0, %entry ], [ %next, %d3 ]
++  %cont = icmp slt i32 %i, %n
++  br i1 %cont, label %dispatch, label %done
++dispatch:
++  switch i32 %i, label %join [
++    i32 0, label %case0
++    i32 1, label %case1
++    i32 2, label %case2
++    i32 3, label %case3
++    i32 4, label %case4
++    i32 5, label %case5
++    i32 6, label %case6
++    i32 7, label %case7
++    i32 8, label %case8
++    i32 9, label %case9
++    i32 10, label %case10
++    i32 11, label %case11
++    i32 12, label %case12
++    i32 13, label %case13
++    i32 14, label %case14
++    i32 15, label %case15
++    i32 16, label %case16
++    i32 17, label %case17
++    i32 18, label %case18
++    i32 19, label %case19
++    i32 20, label %case20
++    i32 21, label %case21
++    i32 22, label %case22
++    i32 23, label %case23
++    i32 24, label %case24
++    i32 25, label %case25
++    i32 26, label %case26
++    i32 27, label %case27
++    i32 28, label %case28
++    i32 29, label %case29
++    i32 30, label %case30
++    i32 31, label %case31
++    i32 32, label %case32
++    i32 33, label %case33
++    i32 34, label %case34
++    i32 35, label %case35
++    i32 36, label %case36
++    i32 37, label %case37
++    i32 38, label %case38
++    i32 39, label %case39
++    i32 40, label %case40
++    i32 41, label %case41
++    i32 42, label %case42
++    i32 43, label %case43
++    i32 44, label %case44
++    i32 45, label %case45
++    i32 46, label %case46
++    i32 47, label %case47
++    i32 48, label %case48
++    i32 49, label %case49
++    i32 50, label %case50
++    i32 51, label %case51
++    i32 52, label %case52
++    i32 53, label %case53
++    i32 54, label %case54
++    i32 55, label %case55
++    i32 56, label %case56
++    i32 57, label %case57
++    i32 58, label %case58
++    i32 59, label %case59
++    i32 60, label %case60
++    i32 61, label %case61
++    i32 62, label %case62
++    i32 63, label %case63
++    i32 64, label %case64
++    i32 65, label %case65
++    i32 66, label %case66
++    i32 67, label %case67
++    i32 68, label %case68
++    i32 69, label %case69
++    i32 70, label %case70
++    i32 71, label %case71
++    i32 72, label %case72
++    i32 73, label %case73
++    i32 74, label %case74
++    i32 75, label %case75
++    i32 76, label %case76
++    i32 77, label %case77
++    i32 78, label %case78
++    i32 79, label %case79
++    i32 80, label %case80
++    i32 81, label %case81
++    i32 82, label %case82
++    i32 83, label %case83
++    i32 84, label %case84
++    i32 85, label %case85
++    i32 86, label %case86
++    i32 87, label %case87
++    i32 88, label %case88
++    i32 89, label %case89
++    i32 90, label %case90
++    i32 91, label %case91
++    i32 92, label %case92
++    i32 93, label %case93
++    i32 94, label %case94
++    i32 95, label %case95
++    i32 96, label %case96
++    i32 97, label %case97
++    i32 98, label %case98
++    i32 99, label %case99
++    i32 100, label %case100
++    i32 101, label %case101
++    i32 102, label %case102
++    i32 103, label %case103
++    i32 104, label %case104
++    i32 105, label %case105
++    i32 106, label %case106
++    i32 107, label %case107
++    i32 108, label %case108
++    i32 109, label %case109
++    i32 110, label %case110
++    i32 111, label %case111
++    i32 112, label %case112
++    i32 113, label %case113
++    i32 114, label %case114
++    i32 115, label %case115
++    i32 116, label %case116
++    i32 117, label %case117
++    i32 118, label %case118
++    i32 119, label %case119
++    i32 120, label %case120
++    i32 121, label %case121
++    i32 122, label %case122
++    i32 123, label %case123
++    i32 124, label %case124
++    i32 125, label %case125
++    i32 126, label %case126
++    i32 127, label %case127
++    i32 128, label %case128
++    i32 129, label %case129
++    i32 130, label %case130
++    i32 131, label %case131
++    i32 132, label %case132
++    i32 133, label %case133
++    i32 134, label %case134
++    i32 135, label %case135
++    i32 136, label %case136
++    i32 137, label %case137
++    i32 138, label %case138
++    i32 139, label %case139
++    i32 140, label %case140
++    i32 141, label %case141
++    i32 142, label %case142
++    i32 143, label %case143
++    i32 144, label %case144
++    i32 145, label %case145
++    i32 146, label %case146
++    i32 147, label %case147
++    i32 148, label %case148
++    i32 149, label %case149
++    i32 150, label %case150
++    i32 151, label %case151
++    i32 152, label %case152
++    i32 153, label %case153
++    i32 154, label %case154
++    i32 155, label %case155
++    i32 156, label %case156
++    i32 157, label %case157
++    i32 158, label %case158
++    i32 159, label %case159
++    i32 160, label %case160
++    i32 161, label %case161
++    i32 162, label %case162
++    i32 163, label %case163
++    i32 164, label %case164
++    i32 165, label %case165
++    i32 166, label %case166
++    i32 167, label %case167
++    i32 168, label %case168
++    i32 169, label %case169
++    i32 170, label %case170
++    i32 171, label %case171
++    i32 172, label %case172
++    i32 173, label %case173
++    i32 174, label %case174
++    i32 175, label %case175
++    i32 176, label %case176
++    i32 177, label %case177
++    i32 178, label %case178
++    i32 179, label %case179
++    i32 180, label %case180
++    i32 181, label %case181
++    i32 182, label %case182
++    i32 183, label %case183
++    i32 184, label %case184
++    i32 185, label %case185
++    i32 186, label %case186
++    i32 187, label %case187
++    i32 188, label %case188
++    i32 189, label %case189
++    i32 190, label %case190
++    i32 191, label %case191
++    i32 192, label %case192
++    i32 193, label %case193
++    i32 194, label %case194
++    i32 195, label %case195
++    i32 196, label %case196
++    i32 197, label %case197
++    i32 198, label %case198
++    i32 199, label %case199
++  ]
++case0:
++  call void @take(ptr %s)
++  br label %join
++case1:
++  %t1 = getelementptr inbounds %struct.S, ptr %t, i32 0, i32 1
++  store ptr %t1, ptr @gp, align 8
++  %v1 = getelementptr inbounds %struct.S, ptr %v, i32 0, i32 1
++  store ptr %v1, ptr @gp, align 8
++  br label %join
++case2:
++  %u1 = getelementptr inbounds %struct.S, ptr %u, i32 0, i32 1
++  store ptr %u1, ptr @gp, align 8
++  br label %join
++case3:
++  store ptr %u, ptr %slot, align 8
++  br label %join
++case4:
++  store ptr %u, ptr %slot, align 8
++  store i32 4, ptr %l, align 4
++  br label %join
++case5:
++  store ptr %slot, ptr @gp, align 8
++  br label %join
++case6:
++  store ptr %c6, ptr @gp, align 8
++  store i32 6, ptr %l, align 4
++  br label %join
++case7:
++  store ptr %c7, ptr @gp, align 8
++  store i32 7, ptr %l, align 4
++  br label %join
++case8:
++  store ptr %c8, ptr @gp, align 8
++  store i32 8, ptr %l, align 4
++  br label %join
++case9:
++  store ptr %c9, ptr @gp, align 8
++  store i32 9, ptr %l, align 4
++  br label %join
++case10:
++  store ptr %c10, ptr @gp, align 8
++  store i32 10, ptr %l, align 4
++  br label %join
++case11:
++  store ptr %c11, ptr @gp, align 8
++  store i32 11, ptr %l, align 4
++  br label %join
++case12:
++  store ptr %c12, ptr @gp, align 8
++  store i32 12, ptr %l, align 4
++  br label %join
++case13:
++  store ptr %c13, ptr @gp, align 8
++  store i32 13, ptr %l, align 4
++  br label %join
++case14:
++  store ptr %c14, ptr @gp, align 8
++  store i32 14, ptr %l, align 4
++  br label %join
++case15:
++  store ptr %c15, ptr @gp, align 8
++  store i32 15, ptr %l, align 4
++  br label %join
++case16:
++  store ptr %c16, ptr @gp, align 8
++  store i32 16, ptr %l, align 4
++  br label %join
++case17:
++  store ptr %c17, ptr @gp, align 8
++  store i32 17, ptr %l, align 4
++  br label %join
++case18:
++  store ptr %c18, ptr @gp, align 8
++  store i32 18, ptr %l, align 4
++  br label %join
++case19:
++  store ptr %c19, ptr @gp, align 8
++  store i32 19, ptr %l, align 4
++  br label %join
++case20:
++  store ptr %c20, ptr @gp, align 8
++  store i32 20, ptr %l, align 4
++  br label %join
++case21:
++  store ptr %c21, ptr @gp, align 8
++  store i32 21, ptr %l, align 4
++  br label %join
++case22:
++  store ptr %c22, ptr @gp, align 8
++  store i32 22, ptr %l, align 4
++  br label %join
++case23:
++  store ptr %c23, ptr @gp, align 8
++  store i32 23, ptr %l, align 4
++  br label %join
++case24:
++  store ptr %c24, ptr @gp, align 8
++  store i32 24, ptr %l, align 4
++  br label %join
++case25:
++  store ptr %c25, ptr @gp, align 8
++  store i32 25, ptr %l, align 4
++  br label %join
++case26:
++  store ptr %c26, ptr @gp, align 8
++  store i32 26, ptr %l, align 4
++  br label %join
++case27:
++  store ptr %c27, ptr @gp, align 8
++  store i32 27, ptr %l, align 4
++  br label %join
++case28:
++  store ptr %c28, ptr @gp, align 8
++  store i32 28, ptr %l, align 4
++  br label %join
++case29:
++  store ptr %c29, ptr @gp, align 8
++  store i32 29, ptr %l, align 4
++  br label %join
++case30:
++  store ptr %c30, ptr @gp, align 8
++  store i32 30, ptr %l, align 4
++  br label %join
++case31:
++  store ptr %c31, ptr @gp, align 8
++  store i32 31, ptr %l, align 4
++  br label %join
++case32:
++  store ptr %c32, ptr @gp, align 8
++  store i32 32, ptr %l, align 4
++  br label %join
++case33:
++  store ptr %c33, ptr @gp, align 8
++  store i32 33, ptr %l, align 4
++  br label %join
++case34:
++  store ptr %c34, ptr @gp, align 8
++  store i32 34, ptr %l, align 4
++  br label %join
++case35:
++  store ptr %c35, ptr @gp, align 8
++  store i32 35, ptr %l, align 4
++  br label %join
++case36:
++  store ptr %c36, ptr @gp, align 8
++  store i32 36, ptr %l, align 4
++  br label %join
++case37:
++  store ptr %c37, ptr @gp, align 8
++  store i32 37, ptr %l, align 4
++  br label %join
++case38:
++  store ptr %c38, ptr @gp, align 8
++  store i32 38, ptr %l, align 4
++  br label %join
++case39:
++  store ptr %c39, ptr @gp, align 8
++  store i32 39, ptr %l, align 4
++  br label %join
++case40:
++  store ptr %c40, ptr @gp, align 8
++  store i32 40, ptr %l, align 4
++  br label %join
++case41:
++  store ptr %c41, ptr @gp, align 8
++  store i32 41, ptr %l, align 4
++  br label %join
++case42:
++  store ptr %c42, ptr @gp, align 8
++  store i32 42, ptr %l, align 4
++  br label %join
++case43:
++  store ptr %c43, ptr @gp, align 8
++  store i32 43, ptr %l, align 4
++  br label %join
++case44:
++  store ptr %c44, ptr @gp, align 8
++  store i32 44, ptr %l, align 4
++  br label %join
++case45:
++  store ptr %c45, ptr @gp, align 8
++  store i32 45, ptr %l, align 4
++  br label %join
++case46:
++  store ptr %c46, ptr @gp, align 8
++  store i32 46, ptr %l, align 4
++  br label %join
++case47:
++  store ptr %c47, ptr @gp, align 8
++  store i32 47, ptr %l, align 4
++  br label %join
++case48:
++  store ptr %c48, ptr @gp, align 8
++  store i32 48, ptr %l, align 4
++  br label %join
++case49:
++  store ptr %c49, ptr @gp, align 8
++  store i32 49, ptr %l, align 4
++  br label %join
++case50:
++  store ptr %c50, ptr @gp, align 8
++  store i32 50, ptr %l, align 4
++  br label %join
++case51:
++  store ptr %c51, ptr @gp, align 8
++  store i32 51, ptr %l, align 4
++  br label %join
++case52:
++  store ptr %c52, ptr @gp, align 8
++  store i32 52, ptr %l, align 4
++  br label %join
++case53:
++  store ptr %c53, ptr @gp, align 8
++  store i32 53, ptr %l, align 4
++  br label %join
++case54:
++  store ptr %c54, ptr @gp, align 8
++  store i32 54, ptr %l, align 4
++  br label %join
++case55:
++  store ptr %c55, ptr @gp, align 8
++  store i32 55, ptr %l, align 4
++  br label %join
++case56:
++  store ptr %c56, ptr @gp, align 8
++  store i32 56, ptr %l, align 4
++  br label %join
++case57:
++  store ptr %c57, ptr @gp, align 8
++  store i32 57, ptr %l, align 4
++  br label %join
++case58:
++  store ptr %c58, ptr @gp, align 8
++  store i32 58, ptr %l, align 4
++  br label %join
++case59:
++  store ptr %c59, ptr @gp, align 8
++  store i32 59, ptr %l, align 4
++  br label %join
++case60:
++  store ptr %c60, ptr @gp, align 8
++  store i32 60, ptr %l, align 4
++  br label %join
++case61:
++  store ptr %c61, ptr @gp, align 8
++  store i32 61, ptr %l, align 4
++  br label %join
++case62:
++  store ptr %c62, ptr @gp, align 8
++  store i32 62, ptr %l, align 4
++  br label %join
++case63:
++  store ptr %c63, ptr @gp, align 8
++  store i32 63, ptr %l, align 4
++  br label %join
++case64:
++  store ptr %c64, ptr @gp, align 8
++  store i32 64, ptr %l, align 4
++  br label %join
++case65:
++  store ptr %c65, ptr @gp, align 8
++  store i32 65, ptr %l, align 4
++  br label %join
++case66:
++  store ptr %c66, ptr @gp, align 8
++  store i32 66, ptr %l, align 4
++  br label %join
++case67:
++  store ptr %c67, ptr @gp, align 8
++  store i32 67, ptr %l, align 4
++  br label %join
++case68:
++  store ptr %c68, ptr @gp, align 8
++  store i32 68, ptr %l, align 4
++  br label %join
++case69:
++  store ptr %c69, ptr @gp, align 8
++  store i32 69, ptr %l, align 4
++  br label %join
++case70:
++  store ptr %c70, ptr @gp, align 8
++  store i32 70, ptr %l, align 4
++  br label %join
++case71:
++  store ptr %c71, ptr @gp, align 8
++  store i32 71, ptr %l, align 4
++  br label %join
++case72:
++  store ptr %c72, ptr @gp, align 8
++  store i32 72, ptr %l, align 4
++  br label %join
++case73:
++  store ptr %c73, ptr @gp, align 8
++  store i32 73, ptr %l, align 4
++  br label %join
++case74:
++  store ptr %c74, ptr @gp, align 8
++  store i32 74, ptr %l, align 4
++  br label %join
++case75:
++  store ptr %c75, ptr @gp, align 8
++  store i32 75, ptr %l, align 4
++  br label %join
++case76:
++  store ptr %c76, ptr @gp, align 8
++  store i32 76, ptr %l, align 4
++  br label %join
++case77:
++  store ptr %c77, ptr @gp, align 8
++  store i32 77, ptr %l, align 4
++  br label %join
++case78:
++  store ptr %c78, ptr @gp, align 8
++  store i32 78, ptr %l, align 4
++  br label %join
++case79:
++  store ptr %c79, ptr @gp, align 8
++  store i32 79, ptr %l, align 4
++  br label %join
++case80:
++  store ptr %c80, ptr @gp, align 8
++  store i32 80, ptr %l, align 4
++  br label %join
++case81:
++  store ptr %c81, ptr @gp, align 8
++  store i32 81, ptr %l, align 4
++  br label %join
++case82:
++  store ptr %c82, ptr @gp, align 8
++  store i32 82, ptr %l, align 4
++  br label %join
++case83:
++  store ptr %c83, ptr @gp, align 8
++  store i32 83, ptr %l, align 4
++  br label %join
++case84:
++  store ptr %c84, ptr @gp, align 8
++  store i32 84, ptr %l, align 4
++  br label %join
++case85:
++  store ptr %c85, ptr @gp, align 8
++  store i32 85, ptr %l, align 4
++  br label %join
++case86:
++  store ptr %c86, ptr @gp, align 8
++  store i32 86, ptr %l, align 4
++  br label %join
++case87:
++  store ptr %c87, ptr @gp, align 8
++  store i32 87, ptr %l, align 4
++  br label %join
++case88:
++  store ptr %c88, ptr @gp, align 8
++  store i32 88, ptr %l, align 4
++  br label %join
++case89:
++  store ptr %c89, ptr @gp, align 8
++  store i32 89, ptr %l, align 4
++  br label %join
++case90:
++  store ptr %c90, ptr @gp, align 8
++  store i32 90, ptr %l, align 4
++  br label %join
++case91:
++  store ptr %c91, ptr @gp, align 8
++  store i32 91, ptr %l, align 4
++  br label %join
++case92:
++  store ptr %c92, ptr @gp, align 8
++  store i32 92, ptr %l, align 4
++  br label %join
++case93:
++  store ptr %c93, ptr @gp, align 8
++  store i32 93, ptr %l, align 4
++  br label %join
++case94:
++  store ptr %c94, ptr @gp, align 8
++  store i32 94, ptr %l, align 4
++  br label %join
++case95:
++  store ptr %c95, ptr @gp, align 8
++  store i32 95, ptr %l, align 4
++  br label %join
++case96:
++  store ptr %c96, ptr @gp, align 8
++  store i32 96, ptr %l, align 4
++  br label %join
++case97:
++  store ptr %c97, ptr @gp, align 8
++  store i32 97, ptr %l, align 4
++  br label %join
++case98:
++  store ptr %c98, ptr @gp, align 8
++  store i32 98, ptr %l, align 4
++  br label %join
++case99:
++  store ptr %c99, ptr @gp, align 8
++  store i32 99, ptr %l, align 4
++  br label %join
++case100:
++  store ptr %c100, ptr @gp, align 8
++  store i32 100, ptr %l, align 4
++  br label %join
++case101:
++  store ptr %c101, ptr @gp, align 8
++  store i32 101, ptr %l, align 4
++  br label %join
++case102:
++  store ptr %c102, ptr @gp, align 8
++  store i32 102, ptr %l, align 4
++  br label %join
++case103:
++  store ptr %c103, ptr @gp, align 8
++  store i32 103, ptr %l, align 4
++  br label %join
++case104:
++  store ptr %c104, ptr @gp, align 8
++  store i32 104, ptr %l, align 4
++  br label %join
++case105:
++  store ptr %c105, ptr @gp, align 8
++  store i32 105, ptr %l, align 4
++  br label %join
++case106:
++  store ptr %c106, ptr @gp, align 8
++  store i32 106, ptr %l, align 4
++  br label %join
++case107:
++  store ptr %c107, ptr @gp, align 8
++  store i32 107, ptr %l, align 4
++  br label %join
++case108:
++  store ptr %c108, ptr @gp, align 8
++  store i32 108, ptr %l, align 4
++  br label %join
++case109:
++  store ptr %c109, ptr @gp, align 8
++  store i32 109, ptr %l, align 4
++  br label %join
++case110:
++  store ptr %c110, ptr @gp, align 8
++  store i32 110, ptr %l, align 4
++  br label %join
++case111:
++  store ptr %c111, ptr @gp, align 8
++  store i32 111, ptr %l, align 4
++  br label %join
++case112:
++  store ptr %c112, ptr @gp, align 8
++  store i32 112, ptr %l, align 4
++  br label %join
++case113:
++  store ptr %c113, ptr @gp, align 8
++  store i32 113, ptr %l, align 4
++  br label %join
++case114:
++  store ptr %c114, ptr @gp, align 8
++  store i32 114, ptr %l, align 4
++  br label %join
++case115:
++  store ptr %c115, ptr @gp, align 8
++  store i32 115, ptr %l, align 4
++  br label %join
++case116:
++  store ptr %c116, ptr @gp, align 8
++  store i32 116, ptr %l, align 4
++  br label %join
++case117:
++  store ptr %c117, ptr @gp, align 8
++  store i32 117, ptr %l, align 4
++  br label %join
++case118:
++  store ptr %c118, ptr @gp, align 8
++  store i32 118, ptr %l, align 4
++  br label %join
++case119:
++  store ptr %c119, ptr @gp, align 8
++  store i32 119, ptr %l, align 4
++  br label %join
++case120:
++  store ptr %c120, ptr @gp, align 8
++  store i32 120, ptr %l, align 4
++  br label %join
++case121:
++  store ptr %c121, ptr @gp, align 8
++  store i32 121, ptr %l, align 4
++  br label %join
++case122:
++  store ptr %c122, ptr @gp, align 8
++  store i32 122, ptr %l, align 4
++  br label %join
++case123:
++  store ptr %c123, ptr @gp, align 8
++  store i32 123, ptr %l, align 4
++  br label %join
++case124:
++  store ptr %c124, ptr @gp, align 8
++  store i32 124, ptr %l, align 4
++  br label %join
++case125:
++  store ptr %c125, ptr @gp, align 8
++  store i32 125, ptr %l, align 4
++  br label %join
++case126:
++  store ptr %c126, ptr @gp, align 8
++  store i32 126, ptr %l, align 4
++  br label %join
++case127:
++  store ptr %c127, ptr @gp, align 8
++  store i32 127, ptr %l, align 4
++  br label %join
++case128:
++  store ptr %c128, ptr @gp, align 8
++  store i32 128, ptr %l, align 4
++  br label %join
++case129:
++  store ptr %c129, ptr @gp, align 8
++  store i32 129, ptr %l, align 4
++  br label %join
++case130:
++  store ptr %c130, ptr @gp, align 8
++  store i32 130, ptr %l, align 4
++  br label %join
++case131:
++  store ptr %c131, ptr @gp, align 8
++  store i32 131, ptr %l, align 4
++  br label %join
++case132:
++  store ptr %c132, ptr @gp, align 8
++  store i32 132, ptr %l, align 4
++  br label %join
++case133:
++  store ptr %c133, ptr @gp, align 8
++  store i32 133, ptr %l, align 4
++  br label %join
++case134:
++  store ptr %c134, ptr @gp, align 8
++  store i32 134, ptr %l, align 4
++  br label %join
++case135:
++  store ptr %c135, ptr @gp, align 8
++  store i32 135, ptr %l, align 4
++  br label %join
++case136:
++  store ptr %c136, ptr @gp, align 8
++  store i32 136, ptr %l, align 4
++  br label %join
++case137:
++  store ptr %c137, ptr @gp, align 8
++  store i32 137, ptr %l, align 4
++  br label %join
++case138:
++  store ptr %c138, ptr @gp, align 8
++  store i32 138, ptr %l, align 4
++  br label %join
++case139:
++  store ptr %c139, ptr @gp, align 8
++  store i32 139, ptr %l, align 4
++  br label %join
++case140:
++  store ptr %c140, ptr @gp, align 8
++  store i32 140, ptr %l, align 4
++  br label %join
++case141:
++  store ptr %c141, ptr @gp, align 8
++  store i32 141, ptr %l, align 4
++  br label %join
++case142:
++  store ptr %c142, ptr @gp, align 8
++  store i32 142, ptr %l, align 4
++  br label %join
++case143:
++  store ptr %c143, ptr @gp, align 8
++  store i32 143, ptr %l, align 4
++  br label %join
++case144:
++  store ptr %c144, ptr @gp, align 8
++  store i32 144, ptr %l, align 4
++  br label %join
++case145:
++  store ptr %c145, ptr @gp, align 8
++  store i32 145, ptr %l, align 4
++  br label %join
++case146:
++  store ptr %c146, ptr @gp, align 8
++  store i32 146, ptr %l, align 4
++  br label %join
++case147:
++  store ptr %c147, ptr @gp, align 8
++  store i32 147, ptr %l, align 4
++  br label %join
++case148:
++  store ptr %c148, ptr @gp, align 8
++  store i32 148, ptr %l, align 4
++  br label %join
++case149:
++  store ptr %c149, ptr @gp, align 8
++  store i32 149, ptr %l, align 4
++  br label %join
++case150:
++  store ptr %c150, ptr @gp, align 8
++  store i32 150, ptr %l, align 4
++  br label %join
++case151:
++  store ptr %c151, ptr @gp, align 8
++  store i32 151, ptr %l, align 4
++  br label %join
++case152:
++  store ptr %c152, ptr @gp, align 8
++  store i32 152, ptr %l, align 4
++  br label %join
++case153:
++  store ptr %c153, ptr @gp, align 8
++  store i32 153, ptr %l, align 4
++  br label %join
++case154:
++  store ptr %c154, ptr @gp, align 8
++  store i32 154, ptr %l, align 4
++  br label %join
++case155:
++  store ptr %c155, ptr @gp, align 8
++  store i32 155, ptr %l, align 4
++  br label %join
++case156:
++  store ptr %c156, ptr @gp, align 8
++  store i32 156, ptr %l, align 4
++  br label %join
++case157:
++  store ptr %c157, ptr @gp, align 8
++  store i32 157, ptr %l, align 4
++  br label %join
++case158:
++  store ptr %c158, ptr @gp, align 8
++  store i32 158, ptr %l, align 4
++  br label %join
++case159:
++  store ptr %c159, ptr @gp, align 8
++  store i32 159, ptr %l, align 4
++  br label %join
++case160:
++  store ptr %c160, ptr @gp, align 8
++  store i32 160, ptr %l, align 4
++  br label %join
++case161:
++  store ptr %c161, ptr @gp, align 8
++  store i32 161, ptr %l, align 4
++  br label %join
++case162:
++  store ptr %c162, ptr @gp, align 8
++  store i32 162, ptr %l, align 4
++  br label %join
++case163:
++  store ptr %c163, ptr @gp, align 8
++  store i32 163, ptr %l, align 4
++  br label %join
++case164:
++  store ptr %c164, ptr @gp, align 8
++  store i32 164, ptr %l, align 4
++  br label %join
++case165:
++  store ptr %c165, ptr @gp, align 8
++  store i32 165, ptr %l, align 4
++  br label %join
++case166:
++  store ptr %c166, ptr @gp, align 8
++  store i32 166, ptr %l, align 4
++  br label %join
++case167:
++  store ptr %c167, ptr @gp, align 8
++  store i32 167, ptr %l, align 4
++  br label %join
++case168:
++  store ptr %c168, ptr @gp, align 8
++  store i32 168, ptr %l, align 4
++  br label %join
++case169:
++  store ptr %c169, ptr @gp, align 8
++  store i32 169, ptr %l, align 4
++  br label %join
++case170:
++  store ptr %c170, ptr @gp, align 8
++  store i32 170, ptr %l, align 4
++  br label %join
++case171:
++  store ptr %c171, ptr @gp, align 8
++  store i32 171, ptr %l, align 4
++  br label %join
++case172:
++  store ptr %c172, ptr @gp, align 8
++  store i32 172, ptr %l, align 4
++  br label %join
++case173:
++  store ptr %c173, ptr @gp, align 8
++  store i32 173, ptr %l, align 4
++  br label %join
++case174:
++  store ptr %c174, ptr @gp, align 8
++  store i32 174, ptr %l, align 4
++  br label %join
++case175:
++  store ptr %c175, ptr @gp, align 8
++  store i32 175, ptr %l, align 4
++  br label %join
++case176:
++  store ptr %c176, ptr @gp, align 8
++  store i32 176, ptr %l, align 4
++  br label %join
++case177:
++  store ptr %c177, ptr @gp, align 8
++  store i32 177, ptr %l, align 4
++  br label %join
++case178:
++  store ptr %c178, ptr @gp, align 8
++  store i32 178, ptr %l, align 4
++  br label %join
++case179:
++  store ptr %c179, ptr @gp, align 8
++  store i32 179, ptr %l, align 4
++  br label %join
++case180:
++  store ptr %c180, ptr @gp, align 8
++  store i32 180, ptr %l, align 4
++  br label %join
++case181:
++  store ptr %c181, ptr @gp, align 8
++  store i32 181, ptr %l, align 4
++  br label %join
++case182:
++  store ptr %c182, ptr @gp, align 8
++  store i32 182, ptr %l, align 4
++  br label %join
++case183:
++  store ptr %c183, ptr @gp, align 8
++  store i32 183, ptr %l, align 4
++  br label %join
++case184:
++  store ptr %c184, ptr @gp, align 8
++  store i32 184, ptr %l, align 4
++  br label %join
++case185:
++  store ptr %c185, ptr @gp, align 8
++  store i32 185, ptr %l, align 4
++  br label %join
++case186:
++  store ptr %c186, ptr @gp, align 8
++  store i32 186, ptr %l, align 4
++  br label %join
++case187:
++  store ptr %c187, ptr @gp, align 8
++  store i32 187, ptr %l, align 4
++  br label %join
++case188:
++  store ptr %c188, ptr @gp, align 8
++  store i32 188, ptr %l, align 4
++  br label %join
++case189:
++  store ptr %c189, ptr @gp, align 8
++  store i32 189, ptr %l, align 4
++  br label %join
++case190:
++  store ptr %c190, ptr @gp, align 8
++  store i32 190, ptr %l, align 4
++  br label %join
++case191:
++  store ptr %c191, ptr @gp, align 8
++  store i32 191, ptr %l, align 4
++  br label %join
++case192:
++  store ptr %c192, ptr @gp, align 8
++  store i32 192, ptr %l, align 4
++  br label %join
++case193:
++  store ptr %c193, ptr @gp, align 8
++  store i32 193, ptr %l, align 4
++  br label %join
++case194:
++  store ptr %c194, ptr @gp, align 8
++  store i32 194, ptr %l, align 4
++  br label %join
++case195:
++  store ptr %c195, ptr @gp, align 8
++  store i32 195, ptr %l, align 4
++  br label %join
++case196:
++  store ptr %c196, ptr @gp, align 8
++  store i32 196, ptr %l, align 4
++  br label %join
++case197:
++  store ptr %c197, ptr @gp, align 8
++  store i32 197, ptr %l, align 4
++  br label %join
++case198:
++  store ptr %c198, ptr @gp, align 8
++  store i32 198, ptr %l, align 4
++  br label %join
++case199:
++  store ptr %c199, ptr @gp, align 8
++  store i32 199, ptr %l, align 4
++  br label %join
++join:
++  store i32 0, ptr %l, align 4
++  br label %latch
++latch:
++  call void @take(ptr %t)
++  %odd = and i32 %i, 1
++  %p = icmp eq i32 %odd, 0
++  br i1 %p, label %d1, label %d2
++d1:
++  call void @take(ptr %v)
++  br label %d3
++d2:
++  call void @take(ptr %v)
++  br label %d3
++d3:
++  %next = add i32 %i, 1
++  br label %loop
++done:
++  %w1 = getelementptr inbounds %struct.S, ptr %w, i32 0, i32 1
++  store ptr %w1, ptr @gp, align 8
++  %x1 = getelementptr inbounds %struct.S, ptr %x, i32 0, i32 1
++  store ptr %x1, ptr @gp, align 8
++  br label %after
++after:
++  call void @take(ptr %w)
++  %q = icmp sgt i32 %n, 3
++  br i1 %q, label %e1, label %e2
++e1:
++  call void @take(ptr %x)
++  br label %e3
++e2:
++  call void @take(ptr %x)
++  br label %e3
++e3:
++  %c = call i32 @pthread_create(ptr %th, ptr null, ptr @worker, ptr %l)
++  store i32 -1, ptr %l, align 4
++  ret void
++}

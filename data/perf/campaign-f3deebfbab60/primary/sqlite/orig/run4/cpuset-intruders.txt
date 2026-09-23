@@ -1,8 +1,0 @@
-claude samples=641 peak_pcpu=5.5
-sshd samples=49 peak_pcpu=0.8
-Rider.Backend samples=17 peak_pcpu=5.4
-kworker/u224:2-events_power_efficient samples=8 peak_pcpu=0.9
-kworker/u224:2-atlantic samples=4 peak_pcpu=0.8
-kworker/u224:2-flush-259:0 samples=2 peak_pcpu=0.9
-kworker/u224:2-writeback samples=1 peak_pcpu=0.9
-kworker/u224:2-events_unbound samples=1 peak_pcpu=0.7

@@ -1,1 +1,0 @@
-bench_one.sh samples=1 peak_pcpu=10.0

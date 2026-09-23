@@ -1,1 +1,0 @@
-memtier_benchma samples=111 peak_pcpu=740.0

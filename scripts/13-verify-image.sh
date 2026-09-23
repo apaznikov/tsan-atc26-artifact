@@ -19,7 +19,7 @@ esac; done
 IMG=${args[0]:-${ART_IMAGE:-tsan-atc26}}
 HASH=f3deebfbab602f4e05289e0acbde0efd06b8058c
 BASE=c609043dd00955bf177ff57b0bad2a87c1e61a36
-TREE=83c8a2a16db10bd5f826a76f84911ae171d05d3f
+TREE=2afe566e987cc80d0cf2d3c09ee0846a7fb0261c
 cpus=(); [ -n "${ART_CPUSET:-}" ] && cpus=(--cpuset-cpus "$ART_CPUSET")
 D=(docker run --rm --security-opt seccomp=unconfined "${cpus[@]}")
 pass=0; failed=0; skipped=0
@@ -66,9 +66,8 @@ else
   chk "the install is self-contained" no "no LLVM library resolves inside /opt/tsan-llvm either, so there is nothing to be self-contained about: the prefix is missing or the binaries are not there"
 fi
 
-# The tree the patch step measured is the image's own second stamp line since 20 Sep 2026, so the check
-# is made from the image, from any checkout. An image built before that carries the expected constant
-# there instead; for it, accept the assertion from a build log if one is here, otherwise say what the
+# The tree the patch step measured is the image's own second stamp line, so the check is made from the
+# image, from any checkout. An image built by an earlier recipe carries the expected constant there instead; for it, accept the assertion from a build log if one is here, otherwise say what the
 # image is and how to replace it, because absence of a record is not evidence of a bad tree.
 stamp2=$("${D[@]}" "$IMG" sed -n 2p /opt/tsan-llvm/TSAN_AUDIT_HASH 2>/dev/null || true)
 case "$stamp2" in
@@ -95,7 +94,7 @@ echo "=== the vendored suites, run INSIDE the image ==="
 mkdir -p "$ART_RESULTS"
 if [ "$static_only" = 1 ]; then
   # Not a skip: with --static the two suites are left to the correctness set, which runs them as its steps 11
-  # and 12 on this same image (an evaluator read the former SKIP line as a check not made, 20 Sep 2026).
+  # and 12 on this same image; a SKIP line here would read as a check not made.
   echo "  (the two suites, 11-soundness-shapes and 12-compiler-equivalence, are run by the correctness set on this image, not here)"
 fi
 for suite in $([ "$static_only" = 1 ] || echo 11-soundness-shapes 12-compiler-equivalence); do

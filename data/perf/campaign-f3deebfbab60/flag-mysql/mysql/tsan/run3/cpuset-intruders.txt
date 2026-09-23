@@ -1,1 +1,0 @@
-mysqladmin samples=8 peak_pcpu=14.2

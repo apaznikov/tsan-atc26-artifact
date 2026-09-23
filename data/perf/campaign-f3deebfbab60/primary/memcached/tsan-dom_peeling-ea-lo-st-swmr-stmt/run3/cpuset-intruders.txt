@@ -1,3 +1,0 @@
-claude samples=104 peak_pcpu=5.6
-memtier_benchma samples=83 peak_pcpu=881.0
-sshd samples=3 peak_pcpu=0.8

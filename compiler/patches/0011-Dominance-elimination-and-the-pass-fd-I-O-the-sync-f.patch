@@ -1,0 +1,883 @@
+From a139294a230cc0ecd7c238ce6fdaccc1cfe4f312 Mon Sep 17 00:00:00 2001
+From: Alexey Paznikov <apaznikov@gmail.com>
+Date: Mon, 14 Sep 2026 19:59:32 +0800
+Subject: Dominance elimination and the pass: fd I/O, the sync-free analysis,
+ termination, chain re-check, interceptor toggles (shapes 11, 12)
+
+---
+ .../Instrumentation/ThreadSanitizer.h         |  21 +-
+ llvm/lib/Analysis/TargetLibraryInfo.cpp       |  15 ++
+ llvm/lib/Passes/PassRegistry.def              |   1 +
+ .../Instrumentation/ThreadSanitizer.cpp       | 201 +++++++++++-------
+ .../elim-by-dominance-across-fd-io.ll         |  50 +++++
+ .../elim-by-dominance-chain-across-latch.ll   |  61 ++++++
+ .../elim-by-dominance-invoke-callee.ll        |  32 +++
+ .../elim-by-dominance-transitive-clean.ll     |  38 ++++
+ ...lim-by-post-dominance-libfunc-may-block.ll |  44 ++++
+ .../intercepted-call-may-unwind.ll            |  37 ++++
+ .../memintrinsic-later-escape.ll              |  70 ++++++
+ 11 files changed, 487 insertions(+), 83 deletions(-)
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-across-fd-io.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-chain-across-latch.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-invoke-callee.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-transitive-clean.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-post-dominance-libfunc-may-block.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/intercepted-call-may-unwind.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/memintrinsic-later-escape.ll
+
+diff --git a/llvm/include/llvm/Transforms/Instrumentation/ThreadSanitizer.h b/llvm/include/llvm/Transforms/Instrumentation/ThreadSanitizer.h
+index 1c2f75068efc..c72783241ed3 100644
+--- a/llvm/include/llvm/Transforms/Instrumentation/ThreadSanitizer.h
++++ b/llvm/include/llvm/Transforms/Instrumentation/ThreadSanitizer.h
+@@ -41,13 +41,6 @@ struct ModuleThreadSanitizerPass
+   : public PassInfoMixin<ModuleThreadSanitizerPass> {
+   PreservedAnalyses run(Module &M, ModuleAnalysisManager &AM);
+   static bool isRequired() { return true; }
+-  /// Built by the module pass for the module it most recently ran on, and
+-  /// read by the function pass for that module's functions, keyed by
+-  /// Function*. That pairing holds in the ordinary pipeline, where the
+-  /// module pass and the function passes for one module run together. A
+-  /// driver that interleaves modules would read one module's answers while
+-  /// instrumenting another; nothing here guards against that.
+-  static std::unique_ptr<SyncFreeInfo> SFI;
+ };
+ 
+ //===----------------------------------------------------------------------===//
+@@ -93,5 +86,19 @@ private:
+   AnalysisManager<Function> &AM;
+ };
+ 
++/// Module analysis wrapping SyncFreeInfo. The module pass computes it and
++/// the function pass reads the cached result for its own module, so two
++/// modules in one process can never see each other's answers; a function
++/// pass run without the module pass finds no result and treats every call
++/// into the program as synchronizing.
++class SyncFreeAnalysis : public AnalysisInfoMixin<SyncFreeAnalysis> {
++  friend AnalysisInfoMixin<SyncFreeAnalysis>;
++  static AnalysisKey Key;
++
++public:
++  using Result = SyncFreeInfo;
++  Result run(Module &M, ModuleAnalysisManager &AM);
++};
++
+ } // namespace llvm
+ #endif /* LLVM_TRANSFORMS_INSTRUMENTATION_THREADSANITIZER_H */
+diff --git a/llvm/lib/Analysis/TargetLibraryInfo.cpp b/llvm/lib/Analysis/TargetLibraryInfo.cpp
+index 38cc4b9eb148..a9b5a37de736 100644
+--- a/llvm/lib/Analysis/TargetLibraryInfo.cpp
++++ b/llvm/lib/Analysis/TargetLibraryInfo.cpp
+@@ -2027,6 +2027,21 @@ bool TargetLibraryInfo::isSyncFree(LibFunc F) const {
+   case LibFunc_getlogin_r: // System call to get information
+   case LibFunc_getpwnam:   // Access to system database (e.g., /etc/passwd)
+ 
++  // File-descriptor I/O. ThreadSanitizer models these as synchronization --
++  // write/send release the descriptor, read/recv acquire it -- so a race with
++  // the other end of a pipe or socket is ordered through them. Dominance
++  // elimination must not treat an access on one side as covering an access on
++  // the far side. They were missing from this list and fell to the sync-free
++  // default, which let dominance cross write(2) and post-dominance cross
++  // read(2) (elim-by-dominance-across-fd-io.ll).
++  case LibFunc_read:
++  case LibFunc_pread:
++  case LibFunc_write:
++  case LibFunc_pwrite:
++  case LibFunc_open:
++  case LibFunc_open64:
++  // (close is not in the LibFunc table.)
++
+     return false; // These functions are NOT sync-free.
+ 
+   default:
+diff --git a/llvm/lib/Passes/PassRegistry.def b/llvm/lib/Passes/PassRegistry.def
+index 4005aa461988..412531fbfbe7 100644
+--- a/llvm/lib/Passes/PassRegistry.def
++++ b/llvm/lib/Passes/PassRegistry.def
+@@ -32,6 +32,7 @@ MODULE_ANALYSIS("verify", VerifierAnalysis())
+ MODULE_ANALYSIS("escape-analysis-global", EscapeAnalysisGlobal())
+ MODULE_ANALYSIS("lock-ownership", LockOwnership())
+ MODULE_ANALYSIS("single-threaded", SingleThreaded())
++MODULE_ANALYSIS("sync-free", SyncFreeAnalysis())
+ 
+ #ifndef MODULE_ALIAS_ANALYSIS
+ #define MODULE_ALIAS_ANALYSIS(NAME, CREATE_PASS)                               \
+diff --git a/llvm/lib/Transforms/Instrumentation/ThreadSanitizer.cpp b/llvm/lib/Transforms/Instrumentation/ThreadSanitizer.cpp
+index 493fede56394..357c987e6e46 100644
+--- a/llvm/lib/Transforms/Instrumentation/ThreadSanitizer.cpp
++++ b/llvm/lib/Transforms/Instrumentation/ThreadSanitizer.cpp
+@@ -481,7 +481,16 @@ public:
+       SingleThreadedInfo *STI = nullptr,
+       DominatorTree *DT = nullptr, PostDominatorTree *PDT = nullptr,
+       AAResults *AA = nullptr, LoopInfo *LI = nullptr,
+-      AssumptionCache *AC = nullptr, ScalarEvolution *SE = nullptr);
++      AssumptionCache *AC = nullptr, ScalarEvolution *SE = nullptr,
++      const SyncFreeInfo *SyncFree = nullptr);
++
++  /// Interprocedural sync-freedom for the module being instrumented, or
++  /// null when the module pass did not run: then every call into the
++  /// program is treated as synchronizing.
++  const SyncFreeInfo *SFI = nullptr;
++  /// Lock ownership for the function being instrumented (may be null); the
++  /// interceptor toggles need it for the release-like escape test.
++  LockOwnershipInfo *CurLOI = nullptr;
+ 
+   /// Checks if an instruction could potentially change ThreadSanitizer's
+   /// synchronization state. This includes atomic operations, memory barriers,
+@@ -518,12 +527,14 @@ public:
+ 
+   /// Classify what \p Inst may do to ThreadSanitizer's happens-before state.
+   static unsigned classifySyncEffect(const Instruction *Inst,
+-                                     const TargetLibraryInfo &TLI);
++                                     const TargetLibraryInfo &TLI,
++                                     const SyncFreeInfo *SFI);
+ 
+   /// True if \p Inst may affect synchronization state at all. Used by the
+   /// interprocedural sync-free analysis, which has no notion of direction.
+   static bool isInstrDangerous(const Instruction *Inst,
+-                               const TargetLibraryInfo &TLI);
++                               const TargetLibraryInfo &TLI,
++                               const SyncFreeInfo *SFI);
+ 
+ private:
+   // Internal Instruction wrapper that contains more information about the
+@@ -743,6 +754,10 @@ PreservedAnalyses ThreadSanitizerPass::run(Function &F,
+     STI = MAMProxy.getCachedResult<SingleThreaded>(*F.getParent());
+   if (ClUseLockOwnershipAnalysis || ClUseLockOwnershipAnalysisUpperbound)
+     LOI = MAMProxy.getCachedResult<LockOwnership>(*F.getParent());
++  const SyncFreeInfo *SFI = nullptr;
++  if (ClUseDominanceAnalysis || ClUseDominanceAnalysisDom ||
++      ClUseDominanceAnalysisPostDom)
++    SFI = MAMProxy.getCachedResult<SyncFreeAnalysis>(*F.getParent());
+ 
+   DominatorTree *DT = nullptr;
+   PostDominatorTree *PDT = nullptr;
+@@ -765,14 +780,20 @@ PreservedAnalyses ThreadSanitizerPass::run(Function &F,
+   const bool Instrumented =
+       TSan.sanitizeFunction(F, FAM.getResult<TargetLibraryAnalysis>(F),
+                             std::nullopt, EAGI, LOI, STI, DT, PDT, AA, LI, AC,
+-                            SE);
++                            SE, SFI);
+   if (Instrumented)
+     return PreservedAnalyses::none();
+ 
+   return PreservedAnalyses::all();
+ }
+ 
+-std::unique_ptr<SyncFreeInfo> ModuleThreadSanitizerPass::SFI;
++AnalysisKey SyncFreeAnalysis::Key;
++
++SyncFreeInfo SyncFreeAnalysis::run(Module &M, ModuleAnalysisManager &MAM) {
++  return SyncFreeInfo(
++      M, MAM.getResult<CallGraphAnalysis>(M),
++      MAM.getResult<FunctionAnalysisManagerModuleProxy>(M).getManager());
++}
+ 
+ PreservedAnalyses ModuleThreadSanitizerPass::run(Module &M,
+                                                  ModuleAnalysisManager &MAM) {
+@@ -829,9 +850,7 @@ PreservedAnalyses ModuleThreadSanitizerPass::run(Module &M,
+ 
+   if (ClUseDominanceAnalysis || ClUseDominanceAnalysisDom ||
+       ClUseDominanceAnalysisPostDom) {
+-    SFI = std::make_unique<SyncFreeInfo>(
+-        M, MAM.getResult<CallGraphAnalysis>(M),
+-        MAM.getResult<FunctionAnalysisManagerModuleProxy>(M).getManager());
++    MAM.getResult<SyncFreeAnalysis>(M);
+   }
+ 
+   if (ClUseLockOwnershipAnalysis && ClUseLockOwnershipAnalysisUpperbound)
+@@ -1590,7 +1609,8 @@ static bool isTsanAtomic(const Instruction *I) {
+ }
+ 
+ unsigned ThreadSanitizer::classifySyncEffect(const Instruction *Inst,
+-                                             const TargetLibraryInfo &TLI) {
++                                             const TargetLibraryInfo &TLI,
++                                             const SyncFreeInfo *SFI) {
+   if (!Inst)
+     return SYNC_NONE;
+ 
+@@ -1619,27 +1639,32 @@ unsigned ThreadSanitizer::classifySyncEffect(const Instruction *Inst,
+   if (TargetLibraryInfo::isLockReleaseFunction(*Callee))
+     return SYNC_RELEASE;
+ 
++  // Whether a call synchronizes and whether it returns are separate
++  // questions. Post-dominance relies on the covering access actually being
++  // reached, so a call that may block or spin forever blocks it: a call is
++  // known to return if it or its callee is willreturn, or the callee is
++  // defined here and free of loops. Library functions and intrinsics get no
++  // exemption -- read(2) blocks, and so can any function we have no body
++  // for; the attribute inference passes mark the ones that provably return.
++  const bool MayNotReturn =
++      !CB->hasFnAttr(Attribute::WillReturn) &&
++      !Callee->hasFnAttribute(Attribute::WillReturn) &&
++      !(SFI && SFI->isLoopFree(Callee));
++  const unsigned Termination = MayNotReturn ? SYNC_MAY_NOT_RETURN : SYNC_NONE;
++
+   // Library and intrinsic calls we recognise: their synchronization behaviour
+-  // is tabulated and they return.
++  // is tabulated.
+   LibFunc Func;
+   if (TLI.getLibFunc(*Callee, Func))
+-    return TLI.isSyncFree(Func) ? SYNC_NONE : SYNC_UNKNOWN;
++    return Termination | (TLI.isSyncFree(Func) ? SYNC_NONE : SYNC_UNKNOWN);
+ 
+   if (Callee->isIntrinsic())
+-    return Intrinsic::isIntrinsicSyncFree(*Callee)
+-               ? SYNC_NONE
+-               : SYNC_UNKNOWN;
+-
+-  // What is left is a call into code of this program. Whether it synchronizes
+-  // and whether it terminates are separate questions, and only the second one
+-  // needs the termination bit -- a callee that may synchronize is already
+-  // blocking both directions.
+-  const bool MayNotReturn =
+-      !CB->hasFnAttr(Attribute::WillReturn) &&
+-      !Callee->hasFnAttribute(Attribute::WillReturn) &&
+-      !(ModuleThreadSanitizerPass::SFI &&
+-        ModuleThreadSanitizerPass::SFI->isLoopFree(Callee));
+-  const unsigned Termination = MayNotReturn ? SYNC_MAY_NOT_RETURN : SYNC_NONE;
++    return Termination | (Intrinsic::isIntrinsicSyncFree(*Callee)
++                              ? SYNC_NONE
++                              : SYNC_UNKNOWN);
++
++  // What is left is a call into code of this program; a callee that may
++  // synchronize is already blocking both directions.
+ 
+   if (Callee->hasFnAttribute(Attribute::NoSync) ||
+       Callee->hasFnAttribute(Attribute::ReadNone))
+@@ -1649,16 +1674,16 @@ unsigned ThreadSanitizer::classifySyncEffect(const Instruction *Inst,
+   // attribute alone can prove, and it accounts for a large share of the
+   // elimination on real code. SFI answers false for anything it has no body
+   // for, so an opaque external call still lands on SYNC_UNKNOWN below.
+-  if (ModuleThreadSanitizerPass::SFI &&
+-      ModuleThreadSanitizerPass::SFI->isSyncFree(Callee))
++  if (SFI && SFI->isSyncFree(Callee))
+     return Termination;
+ 
+   return Termination | SYNC_UNKNOWN;
+ }
+ 
+ bool ThreadSanitizer::isInstrDangerous(const Instruction *Inst,
+-                                       const TargetLibraryInfo &TLI) {
+-  return (classifySyncEffect(Inst, TLI) &
++                                       const TargetLibraryInfo &TLI,
++                                       const SyncFreeInfo *SFI) {
++  return (classifySyncEffect(Inst, TLI, SFI) &
+           (SYNC_ACQUIRE | SYNC_RELEASE | SYNC_UNKNOWN)) != SYNC_NONE;
+ }
+ 
+@@ -1700,13 +1725,13 @@ unsigned ThreadSanitizer::scanPaths(Instruction *FirstInst,
+ 
+   auto scanRange = [&](BasicBlock::iterator B, BasicBlock::iterator E) {
+     for (auto It = B; It != E; ++It)
+-      Effect |= classifySyncEffect(&*It, TLI);
++      Effect |= classifySyncEffect(&*It, TLI, SFI);
+   };
+ 
+   auto scanWholeBlock = [&](const BasicBlock *BB) {
+     noteTermination(BB);
+     for (const Instruction &I : *BB)
+-      Effect |= classifySyncEffect(&I, TLI);
++      Effect |= classifySyncEffect(&I, TLI, SFI);
+   };
+ 
+   // Walk forward from Seeds, staying inside Bound and never re-entering Stop,
+@@ -1765,7 +1790,7 @@ unsigned ThreadSanitizer::scanPaths(Instruction *FirstInst,
+     noteTermination(RemovedBB);
+     for (const Instruction &I : *RemovedBB)
+       if (&I != RemovedInst)
+-        Effect |= classifySyncEffect(&I, TLI);
++        Effect |= classifySyncEffect(&I, TLI, SFI);
+     scanCone(RemovedBB, RemovedBB, ReachesRemoved);
+   }
+ 
+@@ -1877,6 +1902,19 @@ void ThreadSanitizer::eliminateInstrByPrePostDominance(
+                       /*NeedTermination=*/IsPostDom);
+         if (Effect & (IsPostDom ? SYNC_BLOCKS_POSTDOM : SYNC_BLOCKS_DOM))
+           continue;
++        // If the cover was itself removed, the access that will actually
++        // stay is the root of its chain. Location, width, kind and the
++        // (post-)dominance relation compose transitively; the path
++        // condition is re-checked against the root so that nothing rests
++        // on the composition of two clean segments alone.
++        if (const size_t Root = findRoot(DomIndex); Root != DomIndex) {
++          Instruction *RootInst = AllInstr[Root].Inst;
++          const unsigned RootEffect = scanPaths(
++              IsPostDom ? CurrInst : RootInst, IsPostDom ? RootInst : CurrInst,
++              CurrInst, TLI, LI, SE, /*NeedTermination=*/IsPostDom);
++          if (RootEffect & (IsPostDom ? SYNC_BLOCKS_POSTDOM : SYNC_BLOCKS_DOM))
++            continue;
++        }
+ 
+         LLVM_DEBUG(dbgs() << "TSAN: Omitting instrumentation for " << *CurrInst
+                           << " (covered by " << *DomInst << ")\n");
+@@ -1933,12 +1971,14 @@ bool ThreadSanitizer::sanitizeFunction(
+     LockOwnershipInfo *LOI,
+     SingleThreadedInfo *STI, DominatorTree *DT,
+     PostDominatorTree *PDT, AAResults *AA, LoopInfo *LI, AssumptionCache *AC,
+-    ScalarEvolution *SE) {
++    ScalarEvolution *SE, const SyncFreeInfo *SyncFree) {
+   LLVM_DEBUG(dbgs() << "\n%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+                        "%%%%%%%%%%%%%%%%%\n"
+     "%%%%%%%%%%%%%%%%%%%% Func " << F.getName() << "\t%%%%%%%%%%%%%%%%%%%%%%\n"
+     "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n");
+   M = F.getParent();
++  SFI = SyncFree;
++  CurLOI = LOI;
+   Func = &F;
+   RevReachCache.clear();
+   MTCondLeader.clear();
+@@ -2324,15 +2364,30 @@ void ThreadSanitizer::disableInterceptorForInstr(
+   IRB.CreateStore(Saved, InterceptorEnabled);
+ }
+ 
++/// Whether the interceptor for a memory or string call on \p Ptr must stay
++/// on. The same rule as for an ordinary access under the sound
++/// flow-sensitive escape analysis: the object may not have escaped on any
++/// path to here, and every escape reachable afterwards must be release-like
++/// (thread creation, a store to a lock-protected global, an acquire-only
++/// atomic publication) -- a memcpy into a local that is later handed to an
++/// opaque call is exactly the case the runtime must see.
+ static bool
+ isPointerEscaped(Value *Ptr, Instruction *I, const TargetLibraryInfo &TLI,
+-                 EscapeAnalysisGlobalInfo *EAIGlobal) {
+-  if ((EAIGlobal != nullptr)) {
+-    EscReasonTy EscReason;
+-    return EAIGlobal->isEscapedUndrlObjOrPointee(
+-        Ptr, TLI, I->getParent(), EscReason);
+-  }
+-  return true;
++                 EscapeAnalysisGlobalInfo *EAIGlobal, LockOwnershipInfo *LOI) {
++  if (!EAIGlobal)
++    return true;
++  EscReasonTy EscReason;
++  if (EAIGlobal->isEscapedUndrlObjOrPointee(Ptr, TLI, I->getParent(),
++                                            EscReason))
++    return true;
++  EscReasonTy AnywhereReason;
++  if (!EAIGlobal->isEscapedUndrlObjOrPointeeAnywhere(Ptr, TLI, I->getFunction(),
++                                                     AnywhereReason))
++    return false;
++  const LaterEscapes LE = collectLaterEscapes(I, Ptr, TLI, LOI);
++  const bool Volatile =
++      (AnywhereReason & EscReasonTy(EscapeAnalysisInfo::VOLATILE)).any();
++  return LE.ArgObject || Volatile || !LE.allReleaseLike();
+ }
+ 
+ bool ThreadSanitizer::instrumentInterceptedCalls(
+@@ -2342,16 +2397,23 @@ bool ThreadSanitizer::instrumentInterceptedCalls(
+   // LLVM_DEBUG(dbgs() << "Check " << *CI << "\n");
+ 
+   Function *Callee = CI->getCalledFunction();
++  // The toggle clears InterceptorEnabled before the call and restores it in
++  // the instruction after. A call that unwinds never reaches that
++  // instruction and leaves the thread's interceptors off for good, losing
++  // every later intercepted access; only a call that cannot unwind may be
++  // guarded.
++  if (!CI->doesNotThrow())
++    return true;
+   bool ArePointersEscaped = true;
+ 
+   // Check if pointers passed to the function escape
+   if (Callee->getName() == "strcmp" || Callee->getName() == "memchr") {
+-    if (!isPointerEscaped(CI->getArgOperand(0), CI, TLI, EAIGlobal) &&
+-        !isPointerEscaped(CI->getArgOperand(1), CI, TLI, EAIGlobal)) {
++    if (!isPointerEscaped(CI->getArgOperand(0), CI, TLI, EAIGlobal, CurLOI) &&
++        !isPointerEscaped(CI->getArgOperand(1), CI, TLI, EAIGlobal, CurLOI)) {
+       ArePointersEscaped = false;
+     }
+   } else if (Callee->getName() == "strlen") {
+-    if (!isPointerEscaped(CI->getArgOperand(0), CI, TLI, EAIGlobal))
++    if (!isPointerEscaped(CI->getArgOperand(0), CI, TLI, EAIGlobal, CurLOI))
+       ArePointersEscaped = false;
+   }
+ 
+@@ -2361,7 +2423,7 @@ bool ThreadSanitizer::instrumentInterceptedCalls(
+     InstrumentationIRBuilder IRB(CI);
+     disableInterceptorForInstr(CI, IRB);
+     NumMemIntrinsicsInterceptorSkipped++;
+-    return false;
++    return true;
+   }
+   return true;
+ }
+@@ -2385,11 +2447,12 @@ bool ThreadSanitizer::instrumentMemIntrinsic(
+     Value *Cast2 = IRB.CreateIntCast(M->getArgOperand(2), IntptrTy, false);
+ 
+     // Check if pointer is not escape
+-    if (!isPointerEscaped(M->getArgOperand(0), I, TLI, EAIGlobal)) {
++    if (!isPointerEscaped(M->getArgOperand(0), I, TLI, EAIGlobal, CurLOI)) {
+       LLVM_DEBUG(dbgs() << "MemIntrinsic does not escape any pointers\n");
+       disableInterceptorForInstr(I, IRB);
+       NumMemIntrinsicsInterceptorSkipped++;
+-      return false;
++      // The toggle is IR the pass added; report it as such.
++      return true;
+     }
+     LLVM_DEBUG(dbgs() << "MemIntrinsic escapes pointers\n");
+ 
+@@ -2406,32 +2469,14 @@ bool ThreadSanitizer::instrumentMemIntrinsic(
+     // report raised inside the interceptor.
+     return true;
+   } else if (MemTransferInst *M = dyn_cast<MemTransferInst>(I)) {
+-    // Workaround, not a soundness measure, and its root cause is not
+-    // understood. When the destination of a memory-transfer intrinsic does not
+-    // escape, the branch below leaves the llvm.memcpy/memmove intrinsic in
+-    // place with the interceptor disabled instead of lowering it to a
+-    // __tsan_memcpy call. For a stack timeval later handed to select() that
+-    // breaks signal delivery in signal_thread_sigctx_race.cpp -- the program
+-    // functionally misbehaves ("Failed to receive signal"), which is why this
+-    // is keyed on struct.timeval by name. Removing it regresses that test; the
+-    // mechanism (why leaving the intrinsic vs. replacing it changes select's
+-    // behaviour) still needs investigation. It is narrow: any other
+-    // non-escaping struct copied into a syscall with a timeout could hit the
+-    // same wall and would not be caught here.
+-    bool TimevalCaseFlag = false;
+-    if (const auto *Alloca = dyn_cast<AllocaInst>(M->getArgOperand(0)))
+-      if (Alloca->getAllocatedType()->isStructTy())
+-        if (const auto *Struct = cast<StructType>(Alloca->getAllocatedType());
+-            Struct->hasName() && Struct->getName() == "struct.timeval")
+-          TimevalCaseFlag = true;
+-
++ 
+     // Check if pointers are not escape
+-    if (!TimevalCaseFlag &&
+-        !isPointerEscaped(M->getArgOperand(0), I, TLI, EAIGlobal) &&
+-        !isPointerEscaped(M->getArgOperand(1), I, TLI, EAIGlobal)) {
++    if (!isPointerEscaped(M->getArgOperand(0), I, TLI, EAIGlobal, CurLOI) &&
++        !isPointerEscaped(M->getArgOperand(1), I, TLI, EAIGlobal, CurLOI)) {
+       disableInterceptorForInstr(I, IRB);
+       NumMemIntrinsicsInterceptorSkipped++;
+-      return false;
++      // The toggle is IR the pass added; report it as such.
++      return true;
+     }
+ 
+     IRB.CreateCall(
+@@ -2590,8 +2635,12 @@ SyncFreeInfo::SyncFreeInfo(Module &M_, CallGraph &CG_,
+   // so it stays dangerous. Initializing declarations to false made every call
+   // to an invisible external function look synchronization-free, which let
+   // dominance elimination remove instrumentation across it.
++  // Pessimistic until an SCC is proven: a lookup of a function whose SCC has
++  // not been processed reads as "synchronizes". Bottom-up SCC order means
++  // callees are settled before callers, so only a cycle sees the optimistic
++  // per-SCC reset below, which is the standard SCC fixpoint.
+   for (const Function &F : M)
+-    IsFuncDangerousGlobal[&F] = F.isDeclaration();
++    IsFuncDangerousGlobal[&F] = true;
+ 
+   // Analyze strongly connected components (SCCs) of the call graph in reverse
+   // topological order. This ensures we process callees before their callers:
+@@ -2629,8 +2678,8 @@ SyncFreeInfo::SyncFreeInfo(Module &M_, CallGraph &CG_,
+       for (const Instruction &I : instructions(F)) {
+         LLVM_DEBUG(dbgs() << "Checking instruction: " << I << "\n");
+         // Check if it's a call, and we already know the status of the callee
+-        if (const CallInst *CI = dyn_cast<CallInst>(&I)) {
+-          if (const Function *Callee = CI->getCalledFunction()) {
++        if (const auto *CB = dyn_cast<CallBase>(&I)) {
++          if (const Function *Callee = CB->getCalledFunction()) {
+             // First check in FuncsInSSCMap (current SCC)
+             if (std::any_of(CurrentSCC.begin(), CurrentSCC.end(),
+                             [&Callee](const CallGraphNode *CGN) {
+@@ -2648,7 +2697,7 @@ SyncFreeInfo::SyncFreeInfo(Module &M_, CallGraph &CG_,
+         }
+ 
+         if (ThreadSanitizer::isInstrDangerous(
+-                &I, AM.getResult<TargetLibraryAnalysis>(*F))) {
++                &I, AM.getResult<TargetLibraryAnalysis>(*F), this)) {
+           AnySCCFuncDangerous = true;
+           break;
+         }
+@@ -2683,7 +2732,7 @@ void SyncFreeInfo::findFunsContainsLoops() {
+   // As above: without a body we cannot claim the function terminates, so treat
+   // a declaration as if it looped.
+   for (const Function &F : M)
+-    IsFuncContainsLoops[&F] = F.isDeclaration();
++    IsFuncContainsLoops[&F] = true;
+ 
+   // Analyze strongly connected components (SCCs) of the call graph in reverse
+   // topological order. This ensures we process callees before their callers:
+@@ -2722,8 +2771,8 @@ void SyncFreeInfo::findFunsContainsLoops() {
+       for (const Instruction &I : instructions(F)) {
+         LLVM_DEBUG(dbgs() << "Checking instruction: " << I << "\n");
+         // Check if it's a call, and we already know the status of the callee
+-        if (const CallInst *CI = dyn_cast<CallInst>(&I)) {
+-          if (const Function *Callee = CI->getCalledFunction()) {
++        if (const auto *CB = dyn_cast<CallBase>(&I)) {
++          if (const Function *Callee = CB->getCalledFunction()) {
+             // First check in FuncsInSSCMap (current SCC)
+             if (std::any_of(CurrentSCC.begin(), CurrentSCC.end(),
+                             [&Callee](const CallGraphNode *CGN) {
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-across-fd-io.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-across-fd-io.ll
+new file mode 100644
+index 000000000000..13ff25b731c3
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-across-fd-io.ll
+@@ -0,0 +1,50 @@
++; TSan's file-descriptor interceptors are synchronisation: write(2) releases
++; and read(2) acquires on the descriptor, so a race with the other end of a
++; pipe is ordered through them. A dominating access must not be treated as
++; covering one on the far side of write, nor a post-dominating one across
++; read. The library table answered "sync-free" for any function it had no
++; entry for, and both were elided. strlen is the control: it really is
++; sync-free, so the redundant store across it is elided.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-dominance-analysis -S | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@x = global i32 0, align 4
++declare i64 @write(i32, ptr, i64)
++declare i64 @read(i32, ptr, i64)
++declare i64 @strlen(ptr)
++
++; Both stores kept: dominance may not cross write(2).
++; CHECK-LABEL: @across_write
++; CHECK-COUNT-2: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @across_write(ptr %buf) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %n = call i64 @write(i32 1, ptr %buf, i64 1)
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; Both stores kept: post-dominance may not cross read(2).
++; CHECK-LABEL: @across_read
++; CHECK-COUNT-2: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @across_read(ptr %buf) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %n = call i64 @read(i32 0, ptr %buf, i64 1)
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; Control: strlen is sync-free, so the second (dominated) store is elided.
++; CHECK-LABEL: @across_strlen
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK-NOT: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @across_strlen(ptr %buf) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %n = call i64 @strlen(ptr %buf)
++  store i32 2, ptr @x, align 4
++  ret void
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-chain-across-latch.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-chain-across-latch.ll
+new file mode 100644
+index 000000000000..7b4353ea78e0
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-chain-across-latch.ll
+@@ -0,0 +1,61 @@
++; Cover chains through a loop. In @chain the preheader store covers the
++; first body store, which covers the second; both are removed and the
++; preheader store is the surviving root of the chain. In @latch_unlock the
++; back edge passes an unlock, so the path from the preheader store to the
++; first body store on a second iteration is not clean and that store is
++; kept. The second body store sits on the same cycle: an access removed on
++; a cycle has the whole cycle scanned, the unlock is on it, so it is kept
++; as well (conservative, and what the argument for chains relies on).
++; Dominance only: with post-dominance on, the first body store would also
++; cover the preheader store, which is a different chain. Guard for the
++; chain composition: what survives is exactly the root of
++; each chain, never an access whose cover was itself removed.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-dominance-analysis-dom -S | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@x = global i32 0, align 4
++@m = global i64 0, align 8
++declare i32 @pthread_mutex_unlock(ptr)
++
++; CHECK-LABEL: @chain
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK-NOT: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @chain(i32 %n) sanitize_thread {
++entry:
++  store i32 0, ptr @x, align 4
++  br label %loop
++loop:
++  %i = phi i32 [ 0, %entry ], [ %inc, %loop ]
++  store i32 1, ptr @x, align 4
++  store i32 2, ptr @x, align 4
++  %inc = add i32 %i, 1
++  %c = icmp slt i32 %inc, %n
++  br i1 %c, label %loop, label %exit
++exit:
++  ret void
++}
++
++; CHECK-LABEL: @latch_unlock
++; CHECK-COUNT-3: call void @__tsan_write4(ptr @x)
++; CHECK-NOT: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @latch_unlock(i32 %n) sanitize_thread {
++entry:
++  store i32 0, ptr @x, align 4
++  br label %loop
++loop:
++  %i = phi i32 [ 0, %entry ], [ %inc, %latch ]
++  store i32 1, ptr @x, align 4
++  store i32 2, ptr @x, align 4
++  br label %latch
++latch:
++  %u = call i32 @pthread_mutex_unlock(ptr @m)
++  %inc = add i32 %i, 1
++  %c = icmp slt i32 %inc, %n
++  br i1 %c, label %loop, label %exit
++exit:
++  ret void
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-invoke-callee.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-invoke-callee.ll
+new file mode 100644
+index 000000000000..b821f2d7f9ca
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-invoke-callee.ll
+@@ -0,0 +1,32 @@
++; A callee reached through an invoke counts like one reached through a call:
++; @g invokes an opaque function, so @g synchronizes, and a call to @g between
++; two stores keeps both. The summary's scans only looked at CallInst; the
++; per-instruction classification still caught the invoke, so this is a
++; guard for the CallBase form of the scans, not a reproducer.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-dominance-analysis -S | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@x = global i32 0, align 4
++declare void @opaque()
++declare i32 @__gxx_personality_v0(...)
++
++define internal void @g() personality ptr @__gxx_personality_v0 {
++  invoke void @opaque() to label %ok unwind label %lp
++ok:
++  ret void
++lp:
++  %l = landingpad { ptr, i32 } cleanup
++  resume { ptr, i32 } %l
++}
++
++; CHECK-LABEL: @f
++; CHECK-COUNT-2: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @f() sanitize_thread {
++  store i32 1, ptr @x, align 4
++  call void @g()
++  store i32 2, ptr @x, align 4
++  ret void
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-transitive-clean.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-transitive-clean.ll
+new file mode 100644
+index 000000000000..130d32132c8f
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-transitive-clean.ll
+@@ -0,0 +1,38 @@
++; Interprocedural sync-freedom. @mid calls @leaf, both plain arithmetic, so a
++; call to @mid between two stores to the same global synchronizes nothing and
++; the second store is redundant. The sync-free summary used to consult a
++; static pointer to itself while it was being built -- null on the first
++; module -- so every call to a defined function looked synchronizing and only
++; leaf functions were ever sync-free. Without the module pass there is no
++; summary and the call is opaque: both stores stay (FUNC).
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-dominance-analysis -S | FileCheck %s
++; RUN: opt < %s -passes='function(tsan)' -tsan-use-dominance-analysis -S | FileCheck %s --check-prefix=FUNC
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@x = global i32 0, align 4
++
++define internal i32 @leaf(i32 %a) {
++  %r = add i32 %a, 1
++  ret i32 %r
++}
++
++define internal i32 @mid(i32 %a) {
++  %r = call i32 @leaf(i32 %a)
++  ret i32 %r
++}
++
++; CHECK-LABEL: @f
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK-NOT: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++; FUNC-LABEL: @f
++; FUNC-COUNT-2: call void @__tsan_write4(ptr @x)
++; FUNC: ret void
++define void @f(i32 %a) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %r = call i32 @mid(i32 %a)
++  store i32 %r, ptr @x, align 4
++  ret void
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-post-dominance-libfunc-may-block.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-post-dominance-libfunc-may-block.ll
+new file mode 100644
+index 000000000000..df626316b66f
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-post-dominance-libfunc-may-block.ll
+@@ -0,0 +1,44 @@
++; Post-dominance elimination removes the earlier of two accesses when the
++; later one is always reached; a call between them that may never return
++; breaks that. Library functions used to be exempt from the termination
++; test as long as they were sync-free: strlen without any attribute passed,
++; although nothing says an arbitrary library call returns. Now a library
++; call blocks post-dominance unless it is willreturn (the attribute
++; inference passes put it there for the functions that provably return);
++; dominance, which needs no termination, still crosses it (DOM).
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-dominance-analysis-postdom -S | FileCheck %s
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-dominance-analysis-dom -S | FileCheck %s --check-prefix=DOM
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@x = global i32 0, align 4
++declare i64 @strlen(ptr)
++
++; No attribute: may not return, so post-dominance keeps both stores.
++; CHECK-LABEL: @bare
++; CHECK-COUNT-2: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++; DOM-LABEL: @bare
++; DOM: call void @__tsan_write4(ptr @x)
++; DOM-NOT: call void @__tsan_write4(ptr @x)
++; DOM: ret void
++define void @bare(ptr %s) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %n = call i64 @strlen(ptr %s)
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; willreturn on the call: the later store is always reached, the earlier
++; store is redundant under post-dominance.
++; CHECK-LABEL: @returns
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK-NOT: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @returns(ptr %s) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %n = call i64 @strlen(ptr %s) willreturn
++  store i32 2, ptr @x, align 4
++  ret void
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/intercepted-call-may-unwind.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/intercepted-call-may-unwind.ll
+new file mode 100644
+index 000000000000..7a7ef8593e04
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/intercepted-call-may-unwind.ll
+@@ -0,0 +1,37 @@
++; The interceptor toggle around strlen/strcmp/memchr on a provably local
++; buffer clears InterceptorEnabled before the call and restores it in the
++; instruction after. If the call can unwind, the instruction after is never
++; reached and the thread runs the rest of the program with interceptors
++; off: every later intercepted access is lost. So the toggle is emitted
++; only for a call that cannot unwind (nounwind on the call or the callee).
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-escape-analysis-global -S | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++declare i64 @strlen(ptr)
++declare i64 @strlen_nounwind(ptr) nounwind
++
++; CHECK-LABEL: @may_unwind
++; CHECK-NOT: store i1 false, ptr @InterceptorEnabled
++; CHECK: {{call|invoke}} i64 @strlen(
++; CHECK-NOT: store i1 {{.*}}, ptr @InterceptorEnabled
++; CHECK: ret i64
++define i64 @may_unwind() sanitize_thread {
++  %b = alloca [8 x i8], align 1
++  store i8 0, ptr %b, align 1
++  %n = call i64 @strlen(ptr %b)
++  ret i64 %n
++}
++
++; CHECK-LABEL: @call_nounwind
++; CHECK: store i1 false, ptr @InterceptorEnabled
++; CHECK: call i64 @strlen(
++; CHECK: store i1 %{{.*}}, ptr @InterceptorEnabled
++; CHECK: ret i64
++define i64 @call_nounwind() sanitize_thread {
++  %b = alloca [8 x i8], align 1
++  store i8 0, ptr %b, align 1
++  %n = call i64 @strlen(ptr %b) nounwind
++  ret i64 %n
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/memintrinsic-later-escape.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/memintrinsic-later-escape.ll
+new file mode 100644
+index 000000000000..0939360a1024
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/memintrinsic-later-escape.ll
+@@ -0,0 +1,70 @@
++; A memcpy between locals is lowered to an intercepted __tsan_memcpy so the
++; runtime sees the accesses; when both locals provably never escape the
++; interceptor is toggled off around the intrinsic instead. The toggle used
++; the bare per-point escape query: a struct filled by memcpy and then
++; handed to an opaque call in a later block -- a timeval passed to
++; select(), a buffer passed to write() -- had not escaped at the memcpy,
++; so its interceptor was skipped although the callee, and whatever thread
++; it hands the pointer to, reads it. The rule is now the sound
++; flow-sensitive one: every escape reachable after the access must be
++; release-like (thread creation is; an opaque call is not).
++; @escapes_later keeps the interceptor; @never_escapes and
++; @published_by_create toggle it off.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-escape-analysis-global -S | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++%struct.tv = type { i64, i64 }
++declare void @llvm.memcpy.p0.p0.i64(ptr, ptr, i64, i1)
++declare i32 @select(i32, ptr, ptr, ptr, ptr)
++declare i32 @pthread_create(ptr, ptr, ptr, ptr)
++declare ptr @worker(ptr)
++
++; CHECK-LABEL: define void @escapes_later
++; CHECK-NOT: store i1 false, ptr @InterceptorEnabled
++; CHECK: @__tsan_memcpy(ptr %tv, ptr %src, i64 16)
++; CHECK-NOT: store i1 false, ptr @InterceptorEnabled
++; CHECK: @select(
++define void @escapes_later() sanitize_thread {
++entry:
++  %tv = alloca %struct.tv, align 8
++  %src = alloca %struct.tv, align 8
++  store i64 1, ptr %src, align 8
++  call void @llvm.memcpy.p0.p0.i64(ptr %tv, ptr %src, i64 16, i1 false)
++  br label %use
++use:
++  %r = call i32 @select(i32 0, ptr null, ptr null, ptr null, ptr %tv)
++  ret void
++}
++
++; CHECK-LABEL: define i64 @never_escapes
++; CHECK: store i1 false, ptr @InterceptorEnabled
++; CHECK: call void @llvm.memcpy
++; CHECK: store i1 %{{.*}}, ptr @InterceptorEnabled
++define i64 @never_escapes() sanitize_thread {
++  %tv = alloca %struct.tv, align 8
++  %src = alloca %struct.tv, align 8
++  store i64 1, ptr %src, align 8
++  call void @llvm.memcpy.p0.p0.i64(ptr %tv, ptr %src, i64 16, i1 false)
++  %v = load i64, ptr %tv, align 8
++  ret i64 %v
++}
++
++; CHECK-LABEL: define void @published_by_create
++; CHECK: store i1 false, ptr @InterceptorEnabled
++; CHECK: call void @llvm.memcpy
++; CHECK: store i1 %{{.*}}, ptr @InterceptorEnabled
++; CHECK: @pthread_create(
++define void @published_by_create() sanitize_thread {
++entry:
++  %t = alloca i64, align 8
++  %tv = alloca %struct.tv, align 8
++  %src = alloca %struct.tv, align 8
++  store i64 1, ptr %src, align 8
++  call void @llvm.memcpy.p0.p0.i64(ptr %tv, ptr %src, i64 16, i1 false)
++  br label %pub
++pub:
++  %c = call i32 @pthread_create(ptr %t, ptr null, ptr @worker, ptr %tv)
++  ret void
++}

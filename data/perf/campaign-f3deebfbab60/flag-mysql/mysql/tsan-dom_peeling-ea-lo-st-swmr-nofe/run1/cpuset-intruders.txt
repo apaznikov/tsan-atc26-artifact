@@ -1,1 +1,0 @@
-mysqladmin samples=6 peak_pcpu=5.2

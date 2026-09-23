@@ -1,4 +1,0 @@
-claude samples=141 peak_pcpu=5.6
-sshd samples=23 peak_pcpu=0.9
-git-remote-http samples=2 peak_pcpu=4.4
-git samples=2 peak_pcpu=4.1

@@ -1,0 +1,1031 @@
+From aff9aeb71fcc05c8f67026599c6c530d0e0878dd Mon Sep 17 00:00:00 2001
+From: Alexey Paznikov <apaznikov@gmail.com>
+Date: Mon, 14 Sep 2026 19:59:32 +0800
+Subject: Lock ownership: exact names, private and unescaped variables, callee
+ and opaque releases, converged records (shapes 9, 10, 13)
+
+---
+ llvm/include/llvm/Analysis/LockOwnership.h    |  32 ++
+ llvm/lib/Analysis/LockOwnership.cpp           | 347 +++++++++++++++---
+ .../LockOwnership/aggregate-and-st-only.ll    |   6 +-
+ .../Analysis/LockOwnership/annotations.ll     |   4 +-
+ .../Analysis/LockOwnership/callee-releases.ll |  53 +++
+ .../Analysis/LockOwnership/exact-names.ll     |  49 +++
+ .../LockOwnership/external-call-policy.ll     | 138 +++++++
+ .../LockOwnership/linkage-and-escape.ll       |  47 +++
+ .../Analysis/LockOwnership/lock-identity.ll   |  14 +-
+ llvm/test/Analysis/LockOwnership/locks.ll     |  10 +-
+ .../LockOwnership/loop-unlock-in-body.ll      |  70 ++++
+ .../LockOwnership/stale-held-record.ll        |  60 +++
+ 12 files changed, 761 insertions(+), 69 deletions(-)
+ create mode 100644 llvm/test/Analysis/LockOwnership/callee-releases.ll
+ create mode 100644 llvm/test/Analysis/LockOwnership/exact-names.ll
+ create mode 100644 llvm/test/Analysis/LockOwnership/external-call-policy.ll
+ create mode 100644 llvm/test/Analysis/LockOwnership/linkage-and-escape.ll
+ create mode 100644 llvm/test/Analysis/LockOwnership/loop-unlock-in-body.ll
+ create mode 100644 llvm/test/Analysis/LockOwnership/stale-held-record.ll
+
+diff --git a/llvm/include/llvm/Analysis/LockOwnership.h b/llvm/include/llvm/Analysis/LockOwnership.h
+index eb4cb89f8f5c..e3425db87caf 100644
+--- a/llvm/include/llvm/Analysis/LockOwnership.h
++++ b/llvm/include/llvm/Analysis/LockOwnership.h
+@@ -114,6 +114,38 @@ private:
+   };
+   SmallDenseMap<const Function *, FuncStateTy> FuncStates;
+ 
++  /// What a call may release. Computed syntactically over the call graph
++  /// before the dataflow runs, because the dataflow analyses each callee from
++  /// an empty state and so never sees it release a lock its caller holds.
++  struct ReleaseSummaryTy {
++    /// Locks it, or anything it calls, unlocks by identity.
++    SmallPtrSet<const Value *, 4> MayRelease;
++    /// It unlocks a mutex whose identity is unknown: may be any lock held.
++    bool MayReleaseUnknown = false;
++    /// It reaches a call whose effect on locks is unknown (indirect, or a
++    /// declaration that is not a transparent library function).
++    bool CallsOpaque = false;
++  };
++  DenseMap<const Function *, ReleaseSummaryTy> ReleaseSummaries;
++  /// Declarations a call to which cannot release anything: intrinsics, the
++  /// annotation family, and library functions that take no callback.
++  SmallPtrSet<const Function *, 16> TransparentDecls;
++  /// Locks released by some function an opaque call could call back into
++  /// (address taken or externally visible).
++  SmallPtrSet<const Value *, 8> ReleasedByCallbacks;
++  bool CallbackMayReleaseUnknown = false;
++  mutable DenseMap<const GlobalVariable *, bool> PrivateMutexCache;
++
++  void computeReleaseSummaries();
++  /// A private mutex is a local-linkage global every use of which is the
++  /// mutex operand of a lock, unlock, init, destroy or condition-wait call,
++  /// so nothing outside this module can touch it and nothing inside can
++  /// release it except through those calls.
++  bool isPrivateMutex(const Value *Lock) const;
++  void applyOpaqueCall(LockStateTy &State, const Instruction &I);
++  void applyCalleeReleases(LockStateTy &State, const Instruction &I,
++                           const ReleaseSummaryTy &RS);
++
+   // Found lock/unlock pairs
+   SmallDenseSet<std::pair<const Instruction *, const Instruction *>>
+       LockUnlockPairs;
+diff --git a/llvm/lib/Analysis/LockOwnership.cpp b/llvm/lib/Analysis/LockOwnership.cpp
+index 6b0932ba7306..4328985e9b1f 100644
+--- a/llvm/lib/Analysis/LockOwnership.cpp
++++ b/llvm/lib/Analysis/LockOwnership.cpp
+@@ -11,11 +11,15 @@
+ //===----------------------------------------------------------------------===//
+ 
+ #include "llvm/Analysis/LockOwnership.h"
++#include "llvm/ADT/StringSet.h"
+ #include "llvm/IR/CFG.h"
+ 
+ #include "llvm/ADT/PostOrderIterator.h"
+ #include "llvm/ADT/SCCIterator.h"
++#include "llvm/Analysis/TargetLibraryInfo.h"
+ #include "llvm/Analysis/ValueTracking.h"
++#include "llvm/IR/InstIterator.h"
++#include "llvm/TargetParser/Triple.h"
+ #include "llvm/IR/Constants.h"
+ #include "llvm/IR/DataLayout.h"
+ #include "llvm/IR/Instructions.h"
+@@ -263,20 +267,26 @@ bool LockOwnershipInfo::applyTransferFunc(const BasicBlock *BB,
+     // 2. Process calls
+     if (const auto *Call = dyn_cast<CallBase>(&I)) {
+       const auto *CalledFunc = Call->getCalledFunction();
+-      if (!CalledFunc || CalledFunc->isDeclaration())
++      if (CalledFunc && TransparentDecls.contains(CalledFunc))
+         continue;
+-
+-      // Get a function state if it exists
+-      const auto FuncStateIt = FuncStates.find(CalledFunc);
+-      if (FuncStateIt != FuncStates.end()) {
+-        // Update the current state with callee's exit state
+-        for (const auto &[Lock, State] : FuncStateIt->second.ExitState) {
++      if (!CalledFunc || CalledFunc->isDeclaration()) {
++        // Indirect, or a body we cannot see: it may release any lock it can
++        // reach, which is every non-private one plus whatever a callback
++        // into this module releases.
++        applyOpaqueCall(InState, I);
++        continue;
++      }
++      // What the callee (transitively) releases takes effect before what it
++      // still holds at its exit; a callee that unlocks and re-locks the same
++      // mutex leaves it held.
++      if (const auto RSIt = ReleaseSummaries.find(CalledFunc);
++          RSIt != ReleaseSummaries.end())
++        applyCalleeReleases(InState, I, RSIt->second);
++      if (const auto FuncStateIt = FuncStates.find(CalledFunc);
++          FuncStateIt != FuncStates.end())
++        for (const auto &[Lock, State] : FuncStateIt->second.ExitState)
+           if (State.IsLocked)
+             handleLock(InState, I, Lock);
+-          else
+-            handleUnlock(InState, I, Lock);
+-        }
+-      }
+       continue;
+     }
+ 
+@@ -290,7 +300,13 @@ bool LockOwnershipInfo::applyTransferFunc(const BasicBlock *BB,
+         if (State.IsLocked)
+           HeldLocks.insert(Lock);
+       }
+-      if (!HeldLocks.empty())
++      // Replace whatever an earlier visit recorded. A block is visited again
++      // when a predecessor's state shrinks, and its held set can shrink to
++      // nothing; skipping the empty set left the earlier, larger record in
++      // place and an unprotected access looked protected.
++      if (HeldLocks.empty())
++        InstrToLockMap.erase(&I);
++      else
+         InstrToLockMap[&I] = HeldLocks;
+     }
+   }
+@@ -303,6 +319,204 @@ bool LockOwnershipInfo::applyTransferFunc(const BasicBlock *BB,
+   return false; // State did not change
+ }
+ 
++/// Library functions that take a callback: the callee may call back into
++/// this module and release a lock there, so they are not transparent.
++static const StringSet<> CallbackLibFuncs = {
++    "qsort",       "qsort_r",    "bsearch",       "atexit",   "__cxa_atexit",
++    "on_exit",     "signal",     "sigaction",     "bsd_signal",
++    "pthread_create", "pthread_once", "pthread_atfork", "pthread_key_create",
++    "thrd_create", "call_once",  "tsearch",       "tfind",    "tdelete",
++    "twalk",       "lfind",      "lsearch",       "ftw",      "nftw",
++    "glob",        "scandir",    "dl_iterate_phdr"};
++
++/// Mutex operations that do not acquire or release but are the only other
++/// legitimate uses of a private mutex's address.
++static const StringSet<> MutexAuxNames = {
++    "pthread_mutex_init",    "pthread_mutex_destroy",  "pthread_spin_init",
++    "pthread_spin_destroy",  "pthread_rwlock_init",    "pthread_rwlock_destroy",
++    "pthread_cond_wait",     "pthread_cond_timedwait", "mtx_init",
++    "mtx_destroy",           "cnd_wait",               "cnd_timedwait",
++    "omp_init_lock",         "omp_destroy_lock",       "omp_init_nest_lock",
++    "omp_destroy_nest_lock"};
++
++/// Whether an opaque call could invoke \p F synchronously on the calling
++/// thread. An externally visible function can be called from anywhere. A
++/// local one only if its address is taken -- except as the start routine of
++/// a thread creator: that runs on the new thread, which cannot release a
++/// mutex the creating thread holds.
++static bool mayBeCalledBack(const Function &F) {
++  if (!F.hasLocalLinkage())
++    return true;
++  for (const Use &U : F.uses()) {
++    const auto *CB = dyn_cast<CallBase>(U.getUser());
++    if (CB && CB->isCallee(&U))
++      continue;
++    if (CB && CB->isArgOperand(&U)) {
++      const Function *Callee = CB->getCalledFunction();
++      if (Callee && isKnownThreadCreator(*Callee))
++        continue;
++    }
++    return true;
++  }
++  return false;
++}
++
++void LockOwnershipInfo::computeReleaseSummaries() {
++  ReleaseSummaries.clear();
++  TransparentDecls.clear();
++  ReleasedByCallbacks.clear();
++  CallbackMayReleaseUnknown = false;
++  PrivateMutexCache.clear();
++
++  TargetLibraryInfoImpl TLII(Triple(M.getTargetTriple()));
++  TargetLibraryInfo TLI(TLII);
++  for (const Function &F : M) {
++    if (!F.isDeclaration())
++      continue;
++    // Lock and unlock calls are handled by the transfer function itself.
++    if (F.isIntrinsic() || isAnnotationFunc(&F) || isLockFunc(&F) ||
++        isUnLockFunc(&F)) {
++      TransparentDecls.insert(&F);
++      continue;
++    }
++    LibFunc LF;
++    if (TLI.getLibFunc(F, LF) && TLI.has(LF) &&
++        !CallbackLibFuncs.contains(F.getName()))
++      TransparentDecls.insert(&F);
++  }
++
++  // 1. What each body does on its own, and whom it calls.
++  DenseMap<const Function *, SmallPtrSet<const Function *, 8>> Callees;
++  for (const Function &F : M) {
++    if (F.isDeclaration())
++      continue;
++    ReleaseSummaryTy &RS = ReleaseSummaries[&F];
++    for (const Instruction &I : instructions(F)) {
++      const auto *CB = dyn_cast<CallBase>(&I);
++      if (!CB)
++        continue;
++      const auto [CallType, Lock] = getLockCallInfo(&I);
++      if (CallType == LockCallType::UNLOCK) {
++        if (Lock)
++          RS.MayRelease.insert(Lock);
++        else
++          RS.MayReleaseUnknown = true;
++        continue;
++      }
++      if (CallType == LockCallType::LOCK)
++        continue;
++      const Function *Callee = CB->getCalledFunction();
++      if (!Callee || (Callee->isDeclaration() &&
++                      !TransparentDecls.contains(Callee))) {
++        RS.CallsOpaque = true;
++        continue;
++      }
++      if (!Callee->isDeclaration())
++        Callees[&F].insert(Callee);
++    }
++  }
++
++  // 2. Close over the call graph.
++  bool Changed = true;
++  while (Changed) {
++    Changed = false;
++    for (auto &[F, RS] : ReleaseSummaries) {
++      for (const Function *C : Callees[F]) {
++        const auto CIt = ReleaseSummaries.find(C);
++        if (CIt == ReleaseSummaries.end())
++          continue;
++        const ReleaseSummaryTy &CS = CIt->second;
++        const size_t Before = RS.MayRelease.size();
++        RS.MayRelease.insert(CS.MayRelease.begin(), CS.MayRelease.end());
++        const bool Unknown = RS.MayReleaseUnknown || CS.MayReleaseUnknown;
++        const bool Opaque = RS.CallsOpaque || CS.CallsOpaque;
++        if (RS.MayRelease.size() != Before || Unknown != RS.MayReleaseUnknown ||
++            Opaque != RS.CallsOpaque) {
++          RS.MayReleaseUnknown = Unknown;
++          RS.CallsOpaque = Opaque;
++          Changed = true;
++        }
++      }
++    }
++  }
++
++  // 3. What an opaque call could release by calling back into this module.
++  for (const auto &[F, RS] : ReleaseSummaries) {
++    if (!mayBeCalledBack(*F))
++      continue;
++    ReleasedByCallbacks.insert(RS.MayRelease.begin(), RS.MayRelease.end());
++    CallbackMayReleaseUnknown |= RS.MayReleaseUnknown;
++  }
++  LLVM_DEBUG({
++    dbgs() << "Release summaries:\n";
++    for (const auto &[F, RS] : ReleaseSummaries)
++      dbgs() << "  " << F->getName() << ": " << RS.MayRelease.size()
++             << " lock(s)" << (RS.MayReleaseUnknown ? ", unknown" : "")
++             << (RS.CallsOpaque ? ", opaque" : "") << "\n";
++    dbgs() << "  released by callbacks: " << ReleasedByCallbacks.size()
++           << (CallbackMayReleaseUnknown ? " + unknown" : "") << "\n";
++  });
++}
++
++bool LockOwnershipInfo::isPrivateMutex(const Value *Lock) const {
++  const auto *GV = dyn_cast<GlobalVariable>(getUnderlyingObject(Lock));
++  if (!GV || !GV->hasLocalLinkage() || GV->isDeclaration())
++    return false;
++  const auto [It, Inserted] = PrivateMutexCache.try_emplace(GV, false);
++  if (!Inserted)
++    return It->second;
++
++  bool Private = true;
++  SmallVector<const Value *, 8> Work{GV};
++  SmallPtrSet<const Value *, 8> Seen;
++  while (Private && !Work.empty()) {
++    const Value *V = Work.pop_back_val();
++    if (!Seen.insert(V).second)
++      continue;
++    for (const User *U : V->users()) {
++      if (isa<ConstantExpr>(U) || isa<GlobalAlias>(U)) {
++        Work.push_back(U);
++        continue;
++      }
++      const auto *CB = dyn_cast<CallBase>(U);
++      const Function *Callee = CB ? CB->getCalledFunction() : nullptr;
++      if (!Callee || CB->getCalledOperand() == V ||
++          !(isLockFunc(Callee) || isUnLockFunc(Callee) ||
++            MutexAuxNames.contains(Callee->getName()))) {
++        Private = false;
++        break;
++      }
++    }
++  }
++  PrivateMutexCache[GV] = Private;
++  return Private;
++}
++
++void LockOwnershipInfo::applyOpaqueCall(LockStateTy &State,
++                                        const Instruction &I) {
++  SmallVector<const Value *, 4> Held;
++  for (const auto &[Lock, LS] : State)
++    if (LS.IsLocked)
++      Held.push_back(Lock);
++  for (const Value *Lock : Held)
++    if (CallbackMayReleaseUnknown || ReleasedByCallbacks.contains(Lock) ||
++        !isPrivateMutex(Lock))
++      handleUnlock(State, I, Lock);
++}
++
++void LockOwnershipInfo::applyCalleeReleases(LockStateTy &State,
++                                            const Instruction &I,
++                                            const ReleaseSummaryTy &RS) {
++  if (RS.MayReleaseUnknown) {
++    State.clear();
++    return;
++  }
++  for (const Value *Lock : RS.MayRelease)
++    handleUnlock(State, I, Lock);
++  if (RS.CallsOpaque)
++    applyOpaqueCall(State, I);
++}
++
+ void LockOwnershipInfo::buildSummary(const Function *F, bool InstrToLockFlag) {
+   LLVM_DEBUG(dbgs() << "\n===============================================\n");
+   LLVM_DEBUG(dbgs() << "Building summary for function: " << F->getName()
+@@ -317,13 +531,13 @@ void LockOwnershipInfo::buildSummary(const Function *F, bool InstrToLockFlag) {
+ 
+   std::deque<const BasicBlock *> WorkList;
+ 
+-  if (InstrToLockFlag) {
+-    // Here we must iterate through all BBs, so need to add all of them
+-    for (const BasicBlock &BB : *F)
+-      WorkList.push_back(&BB);
+-  } else {
+-    WorkList.push_back(&EntryBB);
+-  }
++  // Every block once, in reverse post-order, then change-driven. Seeding
++  // with the entry alone never reached the blocks behind one whose state
++  // did not change (the common case: no lock activity), and seeding in
++  // layout order met a block before its forward predecessors and took an
++  // optimistic intermediate state as the meet.
++  for (const BasicBlock *BB : ReversePostOrderTraversal<const Function *>(F))
++    WorkList.push_back(BB);
+ 
+   while (!WorkList.empty()) {
+     const BasicBlock *BB = WorkList.front();
+@@ -481,6 +695,7 @@ LockOwnershipInfo::LockOwnershipInfo(CallGraph &CG_, Module &MM_,
+   // Get top-down callgraph list and traverse it
+   // const auto SCCList = getTopDownSCCList(CG);
+ 
++  computeReleaseSummaries();
+   doIPALockOwnershipAnalysis(false);
+   doIPALockOwnershipAnalysis(true);
+ 
+@@ -525,41 +740,38 @@ bool LockOwnershipInfo::isSharedLockFunc(const Function *F) {
+ }
+ 
+ bool LockOwnershipInfo::findLockUnlockFunctions() {
+-  // Common lock function names and patterns
+-  const SmallVector<StringRef> LockNames = {"pthread_mutex_lock",
+-                                            "pthread_mutex_trylock",
+-                                            "pthread_mutex_timedlock",
+-                                            "pthread_spin_lock",
+-                                            "pthread_spin_trylock",
+-                                            "pthread_rwlock_rdlock",
+-                                            "pthread_rwlock_tryrdlock",
+-                                            "pthread_rwlock_timedrdlock",
+-                                            "pthread_rwlock_wrlock",
+-                                            "pthread_rwlock_trywrlock",
+-                                            "pthread_rwlock_timedwrlock",
+-                                            "mtx_lock",
+-                                            "_mutex_lock",
+-                                            "spinlock_lock",
+-                                            "acquire_lock",
+-                                            "rwlock_rdlock",
+-                                            "rwlock_wrlock",
+-                                            "lock"};
+-
+-  const SmallVector<StringRef> UnlockNames = {
+-      "pthread_mutex_unlock",  "pthread_spin_unlock",
+-      "pthread_rwlock_unlock", "mtx_unlock",
+-      "_mutex_unlock",         "spinlock_unlock",
+-      "release_lock",          "rwlock_unlock", "unlock"};
++  // Exact names only. A substring match ("lock") made every function whose
++  // name merely contains it -- flock, memblock_get ("block" contains "lock"),
++  // a user block_alloc -- an acquisition, and if its first argument resolved
++  // to a global it was recorded as a lock held for the rest of the function,
++  // so accesses under it looked protected when nothing was held. The set is
++  // the standard C/C++/POSIX/C11 primitives, matched by full name.
++  static const StringSet<> LockNames = {"pthread_mutex_lock",
++                                        "pthread_mutex_trylock",
++                                        "pthread_mutex_timedlock",
++                                        "pthread_spin_lock",
++                                        "pthread_spin_trylock",
++                                        "pthread_rwlock_rdlock",
++                                        "pthread_rwlock_tryrdlock",
++                                        "pthread_rwlock_timedrdlock",
++                                        "pthread_rwlock_wrlock",
++                                        "pthread_rwlock_trywrlock",
++                                        "pthread_rwlock_timedwrlock",
++                                        "mtx_lock",
++                                        "mtx_trylock",
++                                        "mtx_timedlock",
++                                        "omp_set_lock",
++                                        "omp_set_nest_lock"};
++
++  static const StringSet<> UnlockNames = {
++      "pthread_mutex_unlock", "pthread_spin_unlock", "pthread_rwlock_unlock",
++      "mtx_unlock",           "omp_unset_lock",      "omp_unset_nest_lock"};
+   auto matchPatterns = [](const Function &F, StringRef CurrFuncName,
+-                          const SmallVector<StringRef> &FuncNames,
++                          const StringSet<> &FuncNames,
+                           SmallPtrSet<const Function *, 4> &FuncSet) {
+-    for (const auto &FuncName : FuncNames) {
+-      if (CurrFuncName.contains(FuncName) && F.arg_size() > 0) {
+-        FuncSet.insert(&F);
+-        LLVM_DEBUG(dbgs() << "Found function matching pattern '" << FuncName
+-                          << "': " << F.getName() << "\n");
+-        return;
+-      }
++    if (F.arg_size() > 0 && FuncNames.contains(CurrFuncName)) {
++      FuncSet.insert(&F);
++      LLVM_DEBUG(dbgs() << "Found lock function: " << F.getName() << "\n");
+     }
+   };
+ 
+@@ -602,12 +814,33 @@ LockOwnershipInfo::getLocksProtecting(const Instruction *I) const {
+   return {};
+ }
+ 
++/// True when \p I reads or writes \p GV through its own pointer operand
++/// (possibly via a constant expression), i.e. the access is one this scan
++/// classifies. Any other use of the address is an escape.
++static bool isDirectAccessOf(const Instruction *I, const GlobalVariable *GV) {
++  const Value *Ptr = nullptr;
++  if (const auto *LI = dyn_cast<LoadInst>(I))
++    Ptr = LI->getPointerOperand();
++  else if (const auto *SI = dyn_cast<StoreInst>(I))
++    Ptr = SI->getPointerOperand();
++  else
++    return false;
++  return Ptr->stripPointerCastsAndAliases() == GV ||
++         getUnderlyingObject(Ptr) == GV;
++}
++
+ void LockOwnershipInfo::findProtectedGlobalVariables(SingleThreadedInfo &STI) {
+   LLVM_DEBUG(
+       dbgs() << "\n@@@@@@@@@ Finding protected global variables @@@@@@@@@\n");
+   for (const GlobalVariable &GV : M.globals()) {
+     if (GV.user_empty() || GV.isConstant())
+       continue;
++    // Only a variable this module owns outright can be judged protected: an
++    // external one is accessed by other translation units under locks (or
++    // none) that this module never sees, and a declaration has no accesses
++    // here at all. Same rule as the single-writer analysis.
++    if (!GV.hasLocalLinkage() || GV.isDeclaration())
++      continue;
+ 
+     LLVM_DEBUG(dbgs() << "\nChecking GV: " << GV.getName() << "\n");
+     SmallPtrSet<const Value *, 4> CommonLocksForGV;
+@@ -629,6 +862,16 @@ void LockOwnershipInfo::findProtectedGlobalVariables(SingleThreadedInfo &STI) {
+                         << " MT\n");
+ 
+       LLVM_DEBUG(dbgs() << "\tAccess: " << *I << "\n");
++      // The address of the variable leaving through anything other than the
++      // pointer operand of a load or store -- passed to a call, stored into
++      // another object, cast to an integer, merged in a phi -- means it is
++      // read and written through paths this scan does not see, under
++      // whatever lock they please. That is an escape, not an access.
++      if (!isDirectAccessOf(I, &GV)) {
++        LLVM_DEBUG(dbgs() << "\t\tAddress escapes here\n");
++        AllAccessesProtected = false;
++        break;
++      }
+       const auto LocksForCurrentAccess = getLocksProtecting(I);
+ 
+       if (LocksForCurrentAccess.empty()) {
+diff --git a/llvm/test/Analysis/LockOwnership/aggregate-and-st-only.ll b/llvm/test/Analysis/LockOwnership/aggregate-and-st-only.ll
+index 02dbe3fa5f69..d0389f51874c 100644
+--- a/llvm/test/Analysis/LockOwnership/aggregate-and-st-only.ll
++++ b/llvm/test/Analysis/LockOwnership/aggregate-and-st-only.ll
+@@ -13,9 +13,9 @@
+ target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
+ 
+ @mtx = global i64 0, align 8
+-@control = global i32 0, align 4
+-@rec = global { i32, i32 } zeroinitializer, align 8
+-@st_only = global i32 0, align 4
++@control = internal global i32 0, align 4
++@rec = internal global { i32, i32 } zeroinitializer, align 8
++@st_only = internal global i32 0, align 4
+ 
+ declare i32 @pthread_mutex_lock(ptr)
+ declare i32 @pthread_mutex_unlock(ptr)
+diff --git a/llvm/test/Analysis/LockOwnership/annotations.ll b/llvm/test/Analysis/LockOwnership/annotations.ll
+index 97278a5e337d..f5eac20dcfc4 100644
+--- a/llvm/test/Analysis/LockOwnership/annotations.ll
++++ b/llvm/test/Analysis/LockOwnership/annotations.ll
+@@ -14,8 +14,8 @@ target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f3
+ 
+ @mtx = global i64 0, align 8
+ @custom = global i64 0, align 8
+-@control = global i32 0, align 4
+-@via_annotation = global i32 0, align 4
++@control = internal global i32 0, align 4
++@via_annotation = internal global i32 0, align 4
+ 
+ declare i32 @pthread_mutex_lock(ptr)
+ declare i32 @pthread_mutex_unlock(ptr)
+diff --git a/llvm/test/Analysis/LockOwnership/callee-releases.ll b/llvm/test/Analysis/LockOwnership/callee-releases.ll
+new file mode 100644
+index 000000000000..4d1e6dc2e0e8
+--- /dev/null
++++ b/llvm/test/Analysis/LockOwnership/callee-releases.ll
+@@ -0,0 +1,53 @@
++; A callee that unlocks the caller's mutex ends the critical section at the
++; call. The callee's exit state carried only acquisitions, so the caller kept
++; believing the lock held and the unlocked write after the call was counted as
++; protected. @H is the control: locked and unlocked in the same function.
++
++; RUN: opt < %s -passes='print<lock-ownership>' -disable-output 2>&1 | FileCheck %s --implicit-check-not='* G'
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@m = global i64 0, align 8
++@G = internal global i32 0, align 4
++@H = internal global i32 0, align 4
++declare i32 @pthread_mutex_lock(ptr)
++declare i32 @pthread_mutex_unlock(ptr)
++declare i32 @pthread_create(ptr, ptr, ptr, ptr)
++
++define internal void @release() {
++  %u = call i32 @pthread_mutex_unlock(ptr @m)
++  ret void
++}
++
++define internal ptr @w1(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @m)
++  call void @release()
++  store i32 1, ptr @G, align 4
++  ret ptr null
++}
++
++define internal ptr @w2(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @m)
++  store i32 2, ptr @G, align 4
++  store i32 2, ptr @H, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @m)
++  ret ptr null
++}
++
++define internal ptr @w3(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @m)
++  store i32 3, ptr @H, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @m)
++  ret ptr null
++}
++
++define i32 @main() {
++  %t = alloca i64, align 8
++  %c1 = call i32 @pthread_create(ptr %t, ptr null, ptr @w1, ptr null)
++  %c2 = call i32 @pthread_create(ptr %t, ptr null, ptr @w2, ptr null)
++  %c3 = call i32 @pthread_create(ptr %t, ptr null, ptr @w3, ptr null)
++  ret i32 0
++}
++
++; CHECK: Protected Global Variables
++; CHECK-DAG: * H
+diff --git a/llvm/test/Analysis/LockOwnership/exact-names.ll b/llvm/test/Analysis/LockOwnership/exact-names.ll
+new file mode 100644
+index 000000000000..e5a08ddc28b1
+--- /dev/null
++++ b/llvm/test/Analysis/LockOwnership/exact-names.ll
+@@ -0,0 +1,49 @@
++; Only a call to a function with a standard lock name is an acquisition. The
++; recogniser matched substrings, so any function whose name merely contains
++; "lock" -- memblock_get, block_signals, mlock -- was one, and two threads that
++; both called it around their writes to @G were "consistently protected". @H
++; is the control, under a real pthread mutex.
++
++; RUN: opt < %s -passes='print<lock-ownership>' -disable-output 2>&1 | FileCheck %s --implicit-check-not='* G'
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@pool = global { i64, i64 } zeroinitializer, align 8
++@m = global i64 0, align 8
++@G = internal global i32 0, align 4
++@H = internal global i32 0, align 4
++declare ptr @memblock_get(ptr)
++declare void @block_signals(ptr)
++declare i32 @pthread_mutex_lock(ptr)
++declare i32 @pthread_mutex_unlock(ptr)
++declare i32 @pthread_create(ptr, ptr, ptr, ptr)
++
++define internal ptr @w1(ptr %a) {
++  %b = call ptr @memblock_get(ptr @pool)
++  store i32 1, ptr @G, align 4
++  ret ptr null
++}
++
++define internal ptr @w2(ptr %a) {
++  call void @block_signals(ptr @pool)
++  store i32 2, ptr @G, align 4
++  ret ptr null
++}
++
++define internal ptr @w3(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @m)
++  store i32 3, ptr @H, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @m)
++  ret ptr null
++}
++
++define i32 @main() {
++  %t = alloca i64, align 8
++  %c1 = call i32 @pthread_create(ptr %t, ptr null, ptr @w1, ptr null)
++  %c2 = call i32 @pthread_create(ptr %t, ptr null, ptr @w2, ptr null)
++  %c3 = call i32 @pthread_create(ptr %t, ptr null, ptr @w3, ptr null)
++  ret i32 0
++}
++
++; CHECK: Protected Global Variables
++; CHECK-DAG: * H
+diff --git a/llvm/test/Analysis/LockOwnership/external-call-policy.ll b/llvm/test/Analysis/LockOwnership/external-call-policy.ll
+new file mode 100644
+index 000000000000..a78ecae919ec
+--- /dev/null
++++ b/llvm/test/Analysis/LockOwnership/external-call-policy.ll
+@@ -0,0 +1,138 @@
++; What a call whose body is not visible may release. An externally visible
++; mutex can be unlocked by any function in another translation unit, so an
++; opaque call ends its critical section (@ext_data unprotected). A private
++; mutex -- local linkage, every use of its address a lock/unlock operand --
++; can only be released by code in this module, and an opaque call can reach
++; that code only through a callback: nothing here unlocks @priv from a
++; function an opaque call could invoke, so the opaque call leaves it held
++; (@priv_data protected, also across an indirect call). @cb_priv is private
++; too, but its address-taken releaser @cb is reachable from an opaque call,
++; so the call may release it (@cb_data unprotected). A library function
++; without a callback parameter is transparent (@libc_data protected). An
++; indirect call is opaque for an external mutex (@ind_data unprotected). The
++; workers themselves are only thread start routines: a new thread cannot
++; release the creating thread's mutex, so they are not callback candidates.
++
++; RUN: opt < %s -passes='print<lock-ownership>' -disable-output 2>&1 | FileCheck %s --implicit-check-not='* ext_data' --implicit-check-not='* cb_data' --implicit-check-not='* ind_data'
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++target triple = "x86_64-unknown-linux-gnu"
++
++@ext = global i64 0, align 8
++@priv = internal global i64 0, align 8
++@cb_priv = internal global i64 0, align 8
++@ext_data = internal global i32 0, align 4
++@priv_data = internal global i32 0, align 4
++@cb_data = internal global i32 0, align 4
++@libc_data = internal global i32 0, align 4
++@ind_data = internal global i32 0, align 4
++@fp = internal global ptr null, align 8
++
++declare i32 @pthread_mutex_lock(ptr)
++declare i32 @pthread_mutex_unlock(ptr)
++declare i32 @pthread_create(ptr, ptr, ptr, ptr)
++declare void @opaque()
++declare i64 @strlen(ptr)
++
++define internal void @cb() {
++  %u = call i32 @pthread_mutex_unlock(ptr @cb_priv)
++  ret void
++}
++
++; --- @ext_data: external mutex across an opaque call ---
++define internal ptr @ext_a(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @ext)
++  call void @opaque()
++  store i32 1, ptr @ext_data, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @ext)
++  ret ptr null
++}
++define internal ptr @ext_b(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @ext)
++  store i32 2, ptr @ext_data, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @ext)
++  ret ptr null
++}
++
++; --- @priv_data: private mutex across an opaque call and an indirect call ---
++define internal ptr @priv_a(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @priv)
++  call void @opaque()
++  store i32 1, ptr @priv_data, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @priv)
++  ret ptr null
++}
++define internal ptr @priv_b(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @priv)
++  %f = load ptr, ptr @fp, align 8
++  call void %f()
++  store i32 2, ptr @priv_data, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @priv)
++  ret ptr null
++}
++
++; --- @cb_data: private mutex whose releaser is an address-taken callback ---
++define internal ptr @cb_a(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @cb_priv)
++  call void @opaque()
++  store i32 1, ptr @cb_data, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @cb_priv)
++  ret ptr null
++}
++define internal ptr @cb_b(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @cb_priv)
++  store i32 2, ptr @cb_data, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @cb_priv)
++  ret ptr null
++}
++
++; --- @libc_data: external mutex across a transparent library call ---
++define internal ptr @libc_a(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @ext)
++  %n = call i64 @strlen(ptr %a)
++  store i32 1, ptr @libc_data, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @ext)
++  ret ptr null
++}
++define internal ptr @libc_b(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @ext)
++  store i32 2, ptr @libc_data, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @ext)
++  ret ptr null
++}
++
++; --- @ind_data: external mutex across an indirect call ---
++define internal ptr @ind_a(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @ext)
++  %f = load ptr, ptr @fp, align 8
++  call void %f()
++  store i32 1, ptr @ind_data, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @ext)
++  ret ptr null
++}
++define internal ptr @ind_b(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @ext)
++  store i32 2, ptr @ind_data, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @ext)
++  ret ptr null
++}
++
++define i32 @main() {
++  %t = alloca i64, align 8
++  store ptr @cb, ptr @fp, align 8
++  %c1 = call i32 @pthread_create(ptr %t, ptr null, ptr @ext_a, ptr null)
++  %c2 = call i32 @pthread_create(ptr %t, ptr null, ptr @ext_b, ptr null)
++  %c3 = call i32 @pthread_create(ptr %t, ptr null, ptr @priv_a, ptr null)
++  %c4 = call i32 @pthread_create(ptr %t, ptr null, ptr @priv_b, ptr null)
++  %c5 = call i32 @pthread_create(ptr %t, ptr null, ptr @cb_a, ptr null)
++  %c6 = call i32 @pthread_create(ptr %t, ptr null, ptr @cb_b, ptr null)
++  %c7 = call i32 @pthread_create(ptr %t, ptr null, ptr @libc_a, ptr null)
++  %c8 = call i32 @pthread_create(ptr %t, ptr null, ptr @libc_b, ptr null)
++  %c9 = call i32 @pthread_create(ptr %t, ptr null, ptr @ind_a, ptr null)
++  %c10 = call i32 @pthread_create(ptr %t, ptr null, ptr @ind_b, ptr null)
++  ret i32 0
++}
++
++; CHECK: Protected Global Variables
++; CHECK-DAG: * priv_data
++; CHECK-DAG: * libc_data
+diff --git a/llvm/test/Analysis/LockOwnership/linkage-and-escape.ll b/llvm/test/Analysis/LockOwnership/linkage-and-escape.ll
+new file mode 100644
+index 000000000000..a1d82cd13471
+--- /dev/null
++++ b/llvm/test/Analysis/LockOwnership/linkage-and-escape.ll
+@@ -0,0 +1,47 @@
++; A global is protected only if every access to it is visible here and
++; locked. Two ways that fails: another translation unit can name a global with
++; external linkage; and a global whose address is handed to a call can be
++; accessed through a pointer this analysis cannot trace back. @K is the
++; control: internal, never address-taken, locked everywhere.
++
++; RUN: opt < %s -passes='print<lock-ownership>' -disable-output 2>&1 | FileCheck %s --implicit-check-not='* G' --implicit-check-not='* Hidden'
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@m = global i64 0, align 8
++@G = global i32 0, align 4
++@Hidden = internal global i32 0, align 4
++@K = internal global i32 0, align 4
++declare i32 @pthread_mutex_lock(ptr)
++declare i32 @pthread_mutex_unlock(ptr)
++declare i32 @pthread_create(ptr, ptr, ptr, ptr)
++declare void @take(ptr)
++
++define internal ptr @w1(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @m)
++  store i32 1, ptr @G, align 4
++  store i32 1, ptr @Hidden, align 4
++  store i32 1, ptr @K, align 4
++  call void @take(ptr @Hidden)
++  %u = call i32 @pthread_mutex_unlock(ptr @m)
++  ret ptr null
++}
++
++define internal ptr @w2(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @m)
++  store i32 2, ptr @G, align 4
++  store i32 2, ptr @Hidden, align 4
++  store i32 2, ptr @K, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @m)
++  ret ptr null
++}
++
++define i32 @main() {
++  %t = alloca i64, align 8
++  %c1 = call i32 @pthread_create(ptr %t, ptr null, ptr @w1, ptr null)
++  %c2 = call i32 @pthread_create(ptr %t, ptr null, ptr @w2, ptr null)
++  ret i32 0
++}
++
++; CHECK: Protected Global Variables
++; CHECK-DAG: * K
+diff --git a/llvm/test/Analysis/LockOwnership/lock-identity.ll b/llvm/test/Analysis/LockOwnership/lock-identity.ll
+index b0bec4a9d66a..0f89156a035c 100644
+--- a/llvm/test/Analysis/LockOwnership/lock-identity.ll
++++ b/llvm/test/Analysis/LockOwnership/lock-identity.ll
+@@ -22,13 +22,13 @@ target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f3
+ @locks = global [2 x i64] zeroinitializer, align 8
+ @mptr = global ptr @S, align 8
+ 
+-@same_field  = global i32 0, align 4  ; both threads under S.f0 (spelled two ways)
+-@two_fields  = global i32 0, align 4  ; one thread under S.f0, the other under S.f1
+-@stripe_same = global i32 0, align 4  ; both under locks[0] (spelled two ways)
+-@stripe_diff = global i32 0, align 4  ; locks[0] vs locks[1]
+-@via_arg     = global i32 0, align 4  ; mutex arrives as a pointer argument
+-@via_load    = global i32 0, align 4  ; mutex pointer is loaded
+-@reacquire   = global i32 0, align 4  ; unlock-without-lock, then a proper pair
++@same_field  = internal global i32 0, align 4  ; both threads under S.f0 (spelled two ways)
++@two_fields  = internal global i32 0, align 4  ; one thread under S.f0, the other under S.f1
++@stripe_same = internal global i32 0, align 4  ; both under locks[0] (spelled two ways)
++@stripe_diff = internal global i32 0, align 4  ; locks[0] vs locks[1]
++@via_arg     = internal global i32 0, align 4  ; mutex arrives as a pointer argument
++@via_load    = internal global i32 0, align 4  ; mutex pointer is loaded
++@reacquire   = internal global i32 0, align 4  ; unlock-without-lock, then a proper pair
+ 
+ declare i32 @pthread_mutex_lock(ptr)
+ declare i32 @pthread_mutex_unlock(ptr)
+diff --git a/llvm/test/Analysis/LockOwnership/locks.ll b/llvm/test/Analysis/LockOwnership/locks.ll
+index edc55ea36be9..b809392ec9cb 100644
+--- a/llvm/test/Analysis/LockOwnership/locks.ll
++++ b/llvm/test/Analysis/LockOwnership/locks.ll
+@@ -12,11 +12,11 @@ target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f3
+ @mtx = global i64 0, align 8
+ @rw = global i64 0, align 8
+ 
+-@under_mutex = global i32 0, align 4   ; held by a plain mutex
+-@under_wrlock = global i32 0, align 4  ; held by an rwlock writer
+-@after_unlock = global i32 0, align 4  ; touched once the lock is released
+-@under_rdlock = global i32 0, align 4  ; only ever under a reader lock
+-@after_trylock = global i32 0, align 4 ; touched after a try-lock, which may fail
++@under_mutex = internal global i32 0, align 4   ; held by a plain mutex
++@under_wrlock = internal global i32 0, align 4  ; held by an rwlock writer
++@after_unlock = internal global i32 0, align 4  ; touched once the lock is released
++@under_rdlock = internal global i32 0, align 4  ; only ever under a reader lock
++@after_trylock = internal global i32 0, align 4 ; touched after a try-lock, which may fail
+ 
+ declare i32 @pthread_mutex_lock(ptr)
+ declare i32 @pthread_mutex_unlock(ptr)
+diff --git a/llvm/test/Analysis/LockOwnership/loop-unlock-in-body.ll b/llvm/test/Analysis/LockOwnership/loop-unlock-in-body.ll
+new file mode 100644
+index 000000000000..0170cdaa7639
+--- /dev/null
++++ b/llvm/test/Analysis/LockOwnership/loop-unlock-in-body.ll
+@@ -0,0 +1,70 @@
++; A must-held lockset is the intersection over every path to the access. In
++; this loop the header's access runs locked on the first iteration and
++; unlocked on every later one (the body unlocks and loops back). The analysis
++; visited the header before the back edge existed in its tables, recorded the
++; access under the lock, and never revised it. @H is the control: the unlock
++; sits after the loop, so every iteration holds the lock.
++
++; RUN: opt < %s -passes='print<lock-ownership>' -disable-output 2>&1 | FileCheck %s --implicit-check-not='* G'
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@m = global i64 0, align 8
++@G = internal global i32 0, align 4
++@H = internal global i32 0, align 4
++declare i32 @pthread_mutex_lock(ptr)
++declare i32 @pthread_mutex_unlock(ptr)
++declare i32 @pthread_create(ptr, ptr, ptr, ptr)
++
++define internal ptr @unlock_in_body(ptr %a) {
++entry:
++  %l = call i32 @pthread_mutex_lock(ptr @m)
++  br label %header
++header:
++  %i = phi i32 [ 0, %entry ], [ %n, %body ]
++  store i32 1, ptr @G, align 4
++  %c = icmp slt i32 %i, 10
++  br i1 %c, label %body, label %exit
++body:
++  %u = call i32 @pthread_mutex_unlock(ptr @m)
++  %n = add i32 %i, 1
++  br label %header
++exit:
++  ret ptr null
++}
++
++define internal ptr @unlock_after_loop(ptr %a) {
++entry:
++  %l = call i32 @pthread_mutex_lock(ptr @m)
++  br label %header
++header:
++  %i = phi i32 [ 0, %entry ], [ %n, %body ]
++  store i32 1, ptr @H, align 4
++  %c = icmp slt i32 %i, 10
++  br i1 %c, label %body, label %exit
++body:
++  %n = add i32 %i, 1
++  br label %header
++exit:
++  %u = call i32 @pthread_mutex_unlock(ptr @m)
++  ret ptr null
++}
++
++define internal ptr @other(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @m)
++  store i32 2, ptr @G, align 4
++  store i32 2, ptr @H, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @m)
++  ret ptr null
++}
++
++define i32 @main() {
++  %t = alloca i64, align 8
++  %c1 = call i32 @pthread_create(ptr %t, ptr null, ptr @unlock_in_body, ptr null)
++  %c2 = call i32 @pthread_create(ptr %t, ptr null, ptr @unlock_after_loop, ptr null)
++  %c3 = call i32 @pthread_create(ptr %t, ptr null, ptr @other, ptr null)
++  ret i32 0
++}
++
++; CHECK: Protected Global Variables
++; CHECK-DAG: * H
+diff --git a/llvm/test/Analysis/LockOwnership/stale-held-record.ll b/llvm/test/Analysis/LockOwnership/stale-held-record.ll
+new file mode 100644
+index 000000000000..6f78aee2dc94
+--- /dev/null
++++ b/llvm/test/Analysis/LockOwnership/stale-held-record.ll
+@@ -0,0 +1,60 @@
++; The held-lock record of an instruction must come from the converged
++; state. In @w1 the entry block has no lock activity; the worklist, seeded
++; with the entry alone, stopped there, and the recording run then walked
++; the blocks in layout order: %B (lock) before %join, %A after. At the
++; first visit of %join only %B's state existed and it recorded m as held
++; for the store to @G; when %A was processed and %join revisited, the meet
++; was empty -- and an empty set was not recorded, so the stale record
++; stood and @G counted as protected, although the %A path writes it
++; holding nothing. @H is the control, written under m on every path.
++
++; RUN: opt < %s -passes='print<lock-ownership>' -disable-output 2>&1 | FileCheck %s --implicit-check-not='* G'
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@m = global i64 0, align 8
++@G = internal global i32 0, align 4
++@H = internal global i32 0, align 4
++declare i32 @pthread_mutex_lock(ptr)
++declare i32 @pthread_mutex_unlock(ptr)
++declare i32 @pthread_create(ptr, ptr, ptr, ptr)
++
++define internal ptr @w1(ptr %a) {
++entry:
++  %c = icmp eq ptr %a, null
++  br i1 %c, label %B, label %A
++B:
++  %l = call i32 @pthread_mutex_lock(ptr @m)
++  br label %join
++join:
++  store i32 1, ptr @G, align 4
++  ret ptr null
++A:
++  br label %join
++}
++
++define internal ptr @w2(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @m)
++  store i32 2, ptr @G, align 4
++  store i32 2, ptr @H, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @m)
++  ret ptr null
++}
++
++define internal ptr @w3(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @m)
++  store i32 3, ptr @H, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @m)
++  ret ptr null
++}
++
++define i32 @main() {
++  %t = alloca i64, align 8
++  %c1 = call i32 @pthread_create(ptr %t, ptr null, ptr @w1, ptr null)
++  %c2 = call i32 @pthread_create(ptr %t, ptr null, ptr @w2, ptr null)
++  %c3 = call i32 @pthread_create(ptr %t, ptr null, ptr @w3, ptr null)
++  ret i32 0
++}
++
++; CHECK: Protected Global Variables
++; CHECK-DAG: * H

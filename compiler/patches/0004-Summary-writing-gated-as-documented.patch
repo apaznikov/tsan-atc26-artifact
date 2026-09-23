@@ -1,0 +1,55 @@
+From 53e1b9a0af3c7c66142b83125aba6c6560758732 Mon Sep 17 00:00:00 2001
+From: Alexey Paznikov <apaznikov@gmail.com>
+Date: Mon, 14 Sep 2026 19:59:30 +0800
+Subject: Summary writing gated as documented
+
+---
+ llvm/lib/Analysis/EscapeAnalysis.cpp | 3 ++-
+ llvm/lib/Analysis/LockOwnership.cpp  | 3 ++-
+ llvm/lib/Analysis/SingleThreaded.cpp | 5 ++++-
+ 3 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/llvm/lib/Analysis/EscapeAnalysis.cpp b/llvm/lib/Analysis/EscapeAnalysis.cpp
+index 1cdb951cd815..bc73ee58c448 100644
+--- a/llvm/lib/Analysis/EscapeAnalysis.cpp
++++ b/llvm/lib/Analysis/EscapeAnalysis.cpp
+@@ -1602,7 +1602,8 @@ EscapeAnalysisGlobalInfo::EscapeAnalysisGlobalInfo(CallGraph &CG, Module &M_,
+ 
+   LLVM_DEBUG(printArgEscStatus(););
+ 
+-  writeIPASummary();
++  if (TsanUseAnalysisSummaries)
++    writeIPASummary();
+ 
+   DEBUG_WITH_TYPE(PRINT_ESCAPING_CALLEES,
+       if (EscFuncsFile.is_open()) { EscFuncsFile.close(); });
+diff --git a/llvm/lib/Analysis/LockOwnership.cpp b/llvm/lib/Analysis/LockOwnership.cpp
+index d4d639f01b77..7029b93acd51 100644
+--- a/llvm/lib/Analysis/LockOwnership.cpp
++++ b/llvm/lib/Analysis/LockOwnership.cpp
+@@ -385,7 +385,8 @@ LockOwnershipInfo::LockOwnershipInfo(CallGraph &CG_, Module &MM_,
+   doIPALockOwnershipAnalysis(true);
+ 
+   findProtectedGlobalVariables(STI);
+-  writeSummary();
++  if (TsanUseAnalysisSummaries)
++    writeSummary();
+ }
+ 
+ bool LockOwnershipInfo::isTryLockFunc(const Function *F) {
+diff --git a/llvm/lib/Analysis/SingleThreaded.cpp b/llvm/lib/Analysis/SingleThreaded.cpp
+index eed8876090de..2f6a8c156b69 100644
+--- a/llvm/lib/Analysis/SingleThreaded.cpp
++++ b/llvm/lib/Analysis/SingleThreaded.cpp
+@@ -301,7 +301,10 @@ SingleThreadedInfo::SingleThreadedInfo(CallGraph &CG_, Module &MM_)
+   // Run SWMR analysis
+   findSWMRGlobals();
+ 
+-  writeSummary();
++  // Only write a summary if something may read one. Writing unconditionally
++  // created a tsan-logs/ directory in whatever tree the compiler ran in.
++  if (TsanUseAnalysisSummaries)
++    writeSummary();
+ }
+ 
+ //===----------------------------------------------------------------------===//

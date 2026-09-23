@@ -1,4 +1,0 @@
-claude samples=176 peak_pcpu=5.2
-remote-dev-serv samples=64 peak_pcpu=59.0
-java samples=64 peak_pcpu=20.3
-sshd samples=27 peak_pcpu=0.8

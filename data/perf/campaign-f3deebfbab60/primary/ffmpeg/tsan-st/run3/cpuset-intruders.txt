@@ -1,4 +1,0 @@
-claude samples=307 peak_pcpu=5.3
-remote-dev-serv samples=55 peak_pcpu=59.3
-sshd samples=19 peak_pcpu=0.8
-Rider.Backend samples=3 peak_pcpu=5.2

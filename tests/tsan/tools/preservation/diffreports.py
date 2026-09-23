@@ -5,7 +5,7 @@ Per configuration, buckets every test against stock by TSan report keys:
   L2 identical: same set by function only (a frame's line moved) -- "relocated"
   other: anything else, split into lost (stock has a key the config lacks) and
          new (config has a key stock lacks)
-Keys come from tsan-exp's tools/preservation/tsan_reports.py so the suite and
+Keys come from tools/preservation/tsan_reports.py in the artifact's harness, so the suite and
 application tables read the same. Keys per test are the union over all runs and
 RUN lines. Tests are split by whether stock reported anything at all."""
 import sys, os, glob, collections

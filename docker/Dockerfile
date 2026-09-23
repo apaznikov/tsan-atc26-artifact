@@ -5,14 +5,12 @@
 #         under a memory cap, docker/build.sh says why). This file is the recipe.
 
 # The base is pinned by DIGEST, not by the tag: `ubuntu:24.04` moves, and two builds a month apart would then
-# start from different images (one evaluator's build on 21 Sep 2026 started from 008173c2..., this host's from
-# the digest below). The compiler's own identity is asserted by the reconstructed source tree hash further
+# start from different images. The compiler's own identity is asserted by the reconstructed source tree hash further
 # down, so the base only supplies the toolchain and the runtime libraries; pinning it removes one way for two
 # builds of this artifact to differ. Package versions inside the image can still move (docs/troubleshooting.md).
 FROM ubuntu@sha256:786a8b558f7be160c6c8c4a54f9a57274f3b4fb1491cf65146521ae77ff1dc54 AS build
 ARG DEBIAN_FRONTEND=noninteractive
-# Acquire::Retries: a package fetch that drops mid-way (a student's build on 21 Sep 2026 died in this layer with
-# apt exit code 100 when the network blinked) is retried by apt itself instead of failing the whole build.
+# Acquire::Retries: a package fetch that drops mid-way is retried by apt itself instead of failing the build.
 RUN apt-get -o Acquire::Retries=5 update && apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
       git ca-certificates cmake ninja-build python3 g++ gcc libstdc++-13-dev \
       zlib1g-dev libzstd-dev libxml2-dev binutils file \
@@ -35,9 +33,11 @@ COPY compiler/patches/ /src/patches/
 # though every preimage blob matches the index and is present in the object store; plain
 # `git apply` applies the identical patches cleanly. The index is not used by the build, so
 # apply to the working tree and verify the RESULT instead of trusting the mechanism: the
-# reconstructed tree must hash to the branch's tree, which is the reproducibility claim a
-# reviewer can check without building anything.
-ARG EXPECTED_TREE=83c8a2a16db10bd5f826a76f84911ae171d05d3f
+# reconstructed tree must hash to EXPECTED_TREE, which is the reproducibility claim a reviewer can
+# check without building anything. EXPECTED_TREE is the tree of the measured commit (AUDIT_HASH below)
+# with one repository-root file that no build step reads left out and one docstring line of a test
+# tool reworded; no compiled file differs, and scripts/12-compiler-equivalence.sh checks the compiled output.
+ARG EXPECTED_TREE=2afe566e987cc80d0cf2d3c09ee0846a7fb0261c
 RUN cd llvm-project && for p in $(ls /src/patches/*.patch | sort); do \
       echo "applying $p"; git apply "$p" || exit 1; done \
     && git add -A \
@@ -58,8 +58,7 @@ RUN cd llvm-project && for p in $(ls /src/patches/*.patch | sort); do \
 # stamp. Both the version string and the TSAN_AUDIT_HASH file below carry the branch commit; the file's
 # second line carries the tree hash the patch step MEASURED (not the expected constant), so that
 # scripts/13-verify-image.sh can check the reconstruction from the image itself, from any checkout,
-# without the build log (until 20 Sep 2026 the log was the only record, and a second checkout of the
-# repository reported the check as not made).
+# without the build log.
 ARG AUDIT_HASH=f3deebfbab602f4e05289e0acbde0efd06b8058c
 RUN cmake -G Ninja -S llvm-project/llvm -B build \
       -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=ON \

@@ -1,0 +1,270 @@
+From 55e3f4fc320c9afbfd4ba3120cdba9178ef92ac1 Mon Sep 17 00:00:00 2001
+From: Alexey Paznikov <apaznikov@gmail.com>
+Date: Mon, 14 Sep 2026 19:59:36 +0800
+Subject: EA: a library call that stores a pointer to its argument through
+ another argument (shape 22)
+
+---
+ llvm/docs/TSanAnalysesAudit.md                |  7 +-
+ .../include/llvm/Analysis/TargetLibraryInfo.h |  8 ++
+ llvm/lib/Analysis/EscapeAnalysis.cpp          | 26 +++++-
+ llvm/lib/Analysis/TargetLibraryInfo.cpp       | 16 ++++
+ .../Instrumentation/ThreadSanitizer.cpp       | 15 +++
+ .../escape-libcall-out-pointer.ll             | 93 +++++++++++++++++++
+ 6 files changed, 160 insertions(+), 5 deletions(-)
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/escape-libcall-out-pointer.ll
+
+diff --git a/llvm/docs/TSanAnalysesAudit.md b/llvm/docs/TSanAnalysesAudit.md
+index 73d4010b028a..56f81033351e 100644
+--- a/llvm/docs/TSanAnalysesAudit.md
++++ b/llvm/docs/TSanAnalysesAudit.md
+@@ -43,6 +43,7 @@ commit and a positive control that still elides. Reach is measured per commit
+ | 19 | `%r = call ptr @f(ptr %local)` where `f` stores its argument to a global and returns an escaped pointer; a thread writes through the global; the caller's later store to `local` was elided (found while writing the budget test; reproduced on 729521af8965 by `escape-arg-of-escaped-result-call.ll`; the void-returning callee was handled) | `getEscInfoCall` answered "the result escapes" for every pointer operand of such a call, so its arguments were never classified; **fixed:EA-11** (shape 19: the escaped-result answer only on the callee operand; arguments classified) | EA-11 — fixed on the performance branch (commit `EA: the arguments of a call whose result escapes are analysed too`), escape-arg-of-escaped-result-call |
+ | 20 | `@slot = global ptr @g` — the address of a local-linkage global in another global's initializer (directly, inside a constant aggregate, or through `llvm.used`); a thread loads the pointer and writes through it; SWMR counted `g` read-only and elided main's read of it after the thread started, LO counted it protected (found while sizing the read-only-argument rule; reproduced on 94764fe839df by `swmr-address-in-initializer.ll` and `LockOwnership/address-in-initializer.ll`) | `collectAccessingInstrs` listed instruction users and recursed into constant expressions and aliases, dropping every other user silently; **fixed:SWMR-2, LO-8** (the walk reports an address it cannot follow to an instruction; both consumers treat the global as escaped) | SWMR-2, LO-8 — fixed on the performance branch (commit `SWMR, LO, EA: two more published-address shapes (20, 21)`), swmr-address-in-initializer, address-in-initializer |
+ | 21 | `%r = strchr(%b, c); store %r, @g` — any library call that returns a pointer into its argument (strchr, strstr, memchr, strcpy, memcpy, fgets, realloc, …); a thread writes `b` through the published pointer; `b`'s accesses were elided — after the publication by the per-point verdict, before it by the later-escape rule, which did not follow the result either (found while guarding the interceptor toggle; reproduced on 94764fe839df by `escape-libcall-result-alias.ll`) | the result of such a call was an object of its own, an "escaped call" register unrelated to the argument; **fixed:EA-12** (`TargetLibraryInfo::returnsPointerIntoArg`; the object walk continues from the argument at the whole-object path; `collectLaterEscapes` walks the result's uses; realloc's argument no longer "escapes" through the call since the result stands for the block; realloc(NULL) stays an object of its own) | EA-12 — fixed on the performance branch (same commit), escape-libcall-result-alias |
++| 22 | `strtol(buf, &end, 10); g = end;` — a library call stores a pointer into its argument through an out-parameter (the strtol/strtod family's end pointer) and the slot's content is published; a thread writes `buf` through it; `buf`'s accesses were elided (found while deriving the thread-free vouch lists for the authors' measurements; reproduces on 729521af8965 and d3bf9f8c39fe by `escape-libcall-out-pointer.ll`) | the library table said only that the string is not retained; nothing recorded that the slot now points into it, so the later load-and-publish of the slot escaped nothing; **fixed:EA-13** (`TargetLibraryInfo::storesArgThroughArg`: the call is the store `*end = s` for the escape analysis, and a store site for the later-escape rule; a null end pointer stores nothing) | EA-13 — fixed on the performance branch (commit `EA: a library call that stores a pointer to its argument through another argument (shape 22)`), escape-libcall-out-pointer |
+ 
+ ## Design versus paper
+ 
+@@ -171,7 +172,7 @@ a field of an escaped object" only in one order (`fixed:EA-3`), reason bits
+ lost (`fixed:EA-1`, `fixed:EA-4`), unknown objects dropped (`fixed:EA-5`),
+ unlisted opcodes and loaded pointers with no recorded pointee
+ (`fixed:EA-6`), argument escape for functions reached other than by a direct
+-call (`fixed:EA-7`), library retention table (`fixed:EA-8`). A pointee stored through a pointer that is external only by being an argument now carries `GPTR_ALIASING` beside the seed bit, so the callers' mask cannot erase the escape — `fixed:EA-10` (performance branch; shape 18). The escaped-result answer of a call is now given once, on the callee operand, so the argument operands of a call whose returned pointer escapes go through the ordinary classification — `fixed:EA-11` (performance branch; shape 19). A library call that returns a pointer into its argument (strchr, strcpy, memcpy, fgets, realloc, …) no longer yields an object of its own: the object walk continues from the argument, at the whole-object path, and the later-escape walk follows the result — `fixed:EA-12` (performance branch; shape 21).
++call (`fixed:EA-7`), library retention table (`fixed:EA-8`). A pointee stored through a pointer that is external only by being an argument now carries `GPTR_ALIASING` beside the seed bit, so the callers' mask cannot erase the escape — `fixed:EA-10` (performance branch; shape 18). The escaped-result answer of a call is now given once, on the callee operand, so the argument operands of a call whose returned pointer escapes go through the ordinary classification — `fixed:EA-11` (performance branch; shape 19). A library call that returns a pointer into its argument (strchr, strcpy, memcpy, fgets, realloc, …) no longer yields an object of its own: the object walk continues from the argument, at the whole-object path, and the later-escape walk follows the result — `fixed:EA-12` (performance branch; shape 21). A library call that stores a pointer into its argument through an out-parameter (strtol's end pointer) is the store `*end = s` for the analysis and a store site for the later-escape rule — `fixed:EA-13` (performance branch; shape 22).
+ 
+ ### DE — dominance elimination (`3b-redundancy.tex`, `appendix/de-proofs.tex`)
+ 
+@@ -418,6 +419,7 @@ Lines as of b4bf8b8f4613.
+ | `doesArgEscape` (1417) | does libc retain the argument | fixed:EA-8 (bfaa2b859100: `setbuf/setvbuf` retain arg 1, realloc arg 0 aliases the result); default true sound | tli-retention |; realloc's argument no longer escapes through the call — the result stands for the block (EA-12)
+ | `isReturnValueEscaping` (1723) | does libc return non-fresh memory | fixed:EA-8 (bfaa2b859100: `realloc` family escaping; section III left as is, unreachable for pointer returns) | tli-retention |
+ | `returnsPointerIntoArg` (new) | does libc return a pointer into an argument: strchr/strrchr/strstr/strpbrk/memchr/memrchr, the copy family and its `_chk` variants, fgets/gets, realloc | **fixed:EA-12** (performance branch; shape 21): the object walk and the later-escape walk look through such calls; strtok, ctermid and realpath excluded (static or earlier memory) | escape-libcall-result-alias |
++| `storesArgThroughArg` (new) | does libc store a pointer into one argument through another: the strtol/strtoul/strtoll/strtoull/strtod/strtof/strtold end pointer | **fixed:EA-13** (performance branch; shape 22): modelled as the store `*end = s` in `getEscInfoCall` and as a store site in `collectLaterEscapes`; a null end pointer stores nothing | escape-libcall-out-pointer |
+ | `isSyncFree` (1836) | libc function synchronises? | fixed:DE-5 (450fc39a8545: fd I/O not sync-free); fixed:DE-6 (92f2b95e9d83: an explicit sync-free list, unlisted ⇒ not sync-free; the blocklist kept and tested first) | elim-by-dominance-across-fd-io, elim-by-dominance-tli-sync-free-table |
+ | `isLockAcquireFunction` / `isLockReleaseFunction` (2123/2148) | exact-name lock tables | sound; LO now has the same exact-name discipline (LO-1) | elim-by-dominance-across-acq-rel-* |
+ 
+@@ -478,7 +480,7 @@ Lines as of b4bf8b8f4613.
+ | `isThreadCreatorName` (1085) | second creator list | — | fixed:NAMES-1 pending | — |
+ | `allLoadsAcquire` (1095) | every load of G is acquire | release-like publication | fixed:EA-9 pending (no linkage check) | escape-later-through-loaded-pointer · lines 92.86%, branches 75.00% |
+ | `LaterEscapes::allReleaseLike` (1136) | nothing non-release-like reachable | — | sound given a correct `Seen` | escape-adversarial |
+-| `collectLaterEscapes` (1146) | reachable escape sites of the access's object | sound-FS rule | **fixed:EA-9 pending** (wrong object; memcpy source); follows the result of a call that returns into the argument (**fixed:EA-12**, shape 21) | escape-later-through-loaded-pointer · lines 100.00%, branches 75.00% |
++| `collectLaterEscapes` (1146) | reachable escape sites of the access's object | sound-FS rule | **fixed:EA-9 pending** (wrong object; memcpy source); follows the result of a call that returns into the argument (**fixed:EA-12**, shape 21); a library call storing a pointer into the argument through another argument is a store site (**fixed:EA-13**, shape 22) | escape-later-through-loaded-pointer · lines 100.00%, branches 75.00% |
+ | `attributeFlowSensitiveElision` (1236) | statistics | — | hygiene | — · lines 41.67%, branches 41.67% |
+ | `chooseInstructionsToInstrument` (1273) | the elision pipeline | all propositions | sound in order; each step's analysis verdict is what this ledger audits; LO/STC/SWMR steps gain counters (STATS-1) | ThreadSanitizerNew/* |
+ | `createInstrIndexMap` (1458), `getReverseReachable` (1467) | indices; predecessor closure (memoised) | — | sound | elim-by-dominance-paths |
+@@ -650,6 +652,7 @@ carries its own tests, static-count delta and frozen copy.
+ | `perf/ea-compile-time` (second commit) | EA-11, shape 19: arguments of an escaped-result call | `escape-arg-of-escaped-result-call.ll` fails on 729521af8965 |
+ | `perf/ea-compile-time` (third commit) | the escape analysis's fixpoint: a block is evaluated only when a predecessor's out-state changed (returning blocks always), the object's entries are erased by range, merges insert with a hint; a fail-closed budget (`-tsan-ea-max-blocks`, `-tsan-ea-max-evals-per-block`, `-tsan-ea-max-state-entries`; abandoned = everything escaped) | verdict identity: `-tsan-ea-verify-skips` re-evaluates every skipped block and asserts it a no-op — 0 failures over both lit suites and the 28-module corpus (sqlite3.c, shell.c, memcached) in all three modes; static counts equal to the branch without the change in all nine configurations (memcached / sqlite3.c / shell.c); canonical printed states <CANON>; compile time <EATIME> |
+ | `perf/ea-compile-time` (fourth commit) | `unknown-external-summary.ll`: overlapping CHECK-DAG patterns anchored (the flake) | 3/3 |
++| `perf/stage-b` (sixth commit) | EA-13, shape 22 — the strtol-family end pointer (found while deriving the authors' vouch lists) | `escape-libcall-out-pointer.ll` fails on 729521af8965 and d3bf9f8c39fe; static counts on the patched corpus unchanged in all four configurations (EA, SWMR, LO, sound bundle: memcached 6829 / 6928 / 6919 / 6819, sqlite3.c 55834 / 56713 / 56713 / 55834, shell.c 6303 / 6453 / 6453 / 6298) — no program in the corpus publishes an end pointer; five suites 123 passed / 1 unsupported / 0 failed |
+ | `perf/ea-compile-time` (fifth commit) | SWMR-2/LO-8, shape 20 and EA-12, shape 21 — both found on 94764fe839df | the three tests fail on 94764fe839df; static counts (opt on the `sanitize_thread`-patched corpus, EA / SWMR / LO / sound bundle): memcached and sqlite3.c unchanged in all four, shell.c −10 under EA and the bundle — accesses through never-published realloc'd buffers in `main` and `process_input` (the argument no longer escapes at the call; the result stands for the block); five suites 123/0 |
+ | `yield/dynstc-runs` c877c6eca80b | C1 (Y4): a DynSTC guard run spans calls that cannot create a thread (`SingleThreadedInfo::callMayCreateThread`); guards hoisted to loop preheaders; the vtable paths guarded; switch `-tsan-dynstc-runs-across-thread-free-calls` | `dynstc-runs.ll`, `dynstc-hoist.ll`, `dynstc-vptr.ll` fail on the parent; `__tsan_read/write` counts unchanged; `NumThreadCountLoads` (DynSTC alone) sqlite3.c 30 932 → 28 908 (−6.5 %), shell.c 4 360 → 3 742 (−14.2 %), memcached 4 313 → 3 771 (−12.6 %); three compiler-rt tests, run under the integrated build |
+ | `yield/de-atomic-ordering` eede63e4e9b5 | C2 (Y2): an atomic on a DE path counts by its ordering, exactly as the runtime does (relaxed = no synchronisation; a seq_cst load acquires only); `force_seq_cst_atomics` recorded as incompatible | tests fail on the parent; the classification fires 2 502 times on sqlite3.c but static counts are unchanged on the corpus (every such path has another blocker); two compiler-rt tests |
+diff --git a/llvm/include/llvm/Analysis/TargetLibraryInfo.h b/llvm/include/llvm/Analysis/TargetLibraryInfo.h
+index 574cbdd6edbc..80a1b11426f8 100644
+--- a/llvm/include/llvm/Analysis/TargetLibraryInfo.h
++++ b/llvm/include/llvm/Analysis/TargetLibraryInfo.h
+@@ -454,6 +454,14 @@ public:
+   /// earlier call was given (strtok, ctermid, realpath with a null buffer).
+   static bool returnsPointerIntoArg(LibFunc F, unsigned &ArgNo);
+ 
++  /// True when a call to \p F stores a pointer into the memory its argument
++  /// \p SrcArg points to through its argument \p DstArg -- strtol's end
++  /// pointer: `*end = s + k`. For the escape analysis that is the store
++  /// `*DstArg = SrcArg`, so what DstArg names now points into SrcArg's
++  /// object and publishing it publishes the object.
++  static bool storesArgThroughArg(LibFunc F, unsigned &SrcArg,
++                                  unsigned &DstArg);
++
+   static bool isLockAcquireFunction(const Function &F);
+   static bool isLockReleaseFunction(const Function &F);
+ 
+diff --git a/llvm/lib/Analysis/EscapeAnalysis.cpp b/llvm/lib/Analysis/EscapeAnalysis.cpp
+index b4126f03c866..c988daa02715 100644
+--- a/llvm/lib/Analysis/EscapeAnalysis.cpp
++++ b/llvm/lib/Analysis/EscapeAnalysis.cpp
+@@ -981,9 +981,29 @@ EscapeAnalysisInfo::getEscInfoCall(const Use &U, const Instruction *I) const {
+     const unsigned ArgIndex = Call->getArgOperandNo(&U);
+     // Some functions can be taken as safe external calls
+     LibFunc Func;
+-    if (TLI.getLibFunc(*CalledFunc, Func) && TLI.has(Func) &&
+-        !TLI.doesArgEscape(Func, ArgIndex))
+-      return {EscKindTy::NO_ESCAPE, std::nullopt};
++    if (TLI.getLibFunc(*CalledFunc, Func) && TLI.has(Func)) {
++      // strtol(s, &end, base) stores a pointer into s through end. That is
++      // the store `*end = s` as far as escaping goes: the slot now points
++      // into s's object, and publishing what the slot holds publishes the
++      // object. The table said only that s is not retained, so
++      // `strtol(buf, &end, 10); g = end;` left buf local and its later
++      // accesses unprotected while a thread wrote it through g (shape 22).
++      // A null end pointer stores nothing.
++      if (unsigned Src, Dst; TargetLibraryInfo::storesArgThroughArg(Func, Src, Dst) &&
++          ArgIndex == Src && Dst < Call->arg_size() &&
++          !isa<ConstantPointerNull>(
++              Call->getArgOperand(Dst)->stripPointerCasts())) {
++        bool DstComplete = true;
++        const auto DstObjs =
++            getUnderlyingMayEscObjs(Call->getArgOperand(Dst), TLI,
++                                    MaxUnderlObjLookup, nullptr, &DstComplete);
++        if (!DstComplete || DstObjs.empty())
++          return {EscKindTy::MAY_ESCAPE, EscReasonBits::OTHER};
++        return {EscKindTy::MAY_ALIASING, DstObjs};
++      }
++      if (!TLI.doesArgEscape(Func, ArgIndex))
++        return {EscKindTy::NO_ESCAPE, std::nullopt};
++    }
+ 
+     if (isSafeExternalCall(CalledFunc->getName(), TLI, ArgIndex,
+                            NonEscapingFuncs))
+diff --git a/llvm/lib/Analysis/TargetLibraryInfo.cpp b/llvm/lib/Analysis/TargetLibraryInfo.cpp
+index ce18d017a0f4..dabe773e5471 100644
+--- a/llvm/lib/Analysis/TargetLibraryInfo.cpp
++++ b/llvm/lib/Analysis/TargetLibraryInfo.cpp
+@@ -1761,6 +1761,22 @@ bool TargetLibraryInfo::returnsPointerIntoArg(LibFunc F, unsigned &ArgNo) {
+   }
+ }
+ 
++bool TargetLibraryInfo::storesArgThroughArg(LibFunc F, unsigned &SrcArg,
++                                            unsigned &DstArg) {
++  switch (F) {
++  // The conversion stops somewhere inside the string; the position is
++  // stored through the end pointer when one is given.
++  case LibFunc_strtol: case LibFunc_strtoll:
++  case LibFunc_strtoul: case LibFunc_strtoull:
++  case LibFunc_strtod: case LibFunc_strtof: case LibFunc_strtold:
++    SrcArg = 0;
++    DstArg = 1;
++    return true;
++  default:
++    return false;
++  }
++}
++
+ bool TargetLibraryInfo::isReturnValueEscaping(LibFunc F) {
+   switch (F) {
+   // ===================================================================
+diff --git a/llvm/lib/Transforms/Instrumentation/ThreadSanitizer.cpp b/llvm/lib/Transforms/Instrumentation/ThreadSanitizer.cpp
+index 3ceac225cb3e..38a6119e6335 100644
+--- a/llvm/lib/Transforms/Instrumentation/ThreadSanitizer.cpp
++++ b/llvm/lib/Transforms/Instrumentation/ThreadSanitizer.cpp
+@@ -1280,6 +1280,21 @@ collectLaterEscapes(Instruction *Access, Value *Addr,
+         if (getArgumentAliasingToReturnedPointer(CB, false) == U.get() ||
+             EscapeAnalysisInfo::getLibCallArgReturnedInto(CB, TLI) == U.get())
+           Work.push_back(CB);
++        // A library call that stores a pointer into this argument through
++        // another argument (strtol's end pointer) is a store of the address
++        // into that slot, and is classified as one: a local slot is not
++        // followed (kept), a global slot is a plain publication (shape 22).
++        if (const Function *LibCallee = CB->getCalledFunction()) {
++          LibFunc LF;
++          unsigned Src, Dst;
++          if (TLI.getLibFunc(*LibCallee, LF) && TLI.has(LF) &&
++              TargetLibraryInfo::storesArgThroughArg(LF, Src, Dst) &&
++              ArgNo == Src && Dst < CB->arg_size() &&
++              !isa<ConstantPointerNull>(
++                  CB->getArgOperand(Dst)->stripPointerCasts()))
++            ClassifyStoreTo(CB->getArgOperand(Dst), CB, /*Atomic=*/false,
++                            AtomicOrdering::NotAtomic);
++        }
+         if (CB->doesNotCapture(ArgNo) || !Reachable(CB))
+           continue;
+         const Function *Callee = CB->getCalledFunction();
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/escape-libcall-out-pointer.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/escape-libcall-out-pointer.ll
+new file mode 100644
+index 000000000000..e3174604f9d4
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/escape-libcall-out-pointer.ll
+@@ -0,0 +1,93 @@
++; strtol(s, &end, base) stores a pointer into s through end. The library
++; table said only that s is not retained, so the slot never pointed into the
++; buffer: `strtol(buf, &end, 10); g = end;` left buf local and its later
++; accesses were elided while a thread wrote it through g (shape 22). The call
++; is now the store `*end = s` for the escape analysis and a store site for
++; the later-escape rule. Controls: a null end pointer stores nothing
++; (@strtol_endptr_null), an end pointer that is only compared publishes
++; nothing (@strtol_endptr_private).
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-escape-analysis-global -S | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@g = global ptr null, align 8
++declare i64 @strtol(ptr, ptr, i32)
++declare double @strtod(ptr, ptr)
++declare void @use(i1)
++
++; The slot's content is published after the conversion: the write to the
++; buffer after that is instrumented.
++define void @strtol_endptr_published() sanitize_thread {
++; CHECK-LABEL: @strtol_endptr_published
++; CHECK:       store ptr %e, ptr @g
++; CHECK:       call void @__tsan_write1(ptr %b)
++; CHECK-NEXT:  store i8 1, ptr %b
++  %b = alloca [8 x i8], align 1
++  %endp = alloca ptr, align 8
++  store i8 49, ptr %b, align 1
++  %v = call i64 @strtol(ptr %b, ptr %endp, i32 10)
++  %e = load ptr, ptr %endp, align 8
++  store ptr %e, ptr @g, align 8
++  store i8 1, ptr %b, align 1
++  ret void
++}
++
++; The publication comes after the access: the conversion's store into the
++; local slot is a site the later-escape rule keeps.
++define void @strtol_endptr_published_later() sanitize_thread {
++; CHECK-LABEL: @strtol_endptr_published_later
++; CHECK:       call void @__tsan_write1(ptr %b)
++; CHECK-NEXT:  store i8 1, ptr %b
++; CHECK:       store ptr %e, ptr @g
++  %b = alloca [8 x i8], align 1
++  %endp = alloca ptr, align 8
++  %v = call i64 @strtol(ptr %b, ptr %endp, i32 10)
++  store i8 1, ptr %b, align 1
++  %e = load ptr, ptr %endp, align 8
++  store ptr %e, ptr @g, align 8
++  ret void
++}
++
++; strtod, the same shape.
++define void @strtod_endptr_published() sanitize_thread {
++; CHECK-LABEL: @strtod_endptr_published
++; CHECK:       store ptr %e, ptr @g
++; CHECK:       call void @__tsan_write1(ptr %b)
++; CHECK-NEXT:  store i8 1, ptr %b
++  %b = alloca [8 x i8], align 1
++  %endp = alloca ptr, align 8
++  %v = call double @strtod(ptr %b, ptr %endp)
++  %e = load ptr, ptr %endp, align 8
++  store ptr %e, ptr @g, align 8
++  store i8 1, ptr %b, align 1
++  ret void
++}
++
++; Control: a null end pointer stores nothing; the buffer stays local.
++define void @strtol_endptr_null() sanitize_thread {
++; CHECK-LABEL: @strtol_endptr_null
++; CHECK-NOT:   call void @__tsan_write1(ptr %b)
++; CHECK:       ret void
++  %b = alloca [8 x i8], align 1
++  store i8 49, ptr %b, align 1
++  %v = call i64 @strtol(ptr %b, ptr null, i32 10)
++  store i8 1, ptr %b, align 1
++  ret void
++}
++
++; Control: the end pointer is only compared; nothing is published.
++define void @strtol_endptr_private() sanitize_thread {
++; CHECK-LABEL: @strtol_endptr_private
++; CHECK-NOT:   call void @__tsan_write1(ptr %b)
++; CHECK:       ret void
++  %b = alloca [8 x i8], align 1
++  %endp = alloca ptr, align 8
++  store i8 49, ptr %b, align 1
++  %v = call i64 @strtol(ptr %b, ptr %endp, i32 10)
++  %e = load ptr, ptr %endp, align 8
++  %c = icmp eq ptr %e, %b
++  call void @use(i1 %c)
++  store i8 1, ptr %b, align 1
++  ret void
++}
