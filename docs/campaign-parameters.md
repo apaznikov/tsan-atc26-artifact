@@ -370,7 +370,8 @@ clip; since the FFmpeg default itself became 16, that assignment now restates th
 remaining effect is the `threads_from_env` collision described above; Redis gets no workload variable at all and is short enough without one. And `SQLITE_TESTS=walthread1`
 has no effect on the default path: `run_sqlite_test.sh` reads that variable only inside its `--w1-threads`
 contention branch, so a smoke with the thread knob unset passes threadtest3 no test argument and its own
-substArgv expands that to the whole seven-subtest suite. Found by
+substArgv expands that to the whole seven-subtest suite. Measured: 459.8 s for the `orig` cell alone, the
+fastest of the five builds. Found by
 running one on 23 Sep 2026; not fixed then, because the one-line repair changes the command threadtest3
 receives on the default path, which is the path every shipped SQLite number came from, and that is not a
 change to make beside a verification run. The marker itself is sound: a single run has no

@@ -88,7 +88,9 @@ It is not hung: SQLite is the one application whose smoke run is not shortened. 
 `SQLITE_TESTS=walthread1`, and `run_sqlite_test.sh` reads that variable only on its `--w1-threads`
 contention path; with the thread knob unset, which is the default, threadtest3 is invoked with no test
 argument and runs the whole seven-subtest suite on each of the four builds. Expect roughly the time of a
-SQLite measurement rather than a few minutes. Smoke mode shortens the workload itself only for memcached
+SQLite measurement rather than a few minutes: we timed one on 23 September 2026 and the FIRST cell, the
+uninstrumented `orig` build, took 7 minutes 40 seconds on its own. The four instrumented configurations are
+slower, so nothing is written for well over half an hour. Smoke mode shortens the workload itself only for memcached
 and MySQL; Redis and FFmpeg run theirs once in full. To check that the pipeline works on your machine,
 smoke memcached: its smoke cells ran in twelve seconds each when we measured one on 23 September 2026. (Found 23 September 2026 by running one; the
 repair changes the command threadtest3 receives on the path every shipped SQLite number came from, so it
