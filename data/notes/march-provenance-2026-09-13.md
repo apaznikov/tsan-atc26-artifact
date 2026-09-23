@@ -40,6 +40,11 @@ Two independent drivers compute their sweep from `nproc`:
 - `sql/sqlite/run_sqlite_test_all.sh:62`  `max_threads=$(nproc)`
 - `projects/ffmpeg/bench_ffmpeg_all_threads-contention.sh:8`  `MAX_THREADS="$(nproc)"`
 
+Both paths are the lab harness's, and neither driver is in the shipped `harness/`: they are the sweep loops
+this artifact replaces with `40-perf.sh --all-configs`, and they were left out of it (`scripts/vendor-harness.sh`,
+`LAB_ONLY`) rather than shipped as a second way to do the same thing. The two lines are quoted here because
+this note is the record of what the March runs did, not an instruction to run them.
+
 Both swept `seq 2 2 $MAX` and both stopped at **40**. This is not a truncated run: every one of the 12 SQLite
 configurations has exactly 20 logs spanning 2..40, so the sweep completed for all of them at 40. An
 interruption would have truncated the last configuration only.

@@ -111,6 +111,16 @@ LAB_ONLY=(
   layout_probe.sh memcached_placement_probe.sh ffmpeg_rerun_4threads.sh
   # Superseded by run_sqlite_test.sh, which every live path calls; reachable from nothing and named `_old`.
   run_sqlite_test_all_old.sh
+  # The eight "build or run every configuration" loops, one per application. Each predates
+  # `40-perf.sh --all-configs`, which is the artifact's own way to do the same thing and the one an
+  # evaluator is told about; none is reachable from anything under scripts/ or from any live harness
+  # script (checked by name against scripts/, harness/ and docs/, 23 Sep 2026). They are not dangerous --
+  # no lab path, no frozen compiler, no missing file -- so they are excluded for the reason the packaging
+  # guide gives rather than for a hazard: a second way to build every configuration is code a reviewer has
+  # to read and rule out. `bench_ffmpeg_all.sh` is NOT here: bench_one.sh calls it for every FFmpeg cell.
+  build_memcached_all.sh get_all_tsan_combinations.sh memcached_bench_all.sh
+  bench_ffmpeg_all_threads-contention.sh build_ffmpeg_all-bases.sh build_mysql_all_bases.sh
+  build_sqlite_test_all.sh run_sqlite_test_all.sh
 )
 # PATH-SPECIFIC exclusions, for files whose BASENAME is too common to put in LAB_ONLY (which matches by
 # basename and would have taken every README.md in the harness, including the two that document the
