@@ -367,5 +367,12 @@ across all 112 CPUs" is withdrawn.
   62 % of a core when it was drawing 7.4 %. Neither survived being recomputed from the raw counter over a fixed
   window. This is the same failure as "a positive control is not sensitivity" wearing a different face: a
   result that agrees with you is not evidence that your instrument works.
+- **A mechanical signal is not a semantic one.** Clean apply, conflict count, "tests discovered", a gate that
+  passes, a leg that logs `DONE` — each reports that a procedure ran, not that it produced what it was for, and
+  the gap is always silent. Two on 2026-09-14 alone: a benchmark leg logged `DONE` having lost twelve of twenty
+  cells, because its one-shot retry ran inside the same disturbance window that retired the originals; and a
+  cherry-pick reported two conflicts while delivering three problems, the third being a header that merged
+  without conflict and silently dropped two declarations. Check the thing the signal does not cover — for a
+  leg, count the clean run directories rather than reading the completion marker.
 - **Name the refuting case before running it.** Every predictor that died was proposed by whoever had just seen
   a confirming case and killed by the first case named in advance as able to refute.

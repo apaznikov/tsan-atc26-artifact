@@ -1,0 +1,82 @@
+{
+ "orig": {
+  "n": 5,
+  "skipped": 0,
+  "modes": [
+   "pinned"
+  ],
+  "runs": {
+   "walthread1": [
+    4841.0,
+    5051.0,
+    5058.0,
+    4890.0,
+    5137.0
+   ]
+  }
+ },
+ "tsan": {
+  "n": 5,
+  "skipped": 0,
+  "modes": [
+   "pinned"
+  ],
+  "runs": {
+   "walthread1": [
+    2736.0,
+    2724.0,
+    2728.0,
+    2723.0,
+    2771.0
+   ]
+  }
+ },
+ "tsan-dom_peeling-ea-lo-st-swmr": {
+  "n": 5,
+  "skipped": 0,
+  "modes": [
+   "pinned"
+  ],
+  "runs": {
+   "walthread1": [
+    2734.0,
+    2754.0,
+    2712.0,
+    2760.0,
+    2708.0
+   ]
+  }
+ },
+ "tsan-dom_peeling-ea-lo-st-swmr-stmt": {
+  "n": 5,
+  "skipped": 0,
+  "modes": [
+   "pinned"
+  ],
+  "runs": {
+   "walthread1": [
+    2690.0,
+    2685.0,
+    2684.0,
+    2710.0,
+    2672.0
+   ]
+  }
+ },
+ "tsan-stmt": {
+  "n": 5,
+  "skipped": 0,
+  "modes": [
+   "pinned"
+  ],
+  "runs": {
+   "walthread1": [
+    2666.0,
+    2679.0,
+    2697.0,
+    2694.0,
+    2694.0
+   ]
+  }
+ }
+}

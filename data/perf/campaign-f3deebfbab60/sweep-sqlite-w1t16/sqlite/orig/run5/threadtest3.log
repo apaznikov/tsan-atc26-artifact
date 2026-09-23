@@ -1,0 +1,19 @@
+Running walthread1 for 20 seconds...
+Thread 17 says: 40 checkpoints
+Thread 16 says: 381 iterations
+Thread 15 says: 300 iterations
+Thread 14 says: 301 iterations
+Thread 13 says: 340 iterations
+Thread 12 says: 337 iterations
+Thread 11 says: 349 iterations
+Thread 10 says: 352 iterations
+Thread 9 says: 311 iterations
+Thread 8 says: 286 iterations
+Thread 7 says: 315 iterations
+Thread 6 says: 308 iterations
+Thread 5 says: 309 iterations
+Thread 4 says: 305 iterations
+Thread 3 says: 314 iterations
+Thread 2 says: 351 iterations
+Thread 1 says: 278 iterations
+0 errors out of 1 tests

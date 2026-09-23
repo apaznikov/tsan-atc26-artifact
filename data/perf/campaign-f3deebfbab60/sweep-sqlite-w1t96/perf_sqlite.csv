@@ -1,0 +1,6 @@
+config,test,n,median,mean,sd
+orig,walthread1,5,5666.0,5655.8,51.54803585006901
+tsan,walthread1,5,2915.0,2908.2,15.865055940651454
+tsan-dom_peeling-ea-lo-st-swmr,walthread1,5,2925.0,2920.2,14.342245291445828
+tsan-dom_peeling-ea-lo-st-swmr-stmt,walthread1,5,2868.0,2867.6,12.361229712289955
+tsan-stmt,walthread1,5,2844.0,2838.0,10.559356040971437

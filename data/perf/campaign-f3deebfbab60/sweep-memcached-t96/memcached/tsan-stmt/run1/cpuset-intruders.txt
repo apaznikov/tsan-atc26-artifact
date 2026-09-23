@@ -1,0 +1,2 @@
+memtier_benchma samples=118 peak_pcpu=810.0
+bench_one.sh samples=1 peak_pcpu=9.0

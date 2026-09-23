@@ -529,6 +529,151 @@ with and without the flag: Redis 1.233 [1.183, 1.254], MySQL 1.136 [1.081, 1.188
 is the Redis session drift `docs/confounds.md` describes and the reason ratios are compared within one
 session only.
 
+### Concurrency curves and whole-program summaries, measured after the campaign (not claims)
+
+**What these are.** The campaign fixed each application's concurrency before any number was seen
+(`data/notes/preregistration-2026-09-13.md`), and two of those values were single points rather than points on
+a curve: memcached's server threads and Redis's client count. After the artifact was complete we measured the
+curves, on both hosts, and the one combination of our own analyses the campaign never tried, whole-program
+summaries together with DynSTC. **No row below is a claim, no badge rests on one, and the comparator does not
+judge against these tables** — by construction, not by convention: `compare_with_claims.py` reads a table
+only when its header line begins `| Configuration |` or `| Application |` and carries a column named
+"All five runs [95%]", and none of the tables below does. The first column of the last table is headed
+"Program" for that reason, and renaming it would start judging these rows. What is claimed is in
+the application sections above, at the pre-registered concurrency, and none of it changed.
+
+**The rule, set before the legs ran, and what it decided.** A value would replace the campaign's default only
+if, at five runs on the campaign's host, its interval for the best configuration were no wider than the
+current one and its point higher. **No default changed.** Two arms meet the rule by the letter and are
+recorded rather than acted on: memcached at 24 server threads reads 1.021 against 48's 1.019 with an interval
+0.119 wide against 0.128, and Redis at 512 clients reads 1.007 against the default's 1.000 with an interval
+0.026 against 0.043. Both gaps are far inside the interval they are measured with — 0.002 against a
+width of 0.12 for memcached, 0.007 against 0.03 for Redis — so a rule they satisfy is being read and not
+applied. Two other things settle it: 24 server threads contradicts the one-thread-per-pinned-processor rule
+this section's comparison condition rests on, and on the second host the same change of Redis's client count
+moves that configuration the other way (1.014 at 50 clients, 0.991 at 512). Moving a default on two
+thousandths, in the direction that flatters us, is selection by result with a rule drawn around it.
+
+#### memcached: server threads (`MC_THREADS`), five runs, one warm-up
+
+| Server threads | Host | Stock vs native | AllOpt+peel | AllOpt+peel+DynSTC | DynSTC |
+|---|---|---|---|---|---|
+| 24 | ours | 4.53 [4.24, 4.76] | 1.021 [0.935, 1.054] | 1.018 [0.953, 1.063] | 1.012 [0.958, 1.053] |
+| 48, the campaign's | ours | 3.20 [2.97, 3.40] | 1.019 [0.951, 1.079] | 1.003 [0.961, 1.099] | 0.986 [0.944, 1.063] |
+| 96 | ours | 5.18 [4.58, 5.61] | 1.063 [0.864, 1.200] | 0.980 [0.848, 1.117] | 0.974 [0.837, 1.144] |
+| 112 | ours | 5.60 [5.39, 6.43] | 0.996 [0.891, 1.180] | 1.006 [0.884, 1.189] | 0.900 [0.842, 1.170] |
+| 112, the `r2` leg of 16 Sep | ours | 5.11 [4.49, 5.22] | 1.006 [0.890, 1.161] | 1.089 [0.875, 1.129] | — |
+| 24 | apollo | 4.72 [4.58, 4.91] | 1.008 [0.940, 1.055] | 0.979 [0.949, 1.042] | 1.008 [0.942, 1.081] |
+| 48 | apollo | 4.04 [3.69, 4.43] | 1.005 [0.960, 1.037] | 0.997 [0.947, 1.038] | 1.019 [0.976, 1.043] |
+| 96 | apollo | 5.23 [4.95, 5.78] | 0.995 [0.930, 1.076] | 1.027 [0.960, 1.118] | 1.005 [0.925, 1.080] |
+| 112 | apollo | 5.98 [5.70, 6.40] | 1.023 [0.959, 1.077] | 1.035 [1.014, 1.085] | 1.019 [0.945, 1.071] |
+
+Twenty-five of the twenty-six configuration entries contain 1.0, and above 48 threads our host stops
+resolving anything: its intervals are 0.10 to 0.14 wide at 24 and 48 and 0.27 to 0.34 at 96 and 112, which is
+what running 96 or 112 server threads on 48 pinned processors does. apollo, which pins 48 of its 64, stays
+between 0.07 and 0.16 at every count. So the highest point in the table, 1.063 for AllOpt with peeling at 96
+threads on our host, is also its least resolved. The same point
+measured twice on our host in different sessions reads 1.089 and 1.006 for AllOpt with peeling and DynSTC, a
+gap of eight points between two intervals each spanning a quarter. That is what an unresolved measurement
+looks like, and it is why the default was not moved to where the point happens to be highest.
+
+The exception is apollo at 112 threads, AllOpt with peeling and DynSTC, 1.035 [1.014, 1.085] — the only
+separating memcached row in any leg on any host. It is not claimed: one row in twenty-six is about what
+chance produces at a 95 % interval, it is reproduced neither at 96 nor at 24 on the same host nor at 112 on
+ours (1.006 [0.884, 1.189]), and apollo is not the shape the comparison is judged on. It is recorded because
+a reader deserves to see it and a camera-ready pursuing it would know where to start.
+
+#### Redis: `redis-benchmark` clients (`REDIS_BENCH_CLIENTS`), pipeline 1024
+
+| Clients | Host | Stock vs native | AllOpt+peel | AllOpt+peel+DynSTC | DynSTC |
+|---|---|---|---|---|---|
+| 50, the tool's default and the campaign's | ours | 8.01 [7.83, 8.21] | 1.000 [0.983, 1.026] | 0.958 [0.944, 0.985] | 0.944 [0.927, 0.970] |
+| 112, the `r2` leg | ours | 7.96 [7.83, 8.12] | 1.006 [0.990, 1.026] | 0.974 [0.949, 0.988] | 0.967 [0.948, 0.988] |
+| 256 | ours | 8.34 [8.21, 8.52] | 1.007 [0.988, 1.026] | 0.973 [0.954, 0.997] | 0.975 [0.958, 0.993] |
+| 512 | ours | 8.08 [7.66, 8.14] | 1.007 [0.999, 1.025] | 0.983 [0.971, 0.995] | 0.975 [0.966, 0.991] |
+| 50 | apollo | 8.76 [8.40, 8.99] | 1.014 [0.937, 1.030] | 0.980 [0.942, 1.002] | 0.985 [0.926, 1.006] |
+| 112 | apollo | 8.45 [7.66, 9.11] | 1.041 [0.936, 1.100] | 1.028 [0.911, 1.072] | 1.035 [0.958, 1.090] |
+| 256 | apollo | 7.79 [7.23, 8.73] | 1.041 [1.008, 1.149] | 0.999 [0.913, 1.073] | 1.008 [0.970, 1.111] |
+| 512 | apollo | 6.78 [6.77, 8.49] | 0.991 [0.936, 1.135] | 0.976 [0.866, 1.072] | 0.971 [0.928, 1.116] |
+
+**The campaign's directional result survives the curve.** On our host DynSTC's cost has an interval excluding
+1.0 at every client count — 0.944, 0.967, 0.975, 0.975 — and so does the full bundle with DynSTC, eight rows
+of eight. The magnitude reads smaller at 256 and 512 than at 50, and that is NOT reported as an effect of the
+client count. The count does reach the tool — a cell records no workload knob before 23 Sep 2026, so it was
+established by running the arms' own call shape with an absurd value and reading the live process's argument
+vector, which carried `-c 777` — so these are four real points rather than one point measured four times.
+What they show is that at pipeline depth 1024 this workload is insensitive to the count on this host: stock
+GET reads 3.74, 3.83 and 3.72 million operations per second at 50, 256 and 512, a spread smaller than the
+spread between runs of one arm. The two arms' ratios agreeing to three decimals follows from that, and
+comparing magnitudes across sessions is what this section's conditions forbid in any case. On apollo the same
+arms' stock throughput falls by about a quarter across the four counts, though the spread between runs of its
+512-client arm is wider than the fall, so there the count's effect is suggested and not established. What is
+clear on apollo is that the cost does not reproduce: DynSTC reads 0.985, 1.035, 1.008 and 0.971 across the
+four counts, no interval excluding 1.0 and the sign changing twice. Redis's cost is therefore a result on the
+campaign's host, robust to a tenfold change of client count there, and not a portable one; apollo's run of
+22 Sep read 1.066 for the same configuration at N = 2, which is the same disagreement seen once before. apollo's 256-client arm has AllOpt
+with peeling at 1.041 [1.008, 1.149], excluding 1.0, corroborated at no other count on either host and not
+claimed.
+
+#### SQLite: `threadtest3 walthread1` threads (`SQLITE_W1_THREADS`), our host
+
+| walthread1 threads | Stock vs native | AllOpt+peel | AllOpt+peel+DynSTC | DynSTC |
+|---|---|---|---|---|
+| 8 | 1.834 [1.740, 1.861] | 1.006 [0.992, 1.021] | 0.987 [0.971, 1.019] | 0.986 [0.959, 0.996] |
+| 16 | 1.852 [1.747, 1.887] | 1.002 [0.977, 1.014] | 0.984 [0.964, 0.995] | 0.988 [0.962, 0.990] |
+| 32 | 1.893 [1.835, 1.914] | 1.004 [0.991, 1.028] | 0.985 [0.970, 0.997] | 0.976 [0.962, 0.994] |
+| 48 | 1.930 [1.859, 1.967] | 1.005 [0.994, 1.021] | 0.990 [0.976, 0.999] | 0.980 [0.968, 0.989] |
+| 96 | 1.944 [1.904, 1.975] | 1.003 [0.993, 1.016] | 0.984 [0.975, 0.998] | 0.976 [0.965, 0.986] |
+| 112 | 1.940 [1.913, 1.966] | 1.009 [1.000, 1.020] | 0.991 [0.983, 1.005] | 0.980 [0.978, 0.994] |
+
+**The one workload in the artifact steady enough to resolve a two per cent effect.** DynSTC's cost has an
+interval excluding 1.0 at every one of the six thread counts, and the full bundle with DynSTC at four of the
+six. AllOpt with peeling is a null at all six and a well-resolved one: 1.002 to 1.009, no interval wider than
+0.04, the widest of them a quarter of the narrowest interval in the memcached table above.
+
+These rows neither correct nor contradict the campaign's SQLite rows, because they are a different workload:
+walthread1 alone is one twenty-second test, not the seven-subtest run the campaign measured, and it is far
+steadier — stock against native reads 1.83 to 1.94 here against 2.96 there, and the intervals are three to
+eight times narrower. That is why two per cent resolves here and nothing resolved there: the campaign's
+DynSTC row, 0.995 [0.928, 1.082], contains 1.0 and every number in this table. Read together they say that
+SQLite's campaign rows are unresolved rather than null, and that on the workload steady enough to see it,
+DynSTC costs about two per cent.
+
+That makes SQLite the second application where DynSTC is a cost rather than a gain, after Redis's 5.6 per
+cent. It is reported here and not in the SQLite section above because the claim above is made on the
+seven-subtest workload, and a row measured on another workload does not belong under it.
+
+#### Whole-program summaries on top of DynSTC (`-wp`), our host, five runs
+
+| Program | AllOpt+peel+WP | AllOpt+peel+DynSTC | AllOpt+peel+DynSTC+WP | static sites, +DynSTC then +WP |
+|---|---|---|---|---|
+| Redis | 1.025 [1.000, 1.038] | 0.987 [0.970, 1.005] | 0.984 [0.963, 1.006] | 43 248 → 40 682 |
+| SQLite | 1.026 [0.916, 1.101] | 0.951 [0.880, 1.020] | 0.969 [0.901, 1.062] | 61 897 → 61 793 |
+| memcached | 1.000 [0.935, 1.046] | 0.991 [0.930, 1.036] | 1.004 [0.950, 1.028] | 7 183 → 6 743 |
+
+A measured null on three applications, alone and on top of DynSTC: every interval contains 1.0, Redis's
+whole-program row reaching it exactly at 1.000. Summaries do remove instrumentation — 2 566 static sites on
+Redis, 440 on memcached, 104 on SQLite — and removing it buys no time, which is the mechanism the results
+ledger settled for dominance elimination and which holds here: these analyses remove the accesses the
+runtime's own fast path already answers in about fifteen cycles. The counters' earlier finding that summaries
+ADD 5.73 % executed accesses on SQLite stays on record as an open discrepancy (`docs/campaign-parameters.md`);
+this leg neither reproduces nor contradicts it, because it measures time.
+
+**Conditions.** Every arm: five runs and a warm-up per configuration, run-major, the campaign's set and
+shape on each host (4-27,60-83 here, 0-23,32-55 on apollo), the machine quiet by announcement, the 0.10
+foreign-activity gate in force. On this host no cell was retired, the highest outside-busy share of any cell
+being 0.028. On apollo two cells were, both native and both above the gate by less than a point (0.1076 in
+the 96-thread arm and 0.1088 in the 24-thread arm); each was re-run to completion inside its own leg, and
+both the retired cell and its replacement ship.
+
+**Where the data is.** Ours, under `data/perf/campaign-f3deebfbab60/`: `sweep-memcached-t{24,96,112}`,
+`sweep-redis-c{256,512}`, `sweep-sqlite-w1t*` and `wp-dynstc-{redis,sqlite,memcached}`. apollo's:
+`data/perf/sweep-apollo-f3deebfbab60/`, a separate root because it is a different machine, one processor set
+per arm, the shipped compiler's hash in every cell. A cell records the thread count but not Redis's clients or
+SQLite's walthread1 threads, so each root ships the driver and its log, which name every arm with its knob
+value and its start and end. `scripts/90-tables.sh` regenerates every table above from those cells, and
+`scripts/91-verify-provenance.sh` checks both roots strictly.
+
 ### What an evaluator actually has to run
 
 Reproducing all five applications at fourteen configurations with five runs each took our campaign

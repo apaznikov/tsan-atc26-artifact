@@ -1,0 +1,31 @@
+sqlite orig run1 rc=0 20.1s outside_busy=0.0095 inside_busy=0.0432 foreign_cpu_share=0.0208 (warmup, discarded)
+sqlite tsan run1 rc=0 20.1s outside_busy=0.0119 inside_busy=0.0781 foreign_cpu_share=0.0345 (warmup, discarded)
+sqlite tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 20.1s outside_busy=0.0104 inside_busy=0.0758 foreign_cpu_share=0.0224 (warmup, discarded)
+sqlite tsan-stmt run1 rc=0 20.1s outside_busy=0.0062 inside_busy=0.0767 foreign_cpu_share=0.0126 (warmup, discarded)
+sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 20.1s outside_busy=0.0085 inside_busy=0.0789 foreign_cpu_share=0.0172 (warmup, discarded)
+sqlite orig run1 rc=0 20.1s outside_busy=0.0049 inside_busy=0.0431 foreign_cpu_share=0.0117
+sqlite tsan run1 rc=0 20.1s outside_busy=0.0059 inside_busy=0.079 foreign_cpu_share=0.014
+sqlite tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 20.1s outside_busy=0.0065 inside_busy=0.0834 foreign_cpu_share=0.0202
+sqlite tsan-stmt run1 rc=0 20.2s outside_busy=0.006 inside_busy=0.0772 foreign_cpu_share=0.0128
+sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 20.1s outside_busy=0.0055 inside_busy=0.0781 foreign_cpu_share=0.0128
+sqlite orig run2 rc=0 20.1s outside_busy=0.0044 inside_busy=0.0449 foreign_cpu_share=0.0126
+sqlite tsan run2 rc=0 20.1s outside_busy=0.0051 inside_busy=0.0759 foreign_cpu_share=0.0117
+sqlite tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 20.1s outside_busy=0.0054 inside_busy=0.0797 foreign_cpu_share=0.0146
+sqlite tsan-stmt run2 rc=0 20.1s outside_busy=0.0052 inside_busy=0.0778 foreign_cpu_share=0.0129
+sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run2 rc=0 20.1s outside_busy=0.006 inside_busy=0.0774 foreign_cpu_share=0.014
+sqlite orig run3 rc=0 20.1s outside_busy=0.0051 inside_busy=0.0471 foreign_cpu_share=0.0127
+sqlite tsan run3 rc=0 20.1s outside_busy=0.0047 inside_busy=0.0759 foreign_cpu_share=0.0118
+sqlite tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 20.1s outside_busy=0.0045 inside_busy=0.075 foreign_cpu_share=0.0105
+sqlite tsan-stmt run3 rc=0 20.2s outside_busy=0.0042 inside_busy=0.076 foreign_cpu_share=0.0101
+sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run3 rc=0 20.2s outside_busy=0.0046 inside_busy=0.0781 foreign_cpu_share=0.0112
+sqlite orig run4 rc=0 20.1s outside_busy=0.0044 inside_busy=0.0458 foreign_cpu_share=0.0104
+sqlite tsan run4 rc=0 20.1s outside_busy=0.0055 inside_busy=0.0738 foreign_cpu_share=0.012
+sqlite tsan-dom_peeling-ea-lo-st-swmr run4 rc=0 20.1s outside_busy=0.0228 inside_busy=0.084 foreign_cpu_share=0.0426
+sqlite tsan-stmt run4 rc=0 20.1s outside_busy=0.0089 inside_busy=0.079 foreign_cpu_share=0.0201
+sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run4 rc=0 20.1s outside_busy=0.006 inside_busy=0.0755 foreign_cpu_share=0.0132
+sqlite orig run5 rc=0 20.1s outside_busy=0.0048 inside_busy=0.0464 foreign_cpu_share=0.0116
+sqlite tsan run5 rc=0 20.1s outside_busy=0.0053 inside_busy=0.076 foreign_cpu_share=0.0119
+sqlite tsan-dom_peeling-ea-lo-st-swmr run5 rc=0 20.1s outside_busy=0.0053 inside_busy=0.0749 foreign_cpu_share=0.0107
+sqlite tsan-stmt run5 rc=0 20.1s outside_busy=0.0068 inside_busy=0.0761 foreign_cpu_share=0.0127
+sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run5 rc=0 20.1s outside_busy=0.0053 inside_busy=0.0748 foreign_cpu_share=0.0109
+DONE sqlite

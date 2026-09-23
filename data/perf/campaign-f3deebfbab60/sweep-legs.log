@@ -1,0 +1,1126 @@
+== NIGHT START 18:49:10 at 3e444e6a
+== W2 redis START 18:49:10
+docker/run.sh: ART_JOBS=25 (docker.slice MemoryMax 64 GiB at 2.5 GiB per job); set ART_JOBS to override
+harness: working copy refreshed at /artifact/build/harness (from /artifact/harness; sources and builds kept)
+Expected: performance for redis, 1 warm-up + 5 runs per configuration -- about 15 min at the defaults on 48 pinned processors (--all-configs about 3.4x, ART_RUNS=5 about 2x, smoke mode a few minutes), 20-100 GB of disk.
+[2026-09-22 10:49:10] no machine job lock here (P5_MACHINE_LOCK=true, /home/alexey/bin/logs absent); building unlocked
+[2026-09-22 10:49:10] build redis orig (jobs 25) -> /artifact/results/perf-redis-20260922-104910/build/redis-orig.log
+[2026-09-22 10:49:31] built redis orig in 21s: 0 memory-access sites (0 tsan calls)
+[2026-09-22 10:49:31] build redis tsan (jobs 25) -> /artifact/results/perf-redis-20260922-104910/build/redis-tsan.log
+[2026-09-22 10:49:40] built redis tsan in 8s: 37922 memory-access sites (45186 tsan calls)
+[2026-09-22 10:49:40] generating whole-program summaries for redis (f3deebfbab60)
+[2026-09-22 10:55:47] build redis tsan-dom_peeling-ea-lo-st-swmr-wp (jobs 25) -> /artifact/results/perf-redis-20260922-104910/build/redis-tsan-dom_peeling-ea-lo-st-swmr-wp.log
+[2026-09-22 10:55:56] built redis tsan-dom_peeling-ea-lo-st-swmr-wp in 7s: 40672 memory-access sites (47788 tsan calls)
+[2026-09-22 10:55:56] build redis tsan-dom_peeling-ea-lo-st-swmr-stmt (jobs 25) -> /artifact/results/perf-redis-20260922-104910/build/redis-tsan-dom_peeling-ea-lo-st-swmr-stmt.log
+[2026-09-22 10:56:05] built redis tsan-dom_peeling-ea-lo-st-swmr-stmt in 8s: 43248 memory-access sites (50566 tsan calls)
+[2026-09-22 10:56:05] build redis tsan-dom_peeling-ea-lo-st-swmr-stmt-wp (jobs 25) -> /artifact/results/perf-redis-20260922-104910/build/redis-tsan-dom_peeling-ea-lo-st-swmr-stmt-wp.log
+[2026-09-22 10:56:15] built redis tsan-dom_peeling-ea-lo-st-swmr-stmt-wp in 9s: 40682 memory-access sites (47798 tsan calls)
+[2026-09-22 10:56:15] builds of redis done (fail=0); static counts in /artifact/results/perf-redis-20260922-104910/static-counts.csv
+[2026-09-22 10:56:36] redis orig run1 rc=0 20.8s outside_busy=0.009 inside_busy=0.0491 foreign_cpu_share=0.0153
+ok
+[2026-09-22 10:58:04] redis tsan run1 rc=0 87.4s outside_busy=0.0095 inside_busy=0.1994 foreign_cpu_share=0.0151
+ok
+[2026-09-22 10:59:31] redis tsan-dom_peeling-ea-lo-st-swmr-wp run1 rc=0 86.8s outside_busy=0.0092 inside_busy=0.214 foreign_cpu_share=0.0138
+ok
+[2026-09-22 11:00:59] redis tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 88.0s outside_busy=0.0092 inside_busy=0.2027 foreign_cpu_share=0.0139
+ok
+[2026-09-22 11:02:27] redis tsan-dom_peeling-ea-lo-st-swmr-stmt-wp run1 rc=0 87.2s outside_busy=0.0066 inside_busy=0.2177 foreign_cpu_share=0.0099
+ok
+[2026-09-22 11:02:48] redis orig run1 rc=0 20.6s outside_busy=0.0058 inside_busy=0.0389 foreign_cpu_share=0.0091
+ok
+[2026-09-22 11:04:14] redis tsan run1 rc=0 85.4s outside_busy=0.0078 inside_busy=0.196 foreign_cpu_share=0.0119
+ok
+[2026-09-22 11:05:38] redis tsan-dom_peeling-ea-lo-st-swmr-wp run1 rc=0 84.5s outside_busy=0.0067 inside_busy=0.1958 foreign_cpu_share=0.0099
+ok
+[2026-09-22 11:07:05] redis tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 86.4s outside_busy=0.0066 inside_busy=0.1981 foreign_cpu_share=0.0097
+ok
+[2026-09-22 11:08:32] redis tsan-dom_peeling-ea-lo-st-swmr-stmt-wp run1 rc=0 86.1s outside_busy=0.0077 inside_busy=0.1945 foreign_cpu_share=0.0111
+ok
+[2026-09-22 11:08:52] redis orig run2 rc=0 20.6s outside_busy=0.0061 inside_busy=0.0427 foreign_cpu_share=0.0094
+ok
+[2026-09-22 11:10:19] redis tsan run2 rc=0 85.7s outside_busy=0.0068 inside_busy=0.2 foreign_cpu_share=0.0101
+ok
+[2026-09-22 11:11:43] redis tsan-dom_peeling-ea-lo-st-swmr-wp run2 rc=0 83.9s outside_busy=0.0061 inside_busy=0.1913 foreign_cpu_share=0.0095
+ok
+[2026-09-22 11:13:12] redis tsan-dom_peeling-ea-lo-st-swmr-stmt run2 rc=0 88.5s outside_busy=0.0112 inside_busy=0.2099 foreign_cpu_share=0.0186
+ok
+[2026-09-22 11:14:39] redis tsan-dom_peeling-ea-lo-st-swmr-stmt-wp run2 rc=0 87.2s outside_busy=0.0068 inside_busy=0.2036 foreign_cpu_share=0.0102
+ok
+[2026-09-22 11:15:00] redis orig run3 rc=0 20.6s outside_busy=0.0066 inside_busy=0.0452 foreign_cpu_share=0.011
+ok
+[2026-09-22 11:16:28] redis tsan run3 rc=0 87.4s outside_busy=0.007 inside_busy=0.217 foreign_cpu_share=0.0105
+ok
+[2026-09-22 11:17:53] redis tsan-dom_peeling-ea-lo-st-swmr-wp run3 rc=0 85.1s outside_busy=0.0073 inside_busy=0.1979 foreign_cpu_share=0.0107
+ok
+[2026-09-22 11:19:21] redis tsan-dom_peeling-ea-lo-st-swmr-stmt run3 rc=0 87.0s outside_busy=0.007 inside_busy=0.1887 foreign_cpu_share=0.0108
+ok
+[2026-09-22 11:20:48] redis tsan-dom_peeling-ea-lo-st-swmr-stmt-wp run3 rc=0 87.5s outside_busy=0.0066 inside_busy=0.2085 foreign_cpu_share=0.0101
+ok
+[2026-09-22 11:21:09] redis orig run4 rc=0 20.6s outside_busy=0.0066 inside_busy=0.043 foreign_cpu_share=0.0105
+ok
+[2026-09-22 11:22:36] redis tsan run4 rc=0 86.0s outside_busy=0.008 inside_busy=0.1979 foreign_cpu_share=0.0118
+ok
+[2026-09-22 11:24:00] redis tsan-dom_peeling-ea-lo-st-swmr-wp run4 rc=0 84.3s outside_busy=0.0067 inside_busy=0.1938 foreign_cpu_share=0.0114
+ok
+[2026-09-22 11:25:27] redis tsan-dom_peeling-ea-lo-st-swmr-stmt run4 rc=0 86.5s outside_busy=0.0065 inside_busy=0.1938 foreign_cpu_share=0.0097
+ok
+[2026-09-22 11:26:54] redis tsan-dom_peeling-ea-lo-st-swmr-stmt-wp run4 rc=0 86.9s outside_busy=0.0064 inside_busy=0.1985 foreign_cpu_share=0.0095
+ok
+[2026-09-22 11:27:15] redis orig run5 rc=0 20.6s outside_busy=0.0062 inside_busy=0.0409 foreign_cpu_share=0.0096
+ok
+[2026-09-22 11:28:42] redis tsan run5 rc=0 86.3s outside_busy=0.0069 inside_busy=0.1994 foreign_cpu_share=0.0112
+ok
+[2026-09-22 11:30:07] redis tsan-dom_peeling-ea-lo-st-swmr-wp run5 rc=0 85.1s outside_busy=0.0064 inside_busy=0.2116 foreign_cpu_share=0.0097
+ok
+[2026-09-22 11:31:35] redis tsan-dom_peeling-ea-lo-st-swmr-stmt run5 rc=0 86.8s outside_busy=0.0067 inside_busy=0.2028 foreign_cpu_share=0.0099
+ok
+[2026-09-22 11:33:01] redis tsan-dom_peeling-ea-lo-st-swmr-stmt-wp run5 rc=0 86.5s outside_busy=0.0085 inside_busy=0.2071 foreign_cpu_share=0.013
+ok
+[2026-09-22 11:33:02] done: redis N=5 -> /artifact/results/perf-redis-20260922-104910/redis
+redis: 5 configs, 25 runs -> perf_redis.md
+summary -> /artifact/results/perf-redis-20260922-104910/perf_summary.md
+-> /artifact/results/perf-redis-20260922-104910/perf_redis.md
+== W2 redis END 19:33:02 rc=0
+== W2 sqlite START 19:33:02
+docker/run.sh: ART_JOBS=25 (docker.slice MemoryMax 64 GiB at 2.5 GiB per job); set ART_JOBS to override
+Expected: performance for sqlite, 1 warm-up + 5 runs per configuration -- about 1 h at the defaults on 48 pinned processors (--all-configs about 3.4x, ART_RUNS=5 about 2x, smoke mode a few minutes), 20-100 GB of disk.
+[2026-09-22 11:33:03] no machine job lock here (P5_MACHINE_LOCK=true, /home/alexey/bin/logs absent); building unlocked
+[2026-09-22 11:33:03] build sqlite orig (jobs 25) -> /artifact/results/perf-sqlite-20260922-113303/build/sqlite-orig.log
+[2026-09-22 11:33:35] built sqlite orig in 32s: 0 memory-access sites (0 tsan calls)
+[2026-09-22 11:33:35] build sqlite tsan (jobs 25) -> /artifact/results/perf-sqlite-20260922-113303/build/sqlite-tsan.log
+[2026-09-22 11:34:03] built sqlite tsan in 27s: 57996 memory-access sites (62654 tsan calls)
+[2026-09-22 11:34:03] generating whole-program summaries for sqlite (f3deebfbab60)
+[2026-09-22 11:48:31] build sqlite tsan-dom_peeling-ea-lo-st-swmr-wp (jobs 25) -> /artifact/results/perf-sqlite-20260922-113303/build/sqlite-tsan-dom_peeling-ea-lo-st-swmr-wp.log
+[2026-09-22 11:49:04] built sqlite tsan-dom_peeling-ea-lo-st-swmr-wp in 32s: 61827 memory-access sites (66553 tsan calls)
+[2026-09-22 11:49:04] build sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt (jobs 25) -> /artifact/results/perf-sqlite-20260922-113303/build/sqlite-tsan-dom_peeling-ea-lo-st-swmr-stmt.log
+[2026-09-22 11:49:51] built sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt in 46s: 61897 memory-access sites (66629 tsan calls)
+[2026-09-22 11:49:51] build sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt-wp (jobs 25) -> /artifact/results/perf-sqlite-20260922-113303/build/sqlite-tsan-dom_peeling-ea-lo-st-swmr-stmt-wp.log
+[2026-09-22 11:50:39] built sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt-wp in 47s: 61793 memory-access sites (66523 tsan calls)
+[2026-09-22 11:50:39] builds of sqlite done (fail=0); static counts in /artifact/results/perf-sqlite-20260922-113303/static-counts.csv
+[2026-09-22 11:58:04] sqlite orig run1 rc=0 444.9s outside_busy=0.0059 inside_busy=0.0416 foreign_cpu_share=0.0111
+ok
+[2026-09-22 12:02:47] sqlite tsan run1 rc=0 282.3s outside_busy=0.0052 inside_busy=0.0483 foreign_cpu_share=0.0099
+ok
+[2026-09-22 12:08:36] sqlite tsan-dom_peeling-ea-lo-st-swmr-wp run1 rc=0 348.5s outside_busy=0.0055 inside_busy=0.0444 foreign_cpu_share=0.0103
+ok
+[2026-09-22 12:13:19] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 283.0s outside_busy=0.0064 inside_busy=0.0477 foreign_cpu_share=0.0122
+ok
+[2026-09-22 12:17:47] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt-wp run1 rc=0 267.5s outside_busy=0.0052 inside_busy=0.0507 foreign_cpu_share=0.01
+ok
+[2026-09-22 12:24:30] sqlite orig run1 rc=0 402.6s outside_busy=0.0056 inside_busy=0.0434 foreign_cpu_share=0.011
+ok
+[2026-09-22 12:29:55] sqlite tsan run1 rc=0 325.4s outside_busy=0.005 inside_busy=0.0497 foreign_cpu_share=0.01
+ok
+[2026-09-22 12:34:28] sqlite tsan-dom_peeling-ea-lo-st-swmr-wp run1 rc=0 272.0s outside_busy=0.0054 inside_busy=0.0479 foreign_cpu_share=0.0105
+ok
+[2026-09-22 12:38:50] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 261.6s outside_busy=0.0055 inside_busy=0.0489 foreign_cpu_share=0.0108
+ok
+[2026-09-22 12:43:11] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt-wp run1 rc=0 260.7s outside_busy=0.0054 inside_busy=0.0477 foreign_cpu_share=0.0102
+ok
+[2026-09-22 12:50:52] sqlite orig run2 rc=0 460.9s outside_busy=0.0052 inside_busy=0.0434 foreign_cpu_share=0.01
+ok
+[2026-09-22 12:55:12] sqlite tsan run2 rc=0 259.6s outside_busy=0.0059 inside_busy=0.0474 foreign_cpu_share=0.0107
+ok
+[2026-09-22 13:00:09] sqlite tsan-dom_peeling-ea-lo-st-swmr-wp run2 rc=0 297.2s outside_busy=0.005 inside_busy=0.0491 foreign_cpu_share=0.0102
+ok
+[2026-09-22 13:04:28] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run2 rc=0 258.3s outside_busy=0.0052 inside_busy=0.0487 foreign_cpu_share=0.0101
+ok
+[2026-09-22 13:08:57] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt-wp run2 rc=0 269.2s outside_busy=0.0051 inside_busy=0.0481 foreign_cpu_share=0.0099
+ok
+[2026-09-22 13:16:13] sqlite orig run3 rc=0 435.2s outside_busy=0.0061 inside_busy=0.0435 foreign_cpu_share=0.0118
+ok
+[2026-09-22 13:21:20] sqlite tsan run3 rc=0 307.1s outside_busy=0.0052 inside_busy=0.0477 foreign_cpu_share=0.0102
+ok
+[2026-09-22 13:25:49] sqlite tsan-dom_peeling-ea-lo-st-swmr-wp run3 rc=0 268.5s outside_busy=0.0056 inside_busy=0.0479 foreign_cpu_share=0.0104
+ok
+[2026-09-22 13:30:11] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run3 rc=0 261.2s outside_busy=0.0055 inside_busy=0.0478 foreign_cpu_share=0.0099
+ok
+[2026-09-22 13:34:29] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt-wp run3 rc=0 258.3s outside_busy=0.0053 inside_busy=0.0488 foreign_cpu_share=0.0104
+ok
+[2026-09-22 13:41:27] sqlite orig run4 rc=0 417.1s outside_busy=0.0053 inside_busy=0.0399 foreign_cpu_share=0.0104
+ok
+[2026-09-22 13:45:41] sqlite tsan run4 rc=0 254.1s outside_busy=0.0052 inside_busy=0.0483 foreign_cpu_share=0.0098
+ok
+[2026-09-22 13:50:12] sqlite tsan-dom_peeling-ea-lo-st-swmr-wp run4 rc=0 270.6s outside_busy=0.0051 inside_busy=0.0497 foreign_cpu_share=0.0098
+ok
+[2026-09-22 13:55:17] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run4 rc=0 304.3s outside_busy=0.0059 inside_busy=0.0445 foreign_cpu_share=0.0108
+ok
+[2026-09-22 13:59:42] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt-wp run4 rc=0 265.4s outside_busy=0.0058 inside_busy=0.0474 foreign_cpu_share=0.0103
+ok
+[2026-09-22 14:07:25] sqlite orig run5 rc=0 462.1s outside_busy=0.0052 inside_busy=0.0425 foreign_cpu_share=0.0102
+ok
+[2026-09-22 14:12:11] sqlite tsan run5 rc=0 286.1s outside_busy=0.0051 inside_busy=0.0464 foreign_cpu_share=0.0103
+ok
+[2026-09-22 14:16:55] sqlite tsan-dom_peeling-ea-lo-st-swmr-wp run5 rc=0 283.7s outside_busy=0.0065 inside_busy=0.0462 foreign_cpu_share=0.0125
+ok
+[2026-09-22 14:21:23] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run5 rc=0 267.2s outside_busy=0.0056 inside_busy=0.049 foreign_cpu_share=0.0101
+ok
+[2026-09-22 14:26:00] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt-wp run5 rc=0 277.2s outside_busy=0.0058 inside_busy=0.0466 foreign_cpu_share=0.0101
+ok
+[2026-09-22 14:26:01] done: sqlite N=5 -> /artifact/results/perf-sqlite-20260922-113303/sqlite
+sqlite: 5 configs, 25 runs -> perf_sqlite.md
+summary -> /artifact/results/perf-sqlite-20260922-113303/perf_summary.md
+-> /artifact/results/perf-sqlite-20260922-113303/perf_sqlite.md
+== W2 sqlite END 22:26:01 rc=0
+== W2 memcached START 22:26:01
+docker/run.sh: ART_JOBS=25 (docker.slice MemoryMax 64 GiB at 2.5 GiB per job); set ART_JOBS to override
+Expected: performance for memcached, 1 warm-up + 5 runs per configuration -- about 30 min at the defaults on 48 pinned processors (--all-configs about 3.4x, ART_RUNS=5 about 2x, smoke mode a few minutes), 20-100 GB of disk.
+[2026-09-22 14:26:01] no machine job lock here (P5_MACHINE_LOCK=true, /home/alexey/bin/logs absent); building unlocked
+[2026-09-22 14:26:01] build memcached orig (jobs 25) -> /artifact/results/perf-memcached-20260922-142601/build/memcached-orig.log
+[2026-09-22 14:26:19] built memcached orig in 18s: 0 memory-access sites (0 tsan calls)
+[2026-09-22 14:26:19] build memcached tsan (jobs 25) -> /artifact/results/perf-memcached-20260922-142601/build/memcached-tsan.log
+[2026-09-22 14:26:28] built memcached tsan in 9s: 6748 memory-access sites (7722 tsan calls)
+[2026-09-22 14:26:28] generating whole-program summaries for memcached (f3deebfbab60)
+[2026-09-22 14:26:53] build memcached tsan-dom_peeling-ea-lo-st-swmr-wp (jobs 25) -> /artifact/results/perf-memcached-20260922-142601/build/memcached-tsan-dom_peeling-ea-lo-st-swmr-wp.log
+[2026-09-22 14:27:02] built memcached tsan-dom_peeling-ea-lo-st-swmr-wp in 9s: 6699 memory-access sites (7651 tsan calls)
+[2026-09-22 14:27:02] build memcached tsan-dom_peeling-ea-lo-st-swmr-stmt (jobs 25) -> /artifact/results/perf-memcached-20260922-142601/build/memcached-tsan-dom_peeling-ea-lo-st-swmr-stmt.log
+[2026-09-22 14:27:12] built memcached tsan-dom_peeling-ea-lo-st-swmr-stmt in 10s: 7183 memory-access sites (8155 tsan calls)
+[2026-09-22 14:27:12] build memcached tsan-dom_peeling-ea-lo-st-swmr-stmt-wp (jobs 25) -> /artifact/results/perf-memcached-20260922-142601/build/memcached-tsan-dom_peeling-ea-lo-st-swmr-stmt-wp.log
+[2026-09-22 14:27:22] built memcached tsan-dom_peeling-ea-lo-st-swmr-stmt-wp in 10s: 6743 memory-access sites (7694 tsan calls)
+[2026-09-22 14:27:22] builds of memcached done (fail=0); static counts in /artifact/results/perf-memcached-20260922-142601/static-counts.csv
+[2026-09-22 14:28:09] memcached orig run1 rc=0 47.1s outside_busy=0.0091 inside_busy=0.5448 foreign_cpu_share=0.0111
+ok
+[2026-09-22 14:30:47] memcached tsan run1 rc=0 157.2s outside_busy=0.0069 inside_busy=0.6973 foreign_cpu_share=0.0014
+ok
+[2026-09-22 14:33:33] memcached tsan-dom_peeling-ea-lo-st-swmr-wp run1 rc=0 165.2s outside_busy=0.0082 inside_busy=0.6822 foreign_cpu_share=0.0041
+ok
+[2026-09-22 14:36:15] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 162.2s outside_busy=0.0072 inside_busy=0.6908 foreign_cpu_share=0.0027
+ok
+[2026-09-22 14:38:52] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt-wp run1 rc=0 156.2s outside_busy=0.0079 inside_busy=0.7129 foreign_cpu_share=0.0041
+ok
+[2026-09-22 14:39:39] memcached orig run1 rc=0 47.1s outside_busy=0.007 inside_busy=0.5311 foreign_cpu_share=0.0075
+ok
+[2026-09-22 14:42:18] memcached tsan run1 rc=0 158.2s outside_busy=0.007 inside_busy=0.707 foreign_cpu_share=0.003
+ok
+[2026-09-22 14:44:53] memcached tsan-dom_peeling-ea-lo-st-swmr-wp run1 rc=0 155.2s outside_busy=0.0081 inside_busy=0.7093 foreign_cpu_share=0.0032
+ok
+[2026-09-22 14:47:37] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 163.2s outside_busy=0.0069 inside_busy=0.6962 foreign_cpu_share=0.0023
+ok
+[2026-09-22 14:50:13] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt-wp run1 rc=0 156.2s outside_busy=0.0075 inside_busy=0.7159 foreign_cpu_share=0.0035
+ok
+[2026-09-22 14:51:00] memcached orig run2 rc=0 47.1s outside_busy=0.0068 inside_busy=0.5395 foreign_cpu_share=0.0066
+ok
+[2026-09-22 14:53:39] memcached tsan run2 rc=0 158.2s outside_busy=0.0083 inside_busy=0.6989 foreign_cpu_share=0.0039
+ok
+[2026-09-22 14:56:23] memcached tsan-dom_peeling-ea-lo-st-swmr-wp run2 rc=0 163.2s outside_busy=0.0072 inside_busy=0.6889 foreign_cpu_share=0.0027
+ok
+[2026-09-22 14:59:00] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run2 rc=0 157.2s outside_busy=0.0076 inside_busy=0.6959 foreign_cpu_share=0.0028
+ok
+[2026-09-22 15:01:38] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt-wp run2 rc=0 157.2s outside_busy=0.0067 inside_busy=0.7022 foreign_cpu_share=0.0017
+ok
+[2026-09-22 15:02:25] memcached orig run3 rc=0 47.1s outside_busy=0.0063 inside_busy=0.543 foreign_cpu_share=0.0081
+ok
+[2026-09-22 15:05:01] memcached tsan run3 rc=0 155.2s outside_busy=0.0074 inside_busy=0.7156 foreign_cpu_share=0.0036
+ok
+[2026-09-22 15:07:32] memcached tsan-dom_peeling-ea-lo-st-swmr-wp run3 rc=0 151.2s outside_busy=0.007 inside_busy=0.7272 foreign_cpu_share=0.0026
+ok
+[2026-09-22 15:10:06] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run3 rc=0 153.2s outside_busy=0.0076 inside_busy=0.726 foreign_cpu_share=0.0036
+ok
+[2026-09-22 15:12:42] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt-wp run3 rc=0 156.2s outside_busy=0.0068 inside_busy=0.7039 foreign_cpu_share=0.0016
+ok
+[2026-09-22 15:13:31] memcached orig run4 rc=0 49.1s outside_busy=0.0156 inside_busy=0.5311 foreign_cpu_share=0.021
+ok
+[2026-09-22 15:16:05] memcached tsan run4 rc=0 153.2s outside_busy=0.0071 inside_busy=0.724 foreign_cpu_share=0.0017
+ok
+[2026-09-22 15:18:40] memcached tsan-dom_peeling-ea-lo-st-swmr-wp run4 rc=0 154.2s outside_busy=0.0077 inside_busy=0.7143 foreign_cpu_share=0.0037
+ok
+[2026-09-22 15:21:18] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run4 rc=0 158.2s outside_busy=0.007 inside_busy=0.7105 foreign_cpu_share=0.0015
+ok
+[2026-09-22 15:24:00] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt-wp run4 rc=0 161.2s outside_busy=0.0081 inside_busy=0.6923 foreign_cpu_share=0.0034
+ok
+[2026-09-22 15:24:47] memcached orig run5 rc=0 47.1s outside_busy=0.0066 inside_busy=0.5421 foreign_cpu_share=0.0075
+ok
+[2026-09-22 15:27:22] memcached tsan run5 rc=0 155.2s outside_busy=0.0069 inside_busy=0.7119 foreign_cpu_share=0.0025
+ok
+[2026-09-22 15:30:01] memcached tsan-dom_peeling-ea-lo-st-swmr-wp run5 rc=0 158.2s outside_busy=0.0076 inside_busy=0.7029 foreign_cpu_share=0.0034
+ok
+[2026-09-22 15:32:35] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run5 rc=0 153.2s outside_busy=0.0069 inside_busy=0.7269 foreign_cpu_share=0.0024
+ok
+[2026-09-22 15:35:08] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt-wp run5 rc=0 153.2s outside_busy=0.0084 inside_busy=0.7234 foreign_cpu_share=0.0043
+ok
+[2026-09-22 15:35:09] done: memcached N=5 -> /artifact/results/perf-memcached-20260922-142601/memcached
+memcached: 5 configs, 25 runs -> perf_memcached.md
+summary -> /artifact/results/perf-memcached-20260922-142601/perf_summary.md
+-> /artifact/results/perf-memcached-20260922-142601/perf_memcached.md
+== W2 memcached END 23:35:09 rc=0
+== W1 memcached t=96 START 23:35:09
+docker/run.sh: ART_JOBS=25 (docker.slice MemoryMax 64 GiB at 2.5 GiB per job); set ART_JOBS to override
+Expected: performance for memcached, 1 warm-up + 5 runs per configuration -- about 30 min at the defaults on 48 pinned processors (--all-configs about 3.4x, ART_RUNS=5 about 2x, smoke mode a few minutes), 20-100 GB of disk.
+[2026-09-22 15:35:09] no machine job lock here (P5_MACHINE_LOCK=true, /home/alexey/bin/logs absent); building unlocked
+[2026-09-22 15:35:09] build memcached orig (jobs 25) -> /artifact/results/perf-memcached-20260922-153509/build/memcached-orig.log
+[2026-09-22 15:35:15] built memcached orig in 6s: 0 memory-access sites (0 tsan calls)
+[2026-09-22 15:35:15] build memcached tsan (jobs 25) -> /artifact/results/perf-memcached-20260922-153509/build/memcached-tsan.log
+[2026-09-22 15:35:25] built memcached tsan in 9s: 6748 memory-access sites (7722 tsan calls)
+[2026-09-22 15:35:25] build memcached tsan-dom_peeling-ea-lo-st-swmr (jobs 25) -> /artifact/results/perf-memcached-20260922-153509/build/memcached-tsan-dom_peeling-ea-lo-st-swmr.log
+[2026-09-22 15:35:34] built memcached tsan-dom_peeling-ea-lo-st-swmr in 9s: 7130 memory-access sites (8103 tsan calls)
+[2026-09-22 15:35:34] build memcached tsan-stmt (jobs 25) -> /artifact/results/perf-memcached-20260922-153509/build/memcached-tsan-stmt.log
+[2026-09-22 15:35:44] built memcached tsan-stmt in 10s: 6810 memory-access sites (7784 tsan calls)
+[2026-09-22 15:35:44] build memcached tsan-dom_peeling-ea-lo-st-swmr-stmt (jobs 25) -> /artifact/results/perf-memcached-20260922-153509/build/memcached-tsan-dom_peeling-ea-lo-st-swmr-stmt.log
+[2026-09-22 15:35:54] built memcached tsan-dom_peeling-ea-lo-st-swmr-stmt in 10s: 7183 memory-access sites (8155 tsan calls)
+[2026-09-22 15:35:54] builds of memcached done (fail=0); static counts in /artifact/results/perf-memcached-20260922-153509/static-counts.csv
+[2026-09-22 15:36:45] memcached orig run1 rc=0 50.1s outside_busy=0.0069 inside_busy=0.5354 foreign_cpu_share=0.0022
+ok
+[2026-09-22 15:40:46] memcached tsan run1 rc=0 241.3s outside_busy=0.0083 inside_busy=0.5313 foreign_cpu_share=0.0055
+ok
+[2026-09-22 15:44:28] memcached tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 221.3s outside_busy=0.0078 inside_busy=0.5494 foreign_cpu_share=0.0055
+ok
+[2026-09-22 15:48:31] memcached tsan-stmt run1 rc=0 242.3s outside_busy=0.0073 inside_busy=0.5256 foreign_cpu_share=0.0049
+ok
+[2026-09-22 15:52:19] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 228.3s outside_busy=0.0082 inside_busy=0.5514 foreign_cpu_share=0.0036
+ok
+[2026-09-22 15:53:12] memcached orig run1 rc=0 52.1s outside_busy=0.0106 inside_busy=0.5247 foreign_cpu_share=0.0068
+ok
+[2026-09-22 15:56:43] memcached tsan run1 rc=0 211.3s outside_busy=0.0073 inside_busy=0.573 foreign_cpu_share=0.0022
+ok
+[2026-09-22 16:00:15] memcached tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 211.3s outside_busy=0.0091 inside_busy=0.5692 foreign_cpu_share=0.0045
+ok
+[2026-09-22 16:04:16] memcached tsan-stmt run1 rc=0 241.3s outside_busy=0.0077 inside_busy=0.5221 foreign_cpu_share=0.0042
+ok
+[2026-09-22 16:08:02] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 225.3s outside_busy=0.0077 inside_busy=0.5433 foreign_cpu_share=0.0042
+ok
+[2026-09-22 16:08:54] memcached orig run2 rc=0 51.1s outside_busy=0.0069 inside_busy=0.5234 foreign_cpu_share=0.0038
+ok
+[2026-09-22 16:12:58] memcached tsan run2 rc=0 244.3s outside_busy=0.0083 inside_busy=0.5195 foreign_cpu_share=0.0061
+ok
+[2026-09-22 16:16:31] memcached tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 212.3s outside_busy=0.0074 inside_busy=0.5686 foreign_cpu_share=0.004
+ok
+[2026-09-22 16:20:33] memcached tsan-stmt run2 rc=0 242.3s outside_busy=0.0096 inside_busy=0.5255 foreign_cpu_share=0.0051
+ok
+[2026-09-22 16:24:39] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run2 rc=0 245.3s outside_busy=0.0081 inside_busy=0.5272 foreign_cpu_share=0.0057
+ok
+[2026-09-22 16:25:31] memcached orig run3 rc=0 52.1s outside_busy=0.0069 inside_busy=0.5147 foreign_cpu_share=0.0031
+ok
+[2026-09-22 16:29:24] memcached tsan run3 rc=0 232.3s outside_busy=0.0076 inside_busy=0.5412 foreign_cpu_share=0.0045
+ok
+[2026-09-22 16:33:06] memcached tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 221.3s outside_busy=0.008 inside_busy=0.5494 foreign_cpu_share=0.005
+ok
+[2026-09-22 16:37:15] memcached tsan-stmt run3 rc=0 249.3s outside_busy=0.0075 inside_busy=0.5197 foreign_cpu_share=0.0046
+ok
+[2026-09-22 16:41:12] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run3 rc=0 236.3s outside_busy=0.0079 inside_busy=0.5331 foreign_cpu_share=0.0046
+ok
+[2026-09-22 16:42:04] memcached orig run4 rc=0 52.1s outside_busy=0.0067 inside_busy=0.5167 foreign_cpu_share=0.0019
+ok
+[2026-09-22 16:45:47] memcached tsan run4 rc=0 222.3s outside_busy=0.0075 inside_busy=0.5511 foreign_cpu_share=0.0034
+ok
+[2026-09-22 16:49:26] memcached tsan-dom_peeling-ea-lo-st-swmr run4 rc=0 218.3s outside_busy=0.0076 inside_busy=0.5672 foreign_cpu_share=0.0033
+ok
+[2026-09-22 16:53:12] memcached tsan-stmt run4 rc=0 226.3s outside_busy=0.0081 inside_busy=0.5469 foreign_cpu_share=0.0043
+ok
+[2026-09-22 16:56:55] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run4 rc=0 222.3s outside_busy=0.0074 inside_busy=0.5434 foreign_cpu_share=0.0039
+ok
+[2026-09-22 16:57:45] memcached orig run5 rc=0 50.1s outside_busy=0.007 inside_busy=0.5352 foreign_cpu_share=0.0039
+ok
+[2026-09-22 17:01:54] memcached tsan run5 rc=0 248.3s outside_busy=0.0108 inside_busy=0.511 foreign_cpu_share=0.01
+ok
+[2026-09-22 17:05:54] memcached tsan-dom_peeling-ea-lo-st-swmr run5 rc=0 240.3s outside_busy=0.0078 inside_busy=0.5299 foreign_cpu_share=0.0055
+ok
+[2026-09-22 17:09:36] memcached tsan-stmt run5 rc=0 221.3s outside_busy=0.0077 inside_busy=0.5422 foreign_cpu_share=0.0054
+ok
+[2026-09-22 17:13:35] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run5 rc=0 238.3s outside_busy=0.0079 inside_busy=0.5355 foreign_cpu_share=0.0057
+ok
+[2026-09-22 17:13:35] done: memcached N=5 -> /artifact/results/perf-memcached-20260922-153509/memcached
+memcached: 5 configs, 25 runs -> perf_memcached.md
+summary -> /artifact/results/perf-memcached-20260922-153509/perf_summary.md
+-> /artifact/results/perf-memcached-20260922-153509/perf_memcached.md
+== W1 memcached t=96 END 01:13:35 rc=0
+== W1 memcached t=112 START 01:13:35
+docker/run.sh: ART_JOBS=25 (docker.slice MemoryMax 64 GiB at 2.5 GiB per job); set ART_JOBS to override
+Expected: performance for memcached, 1 warm-up + 5 runs per configuration -- about 30 min at the defaults on 48 pinned processors (--all-configs about 3.4x, ART_RUNS=5 about 2x, smoke mode a few minutes), 20-100 GB of disk.
+[2026-09-22 17:13:36] no machine job lock here (P5_MACHINE_LOCK=true, /home/alexey/bin/logs absent); building unlocked
+[2026-09-22 17:13:36] build memcached orig (jobs 25) -> /artifact/results/perf-memcached-20260922-171336/build/memcached-orig.log
+[2026-09-22 17:13:42] built memcached orig in 6s: 0 memory-access sites (0 tsan calls)
+[2026-09-22 17:13:42] build memcached tsan (jobs 25) -> /artifact/results/perf-memcached-20260922-171336/build/memcached-tsan.log
+[2026-09-22 17:13:51] built memcached tsan in 9s: 6748 memory-access sites (7722 tsan calls)
+[2026-09-22 17:13:51] build memcached tsan-dom_peeling-ea-lo-st-swmr (jobs 25) -> /artifact/results/perf-memcached-20260922-171336/build/memcached-tsan-dom_peeling-ea-lo-st-swmr.log
+[2026-09-22 17:14:01] built memcached tsan-dom_peeling-ea-lo-st-swmr in 10s: 7130 memory-access sites (8103 tsan calls)
+[2026-09-22 17:14:01] build memcached tsan-stmt (jobs 25) -> /artifact/results/perf-memcached-20260922-171336/build/memcached-tsan-stmt.log
+[2026-09-22 17:14:11] built memcached tsan-stmt in 9s: 6810 memory-access sites (7784 tsan calls)
+[2026-09-22 17:14:11] build memcached tsan-dom_peeling-ea-lo-st-swmr-stmt (jobs 25) -> /artifact/results/perf-memcached-20260922-171336/build/memcached-tsan-dom_peeling-ea-lo-st-swmr-stmt.log
+[2026-09-22 17:14:21] built memcached tsan-dom_peeling-ea-lo-st-swmr-stmt in 10s: 7183 memory-access sites (8155 tsan calls)
+[2026-09-22 17:14:21] builds of memcached done (fail=0); static counts in /artifact/results/perf-memcached-20260922-171336/static-counts.csv
+[2026-09-22 17:15:14] memcached orig run1 rc=0 52.1s outside_busy=0.0073 inside_busy=0.521 foreign_cpu_share=0.0027
+ok
+[2026-09-22 17:19:18] memcached tsan run1 rc=0 244.4s outside_busy=0.009 inside_busy=0.5132 foreign_cpu_share=0.0059
+ok
+[2026-09-22 17:23:05] memcached tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 226.3s outside_busy=0.0084 inside_busy=0.5496 foreign_cpu_share=0.0031
+ok
+[2026-09-22 17:26:56] memcached tsan-stmt run1 rc=0 230.3s outside_busy=0.0073 inside_busy=0.5216 foreign_cpu_share=0.004
+ok
+[2026-09-22 17:31:15] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 259.4s outside_busy=0.0076 inside_busy=0.5115 foreign_cpu_share=0.0037
+ok
+[2026-09-22 17:32:08] memcached orig run1 rc=0 52.1s outside_busy=0.0068 inside_busy=0.5189 foreign_cpu_share=0.002
+ok
+[2026-09-22 17:36:24] memcached tsan run1 rc=0 256.4s outside_busy=0.0081 inside_busy=0.5074 foreign_cpu_share=0.0049
+ok
+[2026-09-22 17:40:39] memcached tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 254.4s outside_busy=0.0219 inside_busy=0.5204 foreign_cpu_share=0.0286
+ok
+[2026-09-22 17:44:31] memcached tsan-stmt run1 rc=0 231.3s outside_busy=0.0082 inside_busy=0.5435 foreign_cpu_share=0.0052
+ok
+[2026-09-22 17:48:19] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 228.3s outside_busy=0.0077 inside_busy=0.5387 foreign_cpu_share=0.0039
+ok
+[2026-09-22 17:49:12] memcached orig run2 rc=0 52.1s outside_busy=0.0068 inside_busy=0.5164 foreign_cpu_share=0.0024
+ok
+[2026-09-22 17:53:38] memcached tsan run2 rc=0 266.4s outside_busy=0.0078 inside_busy=0.4981 foreign_cpu_share=0.0046
+ok
+[2026-09-22 17:57:38] memcached tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 239.3s outside_busy=0.0074 inside_busy=0.5161 foreign_cpu_share=0.0043
+ok
+[2026-09-22 18:02:09] memcached tsan-stmt run2 rc=0 270.4s outside_busy=0.0078 inside_busy=0.5016 foreign_cpu_share=0.0051
+ok
+[2026-09-22 18:06:27] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run2 rc=0 258.4s outside_busy=0.0076 inside_busy=0.5084 foreign_cpu_share=0.0038
+ok
+[2026-09-22 18:07:20] memcached orig run3 rc=0 52.1s outside_busy=0.0065 inside_busy=0.5084 foreign_cpu_share=0.0023
+ok
+[2026-09-22 18:11:14] memcached tsan run3 rc=0 234.3s outside_busy=0.0076 inside_busy=0.5284 foreign_cpu_share=0.0042
+ok
+[2026-09-22 18:15:00] memcached tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 225.3s outside_busy=0.0082 inside_busy=0.5424 foreign_cpu_share=0.0053
+ok
+[2026-09-22 18:19:16] memcached tsan-stmt run3 rc=0 255.4s outside_busy=0.0089 inside_busy=0.5181 foreign_cpu_share=0.0053
+ok
+[2026-09-22 18:23:04] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run3 rc=0 228.3s outside_busy=0.0084 inside_busy=0.5419 foreign_cpu_share=0.0041
+ok
+[2026-09-22 18:23:57] memcached orig run4 rc=0 52.1s outside_busy=0.0069 inside_busy=0.5149 foreign_cpu_share=0.0014
+ok
+[2026-09-22 18:27:47] memcached tsan run4 rc=0 230.3s outside_busy=0.0071 inside_busy=0.5274 foreign_cpu_share=0.0039
+ok
+[2026-09-22 18:32:05] memcached tsan-dom_peeling-ea-lo-st-swmr run4 rc=0 257.4s outside_busy=0.0075 inside_busy=0.4997 foreign_cpu_share=0.0052
+ok
+[2026-09-22 18:36:26] memcached tsan-stmt run4 rc=0 260.4s outside_busy=0.0081 inside_busy=0.5024 foreign_cpu_share=0.0061
+ok
+[2026-09-22 18:40:18] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run4 rc=0 232.3s outside_busy=0.0077 inside_busy=0.5289 foreign_cpu_share=0.0056
+ok
+[2026-09-22 18:41:10] memcached orig run5 rc=0 51.1s outside_busy=0.007 inside_busy=0.5264 foreign_cpu_share=0.0018
+ok
+[2026-09-22 18:45:00] memcached tsan run5 rc=0 230.3s outside_busy=0.0076 inside_busy=0.5341 foreign_cpu_share=0.0043
+ok
+[2026-09-22 18:48:53] memcached tsan-dom_peeling-ea-lo-st-swmr run5 rc=0 232.3s outside_busy=0.0075 inside_busy=0.5385 foreign_cpu_share=0.0035
+ok
+[2026-09-22 18:53:09] memcached tsan-stmt run5 rc=0 255.4s outside_busy=0.0078 inside_busy=0.5062 foreign_cpu_share=0.0054
+ok
+[2026-09-22 18:57:03] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run5 rc=0 234.4s outside_busy=0.0117 inside_busy=0.5257 foreign_cpu_share=0.0071
+ok
+[2026-09-22 18:57:04] done: memcached N=5 -> /artifact/results/perf-memcached-20260922-171336/memcached
+memcached: 5 configs, 25 runs -> perf_memcached.md
+summary -> /artifact/results/perf-memcached-20260922-171336/perf_summary.md
+-> /artifact/results/perf-memcached-20260922-171336/perf_memcached.md
+== W1 memcached t=112 END 02:57:04 rc=0
+== W1 memcached t=24 START 02:57:04
+docker/run.sh: ART_JOBS=25 (docker.slice MemoryMax 64 GiB at 2.5 GiB per job); set ART_JOBS to override
+Expected: performance for memcached, 1 warm-up + 5 runs per configuration -- about 30 min at the defaults on 48 pinned processors (--all-configs about 3.4x, ART_RUNS=5 about 2x, smoke mode a few minutes), 20-100 GB of disk.
+[2026-09-22 18:57:04] no machine job lock here (P5_MACHINE_LOCK=true, /home/alexey/bin/logs absent); building unlocked
+[2026-09-22 18:57:04] build memcached orig (jobs 25) -> /artifact/results/perf-memcached-20260922-185704/build/memcached-orig.log
+[2026-09-22 18:57:11] built memcached orig in 6s: 0 memory-access sites (0 tsan calls)
+[2026-09-22 18:57:11] build memcached tsan (jobs 25) -> /artifact/results/perf-memcached-20260922-185704/build/memcached-tsan.log
+[2026-09-22 18:57:20] built memcached tsan in 8s: 6748 memory-access sites (7722 tsan calls)
+[2026-09-22 18:57:20] build memcached tsan-dom_peeling-ea-lo-st-swmr (jobs 25) -> /artifact/results/perf-memcached-20260922-185704/build/memcached-tsan-dom_peeling-ea-lo-st-swmr.log
+[2026-09-22 18:57:30] built memcached tsan-dom_peeling-ea-lo-st-swmr in 9s: 7130 memory-access sites (8103 tsan calls)
+[2026-09-22 18:57:30] build memcached tsan-stmt (jobs 25) -> /artifact/results/perf-memcached-20260922-185704/build/memcached-tsan-stmt.log
+[2026-09-22 18:57:39] built memcached tsan-stmt in 9s: 6810 memory-access sites (7784 tsan calls)
+[2026-09-22 18:57:39] build memcached tsan-dom_peeling-ea-lo-st-swmr-stmt (jobs 25) -> /artifact/results/perf-memcached-20260922-185704/build/memcached-tsan-dom_peeling-ea-lo-st-swmr-stmt.log
+[2026-09-22 18:57:49] built memcached tsan-dom_peeling-ea-lo-st-swmr-stmt in 10s: 7183 memory-access sites (8155 tsan calls)
+[2026-09-22 18:57:49] builds of memcached done (fail=0); static counts in /artifact/results/perf-memcached-20260922-185704/static-counts.csv
+[2026-09-22 18:58:37] memcached orig run1 rc=0 47.1s outside_busy=0.0093 inside_busy=0.5092 foreign_cpu_share=0.0121
+ok
+[2026-09-22 19:01:15] memcached tsan run1 rc=0 158.2s outside_busy=0.0075 inside_busy=0.5628 foreign_cpu_share=0.0062
+ok
+[2026-09-22 19:03:54] memcached tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 158.2s outside_busy=0.0076 inside_busy=0.5588 foreign_cpu_share=0.0065
+ok
+[2026-09-22 19:06:34] memcached tsan-stmt run1 rc=0 160.2s outside_busy=0.0072 inside_busy=0.5589 foreign_cpu_share=0.0053
+ok
+[2026-09-22 19:09:10] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 155.2s outside_busy=0.0076 inside_busy=0.5651 foreign_cpu_share=0.0064
+ok
+[2026-09-22 19:09:57] memcached orig run1 rc=0 47.1s outside_busy=0.0067 inside_busy=0.5035 foreign_cpu_share=0.0078
+ok
+[2026-09-22 19:12:35] memcached tsan run1 rc=0 157.2s outside_busy=0.0073 inside_busy=0.5604 foreign_cpu_share=0.0054
+ok
+[2026-09-22 19:15:11] memcached tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 156.2s outside_busy=0.0089 inside_busy=0.5686 foreign_cpu_share=0.0079
+ok
+[2026-09-22 19:17:47] memcached tsan-stmt run1 rc=0 155.2s outside_busy=0.0075 inside_busy=0.5697 foreign_cpu_share=0.006
+ok
+[2026-09-22 19:20:28] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 161.2s outside_busy=0.0082 inside_busy=0.5609 foreign_cpu_share=0.0068
+ok
+[2026-09-22 19:21:16] memcached orig run2 rc=0 47.1s outside_busy=0.007 inside_busy=0.5005 foreign_cpu_share=0.0086
+ok
+[2026-09-22 19:23:50] memcached tsan run2 rc=0 154.2s outside_busy=0.0086 inside_busy=0.5645 foreign_cpu_share=0.0073
+ok
+[2026-09-22 19:26:33] memcached tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 162.2s outside_busy=0.0073 inside_busy=0.5541 foreign_cpu_share=0.0055
+ok
+[2026-09-22 19:29:12] memcached tsan-stmt run2 rc=0 159.2s outside_busy=0.0079 inside_busy=0.559 foreign_cpu_share=0.0063
+ok
+[2026-09-22 19:31:48] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run2 rc=0 155.2s outside_busy=0.0071 inside_busy=0.5635 foreign_cpu_share=0.0055
+ok
+[2026-09-22 19:32:35] memcached orig run3 rc=0 47.1s outside_busy=0.007 inside_busy=0.5073 foreign_cpu_share=0.0081
+ok
+[2026-09-22 19:35:15] memcached tsan run3 rc=0 159.2s outside_busy=0.0088 inside_busy=0.5634 foreign_cpu_share=0.0073
+ok
+[2026-09-22 19:37:52] memcached tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 157.2s outside_busy=0.0072 inside_busy=0.5578 foreign_cpu_share=0.0055
+ok
+[2026-09-22 19:40:32] memcached tsan-stmt run3 rc=0 159.2s outside_busy=0.0078 inside_busy=0.5623 foreign_cpu_share=0.0065
+ok
+[2026-09-22 19:43:08] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run3 rc=0 156.2s outside_busy=0.008 inside_busy=0.5658 foreign_cpu_share=0.0066
+ok
+[2026-09-22 19:43:56] memcached orig run4 rc=0 47.1s outside_busy=0.0068 inside_busy=0.4985 foreign_cpu_share=0.0079
+ok
+[2026-09-22 19:46:35] memcached tsan run4 rc=0 159.2s outside_busy=0.0071 inside_busy=0.5572 foreign_cpu_share=0.0056
+ok
+[2026-09-22 19:49:16] memcached tsan-dom_peeling-ea-lo-st-swmr run4 rc=0 160.2s outside_busy=0.0095 inside_busy=0.5588 foreign_cpu_share=0.0084
+ok
+[2026-09-22 19:51:56] memcached tsan-stmt run4 rc=0 160.2s outside_busy=0.0071 inside_busy=0.5599 foreign_cpu_share=0.005
+ok
+[2026-09-22 19:54:32] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run4 rc=0 155.2s outside_busy=0.0083 inside_busy=0.5678 foreign_cpu_share=0.0074
+ok
+[2026-09-22 19:55:19] memcached orig run5 rc=0 47.1s outside_busy=0.0078 inside_busy=0.5046 foreign_cpu_share=0.0093
+ok
+[2026-09-22 19:58:01] memcached tsan run5 rc=0 161.2s outside_busy=0.0083 inside_busy=0.5604 foreign_cpu_share=0.0073
+ok
+[2026-09-22 20:00:35] memcached tsan-dom_peeling-ea-lo-st-swmr run5 rc=0 154.2s outside_busy=0.0074 inside_busy=0.5666 foreign_cpu_share=0.0059
+ok
+[2026-09-22 20:03:14] memcached tsan-stmt run5 rc=0 158.2s outside_busy=0.0075 inside_busy=0.5618 foreign_cpu_share=0.007
+ok
+[2026-09-22 20:05:52] memcached tsan-dom_peeling-ea-lo-st-swmr-stmt run5 rc=0 158.2s outside_busy=0.0074 inside_busy=0.5643 foreign_cpu_share=0.006
+ok
+[2026-09-22 20:05:53] done: memcached N=5 -> /artifact/results/perf-memcached-20260922-185704/memcached
+memcached: 5 configs, 25 runs -> perf_memcached.md
+summary -> /artifact/results/perf-memcached-20260922-185704/perf_summary.md
+-> /artifact/results/perf-memcached-20260922-185704/perf_memcached.md
+== W1 memcached t=24 END 04:05:53 rc=0
+== W1 redis c=256 START 04:05:53
+docker/run.sh: ART_JOBS=25 (docker.slice MemoryMax 64 GiB at 2.5 GiB per job); set ART_JOBS to override
+Expected: performance for redis, 1 warm-up + 5 runs per configuration -- about 15 min at the defaults on 48 pinned processors (--all-configs about 3.4x, ART_RUNS=5 about 2x, smoke mode a few minutes), 20-100 GB of disk.
+[2026-09-22 20:05:53] no machine job lock here (P5_MACHINE_LOCK=true, /home/alexey/bin/logs absent); building unlocked
+[2026-09-22 20:05:53] build redis orig (jobs 25) -> /artifact/results/perf-redis-20260922-200553/build/redis-orig.log
+[2026-09-22 20:05:59] built redis orig in 6s: 0 memory-access sites (0 tsan calls)
+[2026-09-22 20:05:59] build redis tsan (jobs 25) -> /artifact/results/perf-redis-20260922-200553/build/redis-tsan.log
+[2026-09-22 20:06:06] built redis tsan in 6s: 37922 memory-access sites (45186 tsan calls)
+[2026-09-22 20:06:06] build redis tsan-dom_peeling-ea-lo-st-swmr (jobs 25) -> /artifact/results/perf-redis-20260922-200553/build/redis-tsan-dom_peeling-ea-lo-st-swmr.log
+[2026-09-22 20:06:14] built redis tsan-dom_peeling-ea-lo-st-swmr in 7s: 43272 memory-access sites (50591 tsan calls)
+[2026-09-22 20:06:14] build redis tsan-stmt (jobs 25) -> /artifact/results/perf-redis-20260922-200553/build/redis-tsan-stmt.log
+[2026-09-22 20:06:22] built redis tsan-stmt in 6s: 37863 memory-access sites (45126 tsan calls)
+[2026-09-22 20:06:22] build redis tsan-dom_peeling-ea-lo-st-swmr-stmt (jobs 25) -> /artifact/results/perf-redis-20260922-200553/build/redis-tsan-dom_peeling-ea-lo-st-swmr-stmt.log
+[2026-09-22 20:06:31] built redis tsan-dom_peeling-ea-lo-st-swmr-stmt in 8s: 43248 memory-access sites (50566 tsan calls)
+[2026-09-22 20:06:31] builds of redis done (fail=0); static counts in /artifact/results/perf-redis-20260922-200553/static-counts.csv
+[2026-09-22 20:06:58] redis orig run1 rc=0 26.1s outside_busy=0.0062 inside_busy=0.085 foreign_cpu_share=0.0101
+ok
+[2026-09-22 20:10:35] redis tsan run1 rc=0 217.2s outside_busy=0.0067 inside_busy=0.2779 foreign_cpu_share=0.0104
+ok
+[2026-09-22 20:14:10] redis tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 214.9s outside_busy=0.0068 inside_busy=0.276 foreign_cpu_share=0.0107
+ok
+[2026-09-22 20:17:55] redis tsan-stmt run1 rc=0 224.3s outside_busy=0.0066 inside_busy=0.27 foreign_cpu_share=0.0102
+ok
+[2026-09-22 20:21:35] redis tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 219.8s outside_busy=0.0068 inside_busy=0.2763 foreign_cpu_share=0.0105
+ok
+[2026-09-22 20:22:01] redis orig run1 rc=0 26.0s outside_busy=0.006 inside_busy=0.0869 foreign_cpu_share=0.0093
+ok
+[2026-09-22 20:25:38] redis tsan run1 rc=0 216.2s outside_busy=0.0069 inside_busy=0.2764 foreign_cpu_share=0.0108
+ok
+[2026-09-22 20:29:11] redis tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 212.7s outside_busy=0.0067 inside_busy=0.2744 foreign_cpu_share=0.0102
+ok
+[2026-09-22 20:32:54] redis tsan-stmt run1 rc=0 222.4s outside_busy=0.0066 inside_busy=0.2773 foreign_cpu_share=0.01
+ok
+[2026-09-22 20:36:37] redis tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 223.0s outside_busy=0.007 inside_busy=0.2793 foreign_cpu_share=0.0107
+ok
+[2026-09-22 20:37:03] redis orig run2 rc=0 26.0s outside_busy=0.0065 inside_busy=0.0843 foreign_cpu_share=0.0105
+ok
+[2026-09-22 20:40:42] redis tsan run2 rc=0 218.8s outside_busy=0.0069 inside_busy=0.2727 foreign_cpu_share=0.0105
+ok
+[2026-09-22 20:44:15] redis tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 212.4s outside_busy=0.0063 inside_busy=0.2731 foreign_cpu_share=0.01
+ok
+[2026-09-22 20:47:57] redis tsan-stmt run2 rc=0 221.3s outside_busy=0.0076 inside_busy=0.2795 foreign_cpu_share=0.012
+ok
+[2026-09-22 20:51:35] redis tsan-dom_peeling-ea-lo-st-swmr-stmt run2 rc=0 217.8s outside_busy=0.0061 inside_busy=0.2723 foreign_cpu_share=0.0094
+ok
+[2026-09-22 20:52:01] redis orig run3 rc=0 25.8s outside_busy=0.0059 inside_busy=0.0823 foreign_cpu_share=0.0092
+ok
+[2026-09-22 20:55:40] redis tsan run3 rc=0 218.6s outside_busy=0.0076 inside_busy=0.2732 foreign_cpu_share=0.0116
+ok
+[2026-09-22 20:59:17] redis tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 216.4s outside_busy=0.0071 inside_busy=0.2759 foreign_cpu_share=0.0109
+ok
+[2026-09-22 21:03:00] redis tsan-stmt run3 rc=0 222.8s outside_busy=0.0067 inside_busy=0.2752 foreign_cpu_share=0.0101
+ok
+[2026-09-22 21:06:39] redis tsan-dom_peeling-ea-lo-st-swmr-stmt run3 rc=0 218.4s outside_busy=0.0062 inside_busy=0.2717 foreign_cpu_share=0.0097
+ok
+[2026-09-22 21:07:05] redis orig run4 rc=0 26.0s outside_busy=0.006 inside_busy=0.0862 foreign_cpu_share=0.0094
+ok
+[2026-09-22 21:10:42] redis tsan run4 rc=0 216.3s outside_busy=0.0068 inside_busy=0.2748 foreign_cpu_share=0.0103
+ok
+[2026-09-22 21:14:18] redis tsan-dom_peeling-ea-lo-st-swmr run4 rc=0 215.7s outside_busy=0.0104 inside_busy=0.2734 foreign_cpu_share=0.0164
+ok
+[2026-09-22 21:18:04] redis tsan-stmt run4 rc=0 225.9s outside_busy=0.0083 inside_busy=0.28 foreign_cpu_share=0.0127
+ok
+[2026-09-22 21:21:45] redis tsan-dom_peeling-ea-lo-st-swmr-stmt run4 rc=0 221.0s outside_busy=0.0064 inside_busy=0.2776 foreign_cpu_share=0.0098
+ok
+[2026-09-22 21:22:12] redis orig run5 rc=0 26.0s outside_busy=0.0059 inside_busy=0.0862 foreign_cpu_share=0.0095
+ok
+[2026-09-22 21:25:47] redis tsan run5 rc=0 215.3s outside_busy=0.0066 inside_busy=0.2738 foreign_cpu_share=0.0107
+ok
+[2026-09-22 21:29:21] redis tsan-dom_peeling-ea-lo-st-swmr run5 rc=0 213.6s outside_busy=0.0068 inside_busy=0.2745 foreign_cpu_share=0.0105
+ok
+[2026-09-22 21:33:02] redis tsan-stmt run5 rc=0 220.2s outside_busy=0.0068 inside_busy=0.276 foreign_cpu_share=0.0105
+ok
+[2026-09-22 21:36:43] redis tsan-dom_peeling-ea-lo-st-swmr-stmt run5 rc=0 220.9s outside_busy=0.0064 inside_busy=0.273 foreign_cpu_share=0.0099
+ok
+[2026-09-22 21:36:43] done: redis N=5 -> /artifact/results/perf-redis-20260922-200553/redis
+redis: 5 configs, 25 runs -> perf_redis.md
+summary -> /artifact/results/perf-redis-20260922-200553/perf_summary.md
+-> /artifact/results/perf-redis-20260922-200553/perf_redis.md
+== W1 redis c=256 END 05:36:44 rc=0
+== W1 redis c=512 START 05:36:44
+docker/run.sh: ART_JOBS=25 (docker.slice MemoryMax 64 GiB at 2.5 GiB per job); set ART_JOBS to override
+Expected: performance for redis, 1 warm-up + 5 runs per configuration -- about 15 min at the defaults on 48 pinned processors (--all-configs about 3.4x, ART_RUNS=5 about 2x, smoke mode a few minutes), 20-100 GB of disk.
+[2026-09-22 21:36:44] no machine job lock here (P5_MACHINE_LOCK=true, /home/alexey/bin/logs absent); building unlocked
+[2026-09-22 21:36:44] build redis orig (jobs 25) -> /artifact/results/perf-redis-20260922-213644/build/redis-orig.log
+[2026-09-22 21:36:50] built redis orig in 6s: 0 memory-access sites (0 tsan calls)
+[2026-09-22 21:36:50] build redis tsan (jobs 25) -> /artifact/results/perf-redis-20260922-213644/build/redis-tsan.log
+[2026-09-22 21:36:57] built redis tsan in 6s: 37922 memory-access sites (45186 tsan calls)
+[2026-09-22 21:36:57] build redis tsan-dom_peeling-ea-lo-st-swmr (jobs 25) -> /artifact/results/perf-redis-20260922-213644/build/redis-tsan-dom_peeling-ea-lo-st-swmr.log
+[2026-09-22 21:37:05] built redis tsan-dom_peeling-ea-lo-st-swmr in 7s: 43272 memory-access sites (50591 tsan calls)
+[2026-09-22 21:37:06] build redis tsan-stmt (jobs 25) -> /artifact/results/perf-redis-20260922-213644/build/redis-tsan-stmt.log
+[2026-09-22 21:37:13] built redis tsan-stmt in 6s: 37863 memory-access sites (45126 tsan calls)
+[2026-09-22 21:37:13] build redis tsan-dom_peeling-ea-lo-st-swmr-stmt (jobs 25) -> /artifact/results/perf-redis-20260922-213644/build/redis-tsan-dom_peeling-ea-lo-st-swmr-stmt.log
+[2026-09-22 21:37:23] built redis tsan-dom_peeling-ea-lo-st-swmr-stmt in 8s: 43248 memory-access sites (50566 tsan calls)
+[2026-09-22 21:37:23] builds of redis done (fail=0); static counts in /artifact/results/perf-redis-20260922-213644/static-counts.csv
+[2026-09-22 21:37:56] redis orig run1 rc=0 32.9s outside_busy=0.0092 inside_busy=0.0907 foreign_cpu_share=0.015
+ok
+[2026-09-22 21:44:14] redis tsan run1 rc=0 377.4s outside_busy=0.0063 inside_busy=0.2781 foreign_cpu_share=0.01
+ok
+[2026-09-22 21:50:24] redis tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 369.6s outside_busy=0.0062 inside_busy=0.2855 foreign_cpu_share=0.0096
+ok
+[2026-09-22 21:56:54] redis tsan-stmt run1 rc=0 390.1s outside_busy=0.0066 inside_busy=0.2801 foreign_cpu_share=0.0104
+ok
+[2026-09-22 22:03:12] redis tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 377.5s outside_busy=0.0068 inside_busy=0.2778 foreign_cpu_share=0.0106
+ok
+[2026-09-22 22:03:45] redis orig run1 rc=0 32.8s outside_busy=0.0055 inside_busy=0.0906 foreign_cpu_share=0.0092
+ok
+[2026-09-22 22:09:59] redis tsan run1 rc=0 374.3s outside_busy=0.0062 inside_busy=0.2793 foreign_cpu_share=0.0095
+ok
+[2026-09-22 22:16:12] redis tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 372.0s outside_busy=0.0066 inside_busy=0.2762 foreign_cpu_share=0.01
+ok
+[2026-09-22 22:22:39] redis tsan-stmt run1 rc=0 386.6s outside_busy=0.0071 inside_busy=0.2781 foreign_cpu_share=0.0113
+ok
+[2026-09-22 22:28:56] redis tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 376.5s outside_busy=0.0068 inside_busy=0.2779 foreign_cpu_share=0.0105
+ok
+[2026-09-22 22:29:29] redis orig run2 rc=0 33.1s outside_busy=0.0056 inside_busy=0.0958 foreign_cpu_share=0.009
+ok
+[2026-09-22 22:35:49] redis tsan run2 rc=0 379.8s outside_busy=0.0066 inside_busy=0.2786 foreign_cpu_share=0.0102
+ok
+[2026-09-22 22:42:02] redis tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 372.9s outside_busy=0.0064 inside_busy=0.2781 foreign_cpu_share=0.01
+ok
+[2026-09-22 22:48:26] redis tsan-stmt run2 rc=0 383.7s outside_busy=0.0063 inside_busy=0.2787 foreign_cpu_share=0.0098
+ok
+[2026-09-22 22:54:47] redis tsan-dom_peeling-ea-lo-st-swmr-stmt run2 rc=0 380.3s outside_busy=0.0062 inside_busy=0.2803 foreign_cpu_share=0.0096
+ok
+[2026-09-22 22:55:21] redis orig run3 rc=0 34.1s outside_busy=0.0067 inside_busy=0.1095 foreign_cpu_share=0.0107
+ok
+[2026-09-22 23:01:42] redis tsan run3 rc=0 380.3s outside_busy=0.0065 inside_busy=0.279 foreign_cpu_share=0.01
+ok
+[2026-09-22 23:07:51] redis tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 368.2s outside_busy=0.0062 inside_busy=0.2757 foreign_cpu_share=0.0096
+ok
+[2026-09-22 23:14:19] redis tsan-stmt run3 rc=0 387.8s outside_busy=0.0063 inside_busy=0.2804 foreign_cpu_share=0.0101
+ok
+[2026-09-22 23:20:44] redis tsan-dom_peeling-ea-lo-st-swmr-stmt run3 rc=0 385.5s outside_busy=0.0073 inside_busy=0.281 foreign_cpu_share=0.0114
+ok
+[2026-09-22 23:21:18] redis orig run4 rc=0 33.1s outside_busy=0.0061 inside_busy=0.0946 foreign_cpu_share=0.0099
+ok
+[2026-09-22 23:27:33] redis tsan run4 rc=0 375.0s outside_busy=0.0064 inside_busy=0.2777 foreign_cpu_share=0.0101
+ok
+[2026-09-22 23:33:42] redis tsan-dom_peeling-ea-lo-st-swmr run4 rc=0 368.9s outside_busy=0.0069 inside_busy=0.2759 foreign_cpu_share=0.0108
+ok
+[2026-09-22 23:40:13] redis tsan-stmt run4 rc=0 390.8s outside_busy=0.0066 inside_busy=0.281 foreign_cpu_share=0.0103
+ok
+[2026-09-22 23:46:29] redis tsan-dom_peeling-ea-lo-st-swmr-stmt run4 rc=0 375.0s outside_busy=0.0062 inside_busy=0.2769 foreign_cpu_share=0.0097
+ok
+[2026-09-22 23:47:02] redis orig run5 rc=0 32.9s outside_busy=0.0056 inside_busy=0.0918 foreign_cpu_share=0.0091
+ok
+[2026-09-22 23:53:17] redis tsan run5 rc=0 374.5s outside_busy=0.0063 inside_busy=0.2785 foreign_cpu_share=0.0098
+ok
+[2026-09-22 23:59:32] redis tsan-dom_peeling-ea-lo-st-swmr run5 rc=0 374.5s outside_busy=0.0065 inside_busy=0.2773 foreign_cpu_share=0.0102
+ok
+[2026-09-23 00:05:57] redis tsan-stmt run5 rc=0 385.3s outside_busy=0.0062 inside_busy=0.2769 foreign_cpu_share=0.0095
+ok
+[2026-09-23 00:12:17] redis tsan-dom_peeling-ea-lo-st-swmr-stmt run5 rc=0 379.0s outside_busy=0.0064 inside_busy=0.2782 foreign_cpu_share=0.0098
+ok
+[2026-09-23 00:12:17] done: redis N=5 -> /artifact/results/perf-redis-20260922-213644/redis
+redis: 5 configs, 25 runs -> perf_redis.md
+summary -> /artifact/results/perf-redis-20260922-213644/perf_summary.md
+-> /artifact/results/perf-redis-20260922-213644/perf_redis.md
+== W1 redis c=512 END 08:12:17 rc=0
+== W1 sqlite w1=8 START 08:12:17
+docker/run.sh: ART_JOBS=25 (docker.slice MemoryMax 64 GiB at 2.5 GiB per job); set ART_JOBS to override
+Expected: performance for sqlite, 1 warm-up + 5 runs per configuration -- about 1 h at the defaults on 48 pinned processors (--all-configs about 3.4x, ART_RUNS=5 about 2x, smoke mode a few minutes), 20-100 GB of disk.
+[2026-09-23 00:12:18] no machine job lock here (P5_MACHINE_LOCK=true, /home/alexey/bin/logs absent); building unlocked
+[2026-09-23 00:12:18] build sqlite orig (jobs 25) -> /artifact/results/perf-sqlite-20260923-001218/build/sqlite-orig.log
+[2026-09-23 00:12:42] built sqlite orig in 24s: 0 memory-access sites (0 tsan calls)
+[2026-09-23 00:12:42] build sqlite tsan (jobs 25) -> /artifact/results/perf-sqlite-20260923-001218/build/sqlite-tsan.log
+[2026-09-23 00:13:11] built sqlite tsan in 28s: 57996 memory-access sites (62654 tsan calls)
+[2026-09-23 00:13:11] build sqlite tsan-dom_peeling-ea-lo-st-swmr (jobs 25) -> /artifact/results/perf-sqlite-20260923-001218/build/sqlite-tsan-dom_peeling-ea-lo-st-swmr.log
+[2026-09-23 00:13:45] built sqlite tsan-dom_peeling-ea-lo-st-swmr in 32s: 61931 memory-access sites (66659 tsan calls)
+[2026-09-23 00:13:45] build sqlite tsan-stmt (jobs 25) -> /artifact/results/perf-sqlite-20260923-001218/build/sqlite-tsan-stmt.log
+[2026-09-23 00:14:26] built sqlite tsan-stmt in 40s: 57957 memory-access sites (62618 tsan calls)
+[2026-09-23 00:14:26] build sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt (jobs 25) -> /artifact/results/perf-sqlite-20260923-001218/build/sqlite-tsan-dom_peeling-ea-lo-st-swmr-stmt.log
+[2026-09-23 00:15:15] built sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt in 47s: 61897 memory-access sites (66629 tsan calls)
+[2026-09-23 00:15:15] builds of sqlite done (fail=0); static counts in /artifact/results/perf-sqlite-20260923-001218/static-counts.csv
+[2026-09-23 00:15:35] sqlite orig run1 rc=0 20.1s outside_busy=0.0095 inside_busy=0.0432 foreign_cpu_share=0.0208
+ok
+[2026-09-23 00:15:55] sqlite tsan run1 rc=0 20.1s outside_busy=0.0119 inside_busy=0.0781 foreign_cpu_share=0.0345
+ok
+[2026-09-23 00:16:16] sqlite tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 20.1s outside_busy=0.0104 inside_busy=0.0758 foreign_cpu_share=0.0224
+ok
+[2026-09-23 00:16:36] sqlite tsan-stmt run1 rc=0 20.1s outside_busy=0.0062 inside_busy=0.0767 foreign_cpu_share=0.0126
+ok
+[2026-09-23 00:16:57] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 20.1s outside_busy=0.0085 inside_busy=0.0789 foreign_cpu_share=0.0172
+ok
+[2026-09-23 00:17:17] sqlite orig run1 rc=0 20.1s outside_busy=0.0049 inside_busy=0.0431 foreign_cpu_share=0.0117
+ok
+[2026-09-23 00:17:38] sqlite tsan run1 rc=0 20.1s outside_busy=0.0059 inside_busy=0.079 foreign_cpu_share=0.014
+ok
+[2026-09-23 00:17:58] sqlite tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 20.1s outside_busy=0.0065 inside_busy=0.0834 foreign_cpu_share=0.0202
+ok
+[2026-09-23 00:18:18] sqlite tsan-stmt run1 rc=0 20.2s outside_busy=0.006 inside_busy=0.0772 foreign_cpu_share=0.0128
+ok
+[2026-09-23 00:18:39] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 20.1s outside_busy=0.0055 inside_busy=0.0781 foreign_cpu_share=0.0128
+ok
+[2026-09-23 00:18:59] sqlite orig run2 rc=0 20.1s outside_busy=0.0044 inside_busy=0.0449 foreign_cpu_share=0.0126
+ok
+[2026-09-23 00:19:20] sqlite tsan run2 rc=0 20.1s outside_busy=0.0051 inside_busy=0.0759 foreign_cpu_share=0.0117
+ok
+[2026-09-23 00:19:40] sqlite tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 20.1s outside_busy=0.0054 inside_busy=0.0797 foreign_cpu_share=0.0146
+ok
+[2026-09-23 00:20:01] sqlite tsan-stmt run2 rc=0 20.1s outside_busy=0.0052 inside_busy=0.0778 foreign_cpu_share=0.0129
+ok
+[2026-09-23 00:20:21] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run2 rc=0 20.1s outside_busy=0.006 inside_busy=0.0774 foreign_cpu_share=0.014
+ok
+[2026-09-23 00:20:41] sqlite orig run3 rc=0 20.1s outside_busy=0.0051 inside_busy=0.0471 foreign_cpu_share=0.0127
+ok
+[2026-09-23 00:21:02] sqlite tsan run3 rc=0 20.1s outside_busy=0.0047 inside_busy=0.0759 foreign_cpu_share=0.0118
+ok
+[2026-09-23 00:21:22] sqlite tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 20.1s outside_busy=0.0045 inside_busy=0.075 foreign_cpu_share=0.0105
+ok
+[2026-09-23 00:21:43] sqlite tsan-stmt run3 rc=0 20.2s outside_busy=0.0042 inside_busy=0.076 foreign_cpu_share=0.0101
+ok
+[2026-09-23 00:22:03] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run3 rc=0 20.2s outside_busy=0.0046 inside_busy=0.0781 foreign_cpu_share=0.0112
+ok
+[2026-09-23 00:22:24] sqlite orig run4 rc=0 20.1s outside_busy=0.0044 inside_busy=0.0458 foreign_cpu_share=0.0104
+ok
+[2026-09-23 00:22:44] sqlite tsan run4 rc=0 20.1s outside_busy=0.0055 inside_busy=0.0738 foreign_cpu_share=0.012
+ok
+[2026-09-23 00:23:04] sqlite tsan-dom_peeling-ea-lo-st-swmr run4 rc=0 20.1s outside_busy=0.0228 inside_busy=0.084 foreign_cpu_share=0.0426
+ok
+[2026-09-23 00:23:25] sqlite tsan-stmt run4 rc=0 20.1s outside_busy=0.0089 inside_busy=0.079 foreign_cpu_share=0.0201
+ok
+[2026-09-23 00:23:45] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run4 rc=0 20.1s outside_busy=0.006 inside_busy=0.0755 foreign_cpu_share=0.0132
+ok
+[2026-09-23 00:24:06] sqlite orig run5 rc=0 20.1s outside_busy=0.0048 inside_busy=0.0464 foreign_cpu_share=0.0116
+ok
+[2026-09-23 00:24:26] sqlite tsan run5 rc=0 20.1s outside_busy=0.0053 inside_busy=0.076 foreign_cpu_share=0.0119
+ok
+[2026-09-23 00:24:47] sqlite tsan-dom_peeling-ea-lo-st-swmr run5 rc=0 20.1s outside_busy=0.0053 inside_busy=0.0749 foreign_cpu_share=0.0107
+ok
+[2026-09-23 00:25:07] sqlite tsan-stmt run5 rc=0 20.1s outside_busy=0.0068 inside_busy=0.0761 foreign_cpu_share=0.0127
+ok
+[2026-09-23 00:25:27] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run5 rc=0 20.1s outside_busy=0.0053 inside_busy=0.0748 foreign_cpu_share=0.0109
+ok
+[2026-09-23 00:25:28] done: sqlite N=5 -> /artifact/results/perf-sqlite-20260923-001218/sqlite
+sqlite: 5 configs, 25 runs -> perf_sqlite.md
+summary -> /artifact/results/perf-sqlite-20260923-001218/perf_summary.md
+-> /artifact/results/perf-sqlite-20260923-001218/perf_sqlite.md
+== W1 sqlite w1=8 END 08:25:28 rc=0
+== W1 sqlite w1=16 START 08:25:28
+docker/run.sh: ART_JOBS=25 (docker.slice MemoryMax 64 GiB at 2.5 GiB per job); set ART_JOBS to override
+Expected: performance for sqlite, 1 warm-up + 5 runs per configuration -- about 1 h at the defaults on 48 pinned processors (--all-configs about 3.4x, ART_RUNS=5 about 2x, smoke mode a few minutes), 20-100 GB of disk.
+[2026-09-23 00:25:29] no machine job lock here (P5_MACHINE_LOCK=true, /home/alexey/bin/logs absent); building unlocked
+[2026-09-23 00:25:29] build sqlite orig (jobs 25) -> /artifact/results/perf-sqlite-20260923-002529/build/sqlite-orig.log
+[2026-09-23 00:25:53] built sqlite orig in 24s: 0 memory-access sites (0 tsan calls)
+[2026-09-23 00:25:53] build sqlite tsan (jobs 25) -> /artifact/results/perf-sqlite-20260923-002529/build/sqlite-tsan.log
+[2026-09-23 00:26:21] built sqlite tsan in 27s: 57996 memory-access sites (62654 tsan calls)
+[2026-09-23 00:26:21] build sqlite tsan-dom_peeling-ea-lo-st-swmr (jobs 25) -> /artifact/results/perf-sqlite-20260923-002529/build/sqlite-tsan-dom_peeling-ea-lo-st-swmr.log
+[2026-09-23 00:26:54] built sqlite tsan-dom_peeling-ea-lo-st-swmr in 32s: 61931 memory-access sites (66659 tsan calls)
+[2026-09-23 00:26:54] build sqlite tsan-stmt (jobs 25) -> /artifact/results/perf-sqlite-20260923-002529/build/sqlite-tsan-stmt.log
+[2026-09-23 00:27:36] built sqlite tsan-stmt in 40s: 57957 memory-access sites (62618 tsan calls)
+[2026-09-23 00:27:36] build sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt (jobs 25) -> /artifact/results/perf-sqlite-20260923-002529/build/sqlite-tsan-dom_peeling-ea-lo-st-swmr-stmt.log
+[2026-09-23 00:28:24] built sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt in 46s: 61897 memory-access sites (66629 tsan calls)
+[2026-09-23 00:28:24] builds of sqlite done (fail=0); static counts in /artifact/results/perf-sqlite-20260923-002529/static-counts.csv
+[2026-09-23 00:28:44] sqlite orig run1 rc=0 20.1s outside_busy=0.007 inside_busy=0.049 foreign_cpu_share=0.012
+ok
+[2026-09-23 00:29:05] sqlite tsan run1 rc=0 20.2s outside_busy=0.007 inside_busy=0.0788 foreign_cpu_share=0.012
+ok
+[2026-09-23 00:29:25] sqlite tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 20.2s outside_busy=0.0067 inside_busy=0.0812 foreign_cpu_share=0.0127
+ok
+[2026-09-23 00:29:46] sqlite tsan-stmt run1 rc=0 20.3s outside_busy=0.0058 inside_busy=0.0818 foreign_cpu_share=0.0107
+ok
+[2026-09-23 00:30:06] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 20.2s outside_busy=0.0065 inside_busy=0.0818 foreign_cpu_share=0.0111
+ok
+[2026-09-23 00:30:27] sqlite orig run1 rc=0 20.1s outside_busy=0.0058 inside_busy=0.0458 foreign_cpu_share=0.0109
+ok
+[2026-09-23 00:30:47] sqlite tsan run1 rc=0 20.2s outside_busy=0.0062 inside_busy=0.0811 foreign_cpu_share=0.0117
+ok
+[2026-09-23 00:31:08] sqlite tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 20.2s outside_busy=0.0064 inside_busy=0.0803 foreign_cpu_share=0.0113
+ok
+[2026-09-23 00:31:28] sqlite tsan-stmt run1 rc=0 20.2s outside_busy=0.0064 inside_busy=0.081 foreign_cpu_share=0.0119
+ok
+[2026-09-23 00:31:49] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 20.2s outside_busy=0.0059 inside_busy=0.0815 foreign_cpu_share=0.0112
+ok
+[2026-09-23 00:32:09] sqlite orig run2 rc=0 20.1s outside_busy=0.0052 inside_busy=0.0494 foreign_cpu_share=0.0105
+ok
+[2026-09-23 00:32:30] sqlite tsan run2 rc=0 20.2s outside_busy=0.0056 inside_busy=0.0819 foreign_cpu_share=0.0117
+ok
+[2026-09-23 00:32:50] sqlite tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 20.2s outside_busy=0.005 inside_busy=0.0839 foreign_cpu_share=0.0116
+ok
+[2026-09-23 00:33:11] sqlite tsan-stmt run2 rc=0 20.3s outside_busy=0.0111 inside_busy=0.0907 foreign_cpu_share=0.0242
+ok
+[2026-09-23 00:33:31] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run2 rc=0 20.2s outside_busy=0.0057 inside_busy=0.0847 foreign_cpu_share=0.012
+ok
+[2026-09-23 00:33:52] sqlite orig run3 rc=0 20.1s outside_busy=0.0056 inside_busy=0.0508 foreign_cpu_share=0.011
+ok
+[2026-09-23 00:34:12] sqlite tsan run3 rc=0 20.2s outside_busy=0.0059 inside_busy=0.0829 foreign_cpu_share=0.0115
+ok
+[2026-09-23 00:34:33] sqlite tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 20.2s outside_busy=0.005 inside_busy=0.0835 foreign_cpu_share=0.0118
+ok
+[2026-09-23 00:34:53] sqlite tsan-stmt run3 rc=0 20.2s outside_busy=0.0052 inside_busy=0.0852 foreign_cpu_share=0.0116
+ok
+[2026-09-23 00:35:14] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run3 rc=0 20.2s outside_busy=0.0051 inside_busy=0.0833 foreign_cpu_share=0.0111
+ok
+[2026-09-23 00:35:34] sqlite orig run4 rc=0 20.2s outside_busy=0.0046 inside_busy=0.0488 foreign_cpu_share=0.011
+ok
+[2026-09-23 00:35:55] sqlite tsan run4 rc=0 20.2s outside_busy=0.0055 inside_busy=0.0837 foreign_cpu_share=0.0124
+ok
+[2026-09-23 00:36:16] sqlite tsan-dom_peeling-ea-lo-st-swmr run4 rc=0 20.2s outside_busy=0.0059 inside_busy=0.0844 foreign_cpu_share=0.0123
+ok
+[2026-09-23 00:36:36] sqlite tsan-stmt run4 rc=0 20.2s outside_busy=0.0048 inside_busy=0.0856 foreign_cpu_share=0.0117
+ok
+[2026-09-23 00:36:57] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run4 rc=0 20.2s outside_busy=0.0061 inside_busy=0.0854 foreign_cpu_share=0.0131
+ok
+[2026-09-23 00:37:17] sqlite orig run5 rc=0 20.1s outside_busy=0.005 inside_busy=0.0524 foreign_cpu_share=0.0121
+ok
+[2026-09-23 00:37:38] sqlite tsan run5 rc=0 20.2s outside_busy=0.0051 inside_busy=0.0845 foreign_cpu_share=0.0111
+ok
+[2026-09-23 00:37:58] sqlite tsan-dom_peeling-ea-lo-st-swmr run5 rc=0 20.2s outside_busy=0.0108 inside_busy=0.0816 foreign_cpu_share=0.0187
+ok
+[2026-09-23 00:38:19] sqlite tsan-stmt run5 rc=0 20.3s outside_busy=0.0056 inside_busy=0.0853 foreign_cpu_share=0.0117
+ok
+[2026-09-23 00:38:39] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run5 rc=0 20.2s outside_busy=0.0072 inside_busy=0.0832 foreign_cpu_share=0.0152
+ok
+[2026-09-23 00:38:40] done: sqlite N=5 -> /artifact/results/perf-sqlite-20260923-002529/sqlite
+sqlite: 5 configs, 25 runs -> perf_sqlite.md
+summary -> /artifact/results/perf-sqlite-20260923-002529/perf_summary.md
+-> /artifact/results/perf-sqlite-20260923-002529/perf_sqlite.md
+== W1 sqlite w1=16 END 08:38:40 rc=0
+== W1 sqlite w1=32 START 08:38:40
+docker/run.sh: ART_JOBS=25 (docker.slice MemoryMax 64 GiB at 2.5 GiB per job); set ART_JOBS to override
+Expected: performance for sqlite, 1 warm-up + 5 runs per configuration -- about 1 h at the defaults on 48 pinned processors (--all-configs about 3.4x, ART_RUNS=5 about 2x, smoke mode a few minutes), 20-100 GB of disk.
+[2026-09-23 00:38:40] no machine job lock here (P5_MACHINE_LOCK=true, /home/alexey/bin/logs absent); building unlocked
+[2026-09-23 00:38:40] build sqlite orig (jobs 25) -> /artifact/results/perf-sqlite-20260923-003840/build/sqlite-orig.log
+[2026-09-23 00:39:05] built sqlite orig in 25s: 0 memory-access sites (0 tsan calls)
+[2026-09-23 00:39:05] build sqlite tsan (jobs 25) -> /artifact/results/perf-sqlite-20260923-003840/build/sqlite-tsan.log
+[2026-09-23 00:39:33] built sqlite tsan in 27s: 57996 memory-access sites (62654 tsan calls)
+[2026-09-23 00:39:33] build sqlite tsan-dom_peeling-ea-lo-st-swmr (jobs 25) -> /artifact/results/perf-sqlite-20260923-003840/build/sqlite-tsan-dom_peeling-ea-lo-st-swmr.log
+[2026-09-23 00:40:07] built sqlite tsan-dom_peeling-ea-lo-st-swmr in 33s: 61931 memory-access sites (66659 tsan calls)
+[2026-09-23 00:40:07] build sqlite tsan-stmt (jobs 25) -> /artifact/results/perf-sqlite-20260923-003840/build/sqlite-tsan-stmt.log
+[2026-09-23 00:40:48] built sqlite tsan-stmt in 40s: 57957 memory-access sites (62618 tsan calls)
+[2026-09-23 00:40:48] build sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt (jobs 25) -> /artifact/results/perf-sqlite-20260923-003840/build/sqlite-tsan-dom_peeling-ea-lo-st-swmr-stmt.log
+[2026-09-23 00:41:36] built sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt in 47s: 61897 memory-access sites (66629 tsan calls)
+[2026-09-23 00:41:36] builds of sqlite done (fail=0); static counts in /artifact/results/perf-sqlite-20260923-003840/static-counts.csv
+[2026-09-23 00:41:57] sqlite orig run1 rc=0 20.3s outside_busy=0.006 inside_busy=0.0562 foreign_cpu_share=0.0105
+ok
+[2026-09-23 00:42:18] sqlite tsan run1 rc=0 20.4s outside_busy=0.0063 inside_busy=0.0899 foreign_cpu_share=0.0118
+ok
+[2026-09-23 00:42:38] sqlite tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 20.4s outside_busy=0.0062 inside_busy=0.0876 foreign_cpu_share=0.011
+ok
+[2026-09-23 00:42:59] sqlite tsan-stmt run1 rc=0 20.4s outside_busy=0.0099 inside_busy=0.0949 foreign_cpu_share=0.0197
+ok
+[2026-09-23 00:43:20] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 20.4s outside_busy=0.0057 inside_busy=0.0919 foreign_cpu_share=0.0114
+ok
+[2026-09-23 00:43:41] sqlite orig run1 rc=0 20.5s outside_busy=0.0053 inside_busy=0.0554 foreign_cpu_share=0.0113
+ok
+[2026-09-23 00:44:01] sqlite tsan run1 rc=0 20.4s outside_busy=0.0056 inside_busy=0.0919 foreign_cpu_share=0.0113
+ok
+[2026-09-23 00:44:22] sqlite tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 20.5s outside_busy=0.0052 inside_busy=0.0931 foreign_cpu_share=0.0117
+ok
+[2026-09-23 00:44:43] sqlite tsan-stmt run1 rc=0 20.4s outside_busy=0.0055 inside_busy=0.0921 foreign_cpu_share=0.011
+ok
+[2026-09-23 00:45:04] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 20.4s outside_busy=0.0095 inside_busy=0.0947 foreign_cpu_share=0.0175
+ok
+[2026-09-23 00:45:24] sqlite orig run2 rc=0 20.3s outside_busy=0.0057 inside_busy=0.0548 foreign_cpu_share=0.0113
+ok
+[2026-09-23 00:45:45] sqlite tsan run2 rc=0 20.4s outside_busy=0.0062 inside_busy=0.0915 foreign_cpu_share=0.0114
+ok
+[2026-09-23 00:46:06] sqlite tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 20.4s outside_busy=0.0059 inside_busy=0.0904 foreign_cpu_share=0.0114
+ok
+[2026-09-23 00:46:26] sqlite tsan-stmt run2 rc=0 20.4s outside_busy=0.0061 inside_busy=0.0911 foreign_cpu_share=0.0116
+ok
+[2026-09-23 00:46:47] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run2 rc=0 20.4s outside_busy=0.006 inside_busy=0.0902 foreign_cpu_share=0.0111
+ok
+[2026-09-23 00:47:08] sqlite orig run3 rc=0 20.3s outside_busy=0.0063 inside_busy=0.0568 foreign_cpu_share=0.0124
+ok
+[2026-09-23 00:47:28] sqlite tsan run3 rc=0 20.4s outside_busy=0.0058 inside_busy=0.0906 foreign_cpu_share=0.0114
+ok
+[2026-09-23 00:47:49] sqlite tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 20.4s outside_busy=0.0056 inside_busy=0.09 foreign_cpu_share=0.011
+ok
+[2026-09-23 00:48:10] sqlite tsan-stmt run3 rc=0 20.4s outside_busy=0.0196 inside_busy=0.0929 foreign_cpu_share=0.0312
+ok
+[2026-09-23 00:48:31] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run3 rc=0 20.4s outside_busy=0.0233 inside_busy=0.0911 foreign_cpu_share=0.0345
+ok
+[2026-09-23 00:48:51] sqlite orig run4 rc=0 20.3s outside_busy=0.0276 inside_busy=0.0701 foreign_cpu_share=0.0525
+ok
+[2026-09-23 00:49:12] sqlite tsan run4 rc=0 20.4s outside_busy=0.0056 inside_busy=0.0912 foreign_cpu_share=0.0113
+ok
+[2026-09-23 00:49:33] sqlite tsan-dom_peeling-ea-lo-st-swmr run4 rc=0 20.4s outside_busy=0.0064 inside_busy=0.0896 foreign_cpu_share=0.0116
+ok
+[2026-09-23 00:49:53] sqlite tsan-stmt run4 rc=0 20.4s outside_busy=0.0068 inside_busy=0.0902 foreign_cpu_share=0.0117
+ok
+[2026-09-23 00:50:14] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run4 rc=0 20.4s outside_busy=0.0073 inside_busy=0.0906 foreign_cpu_share=0.0121
+ok
+[2026-09-23 00:50:35] sqlite orig run5 rc=0 20.3s outside_busy=0.0069 inside_busy=0.0559 foreign_cpu_share=0.0119
+ok
+[2026-09-23 00:50:55] sqlite tsan run5 rc=0 20.4s outside_busy=0.0062 inside_busy=0.0891 foreign_cpu_share=0.0114
+ok
+[2026-09-23 00:51:16] sqlite tsan-dom_peeling-ea-lo-st-swmr run5 rc=0 20.4s outside_busy=0.0061 inside_busy=0.0906 foreign_cpu_share=0.0112
+ok
+[2026-09-23 00:51:37] sqlite tsan-stmt run5 rc=0 20.4s outside_busy=0.0071 inside_busy=0.0896 foreign_cpu_share=0.0125
+ok
+[2026-09-23 00:51:58] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run5 rc=0 20.4s outside_busy=0.0067 inside_busy=0.0894 foreign_cpu_share=0.0115
+ok
+[2026-09-23 00:51:58] done: sqlite N=5 -> /artifact/results/perf-sqlite-20260923-003840/sqlite
+sqlite: 5 configs, 25 runs -> perf_sqlite.md
+summary -> /artifact/results/perf-sqlite-20260923-003840/perf_summary.md
+-> /artifact/results/perf-sqlite-20260923-003840/perf_sqlite.md
+== W1 sqlite w1=32 END 08:51:58 rc=0
+== W1 sqlite w1=48 START 08:51:58
+docker/run.sh: ART_JOBS=25 (docker.slice MemoryMax 64 GiB at 2.5 GiB per job); set ART_JOBS to override
+Expected: performance for sqlite, 1 warm-up + 5 runs per configuration -- about 1 h at the defaults on 48 pinned processors (--all-configs about 3.4x, ART_RUNS=5 about 2x, smoke mode a few minutes), 20-100 GB of disk.
+[2026-09-23 00:51:59] no machine job lock here (P5_MACHINE_LOCK=true, /home/alexey/bin/logs absent); building unlocked
+[2026-09-23 00:51:59] build sqlite orig (jobs 25) -> /artifact/results/perf-sqlite-20260923-005159/build/sqlite-orig.log
+[2026-09-23 00:52:23] built sqlite orig in 24s: 0 memory-access sites (0 tsan calls)
+[2026-09-23 00:52:23] build sqlite tsan (jobs 25) -> /artifact/results/perf-sqlite-20260923-005159/build/sqlite-tsan.log
+[2026-09-23 00:52:51] built sqlite tsan in 27s: 57996 memory-access sites (62654 tsan calls)
+[2026-09-23 00:52:51] build sqlite tsan-dom_peeling-ea-lo-st-swmr (jobs 25) -> /artifact/results/perf-sqlite-20260923-005159/build/sqlite-tsan-dom_peeling-ea-lo-st-swmr.log
+[2026-09-23 00:53:25] built sqlite tsan-dom_peeling-ea-lo-st-swmr in 33s: 61931 memory-access sites (66659 tsan calls)
+[2026-09-23 00:53:25] build sqlite tsan-stmt (jobs 25) -> /artifact/results/perf-sqlite-20260923-005159/build/sqlite-tsan-stmt.log
+[2026-09-23 00:54:06] built sqlite tsan-stmt in 40s: 57957 memory-access sites (62618 tsan calls)
+[2026-09-23 00:54:06] build sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt (jobs 25) -> /artifact/results/perf-sqlite-20260923-005159/build/sqlite-tsan-dom_peeling-ea-lo-st-swmr-stmt.log
+[2026-09-23 00:54:55] built sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt in 47s: 61897 memory-access sites (66629 tsan calls)
+[2026-09-23 00:54:55] builds of sqlite done (fail=0); static counts in /artifact/results/perf-sqlite-20260923-005159/static-counts.csv
+[2026-09-23 00:55:15] sqlite orig run1 rc=0 20.4s outside_busy=0.0069 inside_busy=0.0621 foreign_cpu_share=0.0118
+ok
+[2026-09-23 00:55:36] sqlite tsan run1 rc=0 20.6s outside_busy=0.0059 inside_busy=0.095 foreign_cpu_share=0.0105
+ok
+[2026-09-23 00:55:57] sqlite tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 20.6s outside_busy=0.0066 inside_busy=0.0947 foreign_cpu_share=0.0114
+ok
+[2026-09-23 00:56:18] sqlite tsan-stmt run1 rc=0 20.6s outside_busy=0.0065 inside_busy=0.0948 foreign_cpu_share=0.0115
+ok
+[2026-09-23 00:56:39] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 20.6s outside_busy=0.0066 inside_busy=0.0975 foreign_cpu_share=0.0125
+ok
+[2026-09-23 00:57:00] sqlite orig run1 rc=0 20.5s outside_busy=0.0073 inside_busy=0.0607 foreign_cpu_share=0.0128
+ok
+[2026-09-23 00:57:21] sqlite tsan run1 rc=0 20.6s outside_busy=0.0066 inside_busy=0.0937 foreign_cpu_share=0.0113
+ok
+[2026-09-23 00:57:42] sqlite tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 20.6s outside_busy=0.0067 inside_busy=0.0944 foreign_cpu_share=0.0116
+ok
+[2026-09-23 00:58:03] sqlite tsan-stmt run1 rc=0 20.6s outside_busy=0.0122 inside_busy=0.0965 foreign_cpu_share=0.0197
+ok
+[2026-09-23 00:58:24] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 20.6s outside_busy=0.0066 inside_busy=0.0958 foreign_cpu_share=0.0116
+ok
+[2026-09-23 00:58:44] sqlite orig run2 rc=0 20.4s outside_busy=0.0064 inside_busy=0.0616 foreign_cpu_share=0.0124
+ok
+[2026-09-23 00:59:05] sqlite tsan run2 rc=0 20.6s outside_busy=0.0071 inside_busy=0.0948 foreign_cpu_share=0.0123
+ok
+[2026-09-23 00:59:26] sqlite tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 20.6s outside_busy=0.0059 inside_busy=0.0949 foreign_cpu_share=0.0115
+ok
+[2026-09-23 00:59:47] sqlite tsan-stmt run2 rc=0 20.6s outside_busy=0.0071 inside_busy=0.096 foreign_cpu_share=0.013
+ok
+[2026-09-23 01:00:08] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run2 rc=0 20.6s outside_busy=0.0065 inside_busy=0.0964 foreign_cpu_share=0.0113
+ok
+[2026-09-23 01:00:29] sqlite orig run3 rc=0 20.5s outside_busy=0.0065 inside_busy=0.0624 foreign_cpu_share=0.012
+ok
+[2026-09-23 01:00:50] sqlite tsan run3 rc=0 20.7s outside_busy=0.0072 inside_busy=0.094 foreign_cpu_share=0.012
+ok
+[2026-09-23 01:01:11] sqlite tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 20.7s outside_busy=0.0071 inside_busy=0.0946 foreign_cpu_share=0.0124
+ok
+[2026-09-23 01:01:32] sqlite tsan-stmt run3 rc=0 20.7s outside_busy=0.006 inside_busy=0.0947 foreign_cpu_share=0.0116
+ok
+[2026-09-23 01:01:53] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run3 rc=0 20.7s outside_busy=0.0058 inside_busy=0.0953 foreign_cpu_share=0.0111
+ok
+[2026-09-23 01:02:13] sqlite orig run4 rc=0 20.4s outside_busy=0.0059 inside_busy=0.062 foreign_cpu_share=0.0113
+ok
+[2026-09-23 01:02:34] sqlite tsan run4 rc=0 20.7s outside_busy=0.006 inside_busy=0.0954 foreign_cpu_share=0.0112
+ok
+[2026-09-23 01:02:55] sqlite tsan-dom_peeling-ea-lo-st-swmr run4 rc=0 20.6s outside_busy=0.0089 inside_busy=0.0973 foreign_cpu_share=0.016
+ok
+[2026-09-23 01:03:16] sqlite tsan-stmt run4 rc=0 20.6s outside_busy=0.0074 inside_busy=0.0957 foreign_cpu_share=0.0132
+ok
+[2026-09-23 01:03:37] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run4 rc=0 20.6s outside_busy=0.006 inside_busy=0.0947 foreign_cpu_share=0.0103
+ok
+[2026-09-23 01:03:58] sqlite orig run5 rc=0 20.3s outside_busy=0.0056 inside_busy=0.0567 foreign_cpu_share=0.0097
+ok
+[2026-09-23 01:04:19] sqlite tsan run5 rc=0 20.6s outside_busy=0.0057 inside_busy=0.0929 foreign_cpu_share=0.0098
+ok
+[2026-09-23 01:04:40] sqlite tsan-dom_peeling-ea-lo-st-swmr run5 rc=0 20.6s outside_busy=0.0059 inside_busy=0.0922 foreign_cpu_share=0.0095
+ok
+[2026-09-23 01:05:00] sqlite tsan-stmt run5 rc=0 20.6s outside_busy=0.0057 inside_busy=0.0925 foreign_cpu_share=0.0091
+ok
+[2026-09-23 01:05:21] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run5 rc=0 20.6s outside_busy=0.006 inside_busy=0.0941 foreign_cpu_share=0.0096
+ok
+[2026-09-23 01:05:22] done: sqlite N=5 -> /artifact/results/perf-sqlite-20260923-005159/sqlite
+sqlite: 5 configs, 25 runs -> perf_sqlite.md
+summary -> /artifact/results/perf-sqlite-20260923-005159/perf_summary.md
+-> /artifact/results/perf-sqlite-20260923-005159/perf_sqlite.md
+== W1 sqlite w1=48 END 09:05:22 rc=0
+== W1 sqlite w1=96 START 09:05:22
+docker/run.sh: ART_JOBS=25 (docker.slice MemoryMax 64 GiB at 2.5 GiB per job); set ART_JOBS to override
+Expected: performance for sqlite, 1 warm-up + 5 runs per configuration -- about 1 h at the defaults on 48 pinned processors (--all-configs about 3.4x, ART_RUNS=5 about 2x, smoke mode a few minutes), 20-100 GB of disk.
+[2026-09-23 01:05:23] no machine job lock here (P5_MACHINE_LOCK=true, /home/alexey/bin/logs absent); building unlocked
+[2026-09-23 01:05:23] build sqlite orig (jobs 25) -> /artifact/results/perf-sqlite-20260923-010523/build/sqlite-orig.log
+[2026-09-23 01:05:47] built sqlite orig in 24s: 0 memory-access sites (0 tsan calls)
+[2026-09-23 01:05:47] build sqlite tsan (jobs 25) -> /artifact/results/perf-sqlite-20260923-010523/build/sqlite-tsan.log
+[2026-09-23 01:06:15] built sqlite tsan in 27s: 57996 memory-access sites (62654 tsan calls)
+[2026-09-23 01:06:15] build sqlite tsan-dom_peeling-ea-lo-st-swmr (jobs 25) -> /artifact/results/perf-sqlite-20260923-010523/build/sqlite-tsan-dom_peeling-ea-lo-st-swmr.log
+[2026-09-23 01:06:48] built sqlite tsan-dom_peeling-ea-lo-st-swmr in 31s: 61931 memory-access sites (66659 tsan calls)
+[2026-09-23 01:06:48] build sqlite tsan-stmt (jobs 25) -> /artifact/results/perf-sqlite-20260923-010523/build/sqlite-tsan-stmt.log
+[2026-09-23 01:07:28] built sqlite tsan-stmt in 39s: 57957 memory-access sites (62618 tsan calls)
+[2026-09-23 01:07:28] build sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt (jobs 25) -> /artifact/results/perf-sqlite-20260923-010523/build/sqlite-tsan-dom_peeling-ea-lo-st-swmr-stmt.log
+[2026-09-23 01:08:16] built sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt in 46s: 61897 memory-access sites (66629 tsan calls)
+[2026-09-23 01:08:16] builds of sqlite done (fail=0); static counts in /artifact/results/perf-sqlite-20260923-010523/static-counts.csv
+[2026-09-23 01:08:37] sqlite orig run1 rc=0 20.9s outside_busy=0.0063 inside_busy=0.062 foreign_cpu_share=0.0092
+ok
+[2026-09-23 01:08:59] sqlite tsan run1 rc=0 21.2s outside_busy=0.0059 inside_busy=0.099 foreign_cpu_share=0.009
+ok
+[2026-09-23 01:09:20] sqlite tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 21.2s outside_busy=0.0056 inside_busy=0.1006 foreign_cpu_share=0.0093
+ok
+[2026-09-23 01:09:42] sqlite tsan-stmt run1 rc=0 21.2s outside_busy=0.0056 inside_busy=0.0993 foreign_cpu_share=0.0086
+ok
+[2026-09-23 01:10:03] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 21.2s outside_busy=0.0055 inside_busy=0.1017 foreign_cpu_share=0.0092
+ok
+[2026-09-23 01:10:24] sqlite orig run1 rc=0 20.8s outside_busy=0.0052 inside_busy=0.0639 foreign_cpu_share=0.0088
+ok
+[2026-09-23 01:10:46] sqlite tsan run1 rc=0 21.2s outside_busy=0.0058 inside_busy=0.1003 foreign_cpu_share=0.0098
+ok
+[2026-09-23 01:11:07] sqlite tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 21.2s outside_busy=0.006 inside_busy=0.1007 foreign_cpu_share=0.0096
+ok
+[2026-09-23 01:11:29] sqlite tsan-stmt run1 rc=0 21.2s outside_busy=0.0056 inside_busy=0.0993 foreign_cpu_share=0.0093
+ok
+[2026-09-23 01:11:50] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 21.2s outside_busy=0.0057 inside_busy=0.1005 foreign_cpu_share=0.0094
+ok
+[2026-09-23 01:12:11] sqlite orig run2 rc=0 20.9s outside_busy=0.0054 inside_busy=0.0652 foreign_cpu_share=0.0092
+ok
+[2026-09-23 01:12:33] sqlite tsan run2 rc=0 21.2s outside_busy=0.0062 inside_busy=0.0995 foreign_cpu_share=0.0096
+ok
+[2026-09-23 01:12:54] sqlite tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 21.2s outside_busy=0.0085 inside_busy=0.1031 foreign_cpu_share=0.0173
+ok
+[2026-09-23 01:13:16] sqlite tsan-stmt run2 rc=0 21.2s outside_busy=0.0066 inside_busy=0.103 foreign_cpu_share=0.0135
+ok
+[2026-09-23 01:13:38] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run2 rc=0 21.2s outside_busy=0.0057 inside_busy=0.0997 foreign_cpu_share=0.0096
+ok
+[2026-09-23 01:13:59] sqlite orig run3 rc=0 20.9s outside_busy=0.0052 inside_busy=0.0629 foreign_cpu_share=0.0091
+ok
+[2026-09-23 01:14:20] sqlite tsan run3 rc=0 21.2s outside_busy=0.0055 inside_busy=0.0996 foreign_cpu_share=0.0096
+ok
+[2026-09-23 01:14:42] sqlite tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 21.2s outside_busy=0.0054 inside_busy=0.1005 foreign_cpu_share=0.0091
+ok
+[2026-09-23 01:15:03] sqlite tsan-stmt run3 rc=0 21.2s outside_busy=0.0059 inside_busy=0.0994 foreign_cpu_share=0.0097
+ok
+[2026-09-23 01:15:25] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run3 rc=0 21.2s outside_busy=0.0052 inside_busy=0.1018 foreign_cpu_share=0.0092
+ok
+[2026-09-23 01:15:46] sqlite orig run4 rc=0 20.8s outside_busy=0.0052 inside_busy=0.0655 foreign_cpu_share=0.0094
+ok
+[2026-09-23 01:16:07] sqlite tsan run4 rc=0 21.2s outside_busy=0.0058 inside_busy=0.0985 foreign_cpu_share=0.0093
+ok
+[2026-09-23 01:16:29] sqlite tsan-dom_peeling-ea-lo-st-swmr run4 rc=0 21.2s outside_busy=0.0057 inside_busy=0.1 foreign_cpu_share=0.0096
+ok
+[2026-09-23 01:16:50] sqlite tsan-stmt run4 rc=0 21.2s outside_busy=0.0059 inside_busy=0.0997 foreign_cpu_share=0.0096
+ok
+[2026-09-23 01:17:12] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run4 rc=0 21.2s outside_busy=0.0061 inside_busy=0.0993 foreign_cpu_share=0.0097
+ok
+[2026-09-23 01:17:33] sqlite orig run5 rc=0 20.9s outside_busy=0.0056 inside_busy=0.0647 foreign_cpu_share=0.0096
+ok
+[2026-09-23 01:17:55] sqlite tsan run5 rc=0 21.2s outside_busy=0.0071 inside_busy=0.1019 foreign_cpu_share=0.013
+ok
+[2026-09-23 01:18:16] sqlite tsan-dom_peeling-ea-lo-st-swmr run5 rc=0 21.2s outside_busy=0.0077 inside_busy=0.1006 foreign_cpu_share=0.0124
+ok
+[2026-09-23 01:18:38] sqlite tsan-stmt run5 rc=0 21.2s outside_busy=0.0061 inside_busy=0.0998 foreign_cpu_share=0.0095
+ok
+[2026-09-23 01:18:59] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run5 rc=0 21.2s outside_busy=0.0066 inside_busy=0.0998 foreign_cpu_share=0.0105
+ok
+[2026-09-23 01:19:00] done: sqlite N=5 -> /artifact/results/perf-sqlite-20260923-010523/sqlite
+sqlite: 5 configs, 25 runs -> perf_sqlite.md
+summary -> /artifact/results/perf-sqlite-20260923-010523/perf_summary.md
+-> /artifact/results/perf-sqlite-20260923-010523/perf_sqlite.md
+== W1 sqlite w1=96 END 09:19:00 rc=0
+== W1 sqlite w1=112 START 09:19:00
+docker/run.sh: ART_JOBS=25 (docker.slice MemoryMax 64 GiB at 2.5 GiB per job); set ART_JOBS to override
+Expected: performance for sqlite, 1 warm-up + 5 runs per configuration -- about 1 h at the defaults on 48 pinned processors (--all-configs about 3.4x, ART_RUNS=5 about 2x, smoke mode a few minutes), 20-100 GB of disk.
+[2026-09-23 01:19:00] no machine job lock here (P5_MACHINE_LOCK=true, /home/alexey/bin/logs absent); building unlocked
+[2026-09-23 01:19:00] build sqlite orig (jobs 25) -> /artifact/results/perf-sqlite-20260923-011900/build/sqlite-orig.log
+[2026-09-23 01:19:25] built sqlite orig in 25s: 0 memory-access sites (0 tsan calls)
+[2026-09-23 01:19:25] build sqlite tsan (jobs 25) -> /artifact/results/perf-sqlite-20260923-011900/build/sqlite-tsan.log
+[2026-09-23 01:19:53] built sqlite tsan in 27s: 57996 memory-access sites (62654 tsan calls)
+[2026-09-23 01:19:53] build sqlite tsan-dom_peeling-ea-lo-st-swmr (jobs 25) -> /artifact/results/perf-sqlite-20260923-011900/build/sqlite-tsan-dom_peeling-ea-lo-st-swmr.log
+[2026-09-23 01:20:26] built sqlite tsan-dom_peeling-ea-lo-st-swmr in 32s: 61931 memory-access sites (66659 tsan calls)
+[2026-09-23 01:20:26] build sqlite tsan-stmt (jobs 25) -> /artifact/results/perf-sqlite-20260923-011900/build/sqlite-tsan-stmt.log
+[2026-09-23 01:21:07] built sqlite tsan-stmt in 40s: 57957 memory-access sites (62618 tsan calls)
+[2026-09-23 01:21:07] build sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt (jobs 25) -> /artifact/results/perf-sqlite-20260923-011900/build/sqlite-tsan-dom_peeling-ea-lo-st-swmr-stmt.log
+[2026-09-23 01:21:55] built sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt in 46s: 61897 memory-access sites (66629 tsan calls)
+[2026-09-23 01:21:55] builds of sqlite done (fail=0); static counts in /artifact/results/perf-sqlite-20260923-011900/static-counts.csv
+[2026-09-23 01:22:16] sqlite orig run1 rc=0 20.9s outside_busy=0.0063 inside_busy=0.0635 foreign_cpu_share=0.0096
+ok
+[2026-09-23 01:22:38] sqlite tsan run1 rc=0 21.4s outside_busy=0.0057 inside_busy=0.1004 foreign_cpu_share=0.0088
+ok
+[2026-09-23 01:22:59] sqlite tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 21.4s outside_busy=0.0091 inside_busy=0.1044 foreign_cpu_share=0.0168
+ok
+[2026-09-23 01:23:21] sqlite tsan-stmt run1 rc=0 21.4s outside_busy=0.0106 inside_busy=0.102 foreign_cpu_share=0.0168
+ok
+[2026-09-23 01:23:43] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 21.4s outside_busy=0.0057 inside_busy=0.1017 foreign_cpu_share=0.009
+ok
+[2026-09-23 01:24:04] sqlite orig run1 rc=0 21.0s outside_busy=0.0058 inside_busy=0.0632 foreign_cpu_share=0.0091
+ok
+[2026-09-23 01:24:26] sqlite tsan run1 rc=0 21.4s outside_busy=0.0062 inside_busy=0.1006 foreign_cpu_share=0.0094
+ok
+[2026-09-23 01:24:47] sqlite tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 21.4s outside_busy=0.0057 inside_busy=0.1018 foreign_cpu_share=0.009
+ok
+[2026-09-23 01:25:09] sqlite tsan-stmt run1 rc=0 21.4s outside_busy=0.0057 inside_busy=0.1007 foreign_cpu_share=0.0093
+ok
+[2026-09-23 01:25:31] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 21.4s outside_busy=0.0062 inside_busy=0.1009 foreign_cpu_share=0.0097
+ok
+[2026-09-23 01:25:52] sqlite orig run2 rc=0 21.1s outside_busy=0.0051 inside_busy=0.0644 foreign_cpu_share=0.0089
+ok
+[2026-09-23 01:26:14] sqlite tsan run2 rc=0 21.4s outside_busy=0.0053 inside_busy=0.1004 foreign_cpu_share=0.0088
+ok
+[2026-09-23 01:26:35] sqlite tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 21.3s outside_busy=0.0055 inside_busy=0.1009 foreign_cpu_share=0.0089
+ok
+[2026-09-23 01:26:57] sqlite tsan-stmt run2 rc=0 21.4s outside_busy=0.0054 inside_busy=0.1005 foreign_cpu_share=0.0089
+ok
+[2026-09-23 01:27:19] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run2 rc=0 21.4s outside_busy=0.0055 inside_busy=0.1025 foreign_cpu_share=0.0088
+ok
+[2026-09-23 01:27:40] sqlite orig run3 rc=0 21.0s outside_busy=0.0055 inside_busy=0.0623 foreign_cpu_share=0.009
+ok
+[2026-09-23 01:28:02] sqlite tsan run3 rc=0 21.4s outside_busy=0.0064 inside_busy=0.1065 foreign_cpu_share=0.017
+ok
+[2026-09-23 01:28:23] sqlite tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 21.4s outside_busy=0.006 inside_busy=0.1001 foreign_cpu_share=0.0093
+ok
+[2026-09-23 01:28:45] sqlite tsan-stmt run3 rc=0 21.5s outside_busy=0.0058 inside_busy=0.1006 foreign_cpu_share=0.009
+ok
+[2026-09-23 01:29:07] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run3 rc=0 21.4s outside_busy=0.006 inside_busy=0.1021 foreign_cpu_share=0.0093
+ok
+[2026-09-23 01:29:28] sqlite orig run4 rc=0 21.0s outside_busy=0.0054 inside_busy=0.0649 foreign_cpu_share=0.0087
+ok
+[2026-09-23 01:29:50] sqlite tsan run4 rc=0 21.4s outside_busy=0.0054 inside_busy=0.0996 foreign_cpu_share=0.0089
+ok
+[2026-09-23 01:30:12] sqlite tsan-dom_peeling-ea-lo-st-swmr run4 rc=0 21.4s outside_busy=0.0055 inside_busy=0.1013 foreign_cpu_share=0.0089
+ok
+[2026-09-23 01:30:33] sqlite tsan-stmt run4 rc=0 21.4s outside_busy=0.0056 inside_busy=0.1015 foreign_cpu_share=0.0089
+ok
+[2026-09-23 01:30:55] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run4 rc=0 21.4s outside_busy=0.0055 inside_busy=0.1019 foreign_cpu_share=0.0089
+ok
+[2026-09-23 01:31:16] sqlite orig run5 rc=0 21.1s outside_busy=0.005 inside_busy=0.0635 foreign_cpu_share=0.0086
+ok
+[2026-09-23 01:31:38] sqlite tsan run5 rc=0 21.4s outside_busy=0.0057 inside_busy=0.0993 foreign_cpu_share=0.0092
+ok
+[2026-09-23 01:32:00] sqlite tsan-dom_peeling-ea-lo-st-swmr run5 rc=0 21.3s outside_busy=0.0054 inside_busy=0.1015 foreign_cpu_share=0.0089
+ok
+[2026-09-23 01:32:21] sqlite tsan-stmt run5 rc=0 21.4s outside_busy=0.0056 inside_busy=0.1023 foreign_cpu_share=0.0093
+ok
+[2026-09-23 01:32:43] sqlite tsan-dom_peeling-ea-lo-st-swmr-stmt run5 rc=0 21.4s outside_busy=0.0052 inside_busy=0.1023 foreign_cpu_share=0.0091
+ok
+[2026-09-23 01:32:43] done: sqlite N=5 -> /artifact/results/perf-sqlite-20260923-011900/sqlite
+sqlite: 5 configs, 25 runs -> perf_sqlite.md
+summary -> /artifact/results/perf-sqlite-20260923-011900/perf_summary.md
+-> /artifact/results/perf-sqlite-20260923-011900/perf_sqlite.md
+== W1 sqlite w1=112 END 09:32:44 rc=0
+== NIGHT DONE 09:32:44

@@ -1,0 +1,8 @@
+--- Running Benchmark for: tsan-stmt ---
+Executable: build/test-tsan-stmt/threadtest3
+Full Command: build/test-tsan-stmt/threadtest3 --w1-threads 8 walthread1
+Output will be saved to: results/contention/tsan-stmt_8threads.log
+Memory usage will be saved to: results/memory.txt
+Running, please wait...
+--- Benchmark for [tsan-stmt] completed successfully. ---
+

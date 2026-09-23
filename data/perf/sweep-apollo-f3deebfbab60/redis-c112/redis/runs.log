@@ -1,0 +1,31 @@
+redis orig run1 rc=0 21.7s outside_busy=0.0101 inside_busy=0.0771 foreign_cpu_share=0.006 (warmup, discarded)
+redis tsan run1 rc=0 116.1s outside_busy=0.0131 inside_busy=0.2414 foreign_cpu_share=0.0072 (warmup, discarded)
+redis tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 107.8s outside_busy=0.0112 inside_busy=0.2247 foreign_cpu_share=0.0065 (warmup, discarded)
+redis tsan-stmt run1 rc=0 110.6s outside_busy=0.0133 inside_busy=0.2251 foreign_cpu_share=0.0077 (warmup, discarded)
+redis tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 118.1s outside_busy=0.0145 inside_busy=0.2342 foreign_cpu_share=0.0088 (warmup, discarded)
+redis orig run1 rc=0 21.3s outside_busy=0.0091 inside_busy=0.065 foreign_cpu_share=0.0057
+redis tsan run1 rc=0 134.7s outside_busy=0.0112 inside_busy=0.2576 foreign_cpu_share=0.0066
+redis tsan-dom_peeling-ea-lo-st-swmr run1 rc=0 108.4s outside_busy=0.0115 inside_busy=0.2332 foreign_cpu_share=0.0074
+redis tsan-stmt run1 rc=0 116.8s outside_busy=0.0116 inside_busy=0.2259 foreign_cpu_share=0.0064
+redis tsan-dom_peeling-ea-lo-st-swmr-stmt run1 rc=0 122.3s outside_busy=0.0113 inside_busy=0.2408 foreign_cpu_share=0.0065
+redis orig run2 rc=0 22.1s outside_busy=0.0088 inside_busy=0.0784 foreign_cpu_share=0.0059
+redis tsan run2 rc=0 113.4s outside_busy=0.0147 inside_busy=0.2372 foreign_cpu_share=0.0084
+redis tsan-dom_peeling-ea-lo-st-swmr run2 rc=0 135.1s outside_busy=0.0118 inside_busy=0.2624 foreign_cpu_share=0.0067
+redis tsan-stmt run2 rc=0 112.7s outside_busy=0.0145 inside_busy=0.235 foreign_cpu_share=0.0093
+redis tsan-dom_peeling-ea-lo-st-swmr-stmt run2 rc=0 135.2s outside_busy=0.0115 inside_busy=0.2632 foreign_cpu_share=0.0066
+redis orig run3 rc=0 22.6s outside_busy=0.009 inside_busy=0.0864 foreign_cpu_share=0.0057
+redis tsan run3 rc=0 114.2s outside_busy=0.0133 inside_busy=0.2374 foreign_cpu_share=0.0073
+redis tsan-dom_peeling-ea-lo-st-swmr run3 rc=0 109.9s outside_busy=0.0104 inside_busy=0.2359 foreign_cpu_share=0.0063
+redis tsan-stmt run3 rc=0 114.3s outside_busy=0.0106 inside_busy=0.2311 foreign_cpu_share=0.0062
+redis tsan-dom_peeling-ea-lo-st-swmr-stmt run3 rc=0 132.5s outside_busy=0.0115 inside_busy=0.2595 foreign_cpu_share=0.0072
+redis orig run4 rc=0 21.3s outside_busy=0.0096 inside_busy=0.0721 foreign_cpu_share=0.0064
+redis tsan run4 rc=0 131.0s outside_busy=0.012 inside_busy=0.258 foreign_cpu_share=0.007
+redis tsan-dom_peeling-ea-lo-st-swmr run4 rc=0 120.6s outside_busy=0.0161 inside_busy=0.2506 foreign_cpu_share=0.0107
+redis tsan-stmt run4 rc=0 115.8s outside_busy=0.0108 inside_busy=0.2345 foreign_cpu_share=0.0068
+redis tsan-dom_peeling-ea-lo-st-swmr-stmt run4 rc=0 115.4s outside_busy=0.0108 inside_busy=0.2339 foreign_cpu_share=0.0065
+redis orig run5 rc=0 21.5s outside_busy=0.0088 inside_busy=0.0734 foreign_cpu_share=0.0064
+redis tsan run5 rc=0 121.1s outside_busy=0.011 inside_busy=0.2433 foreign_cpu_share=0.0073
+redis tsan-dom_peeling-ea-lo-st-swmr run5 rc=0 115.7s outside_busy=0.0111 inside_busy=0.2413 foreign_cpu_share=0.0065
+redis tsan-stmt run5 rc=0 122.2s outside_busy=0.0126 inside_busy=0.2513 foreign_cpu_share=0.0072
+redis tsan-dom_peeling-ea-lo-st-swmr-stmt run5 rc=0 116.3s outside_busy=0.0098 inside_busy=0.2319 foreign_cpu_share=0.0062
+DONE redis

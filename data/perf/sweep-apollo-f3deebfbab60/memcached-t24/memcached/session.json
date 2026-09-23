@@ -1,0 +1,23 @@
+{
+ "app": "memcached",
+ "hash": "f3deebfbab60",
+ "N": 5,
+ "configs": [
+  "orig",
+  "tsan",
+  "tsan-dom_peeling-ea-lo-st-swmr",
+  "tsan-stmt",
+  "tsan-dom_peeling-ea-lo-st-swmr-stmt"
+ ],
+ "cpuset": "0-23,32-55",
+ "mode": "pinned",
+ "started": "2026-09-22T14:39:54",
+ "host": "deeef08b669c",
+ "nproc_machine": 64,
+ "governor": "schedutil",
+ "no_turbo": "",
+ "n_inside": 48,
+ "n_outside": 16,
+ "gate_checked": true,
+ "foreign_max": 0.1
+}

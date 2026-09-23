@@ -57,7 +57,7 @@ if [ $# -eq 0 ]; then
   # regenerated only the two Stage B trees, which are shipped as data and support no claim, so the
   # documented one-command check re-derived the retired numbers and not the paper's.
   rc=0
-  for r in "$ART_DATA"/perf/campaign-*/*/ "$ART_DATA"/perf/ffmpeg-threadsweep-*/*/; do
+  for r in "$ART_DATA"/perf/campaign-*/*/ "$ART_DATA"/perf/ffmpeg-threadsweep-*/*/ "$ART_DATA"/perf/sweep-apollo-*/*/; do
     [ -d "$r" ] && { regen_perf "${r%/}" || rc=1; }
   done
   regen_perf "$ART_DATA/perf/stageB-d3bf9f8c39fe" || rc=1

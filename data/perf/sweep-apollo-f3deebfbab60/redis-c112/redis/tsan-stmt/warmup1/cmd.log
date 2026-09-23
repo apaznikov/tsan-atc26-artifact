@@ -1,0 +1,29 @@
+tsan_compiler.sh: using /opt/tsan-llvm/bin/clang (clang version 19.0.0git (https://github.com/focs-lab/llvm-project f3deebfbab602f4e05289e0acbde0efd06b8058c)) [frozen copy, TSAN_AUDIT_HASH=f3deebfbab60]
+==> Running in test-only mode.
+./redis.sh: line 246: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8): No such file or directory
+==> Checking for pre-existing redis-server processes before running benchmarks.
+==> Switching to polygon directory for tests.
+==> Testing stmt
+PING_INLINE 480653.03
+PING_MBULK 702068.81
+SET 360688.75
+GET 465953.06
+INCR 447065.78
+RPUSH 284680.34
+LPOP 265896.25
+RPOP 522427.16
+SADD 408617.66
+HSET 313059.12
+SPOP 535571.75
+ZADD 320130.28
+ZPOPMIN 549998.88
+LPUSH 255294.84
+LRANGE_100 27072.71
+LRANGE_300 10522.14
+LRANGE_500 6104.69
+LRANGE_600 5168.32
+MSET 79258.38
+==> Found running redis-server process(es): 5033
+==> Stopping redis-server with SIGTERM
+==> redis-server stopped gracefully.
+==> Script finished successfully. All results are in __results_redis__

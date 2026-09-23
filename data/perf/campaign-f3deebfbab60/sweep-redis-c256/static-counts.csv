@@ -1,0 +1,6 @@
+app,config,hash,memory_access_sites,tsan_calls_total,sha256,build_seconds
+redis,orig,f3deebfbab60,0,0,82b3eeb782881f737308e4096fcc2469c1bb5ab617217372bb8cec90860308d6,6
+redis,tsan,f3deebfbab60,37922,45186,4c7b2aa4ff172981a70b9c72794aabd3151e9f48f27f7dff4049e65f05fe2f0d,6
+redis,tsan-dom_peeling-ea-lo-st-swmr,f3deebfbab60,43272,50591,c8823631f203fc381feda94237ef45804c21e7543c57b3a11109d6896f511c79,7
+redis,tsan-stmt,f3deebfbab60,37863,45126,13104c6192e26f148db35d3fdb474d662235eb3e161c5765c795e5d74eee90a5,6
+redis,tsan-dom_peeling-ea-lo-st-swmr-stmt,f3deebfbab60,43248,50566,b297a4001ba3a5e1d257bfab65d868956504d2fcedc1b2f27dd6acb82abba82d,8

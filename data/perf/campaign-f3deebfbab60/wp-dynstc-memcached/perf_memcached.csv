@@ -1,0 +1,11 @@
+config,test,n,median,mean,sd
+orig,ops_sec,5,6619602.04,6651424.72,145377.39896496144
+orig,_latency_ms,5,1.20426,1.2158280000000001,0.017394495393658334
+tsan,ops_sec,5,1801120.59,1807130.558,18429.417726340987
+tsan,_latency_ms,5,4.52336,4.520068,0.0569976593379061
+tsan-dom_peeling-ea-lo-st-swmr-stmt,ops_sec,5,1784966.58,1789582.714,62194.55025876733
+tsan-dom_peeling-ea-lo-st-swmr-stmt,_latency_ms,5,4.57145,4.568072,0.13671762384564753
+tsan-dom_peeling-ea-lo-st-swmr-stmt-wp,ops_sec,5,1808785.7,1796007.99,36608.368585242904
+tsan-dom_peeling-ea-lo-st-swmr-stmt-wp,_latency_ms,5,4.51954,4.541714,0.08292433496869292
+tsan-dom_peeling-ea-lo-st-swmr-wp,ops_sec,5,1801830.31,1798829.74,60429.244697125294
+tsan-dom_peeling-ea-lo-st-swmr-wp,_latency_ms,5,4.51186,4.544026,0.16071227716014738

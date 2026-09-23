@@ -86,6 +86,22 @@ is; the curve (DynSTC 1.068 / 1.039 / 1.050 / 1.034 / 1.086 over 50 / 112 / 128 
 no trend) ships beside the point, and no Redis number is quotable until the baseline drift is
 resolved; SQLite walthread1 AllOpt+peel 1.016 [1.00, 1.02].
 
+Swept again on the shipped compiler, 22-23 September 2026, after the artifact was complete: memcached's
+server threads at 24, 96 and 112 beside the campaign's 48, Redis's clients at 256 and 512 beside the
+default 50 and the `r2` leg's 112, SQLite's walthread1 threads at six counts, and the same two curves on the
+second host. The rule for acting on them was written before they ran: a value replaces the campaign's only
+if, at five runs on this host, its interval for the best configuration is no wider than the current one and
+its point higher. **No default changed.** Two arms satisfy the rule by the letter and were not acted on --
+memcached at 24 threads (1.021 against 1.019, interval 0.119 against 0.128) and Redis at 512 clients (1.007
+against 1.000, 0.026 against 0.043) -- because both gaps are two orders of magnitude inside a five-run
+interval, because 24 server threads contradicts the one-thread-per-pinned-processor rule above, and because
+Redis's direction reverses on the second host. The arms ship whole, with every interval, in `CLAIMS.md`
+section 5 under "Concurrency curves and whole-program summaries"; the data is under
+`data/perf/campaign-f3deebfbab60/sweep-*` and `data/perf/sweep-apollo-f3deebfbab60/`. One consequence for
+provenance: until 23 Sep 2026 a cell recorded no workload knob other than the thread count, so the Redis and
+SQLite arms above cannot be told apart from their own artefacts; the harness now writes the knob, its value
+and whether the environment set it into every cell's metadata.
+
 Harness note (tsan-exp, 14 Sep): `run_sqlite_test.sh` passes `--w1-threads N walthread1`, which
 restricts the run to walthread1; to run all seven subtests with a thread count, every test name must
 be listed explicitly on the threadtest3 command line (with flags and no names it prints usage). This
