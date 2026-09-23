@@ -1,6 +1,6 @@
 # What makes the performance numbers vary, and by how much
 
-Read this before comparing your run with `PERFORMANCE.md`. Every item below was measured, not assumed.
+Read this before comparing your run with the campaign's tables (`data/perf/campaign-f3deebfbab60/`). Every item below was measured, not assumed.
 
 ## Speedup ratios travel; absolute overheads do not
 
@@ -36,7 +36,7 @@ we measured:
 The sweep in `data/perf/contention-d3bf9f8c39fe`, taken with an earlier compiler, shows the speedup flat
 from 2 to 112 threads on SQLite's walthread1 and from 50 to 512 clients on Redis, and rising on FFmpeg's
 AllOpt with peeling from 1.007 at 2 threads to 1.055 at 16 (libx265's ceiling). The curves on the shipped
-compiler are in `PERFORMANCE.md`: FFmpeg's thread sweep (AllOpt with peeling 1.005 and 1.010 at 2 and 4
+compiler are in `data/perf/ffmpeg-threadsweep-f3deebfbab60/` and `data/perf/campaign-f3deebfbab60/sweep-*`: FFmpeg's thread sweep (AllOpt with peeling 1.005 and 1.010 at 2 and 4
 threads, 1.063 and 1.065 at 8 and 16; DynSTC about 1.11 at every count) and, measured after the campaign,
 memcached's server threads, Redis's clients and SQLite's walthread1 threads. FFmpeg's rows are compared at
 16 threads by default and at the paper's 4 with `FF_THREADS=4`; the other applications at the campaign's
@@ -156,8 +156,7 @@ want a run that can be compared with ours.
 At N = 3 the percentile bootstrap interval is 6-14% *narrower* than at N = 5 while the point
 estimate moves by about 4 points depending on which three runs are kept. `ART_SMOKE=1` mode (N = 1)
 therefore prints its numbers with an explicit "not a measurement" marker. A result from two to four runs
-is compared with `PERFORMANCE.md` as a point against the shipped interval, never as an interval of its own
-(`PERFORMANCE.md`, "Match criterion for every configuration row").
+is read as a point against the campaign's interval, never as an interval of its own.
 
 ## Foreign load inside the pinned set is invisible from inside the container
 

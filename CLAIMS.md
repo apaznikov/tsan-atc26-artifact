@@ -3,10 +3,8 @@
 Every claim the paper makes, the script that produces it, and what counts as a match. If a number is not
 here, the artifact does not claim it.
 
-The artifact is submitted for the **Available** and **Functional** badges. Its performance campaign
-(the tables, intervals and conditions, and `./evaluate.sh reproduced`, which compares a run with them) ships
-with it in `PERFORMANCE.md` and is not submitted for evaluation: the camera-ready reports performance
-re-measured with the compiler released here.
+The artifact is submitted for the **Available** and **Functional** badges. Its performance harness and the
+runs of its performance campaign (`data/perf/`) ship with it and are not submitted for evaluation.
 
 Each row says how it is checked: **checked by `./evaluate.sh functional`** (the correctness set runs its
 script), **script outside the tiers** (run it yourself; `README.md`, "Running one experiment at a time", gives
@@ -30,10 +28,9 @@ its time), or **recorded, not re-run** (the shipped data carry the claim).
   | `tsan-dom_peeling-ea-lo-st-swmr` | the same with peeling, labelled `AllOpt+peel` |
   | `tsan-dom_peeling-ea-lo-st-swmr-stmt` | AllOpt with peeling and DynSTC; the tables print the name itself, for the reason recorded in `data/tools/perf/aggregate.py` |
   | suffix `-wp` | with whole-program summaries; defined for memcached, Redis and SQLite only |
-  | suffix `-nofe` | with the upstream flag `-tsan-instrument-func-entry-exit=false`, not this paper's contribution (`PERFORMANCE.md`, "Upstream flag") |
+  | suffix `-nofe` | with the upstream flag `-tsan-instrument-func-entry-exit=false`, not this paper's contribution; measured, not claimed (`data/suite/preservation-suite-20260921T135253Z-nofe-amd/`) |
 
-  The paper does not say whether peeling was on in its AllOpt. `PERFORMANCE.md` shows the paper's AllOpt bars
-  beside AllOpt without peeling; MySQL was measured with peeling only.
+  MySQL was measured with AllOpt with peeling only.
 - **L1, L2, L3**: how closely two race reports must agree to count as the same race. L1: the kind, both
   stacks' frames (the first application frame of each access, as function@file:line) and the location. L2:
   the same, with frames and location compared by function only. L3: the kind, the location and its writer's
@@ -61,23 +58,18 @@ DynSTC.
 | Claim | Script | Match criterion |
 |---|---|---|
 | 23 code shapes in which an optimized build could fail to report a race are fixed; each has a test that fails on its parent commit and a positive control that still removes the instrumentation | `scripts/11-soundness-shapes.sh`; checked by `./evaluate.sh functional` | exact: all 62 IR tests in `tests/ir/` pass, and with the analysis flags stripped each of the 50 that assert a removal fails; the 11 that assert only that instrumentation stays pass either way, one multi-step test (`ipa-summary-external.ll`) is not re-run, and none is vacuous |
-| The ledger records, per function, the contract, the paper proposition it implements, a verdict and a covering test | `compiler/TSanAnalysesAudit.md`; a document, recorded, not re-run | document |
 
-**Assumptions.** The soundness argument holds under five assumptions, each recorded in
-`compiler/TSanAnalysesAudit.md`. The program starts at `main`, which is never called again, and no static
-constructor of another unit starts a thread (a constructor of the unit itself that does is handled; "STC",
-deviation (d)). A library function's name binds to that library, libc or libstdc++ ("STC", the recorded
-assumptions under STC-3, which EA's and LO's library tables share). A plain `pthread_mutex_lock` does not
-fail ("LO", recorded assumption). DE's covering access keeps its record in shadow memory until the covered
-access arrives, which ThreadSanitizer's four slots per granule do not guarantee ("DE", "Model deviation,
-quantified"; section 6 measures it). Whole-program summaries (`-wp`) assume that nothing outside the linked
-module calls into it except through addresses it takes itself and `main` ("Whole-program mode via
-summaries"); the `-wp` configurations are outside the soundness claim, and none is among the 12 configurations
-of section 1.
+**Assumptions.** The soundness argument holds under five assumptions. The program starts at `main`, which is
+never called again, and no static constructor of another unit starts a thread (a constructor of the unit
+itself that does is handled). A library function's name binds to that library, libc or libstdc++; EA's and
+LO's library tables share this assumption. A plain `pthread_mutex_lock` does not fail. DE's covering access
+keeps its record in shadow memory until the covered access arrives, which ThreadSanitizer's four slots per
+granule do not guarantee (section 6 measures it). Whole-program summaries (`-wp`) assume that nothing outside
+the linked module calls into it except through addresses it takes itself and `main`; the `-wp` configurations
+are outside the soundness claim, and none is among the 12 configurations of section 1.
 
-**Open item.** The ledger records one defect as pending rather than fixed: when a defined callee is absent
-from the bottom-up summary map, `getIPAFuncRetEscStatus` answers that its return value does not escape
-(`pending:EA-6`, ledger row for that function). No test in section 1 or 2 reaches it, and we have not shown
+**Open item.** One defect is pending rather than fixed: when a defined callee is absent from the bottom-up
+summary map, `getIPAFuncRetEscStatus` answers that its return value does not escape. No test in section 1 or 2 reaches it, and we have not shown
 whether the map can lack a defined callee; the fix is to answer "escapes" in that case.
 
 ## 3. Instrumentation removed (deterministic)
@@ -136,5 +128,5 @@ Six things the submitted paper reports that this artifact does not support:
   the workload and the setup, and describes the build configuration and the Telemetry timeout changes, which are
   not shipped.
 - **Loop peeling in isolation.** The peeling pair (AllOpt with against without peeling) crosses 1.0 on all four
-  applications where it was measured, at resolution floors of 2.5 to 5.7 per cent (`PERFORMANCE.md`). The artifact claims
+  applications where it was measured, at resolution floors of 2.5 to 5.7 per cent (`data/perf/campaign-f3deebfbab60/`). The artifact claims
   the static cost peeling carries (section 3) and no runtime verdict either way.

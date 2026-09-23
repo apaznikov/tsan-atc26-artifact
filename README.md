@@ -1,11 +1,11 @@
 # Artifact: Instrumentation Optimization for Practical Dynamic Race Detection
 
 This is the artifact for the ATC '26 paper *Instrumentation Optimization for Practical Dynamic Race
-Detection*. It contains the modified LLVM/ThreadSanitizer compiler the paper describes, its test suites and
-audit ledger, the benchmark harness, the runs every claim rests on, and one script per experiment.
+Detection*. It contains the modified LLVM/ThreadSanitizer compiler the paper describes, its test suites, the benchmark
+harness, the runs every claim rests on, and one script per experiment.
 
-It is submitted for the **Available** and **Functional** badges. Its performance campaign ships in
-`PERFORMANCE.md` and is not submitted for evaluation.
+It is submitted for the **Available** and **Functional** badges. Its performance harness and the runs of its
+performance campaign (`data/perf/`) ship with it and are not submitted for evaluation.
 
 `CLAIMS.md` is the contract: each claim the paper makes, the script that produces it, and what counts as a
 match. Nothing outside that file is claimed here.
@@ -20,14 +20,13 @@ command builds in 15 to 25 minutes.
 | For | Processors | Memory | Disk |
 |---|---|---|---|
 | the correctness set | 8 | 16 GB | 20 GB |
-| performance (optional, not submitted for evaluation), compared with our intervals | 48 logical, being 24 physical cores with both SMT threads, and otherwise idle | 16 GB | 20 GB |
+| performance (optional, not submitted for evaluation), comparable with the campaign's runs | 48 logical, being 24 physical cores with both SMT threads, and otherwise idle | 16 GB | 20 GB |
 | performance including MySQL (optional) | the same | 16 GB | 100 GB |
 
 We measured on an Intel Xeon w9-3495X (56 cores, 112 threads), 250 GB, Ubuntu 24.04, kernel 6.8.0-40-generic,
 with 24 cores and both SMT threads of each pinned, and repeated the correctness set and the default N = 2
 performance runs on an AMD EPYC 9115 (32 cores, 64 threads; `docs/evaluator-runs.md`). On fewer processors, or
-on a set of another shape, every step still runs and the performance rows are reported rather than judged;
-`PERFORMANCE.md`, "The comparison condition", says why.
+on a set of another shape, every step still runs.
 
 The network is used twice: while the image builds (Ubuntu packages and a shallow clone of upstream LLVM) and
 for FFmpeg's input clip, 78 MB from this repository's GitHub release. The other application sources ship in
@@ -56,8 +55,7 @@ Every step prints its own result, and the run ends with one verdict line:
 - **INCOMPLETE**: nothing failed, but a check could not be made here; the log names it.
 - **FAIL**: the step that stopped it is named, and `docs/troubleshooting.md` lists the failures we have seen.
 
-The optional performance tier adds two verdicts, **PASS on every step, COMPARISON NOT CLEAN** and **PASS on every
-step; COMPARISON NOT APPLICABLE ON THIS MACHINE** (exit status 3), which `PERFORMANCE.md` explains.
+The optional performance tier ends with the tables of its own runs and judges nothing.
 
 Results land in `results/`: `evaluate-<tier>-<stamp>.log` is the whole run. This is the end of a Functional run
 from a fresh clone on our 112-thread host (23 Sep 2026, image build included), trimmed to its per-step verdicts:
@@ -95,17 +93,17 @@ preparing the artifact. The Functional claims, each with its script and match cr
 - **Bounded shadow state**: how ThreadSanitizer's four shadow slots per granule interact with the optimized
   builds (section 6).
 
-Performance, re-measured with this compiler, ships in `PERFORMANCE.md` and is not submitted for evaluation.
+The performance campaign's runs ship in `data/perf/` and are not submitted for evaluation.
 `CLAIMS.md` section 7 lists what this artifact does not support, Chromium and the ReX comparison among them.
 
 ## What is in here
 
 | Path | What it is | In the paper |
 |---|---|---|
-| `compiler/` | the compiler as 28 patches over a pinned upstream LLVM commit, plus the per-function audit ledger of contracts, verdicts and covering tests | the analyses, redundancy elimination, transformations and LLVM integration |
+| `compiler/` | the compiler as 28 patches over a pinned upstream LLVM commit | the analyses, redundancy elimination, transformations and LLVM integration |
 | `docker/` | the container recipe that applies those patches, checks the reconstructed source tree against its hash, and builds the compiler | the evaluation's setup |
 | `scripts/` | one script per experiment, numbered in the order a reader would run them | the evaluation |
-| `harness/` | the benchmark harness: build, run, aggregate, compare | the evaluation |
+| `harness/` | the benchmark harness: build, run, aggregate | the evaluation |
 | `data/` | the runs every claim rests on, each with its compiler stamp, binary hash, processor set, governor and load, plus the aggregates | the evaluation |
 | `tests/` | the IR suite for the analyses and the vendored ThreadSanitizer regression suite | the analyses; race-detection preservation |
 | `docs/` | the method, the known confounds, the experiment that is documented rather than runnable here, and the artifact appendix | the evaluation, appendices |
@@ -141,7 +139,7 @@ twice is safe: every run writes a new directory, and the tables are regenerated 
 | `21-compile-time.sh <app>` | compile-time overhead, three clean builds per configuration | 20 min to 3 h; MySQL twelve builds of 5 to 8 min each at 56 jobs, longer on fewer processors |
 | `30-preservation-suite.sh` | ThreadSanitizer's regression suite in 12 configurations: no configuration may lose a race | most of the functional tier: 23 min on 64 processors, 48 min on 8 |
 | `31-preservation-apps.sh <app> 10` | races reported on an application against stock, N = 10 for a verdict | 1.5 to 3 h |
-| `40-perf.sh <app>` | the performance table for one application (optional; `PERFORMANCE.md`) | Redis 15 min, memcached 30, FFmpeg 25, SQLite 70, MySQL 3.5 h |
+| `40-perf.sh <app>` | the performance table for one application (optional) | Redis 15 min, memcached 30, FFmpeg 25, SQLite 70, MySQL 3.5 h |
 | `50-eviction-stress.sh` | the bounded-shadow experiments | 15 min to 1 h |
 | `90-tables.sh` | regenerates the performance tables and the eviction tables from recorded runs | 1 min |
 | `91-verify-provenance.sh` | every recorded run against its own metadata: one compiler, one processor set, one mode per leg, and the campaign's compiler hash where a claim rests on it | 2 min |

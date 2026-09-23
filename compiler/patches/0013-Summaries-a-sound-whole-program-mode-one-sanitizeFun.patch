@@ -1,4 +1,4 @@
-From 6d5fcdc4402f4228a3d17f62d407f952c6e3bcc1 Mon Sep 17 00:00:00 2001
+From 2b0342ae71c6bc67531827458727798492451249 Mon Sep 17 00:00:00 2001
 From: Alexey Paznikov <apaznikov@gmail.com>
 Date: Mon, 14 Sep 2026 19:59:33 +0800
 Subject: Summaries: a sound whole-program mode; one sanitizeFunction call per

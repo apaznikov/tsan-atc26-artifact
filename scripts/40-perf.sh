@@ -25,8 +25,7 @@ set -euo pipefail
 app="${1:?usage: 40-perf.sh <app> [--build-only] [--all-configs] [--configs \"c1 c2\"]}"; shift
 build_only=0; configs=""; all_configs=0
 SUBSET="orig tsan tsan-dom_peeling-ea-lo-st-swmr tsan-stmt"
-# FFmpeg adds the combination, its headline row (AllOpt with peeling and DynSTC, 1.187 [1.171, 1.201] at the
-# 16-thread default; PERFORMANCE.md, the first FFmpeg section). About a quarter more time than the four.
+# FFmpeg adds the combination, AllOpt with peeling and DynSTC. About a quarter more time than the four.
 [ "$app" = ffmpeg ] && SUBSET="$SUBSET tsan-dom_peeling-ea-lo-st-swmr-stmt"
 while [ $# -gt 0 ]; do
   case "$1" in

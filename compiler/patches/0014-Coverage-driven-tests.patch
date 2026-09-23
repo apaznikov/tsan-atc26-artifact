@@ -1,0 +1,872 @@
+From c5626844dc72d182285fa46de546e1540e27c34e Mon Sep 17 00:00:00 2001
+From: Alexey Paznikov <apaznikov@gmail.com>
+Date: Mon, 14 Sep 2026 19:59:33 +0800
+Subject: Coverage-driven tests
+
+---
+ .../test/tsan/dynstc_second_thread_race.c     | 28 +++++++++
+ compiler-rt/test/tsan/postdom_end_to_end.cpp  | 29 +++++++++
+ .../test/tsan/tools/preservation/README.md    |  8 ++-
+ .../Analysis/LockOwnership/two-lock-sites.ll  | 47 ++++++++++++++
+ .../Analysis/SingleThreaded/creators-all.ll   | 45 +++++++++++++
+ .../creators-and-branching-main.ll            | 43 +++++++++++++
+ .../ThreadSanitizerNew/dynstc-guard.ll        | 34 ++++++++++
+ .../elim-by-dominance-location-covers.ll      | 41 ++++++++++++
+ .../elim-by-dominance-volatile.ll             | 27 ++++++++
+ .../elim-by-post-dominance-loop-terminates.ll | 52 +++++++++++++++
+ .../escape-atomicrmw-publishes.ll             | 27 ++++++++
+ .../escape-later-acquire-only-publication.ll  | 50 +++++++++++++++
+ .../ThreadSanitizerNew/escape-tli-table.ll    | 45 +++++++++++++
+ .../intrinsic-sync-free-blocklist.ll          | 32 ++++++++++
+ .../measurement-switches.ll                   | 58 +++++++++++++++++
+ .../ThreadSanitizerNew/peel-loops-negative.ll | 63 +++++++++++++++++++
+ .../sfi-loops-in-isolation.ll                 | 49 +++++++++++++++
+ .../tsan-disable-enable-region.ll             | 33 ++++++++++
+ 18 files changed, 708 insertions(+), 3 deletions(-)
+ create mode 100644 compiler-rt/test/tsan/dynstc_second_thread_race.c
+ create mode 100644 compiler-rt/test/tsan/postdom_end_to_end.cpp
+ create mode 100644 llvm/test/Analysis/LockOwnership/two-lock-sites.ll
+ create mode 100644 llvm/test/Analysis/SingleThreaded/creators-all.ll
+ create mode 100644 llvm/test/Analysis/SingleThreaded/creators-and-branching-main.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/dynstc-guard.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-location-covers.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-volatile.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-post-dominance-loop-terminates.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/escape-atomicrmw-publishes.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/escape-later-acquire-only-publication.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/escape-tli-table.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/intrinsic-sync-free-blocklist.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/measurement-switches.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/peel-loops-negative.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/sfi-loops-in-isolation.ll
+ create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/tsan-disable-enable-region.ll
+
+diff --git a/compiler-rt/test/tsan/dynstc_second_thread_race.c b/compiler-rt/test/tsan/dynstc_second_thread_race.c
+new file mode 100644
+index 000000000000..b6d30ea594a5
+--- /dev/null
++++ b/compiler-rt/test/tsan/dynstc_second_thread_race.c
+@@ -0,0 +1,28 @@
++// The dynamic single-threaded guard (-tsan-use-active-thread-count) skips
++// the runtime call while only one thread exists and must not skip it once a
++// second thread runs: the race between the two threads below is reported.
++//
++// RUN: %clang_tsan -O1 %s -o %t -mllvm -tsan-use-active-thread-count && %deflake %run %t 2>&1 | FileCheck %s
++#include "test.h"
++
++int Global;
++
++void *Thread(void *x) {
++  barrier_wait(&barrier);
++  Global = 42;
++  return NULL;
++}
++
++int main() {
++  barrier_init(&barrier, 2);
++  pthread_t t;
++  pthread_create(&t, NULL, Thread, NULL);
++  Global = 43;
++  barrier_wait(&barrier);
++  pthread_join(t, NULL);
++  fprintf(stderr, "DONE\n");
++  return 0;
++}
++
++// CHECK: WARNING: ThreadSanitizer: data race
++// CHECK: DONE
+diff --git a/compiler-rt/test/tsan/postdom_end_to_end.cpp b/compiler-rt/test/tsan/postdom_end_to_end.cpp
+new file mode 100644
+index 000000000000..d18c4f4dd341
+--- /dev/null
++++ b/compiler-rt/test/tsan/postdom_end_to_end.cpp
+@@ -0,0 +1,29 @@
++// Post-dominance elimination end to end: the earlier of two writes to the
++// same location in one straight-line thread body is dropped in favour of
++// the later one, and the race with the other thread is still reported.
++//
++// RUN: %clangxx_tsan -O1 %s -o %t -mllvm -tsan-use-dominance-analysis-postdom && %deflake %run %t 2>&1 | FileCheck %s
++#include "test.h"
++
++int Global;
++
++void *Thread(void *x) {
++  barrier_wait(&barrier);
++  Global = 1;
++  Global = 2;
++  return NULL;
++}
++
++int main() {
++  barrier_init(&barrier, 2);
++  pthread_t t;
++  pthread_create(&t, NULL, Thread, NULL);
++  Global = 3;
++  barrier_wait(&barrier);
++  pthread_join(t, NULL);
++  fprintf(stderr, "DONE\n");
++  return 0;
++}
++
++// CHECK: WARNING: ThreadSanitizer: data race
++// CHECK: DONE
+diff --git a/compiler-rt/test/tsan/tools/preservation/README.md b/compiler-rt/test/tsan/tools/preservation/README.md
+index 2dafe1ac8432..34b3079ae6e6 100644
+--- a/compiler-rt/test/tsan/tools/preservation/README.md
++++ b/compiler-rt/test/tsan/tools/preservation/README.md
+@@ -26,14 +26,16 @@ through, so the program output every RUN line would have judged is captured
+ instead. Output: `reports/<cfg>/<test>.k<i>.out`.
+ 
+ **`diffreports.py <reports> stock <cfg>...`** — buckets every test against
+-stock by report keys (`tsan_reports.py` from tsan-experiments, or the copy
+-pointed to by `TSAN_REPORTS_PY`): L1 identical (kind, both access sites
++stock by report keys (`tsan_reports.py` from tsan-experiments: set
++`TSAN_REPORTS_PY` to its *directory*, which is put on `sys.path`): L1 identical (kind, both access sites
+ `function@file:line`, location), L2 identical (frames by function only — a
+ line moved), other (lost / new keys, named). Keys are the union over runs and
+ RUN lines; reporting and silent tests are shown separately.
+ 
+ Report identity is not deterministic for every test even under stock
+ (`race_on_barrier2.c` reports the same race from either side; the location
+-descriptor of `fd_location_closed.cpp` varies); a test in an "other" bucket
++descriptor of `fd_location_closed.cpp` varies; `fork_atexit.cpp` reports in
++roughly one run in five under stock and every configuration alike); a test in
++an "other" bucket
+ must be re-replayed at K=20 under stock and the configuration before it
+ counts as a difference.
+diff --git a/llvm/test/Analysis/LockOwnership/two-lock-sites.ll b/llvm/test/Analysis/LockOwnership/two-lock-sites.ll
+new file mode 100644
+index 000000000000..2e93b07a1e4b
+--- /dev/null
++++ b/llvm/test/Analysis/LockOwnership/two-lock-sites.ll
+@@ -0,0 +1,47 @@
++; The must-lockset meet over two paths that acquire the same mutex at
++; different call sites: the lock is held on both, so the access after the
++; join is protected (the recorded acquisition site is one of the two, which
++; matters only for reporting). @G is written under m in both workers.
++
++; RUN: opt < %s -passes='print<lock-ownership>' -disable-output 2>&1 | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@m = global i64 0, align 8
++@G = internal global i32 0, align 4
++declare i32 @pthread_mutex_lock(ptr)
++declare i32 @pthread_mutex_unlock(ptr)
++declare i32 @pthread_create(ptr, ptr, ptr, ptr)
++
++define internal ptr @w1(ptr %a) {
++entry:
++  %c = icmp eq ptr %a, null
++  br i1 %c, label %A, label %B
++A:
++  %l1 = call i32 @pthread_mutex_lock(ptr @m)
++  br label %join
++B:
++  %l2 = call i32 @pthread_mutex_lock(ptr @m)
++  br label %join
++join:
++  store i32 1, ptr @G, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @m)
++  ret ptr null
++}
++
++define internal ptr @w2(ptr %a) {
++  %l = call i32 @pthread_mutex_lock(ptr @m)
++  store i32 2, ptr @G, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @m)
++  ret ptr null
++}
++
++define i32 @main() {
++  %t = alloca i64, align 8
++  %c1 = call i32 @pthread_create(ptr %t, ptr null, ptr @w1, ptr null)
++  %c2 = call i32 @pthread_create(ptr %t, ptr null, ptr @w2, ptr null)
++  ret i32 0
++}
++
++; CHECK: Protected Global Variables
++; CHECK: * G
+diff --git a/llvm/test/Analysis/SingleThreaded/creators-all.ll b/llvm/test/Analysis/SingleThreaded/creators-all.ll
+new file mode 100644
+index 000000000000..7824b5a52e36
+--- /dev/null
++++ b/llvm/test/Analysis/SingleThreaded/creators-all.ll
+@@ -0,0 +1,45 @@
++; Every name on the known-thread-creator list makes its caller a creator:
++; pthread_create's aliases, C11 thrd_create, the OpenMP fork entry points
++; and TSan's own fiber creation.
++
++; RUN: opt < %s -passes='print<single-threaded>' -disable-output 2>&1 | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++declare i32 @__pthread_create_2_1(ptr, ptr, ptr, ptr)
++declare i32 @thrd_create(ptr, ptr, ptr)
++declare void @__kmpc_fork_call(ptr, i32, ptr, ...)
++declare ptr @__tsan_create_fiber(i32)
++declare ptr @w(ptr)
++define internal void @c1() {
++  %t = alloca i64
++  %r = call i32 @__pthread_create_2_1(ptr %t, ptr null, ptr @w, ptr null)
++  ret void
++}
++define internal void @c2() {
++  %t = alloca i64
++  %r = call i32 @thrd_create(ptr %t, ptr @w, ptr null)
++  ret void
++}
++define internal void @c3() {
++  call void (ptr, i32, ptr, ...) @__kmpc_fork_call(ptr null, i32 0, ptr @w)
++  ret void
++}
++define internal void @c4() {
++  %f = call ptr @__tsan_create_fiber(i32 0)
++  ret void
++}
++define i32 @main() {
++  call void @c1()
++  call void @c2()
++  call void @c3()
++  call void @c4()
++  ret i32 0
++}
++
++; CHECK-LABEL: Thread Creator Functions
++; CHECK-DAG: c1
++; CHECK-DAG: c2
++; CHECK-DAG: c3
++; CHECK-DAG: c4
++; CHECK-LABEL: Multi-Threaded Functions
+diff --git a/llvm/test/Analysis/SingleThreaded/creators-and-branching-main.ll b/llvm/test/Analysis/SingleThreaded/creators-and-branching-main.ll
+new file mode 100644
+index 000000000000..2621049f5588
+--- /dev/null
++++ b/llvm/test/Analysis/SingleThreaded/creators-and-branching-main.ll
+@@ -0,0 +1,43 @@
++; Two things the single-threaded analysis must get right at its roots:
++; __kmpc_fork_teams is a thread creator like the others, and main is
++; classified per block -- the blocks before any creation on every path are
++; single-threaded, the blocks after a creation multi-threaded, and a block
++; reachable both with and without a creation is multi-threaded.
++
++; RUN: opt < %s -passes='print<single-threaded>' -disable-output 2>&1 | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@g = internal global i32 0, align 4
++declare void @__kmpc_fork_teams(ptr, i32, ptr, ...)
++define internal void @omp_outlined(ptr %a, ptr %b) {
++  store i32 1, ptr @g, align 4
++  ret void
++}
++define internal void @spawn_teams() {
++  call void (ptr, i32, ptr, ...) @__kmpc_fork_teams(ptr null, i32 0, ptr @omp_outlined)
++  ret void
++}
++define internal void @before_only() {
++  store i32 0, ptr @g, align 4
++  ret void
++}
++define i32 @main(i32 %argc) {
++entry:
++  call void @before_only()
++  %c = icmp eq i32 %argc, 1
++  br i1 %c, label %spawn, label %join
++spawn:
++  call void @spawn_teams()
++  br label %join
++join:
++  store i32 2, ptr @g, align 4
++  ret i32 0
++}
++
++; CHECK-LABEL: Thread Creator Functions
++; CHECK: spawn_teams
++; CHECK-LABEL: Multi-Threaded Functions
++; CHECK: omp_outlined
++; CHECK-LABEL: Single-Threaded Functions
++; CHECK: before_only
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/dynstc-guard.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/dynstc-guard.ll
+new file mode 100644
+index 000000000000..a048437db796
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/dynstc-guard.ll
+@@ -0,0 +1,34 @@
++; Dynamic single-threaded check. With -tsan-use-active-thread-count every
++; run of accesses (ended by a call or a block boundary) is guarded by one
++; load of the runtime's active-thread counter: the leader is instrumented
++; under the guard and the rest of the run shares it. The counter load is a
++; monotonic atomic on a runtime-owned global and is never itself
++; instrumented; the calls are still emitted, only conditionally.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-active-thread-count -S | FileCheck %s
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -S | FileCheck %s --check-prefix=PLAIN
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@x = global i32 0, align 4
++@y = global i32 0, align 4
++declare void @opaque()
++
++; CHECK-LABEL: @two_runs
++; CHECK: load atomic i32, ptr @__tsan_active_thread_count monotonic
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK: call void @__tsan_write4(ptr @y)
++; CHECK: {{call|invoke}} void @opaque()
++; CHECK: load atomic i32, ptr @__tsan_active_thread_count monotonic
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++; PLAIN-LABEL: @two_runs
++; PLAIN-NOT: __tsan_active_thread_count
++; PLAIN: ret void
++define void @two_runs() sanitize_thread {
++  store i32 1, ptr @x, align 4
++  store i32 1, ptr @y, align 4
++  call void @opaque()
++  store i32 2, ptr @x, align 4
++  ret void
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-location-covers.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-location-covers.ll
+new file mode 100644
+index 000000000000..5228bdcb6d9a
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-location-covers.ll
+@@ -0,0 +1,41 @@
++; What "same location" means for a cover: the covering access must be at
++; least as wide as the covered one (a wider store covers a narrower one at
++; the same address, not the reverse), and an access of scalable size is
++; never a cover nor covered -- its extent is unknown at compile time (the
++; pass does not instrument scalable accesses at all, so the bail is a guard
++; behind that upstream decision).
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-dominance-analysis-dom -S | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@x = global i64 0, align 8
++
++; CHECK-LABEL: @wide_covers_narrow
++; CHECK: call void @__tsan_write8(ptr @x)
++; CHECK-NOT: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @wide_covers_narrow() sanitize_thread {
++  store i64 1, ptr @x, align 8
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; CHECK-LABEL: @narrow_does_not_cover_wide
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK: call void @__tsan_write8(ptr @x)
++; CHECK: ret void
++define void @narrow_does_not_cover_wide() sanitize_thread {
++  store i32 1, ptr @x, align 4
++  store i64 2, ptr @x, align 8
++  ret void
++}
++
++; CHECK-LABEL: @scalable_bails
++; CHECK-NOT: call void @__tsan_
++; CHECK: ret void
++define void @scalable_bails(ptr %p, <vscale x 4 x i32> %v) sanitize_thread {
++  store <vscale x 4 x i32> %v, ptr %p, align 4
++  store <vscale x 4 x i32> %v, ptr %p, align 4
++  ret void
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-volatile.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-volatile.ll
+new file mode 100644
+index 000000000000..3b4953be979f
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-dominance-volatile.ll
+@@ -0,0 +1,27 @@
++; Volatile accesses under dominance elimination. With
++; -tsan-distinguish-volatile a volatile access is instrumented with its own
++; runtime entry point, so a volatile access and a plain one to the same
++; location cannot stand in for each other: neither covers the other.
++; Without the flag they are ordinary accesses and the second store is
++; redundant.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-dominance-analysis -tsan-distinguish-volatile -S | FileCheck %s
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-dominance-analysis -S | FileCheck %s --check-prefix=PLAIN
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@x = global i32 0, align 4
++
++; CHECK-LABEL: @mixed
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK: call void @__tsan_volatile_write4(ptr @x)
++; CHECK: ret void
++; PLAIN-LABEL: @mixed
++; PLAIN: call void @__tsan_write4(ptr @x)
++; PLAIN-NOT: call void @__tsan_write4(ptr @x)
++; PLAIN: ret void
++define void @mixed() sanitize_thread {
++  store i32 1, ptr @x, align 4
++  store volatile i32 2, ptr @x, align 4
++  ret void
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-post-dominance-loop-terminates.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-post-dominance-loop-terminates.ll
+new file mode 100644
+index 000000000000..f1bf827cdfcf
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/elim-by-post-dominance-loop-terminates.ll
+@@ -0,0 +1,52 @@
++; Post-dominance across a loop. The covering access after the loop is
++; reached only if the loop terminates: with a computable trip count it
++; does, and the earlier access is redundant; with an unknown exit it may
++; spin forever, and the earlier access stays. -tsan-postdom-aggressive
++; drops the termination requirement.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-dominance-analysis-postdom -S | FileCheck %s
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-dominance-analysis-postdom -tsan-postdom-aggressive -S | FileCheck %s --check-prefix=AGGR
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@x = global i32 0, align 4
++@y = global i32 0, align 4
++
++; CHECK-LABEL: @counted
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK-NOT: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @counted() sanitize_thread {
++entry:
++  store i32 1, ptr @x, align 4
++  br label %loop
++loop:
++  %i = phi i32 [ 0, %entry ], [ %inc, %loop ]
++  %v = load i32, ptr @y, align 4
++  %inc = add i32 %i, 1
++  %c = icmp slt i32 %inc, 10
++  br i1 %c, label %loop, label %exit
++exit:
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; CHECK-LABEL: @unknown
++; CHECK-COUNT-2: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++; AGGR-LABEL: @unknown
++; AGGR: call void @__tsan_write4(ptr @x)
++; AGGR-NOT: call void @__tsan_write4(ptr @x)
++; AGGR: ret void
++define void @unknown(ptr %flag) sanitize_thread {
++entry:
++  store i32 1, ptr @x, align 4
++  br label %loop
++loop:
++  %v = load volatile i32, ptr %flag, align 4
++  %c = icmp ne i32 %v, 0
++  br i1 %c, label %loop, label %exit
++exit:
++  store i32 2, ptr @x, align 4
++  ret void
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/escape-atomicrmw-publishes.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/escape-atomicrmw-publishes.ll
+new file mode 100644
+index 000000000000..99ea7e197755
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/escape-atomicrmw-publishes.ll
+@@ -0,0 +1,27 @@
++; A pointer handed to an atomicrmw as the value operand is published: the
++; exchange stores it where another thread can load it. The local's later
++; write must stay instrumented. The control never leaves the function.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-escape-analysis-global -S | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@slot = global ptr null, align 8
++
++; CHECK-LABEL: @published
++; CHECK: call void @__tsan_write4(ptr %l)
++define void @published() sanitize_thread {
++  %l = alloca i32, align 4
++  %old = atomicrmw xchg ptr @slot, ptr %l seq_cst
++  store i32 1, ptr %l, align 4
++  ret void
++}
++
++; CHECK-LABEL: @kept_private
++; CHECK-NOT: call void @__tsan_write4
++; CHECK: ret void
++define void @kept_private() sanitize_thread {
++  %l = alloca i32, align 4
++  store i32 1, ptr %l, align 4
++  ret void
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/escape-later-acquire-only-publication.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/escape-later-acquire-only-publication.ll
+new file mode 100644
+index 000000000000..b61ee9baf7c0
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/escape-later-acquire-only-publication.ll
+@@ -0,0 +1,50 @@
++; The sound flow-sensitive rule's third release-like escape: an atomic
++; release store of the local's address into a local-linkage global every
++; load of which is an acquire. Whoever reads the pointer acquires, so the
++; access before the publication happens-before every access through it and
++; needs no instrumentation. In @plain_reader one load of the slot is not
++; an acquire, so the publication is not release-like and the access stays.
++; The publication sits in a later block: the per-block query already treats
++; a same-block publication as an escape at the access.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-escape-analysis-global -S | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@acq_slot = internal global ptr null, align 8
++@mixed_slot = internal global ptr null, align 8
++
++; CHECK-LABEL: @acquire_only
++; CHECK-NOT: call void @__tsan_write4
++; CHECK: call void @__tsan_atomic64_store
++define void @acquire_only() sanitize_thread {
++entry:
++  %l = alloca i32, align 4
++  store i32 1, ptr %l, align 4
++  br label %pub
++pub:
++  store atomic ptr %l, ptr @acq_slot release, align 8
++  ret void
++}
++
++define ptr @acq_reader() {
++  %p = load atomic ptr, ptr @acq_slot acquire, align 8
++  ret ptr %p
++}
++
++; CHECK-LABEL: @plain_reader
++; CHECK: call void @__tsan_write4(ptr %l)
++define void @plain_reader() sanitize_thread {
++entry:
++  %l = alloca i32, align 4
++  store i32 1, ptr %l, align 4
++  br label %pub
++pub:
++  store atomic ptr %l, ptr @mixed_slot release, align 8
++  ret void
++}
++
++define ptr @mixed_reader() {
++  %p = load ptr, ptr @mixed_slot, align 8
++  ret ptr %p
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/escape-tli-table.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/escape-tli-table.ll
+new file mode 100644
+index 000000000000..cbe738a221d0
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/escape-tli-table.ll
+@@ -0,0 +1,45 @@
++; The library retention table, one entry per section: atexit stores its
++; function-pointer argument for later (section I: escapes), strlen and free
++; do not retain theirs (section II), and a function TargetLibraryInfo does
++; not know (a program's own name with a library-like spelling and the
++; wrong prototype) is opaque.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-escape-analysis-global -S | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++target triple = "x86_64-unknown-linux-gnu"
++
++declare i64 @strlen(ptr)
++declare void @free(ptr)
++declare ptr @malloc(i64)
++declare i32 @atexit(ptr)
++declare i64 @strnlen(ptr, i64, i64)
++
++; CHECK-LABEL: @via_strlen
++; CHECK-NOT: call void @__tsan_write1
++; CHECK: ret i64
++define i64 @via_strlen() sanitize_thread {
++  %b = alloca [8 x i8], align 1
++  store i8 0, ptr %b, align 1
++  %n = call i64 @strlen(ptr %b)
++  ret i64 %n
++}
++
++; CHECK-LABEL: @via_free
++; CHECK-NOT: call void @__tsan_write4
++; CHECK: {{call|invoke}} void @free
++define void @via_free() sanitize_thread {
++  %p = call ptr @malloc(i64 4)
++  store i32 1, ptr %p, align 4
++  call void @free(ptr %p)
++  ret void
++}
++
++; CHECK-LABEL: @wrong_prototype
++; CHECK: call void @__tsan_write1
++define i64 @wrong_prototype() sanitize_thread {
++  %b = alloca [8 x i8], align 1
++  store i8 0, ptr %b, align 1
++  %n = call i64 @strnlen(ptr %b, i64 8, i64 0)
++  ret i64 %n
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/intrinsic-sync-free-blocklist.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/intrinsic-sync-free-blocklist.ll
+new file mode 100644
+index 000000000000..5da57c3a14fa
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/intrinsic-sync-free-blocklist.ll
+@@ -0,0 +1,32 @@
++; Intrinsics on the dominance path. Most intrinsics are sync-free and a
++; redundant access across them is elided; the blocklist names the ones that
++; synchronise -- a GPU barrier among them -- and those block elimination.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-dominance-analysis -S | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@x = global i32 0, align 4
++declare void @llvm.assume(i1)
++declare void @llvm.nvvm.barrier0()
++
++; CHECK-LABEL: @across_assume
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK-NOT: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @across_assume(i1 %c) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  call void @llvm.assume(i1 %c)
++  store i32 2, ptr @x, align 4
++  ret void
++}
++
++; CHECK-LABEL: @across_barrier
++; CHECK-COUNT-2: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @across_barrier() sanitize_thread {
++  store i32 1, ptr @x, align 4
++  call void @llvm.nvvm.barrier0()
++  store i32 2, ptr @x, align 4
++  ret void
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/measurement-switches.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/measurement-switches.ll
+new file mode 100644
+index 000000000000..6dff00978422
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/measurement-switches.ll
+@@ -0,0 +1,58 @@
++; The measurement-only switches must run and stay conservative:
++; -tsan-use-lock-ownership-upperbound (every access under any lock counts
++; as protected -- an upper bound on what lock ownership could remove,
++; documented unsound), -tsan-stc-skip-func-entry-exit (a single-threaded
++; function also loses __tsan_func_entry/exit), -tsan-attribute-flow-
++; sensitivity (attribution counters only; the elision decision is the
++; sound rule's).
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-lock-ownership-upperbound -S | FileCheck %s --check-prefix=UPPER
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-single-threaded -tsan-stc-skip-func-entry-exit -S | FileCheck %s --check-prefix=SKIP
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-escape-analysis-global -tsan-attribute-flow-sensitivity -S | FileCheck %s --check-prefix=ATTR
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@m = global i64 0, align 8
++@g = internal global i32 0, align 4
++declare i32 @pthread_mutex_lock(ptr)
++declare i32 @pthread_mutex_unlock(ptr)
++declare i32 @pthread_create(ptr, ptr, ptr, ptr)
++declare void @opaque(ptr)
++
++; UPPER-LABEL: @under_lock
++; UPPER-NOT: call void @__tsan_write4
++; UPPER: ret ptr
++define internal ptr @under_lock(ptr %a) sanitize_thread {
++  %l = call i32 @pthread_mutex_lock(ptr @m)
++  store i32 1, ptr @g, align 4
++  %u = call i32 @pthread_mutex_unlock(ptr @m)
++  ret ptr null
++}
++
++; SKIP-LABEL: @only_from_main
++; SKIP-NOT: __tsan_func_entry
++; SKIP-NOT: __tsan_write4
++; SKIP: ret void
++define internal void @only_from_main() sanitize_thread {
++  store i32 2, ptr @g, align 4
++  ret void
++}
++
++; ATTR-LABEL: @published_later
++; ATTR: call void @__tsan_write4(ptr %l)
++define void @published_later() sanitize_thread {
++entry:
++  %l = alloca i32, align 4
++  store i32 1, ptr %l, align 4
++  br label %pub
++pub:
++  call void @opaque(ptr %l)
++  ret void
++}
++
++define i32 @main() sanitize_thread {
++  %t = alloca i64, align 8
++  call void @only_from_main()
++  %c = call i32 @pthread_create(ptr %t, ptr null, ptr @under_lock, ptr null)
++  ret i32 0
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/peel-loops-negative.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/peel-loops-negative.ll
+new file mode 100644
+index 000000000000..6b8f710c4e3a
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/peel-loops-negative.ll
+@@ -0,0 +1,63 @@
++; Loop peeling is worth it only when an access in the loop has a loop-
++; invariant address, so that the peeled first iteration can cover the rest
++; under dominance. A loop that only walks an array, or only touches
++; volatile locations, is left alone; the control with an invariant global
++; store is peeled and its body's access appears twice.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-dominance-analysis -tsan-use-loop-peeling -S | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@g = global i32 0, align 4
++@v = global i32 0, align 4
++
++; CHECK-LABEL: @walk
++; CHECK-COUNT-1: call void @__tsan_write4(
++; CHECK-NOT: call void @__tsan_write4(
++; CHECK: ret void
++define void @walk(ptr %a, i32 %n) sanitize_thread {
++entry:
++  br label %loop
++loop:
++  %i = phi i32 [ 0, %entry ], [ %inc, %loop ]
++  %p = getelementptr inbounds i32, ptr %a, i32 %i
++  store i32 0, ptr %p, align 4
++  %inc = add i32 %i, 1
++  %c = icmp slt i32 %inc, %n
++  br i1 %c, label %loop, label %exit
++exit:
++  ret void
++}
++
++; CHECK-LABEL: @volatile_only
++; CHECK-COUNT-1: call void @__tsan_write4(ptr @v)
++; CHECK-NOT: call void @__tsan_write4(ptr @v)
++; CHECK: ret void
++define void @volatile_only(i32 %n) sanitize_thread {
++entry:
++  br label %loop
++loop:
++  %i = phi i32 [ 0, %entry ], [ %inc, %loop ]
++  store volatile i32 %i, ptr @v, align 4
++  %inc = add i32 %i, 1
++  %c = icmp slt i32 %inc, %n
++  br i1 %c, label %loop, label %exit
++exit:
++  ret void
++}
++
++; CHECK-LABEL: @invariant
++; CHECK: call void @__tsan_write4(ptr @g)
++; CHECK: ret void
++define void @invariant(i32 %n) sanitize_thread {
++entry:
++  br label %loop
++loop:
++  %i = phi i32 [ 0, %entry ], [ %inc, %loop ]
++  store i32 %i, ptr @g, align 4
++  %inc = add i32 %i, 1
++  %c = icmp slt i32 %inc, %n
++  br i1 %c, label %loop, label %exit
++exit:
++  ret void
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/sfi-loops-in-isolation.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/sfi-loops-in-isolation.ll
+new file mode 100644
+index 000000000000..3cb21e61e16e
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/sfi-loops-in-isolation.ll
+@@ -0,0 +1,49 @@
++; The sync-free summary's loop part on its own: post-dominance may cross a
++; call to a defined callee only if it is known to return, and a callee is
++; known to return when it and everything it calls are free of loops. A
++; loop-free callee is crossed and the earlier store elided; a callee with a
++; loop (no willreturn anywhere) keeps both stores.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -tsan-use-dominance-analysis-postdom -S | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@x = global i32 0, align 4
++
++define internal i32 @straight(i32 %a) {
++  %r = mul i32 %a, 3
++  ret i32 %r
++}
++
++define internal i32 @spins(i32 %a) {
++entry:
++  br label %loop
++loop:
++  %i = phi i32 [ %a, %entry ], [ %d, %loop ]
++  %d = sub i32 %i, 1
++  %c = icmp ne i32 %d, 0
++  br i1 %c, label %loop, label %exit
++exit:
++  ret i32 %d
++}
++
++; CHECK-LABEL: @through_straight
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK-NOT: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @through_straight(i32 %a) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %r = call i32 @straight(i32 %a)
++  store i32 %r, ptr @x, align 4
++  ret void
++}
++
++; CHECK-LABEL: @through_spins
++; CHECK-COUNT-2: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @through_spins(i32 %a) sanitize_thread {
++  store i32 1, ptr @x, align 4
++  %r = call i32 @spins(i32 %a)
++  store i32 %r, ptr @x, align 4
++  ret void
++}
+diff --git a/llvm/test/Instrumentation/ThreadSanitizerNew/tsan-disable-enable-region.ll b/llvm/test/Instrumentation/ThreadSanitizerNew/tsan-disable-enable-region.ll
+new file mode 100644
+index 000000000000..a1f95bf4dd40
+--- /dev/null
++++ b/llvm/test/Instrumentation/ThreadSanitizerNew/tsan-disable-enable-region.ll
+@@ -0,0 +1,33 @@
++; __tsan_disable / __tsan_enable bracket a region whose accesses are not
++; instrumented; the pass erases the calls themselves (the runtime symbols
++; are no-ops kept for code that names them directly). Accesses outside the
++; region are instrumented as usual; nesting counts.
++
++; RUN: opt < %s -passes='module(tsan-module),function(tsan)' -S | FileCheck %s
++
++target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128-n8:16:32:64-S128"
++
++@x = global i32 0, align 4
++declare void @__tsan_disable()
++declare void @__tsan_enable()
++
++; CHECK-LABEL: @region
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK-NOT: call void @__tsan_disable
++; CHECK-NOT: call void @__tsan_write4
++; CHECK-NOT: call void @__tsan_enable
++; CHECK: store i32 3, ptr @x
++; CHECK: call void @__tsan_write4(ptr @x)
++; CHECK: ret void
++define void @region() sanitize_thread {
++  store i32 1, ptr @x, align 4
++  call void @__tsan_disable()
++  store i32 2, ptr @x, align 4
++  call void @__tsan_disable()
++  store i32 3, ptr @x, align 4
++  call void @__tsan_enable()
++  store i32 3, ptr @x, align 4
++  call void @__tsan_enable()
++  store i32 4, ptr @x, align 4
++  ret void
++}

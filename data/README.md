@@ -5,7 +5,7 @@ The runs the paper's tables rest on, as recorded, plus the scripts that turn the
 shipped table does not follow from its shipped runs.
 
 Trees whose names end in `f3deebfbab60` were recorded on the shipped compiler; the performance campaign
-(`PERFORMANCE.md`, not submitted for evaluation) rests on `perf/campaign-f3deebfbab60/` and
+(not submitted for evaluation) rests on `perf/campaign-f3deebfbab60/` and
 `perf/ffmpeg-threadsweep-f3deebfbab60/`. The other trees were recorded on
 earlier compilers and are shipped as data; of those, only the report-key replay (`CLAIMS.md` section 1) and
 the bounded-shadow experiments (section 6) support a claim, on the compilers they name.
@@ -14,10 +14,10 @@ contains absolute paths of the recording machine; nothing reads them.
 
 | Directory | What it is | Compiler | Notes |
 |---|---|---|---|
-| `perf/campaign-f3deebfbab60/primary/`, `perf/campaign-f3deebfbab60/r2/` | **the performance campaign `PERFORMANCE.md` reports**: five applications, up to 14 configurations, N = 5, pinned 48 CPUs, run-major, 15-17 Sep 2026. 290 and 110 measured runs | `f3deebfbab60` | the roots `PERFORMANCE.md` cites; `scripts/91-verify-provenance.sh` checks them strictly |
-| `perf/campaign-f3deebfbab60/ffmpeg-t16/` | FFmpeg at `-threads 16`, the artifact's default thread count: native, stock, DynSTC, AllOpt with peeling, AllOpt with peeling and DynSTC, and the upstream flag on stock and on that combination; N = 5, 21-22 Sep 2026, the campaign's set and shape | `f3deebfbab60` | the 16-thread FFmpeg table in `PERFORMANCE.md` |
-| `perf/campaign-f3deebfbab60/flag-<app>/` | the upstream flag `-tsan-instrument-func-entry-exit=false` on stock and on our configurations, N = 5, 21-22 Sep 2026, the campaign's set; measured and not claimed (`PERFORMANCE.md`, "Upstream flag") | `f3deebfbab60` | the flag's rows are reported with the suite's gate result beside them |
-| `perf/campaign-f3deebfbab60/sweep-<app>-<knob>/` | the concurrency curves measured after the campaign, the campaign's set and shape, N = 5: memcached's server threads at 24, 96 and 112, Redis's clients at 256 and 512, SQLite's walthread1 threads at 8, 16, 32, 48, 96 and 112 | `f3deebfbab60` | measured and not claimed (`PERFORMANCE.md`, "Concurrency curves and whole-program summaries, measured after the campaign"). `sweep-legs.log` and `sweep-legs.sh` beside them name each arm with its knob value and its times, because a cell records the thread count but not Redis's clients or SQLite's walthread1 threads |
+| `perf/campaign-f3deebfbab60/primary/`, `perf/campaign-f3deebfbab60/r2/` | **the performance campaign**: five applications, up to 14 configurations, N = 5, pinned 48 CPUs, run-major, 15-17 Sep 2026. 290 and 110 measured runs | `f3deebfbab60` | `scripts/91-verify-provenance.sh` checks them strictly |
+| `perf/campaign-f3deebfbab60/ffmpeg-t16/` | FFmpeg at `-threads 16`, the artifact's default thread count: native, stock, DynSTC, AllOpt with peeling, AllOpt with peeling and DynSTC, and the upstream flag on stock and on that combination; N = 5, 21-22 Sep 2026, the campaign's set and shape | `f3deebfbab60` | FFmpeg at the default thread count |
+| `perf/campaign-f3deebfbab60/flag-<app>/` | the upstream flag `-tsan-instrument-func-entry-exit=false` on stock and on our configurations, N = 5, 21-22 Sep 2026, the campaign's set; measured and not claimed | `f3deebfbab60` | the flag's rows are reported with the suite's gate result beside them |
+| `perf/campaign-f3deebfbab60/sweep-<app>-<knob>/` | the concurrency curves measured after the campaign, the campaign's set and shape, N = 5: memcached's server threads at 24, 96 and 112, Redis's clients at 256 and 512, SQLite's walthread1 threads at 8, 16, 32, 48, 96 and 112 | `f3deebfbab60` | measured and not claimed. `sweep-legs.log` and `sweep-legs.sh` beside them name each arm with its knob value and its times, because a cell records the thread count but not Redis's clients or SQLite's walthread1 threads |
 | `perf/campaign-f3deebfbab60/wp-dynstc-<app>/` | whole-program summaries together with DynSTC: Redis, SQLite and memcached, five configurations, N = 5 | `f3deebfbab60` | a measured null on all three |
 | `perf/sweep-amd-f3deebfbab60/` | the same memcached and Redis curves on the second host (AMD EPYC 9115, 48 of its 64 threads pinned as 0-23,32-55), N = 5, eight arms | `f3deebfbab60` | a separate root because it is a different machine; checked strictly, one processor set per arm, with its own `legs.log` and `legs.sh` |
 | `perf/ffmpeg-threadsweep-f3deebfbab60/` | the FFmpeg thread sweep on the reference clip: 2, 4, 8 and 16 encoder threads, four configurations, plus `threads-8-dynstc/` (native, stock, DynSTC and AllOpt with peeling and DynSTC at 8 threads), N = 5 | `f3deebfbab60` | checked strictly too |
@@ -43,5 +43,4 @@ set, the governor and turbo state, the load before and after, the foreign-CPU sh
 
 **Drift note.** Byte-identical Redis binaries measured on 8 Sep (Stage B) and on 14 Sep give stock
 ThreadSanitizer 14% less throughput on the later date and native 5% less, so Stage B's Redis rows
-and the repeat's disagree by up to 12 points. The cause was not found; `PERFORMANCE.md` states the condition
-with every Redis row, and `docs/confounds.md` lists the hypotheses eliminated.
+and the repeat's disagree by up to 12 points. The cause was not found; `docs/confounds.md` lists the hypotheses eliminated.

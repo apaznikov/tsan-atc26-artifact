@@ -24,7 +24,7 @@ need_harness() {
 }
 need_compiler() { [ -x "$TSAN_LLVM_ROOT/bin/clang" ] || { echo "no TSan clang at $TSAN_LLVM_ROOT/bin/clang (set TSAN_LLVM_ROOT or run inside the container)"; exit 2; }; }
 stamp() { date +%Y%m%d-%H%M%S; }
-smoke_banner() { [ "$ART_SMOKE" = 1 ] && echo "SMOKE MODE: N=1, reduced workload. Output is NOT A MEASUREMENT and must not be compared with PERFORMANCE.md." || true; }
+smoke_banner() { [ "$ART_SMOKE" = 1 ] && echo "SMOKE MODE: N=1, reduced workload. Output is NOT A MEASUREMENT and must not be compared with the campaign's tables." || true; }
 budget() { # budget <what> <8-core time> <32-core time> <disk>
   printf 'Expected: %s -- about %s on 8 cores, %s on 32 cores, %s of disk.\n' "$1" "$2" "$3" "$4"
 }

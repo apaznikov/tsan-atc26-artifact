@@ -49,7 +49,7 @@ audio track like the clip it replaces.
 The paper's FFmpeg column and the runs of the earlier campaign (compiler `d3bf9f8c39fe`) used the retired clip; within the campaign every
 configuration shares this clip. A control leg on the campaign compiler with the retired clip, four
 configurations, measures the clip's own contribution: its ratios agree with the reference clip's within
-their intervals (`PERFORMANCE.md`, the FFmpeg section at `-threads 4`). Its runs are not shipped, because the
+their intervals (the campaign's FFmpeg rows at `-threads 4`). Its runs are not shipped, because the
 retired clip has no recorded provenance or licence and cannot be redistributed.
 
 Why a real clip and not a synthetic pattern: the one substantial FFmpeg result in the paper
@@ -74,5 +74,5 @@ produces the clip by the first of three paths that applies:
 Paths 2 and 3 re-encode, and a re-encode's sha256 differs from the reference even under an identical
 command, because encoder builds differ. Every run therefore records `input_is_reference: true|false`
 beside `input_sha256` in its `meta.json`. A run on a regenerated clip is valid, and its build and run
-times are what an evaluator pays; only the comparison of its ratios with the shipped intervals is not
-made, since those were measured on the reference clip. Smoke mode uses the same 100 s clip at N = 1.
+times are what an evaluator pays; only its ratios are not comparable with the campaign's, which were
+measured on the reference clip. Smoke mode uses the same 100 s clip at N = 1.

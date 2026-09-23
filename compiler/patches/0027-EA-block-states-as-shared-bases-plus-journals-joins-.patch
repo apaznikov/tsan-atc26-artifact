@@ -1,4 +1,4 @@
-From d0c837061c92b24d725e865f26eb9a985a88e5b5 Mon Sep 17 00:00:00 2001
+From 16c35945da538d3e57f8b4dfa49d9c1b2cd2ce4a Mon Sep 17 00:00:00 2001
 From: Alexey Paznikov <apaznikov@gmail.com>
 Date: Tue, 15 Sep 2026 15:51:39 +0800
 Subject: EA: block states as shared bases plus journals; joins fold journals

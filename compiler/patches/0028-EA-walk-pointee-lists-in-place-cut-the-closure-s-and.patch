@@ -1,4 +1,4 @@
-From 901c0f7353ca3ca9de37d62cb6909609bf6f0026 Mon Sep 17 00:00:00 2001
+From c32572229ccf279c64b26cc07afbeff0cde03fa5 Mon Sep 17 00:00:00 2001
 From: Alexey Paznikov <apaznikov@gmail.com>
 Date: Tue, 15 Sep 2026 15:51:40 +0800
 Subject: EA: walk pointee lists in place; cut the closure's and the walk's

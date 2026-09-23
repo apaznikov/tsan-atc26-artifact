@@ -153,17 +153,6 @@ it is verified against the pinned sha256 before use, so where it came from does 
 Both are UTC (`results/evaluate-<tier>-<stamp>.log` and the `perf-<app>-<stamp>` directories the
 container writes); the "started HH:MM:SS" lines on the console are local time.
 
-## "COMPARISON NOT APPLICABLE ON THIS MACHINE" at the end of a Reproduced run
-
-Not a failure. Every step passed and the performance run is valid; no row was judged because this machine's
-processor-set shape (physical cores and complete SMT sibling pairs, recorded per cell), thread count or FFmpeg
-input is not the campaign's, and the comparator says which on each row. The intervals in `PERFORMANCE.md`
-describe 24 physical cores with both SMT threads (48 logical processors); on such a machine `evaluate.sh` pins
-that set itself, elsewhere set `ART_CPUSET` to a set of that shape if the machine has one. On any other shape
-read the ratios beside the intervals by eye: FFmpeg's DynSTC gain appeared on both hosts we ran, while Redis's
-DynSTC cost did not reproduce on the second one (`PERFORMANCE.md`, the Redis curves). Exit status 3 distinguishes this from a clean
-comparison (0) and from a judged row outside its interval (1).
-
 ## The image build stops in an `apt-get install` layer with "did not complete successfully: exit code: 100"
 
 The package download was interrupted. The two `apt-get` steps retry each fetch five times

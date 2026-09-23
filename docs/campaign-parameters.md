@@ -1,6 +1,6 @@
 # Campaign parameters
 
-Every parameter of the performance campaign that `PERFORMANCE.md` rests on
+Every parameter of the performance campaign
 (`data/perf/campaign-f3deebfbab60/`), so that any run can be repeated exactly. The concurrency of each
 application was fixed before the campaign ran; the table below gives it.
 
@@ -25,16 +25,16 @@ application was fixed before the campaign ran; the table below gives it.
 FFmpeg, SQLite and Redis run at the parameters of the paper's original measurements. memcached and MySQL run
 at the pinned set's values, with the whole-machine values (112 and 84, the paper's original policy) as the
 second row. FFmpeg's resolvable set is all four codecs; SQLite's resolvable set is decided per leg from the
-stock baseline's pooled coefficient of variation (`PERFORMANCE.md`, "The campaign").
+stock baseline's pooled coefficient of variation.
 
 **The thread rule.** The memcached server runs one thread per logical processor of the set it is pinned to,
 sysbench three quarters of that, and FFmpeg an absolute `-threads 16` (libx265's ceiling: it refuses more
 than 16 frame threads). On the 48-processor set that gives 48 and 36. The campaign's FFmpeg rows were taken
 at the paper's `-threads 4`, which `FF_THREADS=4` reproduces; the 16-thread default was chosen after the
-campaign from the thread sweep, and each set of rows is compared only with runs at its own count. Every cell
+campaign from the thread sweep, and each set of rows is comparable only with runs at its own count. Every cell
 records `threads_setting` (the value it ran with) and `threads_from_env` (whether `MC_THREADS`,
 `MYSQL_THREADS` or `FF_THREADS` overrode it). On another processor count the rule yields that machine's
-point, and such a row is reported with its thread count rather than compared.
+point, and such a row is reported with its thread count.
 
 **Fixed at every thread count.** `--requests 100000` for memtier (10 000 gives iterations of about a second
 and a meaningless throughput); equal N per arm; `report_bugs=0` on every instrumented arm; a provenance gate
@@ -112,8 +112,7 @@ On the shipped compiler, after the campaign: memcached's server threads at 24, 9
 256 and 512, SQLite's walthread1 threads at six counts, whole-program summaries with DynSTC, and the memcached
 and Redis curves on the AMD host. A value would have replaced the campaign's default only if, at five runs on
 the campaign's host, its interval for the best configuration were no wider and its point higher; no default
-changed. The arms, their intervals and the reasons are in `PERFORMANCE.md`, "Concurrency curves and
-whole-program summaries, measured after the campaign"; the data is under `data/perf/campaign-f3deebfbab60/sweep-*`,
+changed. The data is under `data/perf/campaign-f3deebfbab60/sweep-*`,
 `data/perf/campaign-f3deebfbab60/wp-dynstc-*` and `data/perf/sweep-amd-f3deebfbab60/`. These cells record the
 thread count but not Redis's clients or SQLite's walthread1 threads, so `sweep-legs.log` and `sweep-legs.sh`
 (and `legs.log`, `legs.sh` on the AMD root) name each arm with its knob value; the shipped harness writes the knob

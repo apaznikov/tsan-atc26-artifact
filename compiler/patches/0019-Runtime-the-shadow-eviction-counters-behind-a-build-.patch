@@ -1,4 +1,4 @@
-From ea9a7c6191f983e16db27bde7efb831ae4d8afe9 Mon Sep 17 00:00:00 2001
+From 7df018ea75cc674333ab3a003ab053711f61cb61 Mon Sep 17 00:00:00 2001
 From: Alexey Paznikov <apaznikov@gmail.com>
 Date: Mon, 14 Sep 2026 19:59:34 +0800
 Subject: Runtime: the shadow-eviction counters behind a build option, per
@@ -17,8 +17,7 @@ Subject: Runtime: the shadow-eviction counters behind a build option, per
  compiler-rt/test/tsan/lit.cfg.py             |  5 ++
  compiler-rt/test/tsan/lit.site.cfg.py.in     |  1 +
  compiler-rt/test/tsan/shadow_evictions.c     |  4 +-
- llvm/docs/TSanAnalysesAudit.md               | 20 ++++-
- 13 files changed, 211 insertions(+), 62 deletions(-)
+ 12 files changed, 193 insertions(+), 60 deletions(-)
 
 diff --git a/compiler-rt/lib/tsan/rtl/CMakeLists.txt b/compiler-rt/lib/tsan/rtl/CMakeLists.txt
 index 3bfc34ca9441..27066ef99f99 100644
@@ -492,42 +491,3 @@ index aaadbe66aa4d..c2d9401e8c86 100644
  // RUN: %clang_tsan -O1 %s -o %t
  // RUN: %env_tsan_opts=print_evictions=1 %run %t 2>&1 | FileCheck %s
  // RUN: %run %t 2>&1 | FileCheck %s --check-prefix=QUIET --allow-empty
-diff --git a/llvm/docs/TSanAnalysesAudit.md b/llvm/docs/TSanAnalysesAudit.md
-index d969847a0e2f..0f4847939eeb 100644
---- a/llvm/docs/TSanAnalysesAudit.md
-+++ b/llvm/docs/TSanAnalysesAudit.md
-@@ -498,9 +498,9 @@ Lines as of b4bf8b8f4613.
- | `__tsan_active_thread_count` (tsan_rtl.cpp:35; `ThreadCreate` :117 `+1`, `ThreadJoin` :320 `-1`, both `seq_cst`) | counter for the dynamic guard | sound (decrement at join, not exit; detach/fork over-count) |
- | `InterceptorEnabled` (sanitizer_common.cpp:23, THREADLOCAL) and its six readers | skip a string/memory interceptor for local operands | sound (real call still performed); RT-1 note |
- | `MutexLock/ReadLock` `process_lock` guards (tsan_rtl_mutex.cpp) | ReX bookkeeping only with `g_filter` | sound (1af068d46cae) |
--| ReX filter (`tsan_filter.*`, `filter_ctx`) | research code | fixed:RT-2 (0d63553b3e43): behind `COMPILER_RT_TSAN_REX_FILTER` (default OFF); with OFF, upstream's `tsan_rtl_mutex.cpp` compiled with this tree's headers is byte-identical except `__LINE__` immediates, `ThreadState` has upstream's members, `tsan_rtl_access.cpp` differs by `NoteEviction` and its two call sites only; the dead RUN-less `ReXFilter/` tests are deleted (previously: compiled in, hooks dead, `enable_filter=1` paid and never filteredcal |
-+| ReX filter (`tsan_filter.*`, `filter_ctx`) | research code | fixed:RT-2 (0d63553b3e43): behind `COMPILER_RT_TSAN_REX_FILTER` (default OFF); with OFF, upstream's `tsan_rtl_mutex.cpp` compiled with this tree's headers is byte-identical except `__LINE__` immediates, `ThreadState` has upstream's members, `tsan_rtl_access.cpp` differs by `NoteEviction` and its two call sites only (and since the performance pass not even by those: see the `NoteEviction` row); the dead RUN-less `ReXFilter/` tests are deleted (previously: compiled in, hooks dead, `enable_filter=1` paid and never filteredcal |
- | `__tsan_enable/__tsan_disable` (tsan_interface.inc) | no-op symbols | fixed:RT-2 (the racy `int GV` counter, the `MemoryRangeFreed` VPrintf and the CheckRaces debug prints are gone) |
--| `NoteEviction` (tsan_rtl_access.cpp, eviction branch of both `CheckRaces`), `evict_total` / `evict_concurrent_foreign` / `evict_concurrent_foreign_plain`, flags `print_evictions`, `trace_evictions`, `evict_watch` (per-granule counters, 248f45c260ef) | measure the bounded-shadow loss channel: overwrites of another thread's uncovered access | P3 implemented (5eca63015f63); default path unchanged except one call on the slow branch; the uncovered evictions in lock-heavy code are the interceptors' atomic reads on the mutex word, hence the plain subset | shadow_evictions.c |
-+| `NoteEviction` (tsan_rtl_access.cpp, eviction branch of both `CheckRaces`), `evict_total` / `evict_concurrent_foreign` / `evict_concurrent_foreign_plain`, flags `print_evictions`, `trace_evictions`, `evict_watch` (per-granule counters, 248f45c260ef) | measure the bounded-shadow loss channel: overwrites of another thread's uncovered access | P3 implemented (5eca63015f63); **fixed:RT-3** (performance pass, branch `perf/runtime-counters`): the counters were an unconditional lock-prefixed increment on one process-global cache line per eviction and an out-of-line call inside the inlined `CheckRaces`, which cost every `__tsan_read*/write*` a three-register callee-saved prologue on its fast path — stock TSan ran ~1.4× slower than the paper compiler's (SQLite threadtest3; 2.67× on `checkpoint_starvation_1`, 3.0e8 evictions in 10 s). Now behind `COMPILER_RT_TSAN_EVICTION_STATS` (default OFF): with OFF every symbol of `tsan_rtl_access.cpp` is byte-identical to upstream c609043dd009 compiled with the same command line, except the fork-only `__tsan_enable/__tsan_disable` and one `CHECK` line immediate in `DoReportRaceV`; with ON the counters are per-thread plain increments handed to `Context` at thread finish, the watch/trace work out of line (`preserve_most`), and the access callbacks keep one callee-saved register (`rbx`) — a measurement build. The uncovered evictions in lock-heavy code are the interceptors' atomic reads on the mutex word, hence the plain subset | shadow_evictions.c (`REQUIRES: tsan-eviction-stats`) |
- 
- ## Verification on the final tree
- 
-@@ -622,6 +622,22 @@ named in its row.
- 
- 
- 
-+## Performance pass (2026-09-05, separate branches off 729521af8965)
-+
-+Prompted by Stage A of the authors' measurements: (1) `sql_yacc.cc` compiles for 3 h 02 min
-+under `-tsan-use-escape-analysis-global` (16–55 s without) — the escape
-+analysis's per-function fixpoint, not its verdicts; (2) stock TSan on this
-+tree ~1.4× slower than the paper compiler's — the eviction counters (RT-3
-+above); (3) after the soundness fixes no configuration beats stock by much
-+(memcached 0.80 with peeling and summaries, FFmpeg 0.83 with summaries,
-+SQLite/Redis/MySQL ≈ 1.0), because the paper's dominance yield came from
-+the unsound location test. Nothing here lands on the development branch; each branch
-+carries its own tests, static-count delta and frozen copy.
-+
-+| branch | change | gate and measurement |
-+|---|---|---|
-+| `perf/runtime-counters` | RT-3: counters behind `COMPILER_RT_TSAN_EVICTION_STATS` (OFF), per-thread when ON | objdump per-symbol identity with upstream (above); check-tsan OFF/ON: <RT3-CHECK> |
-+
- ## Commit map after the history consolidation (2026-09-03)
- 
- The hashes cited above are those of the working history, preserved as

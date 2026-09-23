@@ -1,4 +1,4 @@
-From b7c8a8adfa7bd554196f0251a9ca3a3bae9b7ebf Mon Sep 17 00:00:00 2001
+From f44de24c49bd5b8b5bb75460f7f0847ec502ceb6 Mon Sep 17 00:00:00 2001
 From: Alexey Paznikov <apaznikov@gmail.com>
 Date: Tue, 15 Sep 2026 15:51:39 +0800
 Subject: EA: evaluate a block only when a predecessor changed; a fail-closed

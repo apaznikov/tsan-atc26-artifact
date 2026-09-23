@@ -1,45 +1,15 @@
-From 208f9167a0474e933b92c7ced21b93faf33792cd Mon Sep 17 00:00:00 2001
+From f4703cbd247b44d511249822df9cfac3625b4d6f Mon Sep 17 00:00:00 2001
 From: Alexey Paznikov <apaznikov@gmail.com>
 Date: Mon, 14 Sep 2026 19:59:35 +0800
 Subject: EA: the arguments of a call whose result escapes are analysed too
  (shape 19)
 
 ---
- llvm/docs/TSanAnalysesAudit.md                |  4 +-
  llvm/lib/Analysis/EscapeAnalysis.cpp          | 10 ++-
  .../escape-arg-of-escaped-result-call.ll      | 73 +++++++++++++++++++
- 3 files changed, 85 insertions(+), 2 deletions(-)
+ 2 files changed, 82 insertions(+), 1 deletion(-)
  create mode 100644 llvm/test/Instrumentation/ThreadSanitizerNew/escape-arg-of-escaped-result-call.ll
 
-diff --git a/llvm/docs/TSanAnalysesAudit.md b/llvm/docs/TSanAnalysesAudit.md
-index 61188ef2a414..56e27bf0728d 100644
---- a/llvm/docs/TSanAnalysesAudit.md
-+++ b/llvm/docs/TSanAnalysesAudit.md
-@@ -40,6 +40,7 @@ commit and a positive control that still elides. Reach is measured per commit
- | 16 | dominance across `qsort` whose comparator releases a lock that another thread acquires before writing the location (the sync-free-default decision, closed 2026-09-04; reproduced on 3d70ff61f640 by `elim-by-dominance-tli-sync-free-table.ll`) | `TLI::isSyncFree` answered true for every library function its blocklist did not name — every file, directory and time system call, `qsort`, `strtok`, the `_unlocked` stream family | DE-6 — fixed 92f2b95e9d83 |
- | 17 | a store after `__kmpc_fork_call` counted as protected although the microtask, which the fork runs on the calling thread too, released the lock (found in the STC-3 design review; reproduced on 3d70ff61f640 by `fork-call-runs-on-caller.ll`) | LO's callback exemption assumed every known thread creator runs its routine only on the new thread | LO-7 — fixed 729521af8965 |
- | 18 | `f(&local, &slot)` where `f` stores its first argument through its second; the caller publishes the slot's content and starts a thread that writes through it; the caller's later store to `local` was elided (found in the performance-pass design review; reproduced on 729521af8965 by `escape-callee-out-param.ll`) | the bottom-up summary recorded the stored argument as escaping only by the seed bit `PTR_ARG_ALIASING`, which callers mask out as "merely an argument" | EA-10 — fixed on the performance branch (commit `EA: a pointer stored through an argument has escaped to the caller`) |
-+| 19 | `%r = call ptr @f(ptr %local)` where `f` stores its argument to a global and returns an escaped pointer; a thread writes through the global; the caller's later store to `local` was elided (found while writing the budget test; reproduced on 729521af8965 by `escape-arg-of-escaped-result-call.ll`; the void-returning callee was handled) | `getEscInfoCall` answered "the result escapes" for every pointer operand of such a call, so its arguments were never classified; **fixed:EA-11** (shape 19: the escaped-result answer only on the callee operand; arguments classified) | EA-11 — fixed on the performance branch (commit `EA: the arguments of a call whose result escapes are analysed too`), escape-arg-of-escaped-result-call |
- 
- ## Design versus paper
- 
-@@ -164,7 +165,7 @@ a field of an escaped object" only in one order (`fixed:EA-3`), reason bits
- lost (`fixed:EA-1`, `fixed:EA-4`), unknown objects dropped (`fixed:EA-5`),
- unlisted opcodes and loaded pointers with no recorded pointee
- (`fixed:EA-6`), argument escape for functions reached other than by a direct
--call (`fixed:EA-7`), library retention table (`fixed:EA-8`). A pointee stored through a pointer that is external only by being an argument now carries `GPTR_ALIASING` beside the seed bit, so the callers' mask cannot erase the escape — `fixed:EA-10` (performance branch; shape 18).
-+call (`fixed:EA-7`), library retention table (`fixed:EA-8`). A pointee stored through a pointer that is external only by being an argument now carries `GPTR_ALIASING` beside the seed bit, so the callers' mask cannot erase the escape — `fixed:EA-10` (performance branch; shape 18). The escaped-result answer of a call is now given once, on the callee operand, so the argument operands of a call whose returned pointer escapes go through the ordinary classification — `fixed:EA-11` (performance branch; shape 19).
- 
- ### DE — dominance elimination (`3b-redundancy.tex`, `appendix/de-proofs.tex`)
- 
-@@ -639,6 +640,7 @@ carries its own tests, static-count delta and frozen copy.
- |---|---|---|
- | `perf/runtime-counters` | RT-3: counters behind `COMPILER_RT_TSAN_EVICTION_STATS` (OFF), per-thread when ON | objdump per-symbol identity with upstream (above); check-tsan OFF/ON: <RT3-CHECK> |
- | `perf/ea-compile-time` (first commit) | EA-10, shape 18: the out-parameter escape | `escape-callee-out-param.ll` fails on 729521af8965 at both checks |
-+| `perf/ea-compile-time` (second commit) | EA-11, shape 19: arguments of an escaped-result call | `escape-arg-of-escaped-result-call.ll` fails on 729521af8965 |
- 
- ## Commit map after the history consolidation (2026-09-03)
- 
 diff --git a/llvm/lib/Analysis/EscapeAnalysis.cpp b/llvm/lib/Analysis/EscapeAnalysis.cpp
 index 1bbdfee14e05..c249ad0f9321 100644
 --- a/llvm/lib/Analysis/EscapeAnalysis.cpp

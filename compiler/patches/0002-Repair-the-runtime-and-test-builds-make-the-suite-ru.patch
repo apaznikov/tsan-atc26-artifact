@@ -1,4 +1,4 @@
-From e6c585820dd978ec40cd2b1b2c7800f718abf0a4 Mon Sep 17 00:00:00 2001
+From 000408e5e0fd398d3059dcaac3c16b21f4902498 Mon Sep 17 00:00:00 2001
 From: Alexey Paznikov <apaznikov@gmail.com>
 Date: Mon, 14 Sep 2026 19:59:29 +0800
 Subject: Repair the runtime and test builds; make the suite runnable per

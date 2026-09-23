@@ -1,9 +1,7 @@
 # Our own evaluator-style runs
 
 Every time we ran the artifact the way an evaluator runs it (a fresh clone, the container, N = 2 at the
-default configurations unless noted), with what `harness/tools/perf/compare_with_claims.py` judged. The
-criterion and the comparison condition are in `PERFORMANCE.md` ("The comparison condition", "Match criterion for every
-configuration row"). These runs support no claim and are not
+default configurations unless noted), with what `harness/tools/perf/compare_with_claims.py` judged against the campaign's intervals. These runs support no claim and are not
 shipped, except the SQLite N = 5 leg (`data/perf/n2-spread-sqlite-n5-20260918`); the figures are what the
 comparator printed. "Ours" is the Intel Xeon w9-3495X the intervals were measured on; "second host" is an
 AMD EPYC 9115 (2 sockets x 16 cores x 2 threads).
@@ -36,7 +34,7 @@ on it memcached's instrumented runs split between two modes about 15 per cent ap
 whichever mode each pair drew (0.942 one day, 1.162 the next), while in run 9, on the campaign's shape, all
 eight instrumented runs landed in one mode, and in runs 9 and 10 both memcached rows fell inside. What does not
 travel is Redis's DynSTC cost: that row read 0.971, 0.977, 0.939 and 1.066 there, and the N = 5 curves on that
-host (`PERFORMANCE.md`, the Redis curves) contain 1.0 at every client count. In run 10 both Redis rows moved together because
+host (`data/perf/sweep-amd-f3deebfbab60/`) contain 1.0 at every client count. In run 10 both Redis rows moved together because
 stock alone moved (slowdown against native 8.54 in run 9 and 9.59 in run 10, against 9.09 and 9.00 for DynSTC
 and 8.66 and 8.55 for AllOpt with peeling); when several rows of one application fall outside on the same side,
 check each configuration's slowdown against native before reading the ratios. FFmpeg's DynSTC gain appeared in

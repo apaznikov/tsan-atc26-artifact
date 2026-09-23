@@ -1,4 +1,4 @@
-From 58f8864d189472f819a69bdfd655a8cd6bf143f6 Mon Sep 17 00:00:00 2001
+From 6a50e5bd46734ae4a7ea3e12e9f388ebdd4dad81 Mon Sep 17 00:00:00 2001
 From: Alexey Paznikov <apaznikov@gmail.com>
 Date: Mon, 14 Sep 2026 19:59:35 +0800
 Subject: Test: anchor the function names in unknown-external-summary.ll

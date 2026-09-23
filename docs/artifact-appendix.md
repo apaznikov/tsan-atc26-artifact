@@ -1,12 +1,12 @@
 # Artifact Appendix
 
 The artifact's abstract, scope, requirements and evaluation workflow. Numbers here are the ones in
-`CLAIMS.md` and `PERFORMANCE.md` and nowhere else.
+`CLAIMS.md` and nowhere else.
 
 ## Abstract
 
 The artifact contains the modified LLVM/ThreadSanitizer compiler the paper describes, as a patch
-series over a pinned upstream commit; the test suites and audit ledger for its five static analyses;
+series over a pinned upstream commit; the test suites for its five static analyses;
 the benchmark harness for five applications; the runs every claim rests on, with the conditions each was
 taken under; and one script per experiment. A container builds the compiler from the patch series,
 asserts that the reconstructed source tree hashes to ours, and checks that the compiler emits the same
@@ -32,8 +32,7 @@ The artifact is submitted for the Available and Functional badges. Supported by 
 - **Bounded shadow state**: the occupied-granule experiment, which a script re-runs, and the two-race
   experiment, recorded (`CLAIMS.md` section 6).
 
-Runtime performance, re-measured with this compiler, ships in `PERFORMANCE.md` and is not submitted for
-evaluation.
+The performance campaign's runs ship in `data/perf/` and are not submitted for evaluation.
 
 Not supported, and stated in `CLAIMS.md` section 7: the submitted version's static-reduction figures, executed
 instrumentation per unit of work, memory overhead, the ReX comparison and the access-trace oracle, Chromium,
@@ -42,7 +41,7 @@ compilers they name (`CLAIMS.md` sections 1 and 6).
 
 ## Which version of the paper the artifact describes
 
-The camera-ready, which reports performance re-measured with the compiler released here (`PERFORMANCE.md`).
+The camera-ready.
 
 ## Contents, hosting and requirements
 
@@ -55,8 +54,8 @@ Any x86-64 Linux host with Docker, 8 processors, 16 GB of memory and 20 GB of di
 deterministic. The container build fetches upstream LLVM with a shallow clone and compiles it: measured with
 `--no-cache`, 14m52s at the derived default of 25 jobs on our host and 24m38s at 8 jobs (mostly a fixed
 serial head: clone, patches, configure and the runtime stage do not scale with jobs). The optional performance
-experiments run on any processor count, are compared with our intervals only with 48 processors pinned, and
-need a machine doing nothing else; ours was an Intel Xeon w9-3495X, 56 cores and 112 threads, 250 GB, Ubuntu
+experiments run on any processor count, are comparable with the campaign's runs only with 48 processors
+pinned, and need a machine doing nothing else; ours was an Intel Xeon w9-3495X, 56 cores and 112 threads, 250 GB, Ubuntu
 24.04, with benchmarks pinned to 24 physical cores with both SMT threads of each (48 logical processors).
 
 ## Set-up and basic test
@@ -93,7 +92,7 @@ Performance is optional, not submitted for evaluation, and needs the hardware ab
 runs each, a point estimate per row) it is about 2 h 30 min for Redis, memcached, FFmpeg and SQLite
 together, and the whole Reproduced tier about 3 hours (2 h 38 min on our host); everything at fourteen
 configurations is about 11 hours of runs, 14 with the builds; our own five-run setting, which produces the
-confidence intervals in `PERFORMANCE.md`, is a variable away and twice as long:
+campaign's confidence intervals, is a variable away and twice as long:
 
 ```
 ./docker/run.sh scripts/40-perf.sh <redis|memcached|sqlite|ffmpeg|mysql>

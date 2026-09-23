@@ -10,9 +10,9 @@
 #                                64 processors, 48 min on 8).
 #   ./evaluate.sh reproduced     Optional: the whole functional tier first, then the performance
 #                                subset, Redis, memcached, FFmpeg and SQLite at the defaults (four configurations,
-#                                two runs), compared with the intervals PERFORMANCE.md ships. About 3 hours (2 h 38 min
-#                                measured on our host). Runs on any processor count; the comparison with our
-#                                intervals needs the campaign's shape pinned, 24 physical cores with both SMT
+#                                two runs), ending with this run's tables. About 3 hours (2 h 38 min measured
+#                                on our host). Runs on any processor count; to be comparable with the campaign's
+#                                runs it needs the campaign's shape pinned, 24 physical cores with both SMT
 #                                threads (48 logical processors, chosen here when the machine has them), and a
 #                                machine that is otherwise idle.
 #   ./evaluate.sh everything     reproduced at all fourteen configurations, plus MySQL. About 14 hours.
@@ -33,7 +33,7 @@
 # README documents, called in the documented order; this file adds nothing else.
 # Environment: ART_CPUSET (pin the performance runs; our runs used 48 processors; unset, the script pins 48 of
 # the processors the Docker daemon grants when there are that many), ART_RUNS (2 by default, 5 for intervals),
-# ART_FFMPEG_CLIP_URL (the reference clip; without it FFmpeg's rows are timed but not compared), ART_JOBS
+# ART_FFMPEG_CLIP_URL (the reference clip; without it FFmpeg is timed on a regenerated input), ART_JOBS
 # (derived by env.sh); see env.sh for the rest.
 set -uo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -111,10 +111,9 @@ autopin=0
 if [ "$perf_tier" = 1 ]; then
   echo
   echo "Four things to know about the performance tier (it starts right after them; --plan lists the steps without starting):"
-  echo "  1. Machine. Any processor count runs. The comparison with our intervals is made on the campaign's shape,"
-  echo "     24 physical cores with both SMT threads of each pinned (48 logical processors; memcached's thread count"
-  echo "     follows the logical count; with fewer, its rows are reported, not judged), and on a machine on which"
-  echo "     nothing else runs: the disturbance gate retires every cell measured under foreign load (docs/confounds.md)."
+  echo "  1. Machine. Any processor count runs. The campaign ran on 24 physical cores with both SMT threads of each"
+  echo "     pinned (48 logical processors; memcached's thread count follows the logical count), on a machine on which"
+  echo "     nothing else ran: the disturbance gate retires every cell measured under foreign load (docs/confounds.md)."
   # Our intervals describe 24 physical cores with both SMT siblings (48 logical, 4-27 and 60-83 on our host,
   # siblings n and n+56), and the workload's thread counts follow from the logical count
   # (docs/campaign-parameters.md). So, unless the caller chose a set, pin that shape when the machine has it:
@@ -123,7 +122,7 @@ if [ "$perf_tier" = 1 ]; then
   # and a request outside the grant is clipped). The first 48 granted would be 4-51 on our host: 48 distinct
   # cores with no SMT contention, twice the campaign's compute under the same logical count. Without 24 such
   # pairs, the first 48 granted, labelled as a different shape.
-  # A smaller machine runs unpinned, not gate-checked, memcached's rows reported rather than compared.
+  # A smaller machine runs unpinned and not gate-checked.
   if [ -z "${ART_CPUSET:-}" ]; then
     ncpu_here=$(nproc 2>/dev/null || echo 0)
     if [ "$ncpu_here" -ge 48 ]; then
@@ -135,8 +134,7 @@ if [ "$perf_tier" = 1 ]; then
     else
       echo "     ART_CPUSET not set and $ncpu_here processors here (fewer than 48): the run uses every processor the"
       echo "     container sees and is not gate-checked. Its processor-set shape differs from the campaign's (24 cores"
-      echo "     with both SMT threads), so every row is reported with its ratio against stock and the reason, and none"
-      echo "     is judged: the tier then ends 'COMPARISON NOT APPLICABLE ON THIS MACHINE', which is not a failure."
+      echo "     with both SMT threads), which the tables record."
     fi
   else
     echo "     ART_CPUSET=$ART_CPUSET (our runs used 48 processors, 4-27 and 60-83 on our host)."
@@ -146,15 +144,14 @@ if [ "$perf_tier" = 1 ]; then
   echo "     tsan-stmt = DynSTC. Each configuration row is a ratio against tsan: above 1.0 is faster than stock."
   if [ -n "${ART_FFMPEG_CLIP_URL:-}" ]; then
     echo "  3. FFmpeg. The reference clip is fetched from the artifact's GitHub release (78 MB) and verified by sha256,"
-    echo "     so its rows are compared. Export ART_FFMPEG_CLIP_URL= (empty) to regenerate it from the Blender source"
-    echo "     (557 MB) instead; those rows are then 'not comparable' by design (docs/ffmpeg-input.md)."
+    echo "     the campaign's input. Export ART_FFMPEG_CLIP_URL= (empty) to regenerate it from the Blender source"
+    echo "     (557 MB) instead; those rows then time a different input (docs/ffmpeg-input.md)."
   else
-    echo "  3. FFmpeg. ART_FFMPEG_CLIP_URL is empty: the run regenerates the input from the Blender source (557 MB), its"
-    echo "     timings are valid, and its three rows print 'not comparable' by design (docs/ffmpeg-input.md)."
+    echo "  3. FFmpeg. ART_FFMPEG_CLIP_URL is empty: the run regenerates the input from the Blender source (557 MB); its"
+    echo "     timings are valid and time a different input from the campaign's (docs/ffmpeg-input.md)."
   fi
-  echo "  4. The end. The tier ends with one line per configuration row of this run against the interval PERFORMANCE.md"
-  echo "     ships for it (IN; OUT with the distance; not judged; not comparable) and 'N rows judged'. What an OUT"
-  echo "     row can mean, and the five-run re-check for it, is PERFORMANCE.md, 'Match criterion'."
+  echo "  4. The end. The tier ends with this run's summary table per application (results/perf-<app>-<stamp>/"
+  echo "     perf_summary.md). It judges nothing; the campaign's own tables are under data/perf/campaign-f3deebfbab60/."
   # No question: a reader who named a tier meant it, --plan exists for looking first, and a prompt breaks
   # every run under nohup, tmux scripts and CI. --yes is accepted and ignored.
   : "$yes"
@@ -193,7 +190,7 @@ resolve_autopin() {
   else
     chosen=$(printf '%s\n' "$list" | head -48 | compress_cpus)
     cores=$(for c in $(printf '%s\n' "$list" | head -48); do echo "$(cat /sys/devices/system/cpu/cpu$c/topology/physical_package_id 2>/dev/null):$(cat /sys/devices/system/cpu/cpu$c/topology/core_id 2>/dev/null)"; done | sort -u | wc -l)
-    shape="48 logical processors on $cores physical cores: NOT the campaign's shape (24 cores with both SMT threads), so the rows are labelled with it and the memcached rows are not compared"
+    shape="48 logical processors on $cores physical cores: NOT the campaign's shape (24 cores with both SMT threads), so the rows are labelled with it"
   fi
   printf '%s\t%s' "$chosen" "$shape"
 }
@@ -201,7 +198,7 @@ resolve_autopin() {
 mkdir -p results
 log="results/evaluate-$tier-$(date -u +%Y%m%d-%H%M%S).log"
 echo "log: $log  (the stamp is UTC, like the results directories written inside the container)"; echo
-start_all=$(date +%s); verdict=PASS; failed=""; compared=""
+start_all=$(date +%s); verdict=PASS; failed=""
 i=0
 for s in "${steps[@]}"; do
   i=$((i+1)); IFS='|' read -r label t cmd <<< "$s"
@@ -274,85 +271,48 @@ for s in "${steps[@]}"; do
   else echo "      ... last 6 of $n lines (all of them in the log):"; tail -6 "$step_out" | sed 's/^/      /'; fi
   rm -f "$step_out"
 done
-# The performance tiers end with the comparison an evaluator came for: every row this run produced
-# against the interval PERFORMANCE.md ships for it. The script reads the intervals out of PERFORMANCE.md's own
-# tables and the expected thread counts out of the shipped campaign runs, so nothing is hardcoded; its
-# silence is never a pass, six of its nine output states are refusals, and its "rows judged" line is
-# the one to read first. A judged row outside its interval is reported as such, not as a failure of
-# the artifact's plumbing, and the exit status carries it.
+# The performance tiers end with the summary table of each application this run measured. A performance tier
+# that produced no results is a failure, not a silent skip.
 if [ "$perf_tier" = 1 ] && [ "$verdict" != FAIL ]; then
   # results/ literally, with a trailing slash: docker/run.sh always mounts ./results (ART_RESULTS does not cross
   # the container boundary), and a symlinked results/ pointing at a larger disk is followed only with the slash.
   trees=$(find results/ -maxdepth 1 -name 'perf-*' -newermt "@$start_all" 2>/dev/null | sort | tr '\n' ' ')
   if [ -z "$trees" ]; then
-    # The comparison is why this tier exists. If the run produced no performance tree to compare, that
-    # is a failure of the tier and not a silent skip: without this the whole tier could report PASS
-    # having compared nothing at all.
     echo
-    echo "No performance results were produced by this run, so nothing could be compared with PERFORMANCE.md."
+    echo "No performance results were produced by this run."
     echo "Looked for directories named perf-* under results/ created after the run began."
-    verdict=FAIL; failed="the performance tier produced no results to compare"
+    verdict=FAIL; failed="the performance tier produced no results"
   fi
-  if [ -n "$trees" ]; then
+  for t in $trees; do
     echo
-    echo "Comparison with the intervals in PERFORMANCE.md:"
-    ./docker/run.sh python3 harness/tools/perf/compare_with_claims.py PERFORMANCE.md $trees 2>&1 | tee -a "$log"
-    cmp_rc=${PIPESTATUS[0]}
-    # 0: every judged row inside. 2: nothing could be compared for a machine reason (the processor-set shape,
-    # a thread count, the input) and nothing was outside: the run is valid and unjudged, which is not a failure
-    # and not a pass. Anything else: a judged row outside, no table / no shipped data to compare with, or 64, the
-    # comparator's usage error (cannot happen here: it is called only with trees), read as not clean on purpose.
-    case "$cmp_rc" in 0) ;; 2) compared=NOTAPPLICABLE;; *) compared=OUTSIDE;; esac
-  fi
+    if [ -f "${t%/}/perf_summary.md" ]; then tee -a "$log" < "${t%/}/perf_summary.md"
+    else echo "no perf_summary.md in $t" | tee -a "$log"; fi
+  done
 fi
 dt=$(( $(date +%s) - start_all ))
 echo
 {
 if [ "$dt" -ge 3600 ]; then took="$((dt/3600))h$(( (dt%3600)/60 ))m"; else took="$((dt/60))m$(printf %02d $((dt%60)))s"; fi
 where="(tier $tier, $took; full log in $log)"
-if [ "$verdict" = PASS ] && [ "${compared:-}" = NOTAPPLICABLE ]; then
-  echo "evaluate.sh: PASS on every step; COMPARISON NOT APPLICABLE ON THIS MACHINE  $where"
-  echo "Every step ran and passed. No performance row could be compared with our intervals, for the reason each row"
-  echo "prints (this machine's processor-set shape, thread count or input is not the campaign's); the run is a valid"
-  echo "measurement and its ratios stand beside the intervals above, unjudged. To be judged, pin 24 physical cores with"
-  echo "both SMT threads (48 logical processors) with ART_CPUSET, as PERFORMANCE.md describes. Exit status 3."
-elif [ "$verdict" = PASS ] && [ -n "${compared:-}" ]; then
-  # Not "PASS, rows outside": every step ran, and the comparison is the tier's question, so the line
-  # must say the comparison did not come back clean. The exit status says the same.
-  echo "evaluate.sh: PASS on every step, COMPARISON NOT CLEAN  $where"
-  echo "Every step ran and passed, and the comparison above did not come back clean: a judged row lies outside"
-  echo "its shipped interval, or no row could be judged at all. Its own output says which. PERFORMANCE.md"
-  echo "('Match criterion') says what an outside row can mean and gives the five-run re-check for it."
-else
-  vline="$verdict"
-  # Both facts when both hold: a skipped check and a comparison that did not come back clean are two answers,
-  # and the last line must not drop the second.
-  [ "$verdict" = INCOMPLETE ] && [ "${compared:-}" = OUTSIDE ] && vline="INCOMPLETE, and COMPARISON NOT CLEAN"
-  [ "$verdict" = INCOMPLETE ] && [ "${compared:-}" = NOTAPPLICABLE ] && vline="INCOMPLETE; COMPARISON NOT APPLICABLE ON THIS MACHINE"
-  echo "evaluate.sh: $vline  $where"
-  case "$verdict" in
-    PASS) case "$tier" in
-      check)
-        echo "Every step ran and passed: the image is our compiler built from the patch series, each analysis removes what it"
-        echo "claims and the race is still reported, and the shipped tables follow from the shipped runs. This is the check,"
-        echo "not the Functional badge: the regression suite (no configuration loses a race) runs in ./evaluate.sh functional." ;;
-      functional)
-        echo "Every step ran and passed: the image is our compiler built from the patch series and emits the instrumentation of the"
-        echo "measured compiler; the 23 soundness shapes hold; the regression suite loses no race in twelve configurations; every"
-        echo "shipped run is attributable; the shipped tables follow from the shipped runs (CLAIMS.md says which row each step checks)."
-        echo "This tier says nothing about speed." ;;
-      *)
-        echo "Every step ran and passed, and every judged performance row lies inside its shipped interval (the table above)." ;;
-    esac ;;
-    INCOMPLETE) echo "Nothing failed, but a check could not be made here (its prerequisite is absent); the log names it. A skipped check is neither a pass nor a failure."
-                [ "${compared:-}" = OUTSIDE ] && echo "And the comparison above did not come back clean: a judged row lies outside its shipped interval, or no row could be judged; PERFORMANCE.md ('Match criterion') says what that can mean."
-                [ "${compared:-}" = NOTAPPLICABLE ] && echo "And no performance row could be compared on this machine (each row prints why); the ratios stand unjudged." ;;
-    FAIL) echo "Stopped at: $failed. docs/troubleshooting.md lists the failures we know; the log has the rest." ;;
-  esac
-fi
+echo "evaluate.sh: $verdict  $where"
+case "$verdict" in
+  PASS) case "$tier" in
+    check)
+      echo "Every step ran and passed: the image is our compiler built from the patch series, each analysis removes what it"
+      echo "claims and the race is still reported, and the shipped tables follow from the shipped runs. This is the check,"
+      echo "not the Functional badge: the regression suite (no configuration loses a race) runs in ./evaluate.sh functional." ;;
+    functional)
+      echo "Every step ran and passed: the image is our compiler built from the patch series and emits the instrumentation of the"
+      echo "measured compiler; the 23 soundness shapes hold; the regression suite loses no race in twelve configurations; every"
+      echo "shipped run is attributable; the shipped tables follow from the shipped runs (CLAIMS.md says which row each step checks)."
+      echo "This tier says nothing about speed." ;;
+    *)
+      echo "Every step ran and passed. The performance tables above are this run's measurements; nothing judges them." ;;
+  esac ;;
+  INCOMPLETE) echo "Nothing failed, but a check could not be made here (its prerequisite is absent); the log names it. A skipped check is neither a pass nor a failure." ;;
+  FAIL) echo "Stopped at: $failed. docs/troubleshooting.md lists the failures we know; the log has the rest." ;;
+esac
 } | tee -a "$log"    # the verdict goes into the log too: a log that ends without it answers a different question
-# Exit status: 0 PASS with a clean comparison (or no comparison in this tier); 3 PASS on every step with the comparison
-# not applicable on this machine; 1 otherwise.
-if [ "$verdict" = PASS ] && [ -z "${compared:-}" ]; then exit 0; fi
-if [ "$verdict" = PASS ] && [ "${compared:-}" = NOTAPPLICABLE ]; then exit 3; fi
+# Exit status: 0 PASS; 1 otherwise.
+[ "$verdict" = PASS ] && exit 0
 exit 1

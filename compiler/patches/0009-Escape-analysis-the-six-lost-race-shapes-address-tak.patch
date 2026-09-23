@@ -1,4 +1,4 @@
-From 0abca023c5d8f3eb5adf5c9a406cc1daccd3d72a Mon Sep 17 00:00:00 2001
+From 0a359c12c0d1571d7f4ee5ece0654cdbe54656b6 Mon Sep 17 00:00:00 2001
 From: Alexey Paznikov <apaznikov@gmail.com>
 Date: Mon, 14 Sep 2026 19:59:31 +0800
 Subject: Escape analysis: the six lost-race shapes, address-taken arguments,
