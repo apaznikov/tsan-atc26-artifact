@@ -58,6 +58,27 @@ MC_PORT="${ART_MEMCACHED_PORT:-7777}"
 # describe -- and on this workload the thread count moves the result more than any compiler flag does.
 # One variable, used in the command and written to the record, so the two cannot disagree.
 case "${MC_THREADS:-}${MYSQL_THREADS:-}${FF_THREADS:-}" in "") THREADS_FROM_ENV=False;; *) THREADS_FROM_ENV=True;; esac
+# THE WORKLOAD KNOBS THAT ARE NOT THREAD COUNTS. A Redis arm at 256 clients and one at the default 50 were
+# indistinguishable in the record: threads_setting is "" for redis and sqlite, redis.sh never echoes the
+# redis-benchmark command line, and no other artefact carries it, so two arms differed only in the
+# launcher's environment. Recorded as a number, and ABSENT rather than empty when the application has no
+# such knob, because "" already had to stop meaning two things once (threads_setting, below). Each flag is
+# decided from its own variable so a stray export for another application cannot set it. The 50 and the 0
+# are redis.sh:338's and run_sqlite_test.sh's own defaults, repeated here on purpose: if either moves, this
+# moves with it. (tsan-paper found the gap, 23 Sep 2026.)
+case "$APP" in
+  redis)  KNOB_JSON='"redis_clients"';     KNOB_EFF="${REDIS_BENCH_CLIENTS:-50}"
+          case "${REDIS_BENCH_CLIENTS:-}" in "") KNOB_FROM_ENV=False;; *) KNOB_FROM_ENV=True;; esac;;
+  # NULL, NOT ZERO, when SQLITE_W1_THREADS is unset. Redis always runs at SOME client count, so its unset
+  # case has a true effective value (redis.sh's 50). SQLite's unset case is a DIFFERENT WORKLOAD -- the
+  # seven-subtest run, not walthread1 at some thread count -- so any number here would assert a thread
+  # count that was never chosen, and 0 is a value a caller could legitimately pass. The knob is still
+  # named, so "named with a null value" reads as "this application has the knob and did not use it",
+  # distinct from memcached's "no such knob". (tsan-paper's question, 23 Sep 2026.)
+  sqlite) KNOB_JSON='"sqlite_w1_threads"'; KNOB_EFF="${SQLITE_W1_THREADS:-null}"
+          case "${SQLITE_W1_THREADS:-}" in "") KNOB_FROM_ENV=False;; *) KNOB_FROM_ENV=True;; esac;;
+  *)      KNOB_JSON=null; KNOB_EFF=null; KNOB_FROM_ENV=False;;
+esac
 # THE CAMPAIGN'S RULE, NOT A FIXED NUMBER AND NOT NCPU/2. The campaign's parameter was a RULE -- threads
 # equal to the PINNED PROCESSORS, three quarters of them for sysbench (campaign-parameters.md R1) -- and on
 # the 48-CPU bench set the rule yields exactly the 48 and 36 the cells record. The defaults here had an
@@ -254,6 +275,7 @@ meta = {
   # The EFFECTIVE value, never the override: an empty string here used to mean "defaulted", which is
   # indistinguishable in the record from "not applicable", and both read as nothing worth checking.
   "uid": $(id -u),
+  "workload_knob": $KNOB_JSON, "workload_knob_value": $KNOB_EFF, "workload_knob_from_env": $KNOB_FROM_ENV,
   "threads_setting": "${THREADS_EFFECTIVE:-}",
   "threads_from_env": ${THREADS_FROM_ENV:-False},
 }

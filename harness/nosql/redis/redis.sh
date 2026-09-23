@@ -42,7 +42,6 @@ TRACE_RAM_ROOT="/dev/shm"
 TRACES_COPIED=false
 TRACE_PIPE_PID=""
 RESULTS_FILE="$RESULTS_DIR/compilation_time.txt"
-STATS_FILE="$RESULTS_DIR/instr_count.txt"
 TSAN_TMP_DIR="/tmp/__tsan__"                   # ThreadSanitizer temporary directory
 
 #------------------------------------------------------------------------------
@@ -87,7 +86,6 @@ BUILD_OPTIONS="${BUILD_OPTIONS:-ea-lo-st-swmr-stmt}"
 COMPILE=true
 TESTS=true
 TRACE_MODE=false
-COUNT_INSTRUCTIONS=false
 
 export TSAN_OPTIONS="report_bugs=0"
 
@@ -220,9 +218,6 @@ for arg in "$@"; do
             ;;
         trace)
             TRACE_MODE=true
-            ;;
-        --instr-count)
-            COUNT_INSTRUCTIONS=true
             ;;
     esac
 done
@@ -410,11 +405,6 @@ if [ "$COMPILE" = true ]; then
     mkdir -p "$RESULTS_DIR"
     echo "Compilation time (in seconds):" > "$RESULTS_FILE"
     log "Results file '$RESULTS_FILE' has been cleared."
-    # Clear/create stats file
-    if [ "$COUNT_INSTRUCTIONS" = true ]; then
-        echo "Instrumented instruction count:" > "$STATS_FILE"
-        log "Stats file '$STATS_FILE' has been cleared."
-    fi
     echo ""
 
     # Build loop
@@ -558,15 +548,6 @@ if [ "$COMPILE" = true ]; then
         echo "$OPTION: $duration" >> "../../$RESULTS_FILE"
         log "Result for '$OPTION' saved to $RESULTS_FILE"
 
-        # Summarize and save instruction stats
-        if [ "$COUNT_INSTRUCTIONS" = true ]; then
-            log "Summarizing instruction statistics for $OPTION"
-            instr_count=$(summarize_instr_stats.py)
-            log "Instrumented instructions: $instr_count"
-            echo "$OPTION: $instr_count" >> "../../$STATS_FILE"
-            log "Result for '$OPTION' saved to $STATS_FILE"
-        fi
-
         cd ../..
         log "----------------------------------------"
     done
@@ -689,7 +670,3 @@ fi
 
 log "Script finished successfully. All results are in $RESULTS_DIR"
 
-if [ "$TRACE_MODE" = true ] && [ -n "$LOCAL_TRACES_DIR" ]; then
-    cd "$LOCAL_TRACES_DIR" || exit 1
-    analyze_trace2_zst_in_current_dir.sh
-fi
