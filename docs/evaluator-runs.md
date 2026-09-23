@@ -139,8 +139,9 @@ what tells a moved baseline from a slower machine. A ratio of cell wall times is
 it weights an application's subtests by their duration where the headline weights them equally, and on Redis it
 reads 4.07 where the table reads 8.01.
 
-The same host again on 22 Sep 2026, the tree of the day (`8e63965`, the 16-thread FFmpeg default, the release
-clip), the set chosen by the script (0-23,32-55, the campaign's shape), no cell retired, 2 h 39 min: nine rows
+The same host again on 22 Sep 2026, the tree of the day (the 16-thread FFmpeg default and the release clip
+were both in it; this repository's history is one commit, so a hash of the tree as it was that day no longer
+exists), the set chosen by the script (0-23,32-55, the campaign's shape), no cell retired, 2 h 39 min: nine rows
 judged, three inside and six outside (the table above). Which side moved, read in the headline estimator from
 that run's own summary table, slowdown against native: stock ThreadSanitizer 8.54 on 20 Sep and 9.59 on 22 Sep,
 DynSTC 9.09 and 9.00, AllOpt with peeling 8.66 and 8.55. Stock is the only configuration that moved, by 12.3 per

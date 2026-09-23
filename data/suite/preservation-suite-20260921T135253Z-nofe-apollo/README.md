@@ -1,7 +1,7 @@
 # The regression suite with the upstream flag `-tsan-instrument-func-entry-exit=false`, K = 5 (21 Sep 2026)
 
 The suite gate behind the "Upstream flag (measured, not claimed)" section of `CLAIMS.md`: `scripts/30-preservation-suite.sh 5`
-on the second host (AMD EPYC 9115, 64 threads) from a scratch clone of the artifact at `c280f2b` whose
+on the second host (AMD EPYC 9115, 64 threads) from a scratch clone of the artifact, taken on 21 Sep, whose
 `data/preservation/lit-configurations.txt` had two rows appended, `nofe` and `AllOpt+peel+DynSTC+nofe` (the last two
 lines of `configurations.txt` here; the shipped matrix has twelve rows and does not carry them, because the flag is not
 one of the paper's configurations). Layout as `../preservation-suite-20260921T052239Z`: `failures.tsv` (configuration,
