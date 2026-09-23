@@ -1,17 +1,15 @@
 # Claims and how to check them
 
-Every claim the paper makes, the script that produces it, and what counts as a match. This file is
-the contract between the paper and this artifact: if a number is not here, the artifact does not
-claim it.
+Every claim the paper makes, the script that produces it, and what counts as a match. If a number is not
+here, the artifact does not claim it.
 
-Measurement provenance for every performance row: compiler `f3deebfbab60` (the image's `TSAN_AUDIT_HASH`),
-five applications, one discarded warm-up then N = 5 runs per configuration (our campaign; the artifact's
-default for an evaluator is N = 2, see "What an evaluator actually has to run"), pinned to 48 logical
-processors that are 24 physical cores with both SMT threads of each (CPUs 4-27 and 60-83 on our machine,
-siblings n and n+56), one measurement at a time in run-major order. The statistic is the geometric mean over an
-application's tests of per-test medians, with a 95% confidence interval from 2000 bootstrap
-resamples over runs (seed 1). Our machine: Intel Xeon w9-3495X, 56 cores / 112 threads, 250 GB
-RAM, Ubuntu 24.04, kernel 6.8.
+Every performance row: compiler `f3deebfbab60` (the image's `TSAN_AUDIT_HASH`); one discarded warm-up, then
+N = 5 runs per configuration (our campaign; an evaluator's default is N = 2, see
+"What an evaluator actually has to run"); pinned to 48 logical processors that are 24 physical cores with both SMT
+threads of each (CPUs 4-27 and 60-83 on our machine, siblings n and n+56); one measurement at a time, in run-major
+order. The statistic is the geometric mean over an application's tests of per-test medians, with a 95% confidence
+interval from 2000 bootstrap resamples over runs (seed 1). Our machine: Intel Xeon w9-3495X, 56 cores / 112 threads,
+250 GB RAM, Ubuntu 24.04, kernel 6.8. All campaign parameters: `docs/campaign-parameters.md`.
 
 ## Terms used below
 
@@ -32,21 +30,16 @@ RAM, Ubuntu 24.04, kernel 6.8.
   | `tsan-dom_peeling-ea-lo-st-swmr-stmt` | AllOpt with peeling and DynSTC; the tables print the name itself, for the reason recorded in `data/tools/perf/aggregate.py` |
   | suffix `-wp` | with whole-program summaries; defined for memcached, Redis and SQLite only |
   | suffix `-nofe` | with the upstream flag `-tsan-instrument-func-entry-exit=false`, not this paper's contribution (its own section below) |
-- **Cell, leg, root**: a cell is one application, one configuration, one run; a leg is one application's
-  sequence of cells in run-major order; a root is a directory of legs recorded under one compiler
-  (`data/perf/campaign-f3deebfbab60/primary`).
-- **Disturbed, retired, the gate**: every pinned cell records the busy share of the processors outside its
-  set. Above 0.10 the cell is disturbed, retired from the statistics and re-run; the retired cell ships
-  beside its replacement (`docs/confounds.md`).
-- **Headline column, resolvable column**: the headline is the geometric mean over all of an application's
-  subtests; the resolvable column is the same over the subtests whose run-to-run variation under stock
-  (the pooled coefficient of variation, with the threshold stated per application) is small enough to
-  resolve a change of a few per cent.
-- **Point estimate, interval, same side**: at N = 5 a row carries a 95% bootstrap interval; at N = 2 a
-  point only, compared against the shipped interval. For a row whose shipped interval excludes 1.0, "same
-  side" is whether the evaluator's value lies on the same side of 1.0 as ours.
-- **L1, L2, L3**: how closely two race reports must agree to count as the same race: kind and both stacks
-  with file and line (L1), the functions alone (L2), the location and its writer (L3).
+- **Cell, leg, root**: one application, configuration and run; one application's cells in run-major order; a
+  directory of legs recorded under one compiler (`data/perf/campaign-f3deebfbab60/primary`).
+- **Disturbed, retired, the gate**: a pinned cell whose processors outside its set were more than 0.10 busy is
+  retired from the statistics and re-run; it ships beside its replacement (`docs/confounds.md`).
+- **Headline column, resolvable column**: the geometric mean over all of an application's subtests, and over
+  the subtests stable enough under stock to resolve a change of a few per cent (section 5).
+- **Point estimate, interval, same side**: N = 5 gives a 95% bootstrap interval, N = 2 a point compared with the
+  shipped interval; "same side" of 1.0 as ours applies to rows whose shipped interval excludes 1.0.
+- **L1, L2, L3**: how closely two race reports must agree to count as the same race: kind and both stacks with
+  file and line (L1), the functions alone (L2), the location and its writer (L3).
 - **input_is_reference**: FFmpeg's input clip has the reference sha256; a regenerated clip is valid but its
   rows are not compared.
 - **Session drift**: byte-identical binaries measured days apart on one host differed by 14%; the
@@ -58,11 +51,11 @@ RAM, Ubuntu 24.04, kernel 6.8.
 
 | Claim | Script | Match criterion |
 |---|---|---|
-| No configuration loses a race that stock ThreadSanitizer reports, over ThreadSanitizer's own regression suite | `scripts/30-preservation-suite.sh` | exact: no candidate lost race. The vendored suite discovers 383 tests; `lit` marks 90 unsupported on this platform before anything is compiled (47 Darwin, 37 libdispatch, 1 libcxx and 5 behind their own feature gates, among them `getline_nohang.cpp`, unsupported from glibc 2.38 on; each named in `data/suite/unsupported/`), so 293 execute in each of 12 configurations, K repeats each, and a test counts as a candidate lost race only when it fails every repeat under a configuration and never fails under stock. Run with the shipped compiler (`f3deebfbab60`, K = 5, 12 configurations, 60 repeats; `data/suite/preservation-suite-20260921T052239Z`): 292 pass and 1 is expectedly failed, 0 fail and 0 time out in every one of the 60 repeats, every configuration always-fail = 0 and ever-fail = 0, so no candidate lost race; the same suite on a 64-processor AMD host, 0 and 0 in 60 repeats. An earlier run on the same compiler (`data/suite/preservation-suite-20260917T075005Z`, 0 failures in 60 repeats) predates the fix to the vendored lit configuration's glibc detection, so it has 91 unsupported and 292 executed (`docs/nondeterministic-tests.md`). Every number here is re-derivable from the shipped runs: their READMEs give the command for each |
-| The harness can detect a loss at all | `scripts/30-preservation-suite.sh --self-test` | required first: it runs a detector with load and store instrumentation switched off and requires the harness to report the losses. A suite reporting nothing looks the same whether races are preserved or the harness is blind |
-| Every race test reports the same race as under stock ThreadSanitizer (report keys at L1, kind and both stacks with file and line, and at L2, functions) | recorded, not re-run by the evaluator: a K = 5 replay of the executable tests (293 in that run) under the 12 configurations, keyed by `harness/tools/preservation/tsan_reports.py`, made on compiler `aa8a6dd8a2e8` and carried to the shipped `f3deebfbab60` on the verdict-identity evidence (the three commits between them change none of the 112 corpus rows, none of the 17 application configurations' site counts, and leave Redis's whole-program summaries byte-identical); the replay's output ships as `data/suite/replay-aa8a6dd8a2e8/` | on that run no L1 or L2 key differs on any test. Four tests land in the other bucket: `pthread_atfork_deadlock2.c` lost a report under STC alone (the only lost entry; a thread-leak diagnostic, not a data race), and `fd_location_closed.cpp` (under STC and AllOpt with peeling), `race_on_barrier2.c` (STC and DE) and `fork_atexit.cpp` (9 of the 11 compared configurations) gained one; the last three are the tests `docs/nondeterministic-tests.md` names as non-deterministic under stock itself. The replay's 293 is its own test set (the compiler source tree's suite), counted independently of the vendored suite in the first row. `scripts/30-preservation-suite.sh` compares pass and fail per test, not report text: `lit -q` does not capture the reports, so the shipped logs carry none. This row covers the twelve configurations listed below this table and not the rows measured with the upstream flag `-tsan-instrument-func-entry-exit=false`: that flag removes the shadow stack the report keys are built from (both frames at L1, the functions at L2, the writer and heap locations at L3), so for those rows report keys are not comparable, and their preservation rests on the suite's pass or fail per test and on the applications' race counts and kinds |
+| No configuration loses a race that stock ThreadSanitizer reports, over ThreadSanitizer's own regression suite | `scripts/30-preservation-suite.sh` | exact: no candidate lost race, that is, no test failing every repeat under a configuration and never under stock. Of the vendored suite's 383 tests `lit` marks 90 unsupported on this platform (47 Darwin, 37 libdispatch, 1 libcxx, 5 behind their own feature gates such as `getline_nohang.cpp`, unsupported from glibc 2.38 on; each named in `data/suite/unsupported/`), so 293 execute in each of 12 configurations, K repeats each. Shipped run (`f3deebfbab60`, K = 5, 60 repeats; `data/suite/preservation-suite-20260921T052239Z`): 292 pass and 1 is expectedly failed, 0 fail and 0 time out in every repeat, always-fail = 0 and ever-fail = 0 in every configuration; on a 64-processor AMD host, 0 and 0 in 60 repeats. An earlier run on the same compiler (`data/suite/preservation-suite-20260917T075005Z`, 0 failures in 60 repeats) predates the fix to the lit configuration's glibc detection: 91 unsupported, 292 executed (`docs/nondeterministic-tests.md`). Each run's README gives the command that re-derives its numbers |
+| The harness can detect a loss at all | `scripts/30-preservation-suite.sh --self-test` | required first: with load and store instrumentation switched off, the harness must report the losses; otherwise a silent suite cannot be told from a blind harness |
+| Every race test reports the same race as under stock ThreadSanitizer (report keys at L1 and L2) | recorded, not re-run by the evaluator: a K = 5 replay of the executable tests (293 in that run) under the 12 configurations on compiler `aa8a6dd8a2e8`, keyed by `harness/tools/preservation/tsan_reports.py` (`data/suite/replay-aa8a6dd8a2e8/`); it holds for `f3deebfbab60`, whose three extra commits change none of the 112 corpus rows and none of the 17 application configurations' site counts, and leave Redis's whole-program summaries byte-identical | no L1 or L2 key differs on any test. The other bucket: `pthread_atfork_deadlock2.c` lost a report under STC alone (the only loss; a thread-leak diagnostic, not a data race); `fd_location_closed.cpp` (STC, AllOpt with peeling), `race_on_barrier2.c` (STC, DE) and `fork_atexit.cpp` (9 of the 11 compared configurations) gained one, all three non-deterministic under stock itself (`docs/nondeterministic-tests.md`). The replay's 293 is the compiler source tree's suite, counted independently of the first row's. `scripts/30-preservation-suite.sh` compares pass and fail per test, not report text (`lit -q` captures no reports). Not for the `-nofe` rows: that flag removes the shadow stack the keys are built from (both frames at L1, the functions at L2, the writer and heap locations at L3); their preservation rests on the suite's pass or fail per test and on the applications' race counts and kinds |
 | No test that expects no report produces one | `scripts/30-preservation-suite.sh` | exact |
-| On the applications, no race site that stock ThreadSanitizer reports in every run is absent from an optimized configuration in every run | `scripts/31-preservation-apps.sh <app> 10` (N = 10 as we ran it; at the default N = 2 the script prints the frequencies and no verdict) | comparative, on your own runs, never against a fixed set: detection is schedule-dependent, so the script prints the per-site frequency (k of N) under stock and under each configuration and classifies each site by the configuration's count first: KEPT if the configuration reports it in at least one run, whatever stock's frequency; LOST if the configuration never reports it and stock reports it in every run; UNDETERMINED at this N if the configuration never reports it and stock reports it only in some runs, so an unlucky schedule cannot be told from a loss without more runs; and ONLY-OPTIMIZED if the configuration reports a site stock never does, which is labelled rather than dropped because the shadow-eviction effect can produce exactly that. It exits non-zero only on LOST. Measured on the shipped compiler `f3deebfbab60`, N = 10, configurations stock, the sound bundle and AllOpt with peeling, gating at L3 (`data/preservation/*/2026-09-17-shipped-f3deebfbab60/verdict-L3.txt`, all three levels printed). **SQLite: no site lost at any level**; at L3 three sites (`walRestartHdr` 68034 and 68035, `walIndexRecover` 67450), KEPT under every configuration, the weakest at 2 / 2 / 3 of 10. **memcached: no site lost at L3**; four sites at 10 of 10 under all three configurations (`clock_handler` on `current_time`, `do_item_link` and `do_item_unlink` on `stats_state` and `memory_allocated`), seven sites that stock and the sound bundle each saw once in ten and AllOpt with peeling never saw, UNDETERMINED, and one site reported only by the optimized builds (`lru_maintainer_juggle` reading `current_time`, 0 / 2 / 2 of 10). **One relocation, reported rather than suppressed**: at L1 and L2 the pairing of the reader `conn_new@memcached.c:761` with the writer `clock_handler` on `current_time` is 10 of 10 under stock and under the sound bundle and 0 of 10 under AllOpt with peeling, while the same race on the same location is reported 10 of 10 under AllOpt with peeling by `do_item_link`, `lru_maintainer_thread` and `try_read_command_ascii`. The read at line 761 is instrumented under AllOpt with peeling exactly as under stock, checked on the campaign binaries and at the IR level from source with the campaign's own flags (the call multiset in `conn_new` identical, the `__tsan_read4` of `current_time` at line 761 present, and that line the only reference to `current_time` in the function): `conn_new` carries 20 reads, 35 writes, 60 `__tsan_*` calls and 403 instructions in all three builds, with two calls attributed to line 761 in each, and `clock_handler` 15 calls in each. Nothing was elided; which reader's record survives the four shadow slots on that granule is eviction arithmetic, and AllOpt with peeling carries 382 more instrumented sites than stock (peeling duplicates first iterations), which is enough to change it. No single transform does it alone: under the sound bundle, under DE alone and under DE with peeling the pairing stays at 10 of 10, and only the full combination relocates it. The paper's criterion is the location and writer (L3), which holds. The earlier trees under `data/preservation/` are from earlier compilers of the same lineage and are shipped as data |
+| On the applications, no race site that stock ThreadSanitizer reports in every run is absent from an optimized configuration in every run | `scripts/31-preservation-apps.sh <app> 10` (N = 10 as we ran it; at the default N = 2 the script prints the frequencies and no verdict) | comparative, on your own runs, never against a fixed set, since detection is schedule-dependent. Each site, by the configuration's count of N: KEPT if reported in at least one run, whatever stock's frequency; LOST if never, while stock reports it in every run; UNDETERMINED at this N if never, while stock reports it only in some; ONLY-OPTIMIZED if stock never reports it (labelled, not dropped: shadow eviction can produce it). Non-zero exit only on LOST. Ours: `f3deebfbab60`, N = 10, stock, the sound bundle and AllOpt with peeling, gating at L3 (`data/preservation/*/2026-09-17-shipped-f3deebfbab60/verdict-L3.txt`, all three levels printed). **SQLite: no site lost at any level**; at L3 `walRestartHdr` 68034 and 68035 and `walIndexRecover` 67450, KEPT everywhere, the weakest at 2 / 2 / 3 of 10. **memcached: no site lost at L3**; four sites at 10 of 10 under all three (`clock_handler` on `current_time`, `do_item_link` and `do_item_unlink` on `stats_state` and `memory_allocated`); seven UNDETERMINED (once in ten under stock and under the sound bundle, never under AllOpt with peeling); one only in the optimized builds (`lru_maintainer_juggle` reading `current_time`, 0 / 2 / 2 of 10). **One relocation, reported rather than suppressed**: at L1 and L2, reader `conn_new@memcached.c:761` paired with writer `clock_handler` on `current_time` is 10 of 10 under stock and the sound bundle and 0 of 10 under AllOpt with peeling, which reports that race on that location 10 of 10 through `do_item_link`, `lru_maintainer_thread` and `try_read_command_ascii`. Line 761 is instrumented identically in all three builds (campaign binaries, and IR with the campaign's flags: `conn_new` 20 reads, 35 writes, 60 `__tsan_*` calls, 403 instructions, two calls at line 761, among them the `__tsan_read4` of `current_time`, the function's only reference to it; `clock_handler` 15 calls). Which reader's record survives the four shadow slots is eviction arithmetic, shifted by AllOpt with peeling's 382 extra instrumented sites; the sound bundle, DE alone and DE with peeling each keep the pairing at 10 of 10. L3, the paper's criterion, holds. Earlier trees under `data/preservation/` are from earlier compilers of the same lineage, shipped as data |
 
 The 12 configurations: stock, each analysis alone (STC, SWMR, LO, EA, DE), DE with peeling, the
 four sound analyses combined, AllOpt with and without peeling, and each of the last two with
@@ -79,9 +72,9 @@ DynSTC.
 
 | Claim | Script | Match criterion |
 |---|---|---|
-| Static instrumentation sites per application and configuration | `scripts/20-static-counts.sh` | exact for the differences between configurations (what each analysis removes or adds), which are a property of the compiler; the absolute count of a binary may carry a small constant offset from the build environment: Redis built inside the container has 37 922 sites under stock and 43 272 under AllOpt with peeling against 37 941 and 43 291 for the campaign's host-built binaries, 19 fewer in each, the removed and added counts identical. The cause: Redis's Makefile auto-detects libsystemd and links it when present; the host had it, the image does not, so the container build compiles out `redisCommunicateSystemd` and the branches in its four callers. It is deterministic and every evaluator's image will show the same 19. (Redis stamps each build with its build time, so the campaign's Redis binaries match no sha256 in `static-counts.csv` and for Redis the counts are linked to the measured binaries by sources and flags; the other four applications' binaries hash-match their rows.) Compare your differences with ours exactly and your absolute counts to within such an offset |
-| Static instrumentation reduction, the submitted paper's headline figure (up to 65 %) | `scripts/20-static-counts.sh` against `data/perf/campaign-f3deebfbab60/static-counts.csv` | exact: on the shipped compiler AllOpt without peeling removes 5.0 % (memcached), 2.3 % (Redis), 7.8 % (FFmpeg) and 3.3 % (SQLite) of the static memory-access sites, and AllOpt with peeling carries more sites than stock on every application (+5.7, +14.1, +5.5, +6.8, MySQL +6.3 %), because peeling duplicates loop bodies. The paper's figures (60.8, 34.7, 64.9, 55.6 and 14.5 %) were measured with the submitted compiler, whose reach came from an unsound same-location test in the dominance elimination that the soundness fixes closed; the camera-ready reports these |
-| The compiler built from the shipped patch series behaves like the frozen compiler the performance numbers were measured on | `scripts/12-compiler-equivalence.sh` | exact: it recompiles 28 vendored LLVM IR modules under 4 configurations and requires all 112 `__tsan_*` symbol histograms to equal a reference table produced by the campaign compiler, checking the `TSAN_AUDIT_HASH` stamp separately. It says "behaves like", not "is": an identical corpus does not identify the commit, since the three compile-time commits change none of the 112 rows. A control asserts the reference table separates the configurations at all (24 of 28 modules do), so agreement is not free |
+| Static instrumentation sites per application and configuration | `scripts/20-static-counts.sh` | exact for the differences between configurations (what each analysis removes or adds, a property of the compiler); absolute counts to within a constant offset from the build environment. Redis built in the container has 37 922 sites under stock and 43 272 under AllOpt with peeling, against 37 941 and 43 291 host-built: 19 fewer in each, removed and added counts identical, because without libsystemd in the image Redis's Makefile compiles out `redisCommunicateSystemd` and the branches in its four callers (every image shows the same 19). Redis stamps its build time, so its campaign binaries match no sha256 in `static-counts.csv` and are tied to their counts by sources and flags; the other four applications' binaries hash-match their rows |
+| Static instrumentation reduction, the submitted paper's headline figure (up to 65 %) | `scripts/20-static-counts.sh` against `data/perf/campaign-f3deebfbab60/static-counts.csv` | exact: on the shipped compiler AllOpt without peeling removes 5.0 % (memcached), 2.3 % (Redis), 7.8 % (FFmpeg) and 3.3 % (SQLite) of the static memory-access sites, and AllOpt with peeling carries more sites than stock on every application (+5.7, +14.1, +5.5, +6.8, MySQL +6.3 %), because peeling duplicates loop bodies. The paper's 60.8, 34.7, 64.9, 55.6 and 14.5 % came from the submitted compiler, whose reach relied on an unsound same-location test in the dominance elimination that the soundness fixes closed; the camera-ready reports the new figures |
+| The compiler built from the shipped patch series behaves like the frozen compiler the performance numbers were measured on | `scripts/12-compiler-equivalence.sh` | exact: 28 vendored LLVM IR modules recompiled under 4 configurations; all 112 `__tsan_*` symbol histograms must equal the campaign compiler's reference table, and the `TSAN_AUDIT_HASH` stamp is checked separately. "Behaves like", not "is": the three compile-time commits change none of the 112 rows. A control requires the reference table to separate the configurations (24 of 28 modules do) |
 | The three compile-time commits added to that compiler changed no instrumentation decision on any application | recorded, not re-run by the evaluator (the corpus and its reference table in `data/equivalence/`) | the same 112 corpus rows against the previous compiler, plus the 17 application configurations built on both compilers (MySQL 640 355 sites and 1 263 905 calls; all 14 Redis rows) and Redis's whole-program analysis summaries byte-identical between them |
 | Executed instrumentation per unit of work | not measured on this compiler; the recorded counter runs are shipped under `data/perf/*-counters` and are from an earlier one | exact from the shipped data; within run-to-run noise when re-measured |
 
@@ -89,48 +82,36 @@ DynSTC.
 
 | Claim | Script | Match criterion |
 |---|---|---|
-| Every run of the campaign (`data/perf/campaign-f3deebfbab60/{primary,r2}`: 290 and 110 measured runs beside their warm-ups, the roots every performance claim rests on) records the compiler that built it, the hash of the binary it ran, the hash of its input where the workload reads one (FFmpeg), its processor set and mode, the foreign-activity share the gate saw and the size of the set it watched (56 of the 64 processors outside the pinned set: eight were excluded from the watched set during the campaign, which the shipped default no longer does), and its place in a full set of N; `scripts/91-verify-provenance.sh` opens every one of them and exits 0 only when all are attributable, an empty root is a failure, and a root that holds no runs directly is expanded to its sub-roots. The earlier trees shipped beside them were recorded before the harness wrote every one of those fields and on earlier compilers; they support no claim and the script reports them for information only | `scripts/91-verify-provenance.sh` | exact: six assertions, each tested against the fault it exists to catch (a pre-audit binary measured as current; a configuration whose binary changed mid-leg; an input path that satisfied the runner and recorded an empty hash; pinned and unpinned runs pooled; a run above the gate that was kept; a thin row that looked complete) |
+| Every run of the campaign (`data/perf/campaign-f3deebfbab60/{primary,r2}`: 290 and 110 measured runs beside their warm-ups) records its compiler, the hash of its binary, the hash of its input where it has one (FFmpeg), its processor set and mode, the foreign-activity share the gate saw and the size of the set it watched (56 of the 64 processors outside the pinned set; eight were excluded during the campaign, which the shipped default no longer does), and its place in a full set of N | `scripts/91-verify-provenance.sh` | exact: exit 0 only when every run is attributable; an empty root fails, and a root with no runs directly is expanded to its sub-roots. Six assertions, each tested against its fault: a pre-audit binary measured as current; a configuration whose binary changed mid-leg; an input path that satisfied the runner and recorded an empty hash; pinned and unpinned runs pooled; a run above the gate that was kept; a thin row that looked complete. The earlier trees, on earlier compilers and predating these fields, support no claim and are reported for information only |
 
-This is the property the paper's setup section rests on. It does not check that a configuration's
-flags were the intended ones, which is the build guard's job at build time, and it says nothing
-about whether a number is right: a tree can pass this and still be wrong, but it cannot pass this
-and be unattributable.
+This is the property the paper's setup section rests on. It does not check a configuration's flags (the build
+guard does) or whether a number is right: a tree can pass this and be wrong, but not pass it and be
+unattributable.
 
 ## 4. Compile-time overhead
 
 | Claim | Script | Match criterion |
 |---|---|---|
-| Compile-time overhead of the analyses over an uninstrumented build | `scripts/21-compile-time.sh` | same order of magnitude; a few per cent tolerance, since it depends on the machine and the parallelism. The script rebuilds from scratch for every repetition and forces native and stock in as controls; on memcached, whose whole build takes about ten seconds, its own control reports that the resolution is worse than the effect (ratios 1.00 to 1.05 with 0.0% variation between control repetitions), and it says so rather than printing a ratio to be believed |
+| Compile-time overhead of the analyses over an uninstrumented build | `scripts/21-compile-time.sh` | same order of magnitude; a few per cent tolerance, since it depends on the machine and the parallelism. Every repetition rebuilds from scratch with native and stock as controls; on memcached, a build of about ten seconds, the control shows the resolution is worse than the effect (ratios 1.00 to 1.05, 0.0% variation between control repetitions), and the script says so instead of printing a ratio |
 
 ## 5. Performance (machine-dependent)
 
 The "Paper" column of each table is the submitted manuscript's figure, measured before the soundness fixes
 and kept for the record; the camera-ready reports the numbers in this file.
 
-All five applications, from the campaign of 15-17 September 2026 on compiler `f3deebfbab60`: 400 measured
-runs (290 and 110) beside their warm-ups, provenance verified on every root. Three cells were retired
-and re-run to completion, two by the disturbance gate and one (gate reading 0.0072) by the provenance
-rule, because it overlapped a logged foreign-work window; the retired cells ship beside their replacements
-(`primary/sqlite/tsan-lo/run2.foreign-window-030844`, `r2/redis/tsan-stmt/run1.disturbed.025858`,
-`r2/redis/tsan-dom/run1.disturbed.030107`). **Of the 48 rows at the
-primary concurrency, four separate from stock, and all four are DynSTC: a 5.6% cost on Redis and an
-11.3% gain on FFmpeg, alone and inside AllOpt.** Every other configuration of every application
-crosses 1.0 at the primary concurrency. At 16 threads, FFmpeg's default in the artifact (the first FFmpeg
-section below), three rows are above stock, all from the paper's own transforms: DynSTC, AllOpt with peeling
-(1.067 [1.050, 1.079]) and their combination (1.187 [1.171, 1.201]). The rows with the upstream flag are
-measured and not claimed (the section after FFmpeg). Every configuration of the paper's figure is listed with
-the paper's bar beside it, plus the configurations the paper does not show (AllOpt with peeling, its
-combination with DynSTC, and the two whole-program rows where they exist).
-Each row carries its interval over all five measured runs and, beside it, the point estimate over
-runs 2-5 with no interval (four runs never get one). The two share four runs, so overlap of the two
-intervals is not a test; the check is that the runs-2-5 point lies inside the all-five interval,
-which says that the first measured run did not drive the result. A row is claimed to differ from
-stock only when the all-five interval excludes 1.0 and that check holds; "no measurable change"
-means the interval contains 1.0, not that the effect is zero. "Resolvable subtests" repeats the speedup over the subtests whose pooled
-run-to-run variation is at most 5%; the set is taken once per leg from the stock baseline and applies to every row. That
-variation can be estimated only with at least three runs per configuration, so the column exists at our
-N = 5 and not at the default N = 2, where the artifact prints "pooled CV not estimable at this N -- NOT A
-STABILITY CLAIM" instead.
+The campaign of 15-17 September 2026 on `f3deebfbab60`: 400 measured runs beside their warm-ups
+(`data/perf/campaign-f3deebfbab60/{primary,r2}`, 290 and 110), three cells retired and re-run
+(`docs/campaign-parameters.md`). **Of the 48 rows at the primary concurrency, four
+separate from stock, and all four are DynSTC: a 5.6% cost on Redis and an 11.3% gain on FFmpeg, alone and inside
+AllOpt.** Every other row crosses 1.0. At 16 threads, FFmpeg's default in the artifact, three rows are above stock,
+all from the paper's own transforms: DynSTC, AllOpt with peeling and their combination. Rows with the upstream flag
+are measured, not claimed.
+
+A row is claimed to differ from stock only when its interval over all five runs excludes 1.0 and its point over
+runs 2-5 (four runs, no interval) lies inside that interval; "no measurable change" means the interval contains
+1.0, not that the effect is zero. "Resolvable subtests" is the speedup over the subtests whose pooled run-to-run
+variation under stock is at most 5%, the set fixed once per leg for every row. It needs at least three runs, so at
+the default N = 2 the artifact prints "pooled CV not estimable at this N -- NOT A STABILITY CLAIM" instead.
 
 ### Redis 7.0.15 (`redis-benchmark`, 19 commands, 50 clients, pipeline 1024; session of 15 Sep 18:49, pinned, governor powersave)
 
@@ -152,30 +133,24 @@ Stock ThreadSanitizer against native: 8.01x [7.83, 8.21] (the paper: 9.2x). Reso
 | four sound analyses, whole-program summaries | not in the paper | 0.996 [0.971, 1.017] | 0.993 | 0.994 [0.968, 1.015] | no measurable change |
 | AllOpt with peeling, whole-program summaries | not in the paper | 0.998 [0.980, 1.027] | 0.996 | 0.997 [0.976, 1.023] | no measurable change |
 
-Condition that travels with every Redis row: byte-identical Redis binaries measured six days apart
-on this host differed by 14% (stock) and 5% (native) in throughput for reasons we could not
-identify (`docs/confounds.md`). Ratios within one session are what is claimed; a disagreement of a
-few points with an evaluator's run is inside that effect. The second concurrency point, 112 clients
-(session of 17 Sep, N = 5): DynSTC 0.967 [0.948, 0.988] and AllOpt with peeling and DynSTC 0.974
-[0.949, 0.988], both still below stock, so on this host the sign does not depend on the client count
-(the curves below; it does not reproduce on the second host); every other row at 112
-clients crosses 1.0 (EA 0.986, LO 0.985, STC 0.989, SWMR 0.987, DE 1.000, DE+peeling 1.001, AllOpt
-without peeling 1.005, with peeling 1.006, whole-program 0.984 and 1.004, each within about two
-points of 1.0). Stock against native at 112 clients: 7.96x [7.83, 8.11]. The peeling pair on
-Redis, AllOpt with against without peeling on the resolvable subtests: 1.0105 [0.9905, 1.0326].
+DynSTC, alone and inside AllOpt with peeling, is the one Redis effect. Condition on every Redis row: session drift,
+measured on Redis as 14% (stock) and 5% (native) in throughput between byte-identical binaries six days apart
+(`docs/confounds.md`); ratios within one session are what is claimed, and a few points of disagreement with an
+evaluator's run is inside that effect. At 112 clients (the `r2` leg, N = 5; the 112 row of the Redis curves below)
+DynSTC and its combination with AllOpt with peeling stay below stock and every other row crosses 1.0 within about
+two points (`data/perf/campaign-f3deebfbab60/r2/`); stock against native 7.96x [7.83, 8.11]. The peeling pair,
+AllOpt with against without peeling on the resolvable subtests: 1.0105 [0.9905, 1.0326].
 
 Script: `scripts/40-perf.sh redis` (about 15 minutes at the default N = 2 and four configurations; about 2
 hours at N = 5 and fourteen, on 48 CPUs).
 
 ### memcached 1.6.29 (`memtier_benchmark` 2.1.1, 10 threads x 50 clients, pipeline 16, 100 000 requests per client, averaged over 5 iterations, server at 48 threads; session of 15 Sep, pinned)
 
-Stock ThreadSanitizer against native: 3.20x [2.97, 3.40] (the paper: 2.5x). **No configuration is
-resolved on memcached**: across the twelve instrumented configurations every speedup interval is between 11.9 and 15.7 points wide and contains 1.0 (the thirteenth row of that column, `orig`, is native against stock, a baseline ratio rather than a speedup, and is 42.8 points wide). The cause is the
-workload, not the analyses: memcached reports one metric, operations per second, so the geometric
-mean is over a single number and the whole interval is its run-to-run variance at N = 5. Only more
-repetitions would narrow it; no subtest filter can, because there are no subtests. The paper's
-memcached bars (1.00 to 1.07) lie inside these intervals, so the campaign neither confirms nor
-contradicts them.
+Stock ThreadSanitizer against native: 3.20x [2.97, 3.40] (the paper: 2.5x). **No configuration is resolved on
+memcached**: all twelve instrumented configurations have intervals 11.9 to 15.7 points wide that contain 1.0 (the
+`orig` row, native against stock, 42.8). memcached reports one metric, so the interval is its run-to-run variance at
+N = 5, and only more runs would narrow it. The paper's bars (1.00 to 1.07) lie inside, neither confirmed nor
+contradicted.
 
 | Configuration | Paper | All five runs [95%] | Interval width | Verdict |
 |---|---|---|---|---|
@@ -192,26 +167,22 @@ contradicts them.
 | four sound analyses, whole-program summaries | not in the paper | 1.005 [0.947, 1.089] | 14 points | no measurable change |
 | AllOpt with peeling, whole-program summaries | not in the paper | 1.023 [0.961, 1.112] | 15 points | no measurable change |
 
-Redis's DynSTC cost does not appear here (0.986, interval 11.9 points wide, the narrowest of the twelve); whether that is a real
-difference between the two applications or memcached's noise cannot be told from this measurement.
-The peeling pair on memcached, AllOpt with against without peeling: 1.0332 [0.9593, 1.0567].
-
-Second concurrency row, the server at 112 threads (the paper's `nproc` value; N = 5): AllOpt with
-peeling 1.006 [0.890, 1.161], with DynSTC 1.089 [0.875, 1.129]; both cross 1.0 with intervals of 25
-to 27 points, wider still than at 48 threads. Stock against native at 112 threads: 5.11x [4.48, 5.22].
+Redis's DynSTC cost does not appear here (0.986, the narrowest interval), whether by a real difference or by
+memcached's noise. The peeling pair: 1.0332 [0.9593, 1.0567]. With the server at 112 threads (the paper's `nproc`
+value; the `r2` leg, the 112 row of the memcached curves below) both rows measured cross 1.0, with intervals 25 to
+27 points wide; stock against native 5.11x [4.48, 5.22].
 
 Script: `scripts/40-perf.sh memcached` (about 34 minutes at the default N = 2 and four configurations;
 4 hours at N = 5 and fourteen).
 
 ### SQLite 3.50.2 (`threadtest3`, all seven subtests at their default thread counts; session of 16 Sep 00:30, pinned)
 
-Stock ThreadSanitizer against native: 2.96x [2.79, 3.28] (the paper: 2.4x). This is the campaign's
-widest slowdown column, because SQLite's uninstrumented build varies by 37.9% run to run; that is the
-workload, not the measurement. Resolvable subtests: 5 of 7 (`dynamic_triggers` and `stress1` excluded).
+Stock ThreadSanitizer against native: 2.96x [2.79, 3.28] (the paper: 2.4x), the widest slowdown interval, because
+SQLite's uninstrumented build varies by 37.9% run to run. Resolvable subtests: 5 of 7 (`dynamic_triggers` and
+`stress1` excluded).
 
-**Nothing is claimed for SQLite: every headline interval contains 1.0**, over all seven subtests and
-on both run ranges. The paper's SQLite bars, which include its largest single claim (AllOpt 1.71),
-are not reproduced: the campaign measures 1.020 for the same configuration.
+**Nothing is claimed for SQLite: every headline interval contains 1.0**, over all seven subtests and on both run
+ranges. The paper's largest single claim, AllOpt 1.71 on SQLite, is not reproduced: the campaign measures 1.020.
 
 | Configuration | Paper | All five runs [95%] | Runs 2-5, point | Resolvable subtests [95%] |
 |---|---|---|---|---|
@@ -228,16 +199,9 @@ are not reproduced: the campaign measures 1.020 for the same configuration.
 | four sound analyses, whole-program summaries | not in the paper | 1.013 [0.942, 1.099] | 1.023 | 0.999 [0.978, 1.015] |
 | AllOpt with peeling, whole-program summaries | not in the paper | 1.049 [0.988, 1.113] | 1.042 | 0.998 [0.984, 1.017] |
 
-One entry above is bold because it excludes 1.0 in one column and not in the headline one, and it
-is not claimed: DynSTC excludes it on the resolvable subtests (0.980, a 2% cost) while the headline
-column contains it. A row is claimed only on the headline column, so it is reported as no measurable
-change, with the disagreement shown rather than resolved by choosing the column that separates.
-
-On the resolvable subtests (`dynamic_triggers` and `stress1` set aside) every configuration sits within
-about 2% of stock, with intervals three to five times narrower than the headline ones.
-
-The peeling pair on SQLite, AllOpt with against without peeling on the resolvable subtests:
-0.9967 [0.9650, 1.0118], resolution floor 3.5%.
+On the resolvable subtests every row is within about 2% of stock, with intervals three to five times narrower; the
+bold DynSTC entry is not claimed, because a row is claimed on the headline column only. The peeling pair on the
+resolvable subtests: 0.9967 [0.9650, 1.0118], resolution floor 3.5%.
 
 Script: `scripts/40-perf.sh sqlite` (about 70 minutes at the default N = 2 and four configurations; about 7
 hours at N = 5 and fourteen, on 48 CPUs).
@@ -246,36 +210,27 @@ hours at N = 5 and fourteen, on 48 CPUs).
 
 Stock ThreadSanitizer against native: 9.70x [9.29, 10.08], the largest of the five applications (the
 paper: 7.1x). Resolvable subtests: 4 of 5 (`oltp_read_only` excluded at 6.1% pooled variation; the
-others are between 1.8 and 3.8%). Only four configurations are measured: the campaign's configuration set
-was fixed when a MySQL build with the escape analysis took about 2.2 hours on the previous compiler (the
-shipped one builds it in 459 s); `docs/mysql.md`.
+others are between 1.8 and 3.8%). Four configurations only (section 7).
 
 | Configuration | Paper | All five runs [95%] | Runs 2-5, point | Resolvable subtests [95%] | Verdict |
 |---|---|---|---|---|---|
 | AllOpt with peeling | 1.16 and 1.11 on the two scripts the paper plots (`select-random-points`, `write-only`); the campaign's figure is a geometric mean over five scripts | 1.042 [0.985, 1.062] | 1.025 | 1.027 [0.991, 1.052] | no measurable change |
 | AllOpt with peeling and DynSTC | not in the paper | 1.018 [0.967, 1.037] | 1.009 | 1.000 [0.964, 1.023] | no measurable change |
 
-AllOpt with peeling at 1.042 is the largest MySQL point in the campaign, and it does not separate from
-stock (lower bound 0.985). Both runs-2-5 points lie inside their all-five intervals.
-
-Second concurrency row, 84 threads (the paper's `nproc*3/4` value; N = 5): AllOpt with peeling 1.011
-[0.978, 1.049], with DynSTC 0.992 [0.966, 1.023]; both cross 1.0. Stock against native at 84 threads:
-8.77x [8.56, 9.37].
+Neither row separates from stock, and both runs-2-5 points lie inside their intervals. At 84 threads (the paper's
+`nproc*3/4` value; the `r2` leg, N = 5), AllOpt with peeling 1.011 [0.978, 1.049] and with DynSTC 0.992 [0.966, 1.023]
+cross 1.0; stock against native 8.77x [8.56, 9.37].
 
 Script: `scripts/40-perf.sh mysql` (four configurations only; about 3.4 hours at the default N = 2,
 6.7 at N = 5, on 48 CPUs; builds in about 8 minutes each with the shipped compiler, 459 s measured at 56 jobs).
 
 ### FFmpeg 4.3.9 at `-threads 16` (libx264, libx265, mjpeg, stream copy; the Tears of Steel reference clip; session of 21-22 Sep 2026, pinned; the artifact's default thread count)
 
-This is the FFmpeg table an evaluator's default run is compared with: the harness's thread rule for FFmpeg
-is 16 (`FF_THREADS` empty in `env.sh` means the rule; `FF_THREADS=4` reproduces the paper's count), and
-`scripts/40-perf.sh ffmpeg` measures AllOpt with peeling and DynSTC beside the four default configurations.
-The thread count was chosen after the campaign, from its data: the thread sweep (next section) found that
-AllOpt with peeling gains nothing at the paper's `-threads 4` and about 6 per cent at 8 and 16, that DynSTC's
-gain is the same at every count, and 16 is libx265's frame-thread ceiling (`X265_MAX_FRAME_THREADS`) and the
-highest point of the sweep. The paper's own count, 4, keeps its table in the next section; an evaluator who
-exports `FF_THREADS=4` is compared with that one. The comparator reads the count from these headings and from
-each run's `meta.json`, so a run is judged only against the rows of its own count.
+The table an evaluator's default run is compared with: 16 threads (`FF_THREADS` empty in `env.sh`), libx265's
+frame-thread ceiling (`X265_MAX_FRAME_THREADS`), chosen after the campaign from its thread sweep (next section), with
+AllOpt with peeling and DynSTC added to the four default configurations. A run with `FF_THREADS=4`, the paper's
+count, is compared with the next section's table: the comparator reads the count from these headings and from each
+run's `meta.json`, and judges a run only against the rows of its own count.
 
 Stock ThreadSanitizer against native: 2.883x [2.799, 2.916]. Resolvable subtests: all four.
 
@@ -285,50 +240,39 @@ Stock ThreadSanitizer against native: 2.883x [2.799, 2.916]. Resolvable subtests
 | AllOpt with peeling | not in the paper | **1.067 [1.050, 1.079]** | 1.069 | **above stock** |
 | AllOpt with peeling and DynSTC | not in the paper | **1.187 [1.171, 1.201]** | 1.191 | **above stock** |
 
-The two effects compose about multiplicatively: 1.067 x 1.133 = 1.209 against 1.187 measured, the
-combination's interval two points below the product. This is the largest gain of the paper's own transforms
-on the shipped compiler: about 19 per cent over stock ThreadSanitizer at 8 and at 16 threads, the transcode
-2.43x [2.36, 2.46] slower than native instead of 2.88x. At 8 threads
-(`data/perf/ffmpeg-threadsweep-f3deebfbab60/threads-8-dynstc/`) the same row is 1.190 [1.167, 1.211]
-and DynSTC alone 1.138 [1.112, 1.161], stock against native 2.822 [2.755, 2.889], so the combination's gain
-is flat between 8 and 16 threads and the choice of 16 over 8 is libx265's ceiling, not a better number.
-AllOpt with peeling carries more static sites than stock (535 690 against 507 825 in these builds: peeling
-duplicates loop bodies), so the gain is a runtime effect and not a static-count one.
-
-Runs (N = 5, the campaign's set and shape, 21-22 Sep 2026): `data/perf/campaign-f3deebfbab60/ffmpeg-t16/` (35
-measured cells, none retired; it also carries the two FFmpeg rows of the upstream-flag section below) and
-`threads-8-dynstc/` above (20 cells, two retired by the disturbance gate and re-run, both shipped);
-`scripts/90-tables.sh` regenerates both tables and `scripts/91-verify-provenance.sh` checks both strictly.
+About 19 per cent over stock, the largest gain of the paper's own transforms on the shipped compiler: the transcode
+runs 2.43x [2.36, 2.46] slower than native instead of 2.88x, the two effects composing about multiplicatively (1.067
+x 1.133 = 1.209 against 1.187). At 8 threads (`data/perf/ffmpeg-threadsweep-f3deebfbab60/threads-8-dynstc/`) the
+combination is 1.190 [1.167, 1.211], DynSTC 1.138 [1.112, 1.161] and stock against native 2.822 [2.755, 2.889]:
+16 is chosen for libx265's ceiling, not for a better number. AllOpt with peeling carries more static sites than stock
+(535 690 against 507 825), so its gain is a runtime effect. Runs (N = 5, the campaign's set and shape):
+`data/perf/campaign-f3deebfbab60/ffmpeg-t16/` (35 cells, none retired; also the flag section's FFmpeg rows) and
+`threads-8-dynstc/` (20 cells, two retired by the gate and re-run, both shipped), both regenerated by
+`scripts/90-tables.sh` and checked strictly by `scripts/91-verify-provenance.sh`.
 
 ### FFmpeg 4.3.9 (libx264, libx265, mjpeg, stream copy at `-threads 4`; the Tears of Steel clip; session of 16 Sep 22:02, pinned; the paper's thread count)
 
-The paper's thread count, and the campaign's table. The artifact's default is 16 threads (the section
-above); a run with `FF_THREADS=4` exported is compared with this table.
+The paper's thread count and the campaign's table; a run with `FF_THREADS=4` exported is compared with it.
 
 Stock ThreadSanitizer against native: 2.76x [2.70, 2.80] (the paper: 2.9x, on a different clip).
-Every shipped FFmpeg run carries all four codecs: `check_ffmpeg_codecs.py` gates every cell as it is
-produced, and a cell whose workload did not emit all four codecs is a failed cell, not a geomean over the
-survivors. (The workload writes each codec's output to `/dev/shm`; a container's default is 64 MB and the
-stream-copy and mjpeg outputs exceed it, which is why `docker/run.sh` passes `--shm-size=1g`.) The
-resolvable set is all four, so the headline column is the stable column. Twelve configurations rather than
-fourteen: FFmpeg has no whole-program summary generator.
+Twelve configurations (FFmpeg has no whole-program summary generator); the resolvable set is all four codecs, and
+`check_ffmpeg_codecs.py` fails any cell that did not emit all four (hence `docker/run.sh --shm-size=1g`).
 
-The thread sweep on the same clip (`-threads` 2, 4, 8 and 16, the four default configurations,
-N = 5, 20 cells per arm, none disturbed) says what the single `-threads 4` row cannot:
-DynSTC's speedup is a property of the transform and not of the concurrency, 1.113 [1.098, 1.131], 1.113
-[1.096, 1.128], 1.116 [1.087, 1.130] and 1.114 [1.102, 1.125] across an eightfold range, every interval
-excluding 1.0. AllOpt with peeling does depend on it: it crosses 1.0 at 2 and 4 threads (1.005 [0.998,
-1.021], 1.010 [0.999, 1.021]) and excludes it at 8 and 16 (1.063 [1.052, 1.069], 1.065 [1.055, 1.076]), a gain
-of about 6 per cent that is absent at the campaign's thread count. The sweep itself is reported, not
-claimed (the 16-thread rows above are the claim); it was not measured against AllOpt without peeling, so it
-does not isolate peeling's share of that gain.
-Stock ThreadSanitizer's overhead falls over most of the range, and not monotonically: 2.94, 2.78, 2.66 and 2.70 at 2, 4, 8 and 16 threads.
+The thread sweep on the same clip, reported and not claimed (the four default configurations, N = 5, 20 cells per
+arm, none disturbed; `data/perf/ffmpeg-threadsweep-f3deebfbab60`, 80 cells, checked strictly):
 
-**The paper's FFmpeg column differs from this one because of the compiler, not the input.** The paper's
-column was taken on a clip that cannot be redistributed; a control leg on that retired clip, on this
-compiler, at the same `-threads 4` and N = 5, gives the same ratios as the reference clip (ratios only;
-absolute times differ between the clips and are not compared; the retired clip is identified by its sha256,
-`92eea6ec…`; the control's runs are not shipped because the clip cannot be redistributed):
+| Configuration | `-threads 2` | `-threads 4` | `-threads 8` | `-threads 16` |
+|---|---|---|---|---|
+| DynSTC | 1.113 [1.098, 1.131] | 1.113 [1.096, 1.128] | 1.116 [1.087, 1.130] | 1.114 [1.102, 1.125] |
+| AllOpt with peeling | 1.005 [0.998, 1.021] | 1.010 [0.999, 1.021] | 1.063 [1.052, 1.069] | 1.065 [1.055, 1.076] |
+| Stock against native | 2.94 | 2.78 | 2.66 | 2.70 |
+
+DynSTC's gain does not depend on the thread count; AllOpt with peeling gains about 6 per cent at 8 and 16 threads
+only (the sweep has no AllOpt without peeling, so peeling's share of that is not isolated).
+
+**The paper's FFmpeg column differs from this one because of the compiler, not the input.** A control leg on the
+paper's clip (sha256 `92eea6ec…`; it cannot be redistributed, so its runs are not shipped), on this compiler at
+`-threads 4` and N = 5, gives the same ratios as the reference clip (ratios only; absolute times are not compared):
 
 | Configuration | Retired clip, N = 5 | Reference clip, N = 5 |
 |---|---|---|
@@ -336,13 +280,6 @@ absolute times differ between the clips and are not compared; the retired clip i
 | AllOpt without peeling | 1.005 [0.934, 1.016] | 1.012 [0.996, 1.029] |
 | AllOpt with peeling | 1.009 [1.001, 1.018] | 1.006 [0.990, 1.024] |
 | DynSTC | 1.126 [1.114, 1.140] | 1.113 [1.099, 1.129] |
-
-Every row overlaps, DynSTC excludes 1.0 on both clips, so the input changes none of the ratios, and the
-paper's FFmpeg column (EA 1.05, DE 1.30, DE with peeling 1.42, AllOpt 1.57) differs from this table's
-(about 1.0) because of the compiler. Within this table every configuration shares one input, so the rows
-compare with each other exactly. The thread sweep's runs ship as
-`data/perf/ffmpeg-threadsweep-f3deebfbab60` (80 cells, four arms, their tables beside them), checked
-strictly against the shipped compiler like the campaign roots.
 
 | Configuration | Paper (retired clip) | All five runs [95%] | Runs 2-5, point | Verdict |
 |---|---|---|---|---|
@@ -357,86 +294,39 @@ strictly against the shipped compiler like the campaign roots.
 | AllOpt with peeling | not in the paper | 1.006 [0.990, 1.024] | 1.008 | no measurable change |
 | AllOpt with peeling and DynSTC | not in the paper | **1.123 [1.112, 1.142]** | 1.125 | **above stock** |
 
-At the paper's thread count DynSTC is the one configuration with a measurable runtime effect, and its sign
-depends on the application: an 11.3% gain here, where the transcode has long single-threaded phases
-and the guard skips instrumentation during them, against a 5.6% cost on Redis, whose background
-threads start before the first client so the guard is paid for and never pays back. Both intervals
-are far from 1.0, and on this host Redis's survives the second concurrency point. The peeling pair on FFmpeg,
-the tightest of the four at a resolution floor of 2.5%: 0.9941 [0.9753, 1.0125], crossing 1.0 like
-the other three.
+At this thread count DynSTC is the one transform with a measurable effect, and its sign depends on the application:
+an 11.3% gain here, where the transcode's long single-threaded phases let the guard skip instrumentation, against a
+5.6% cost on Redis, whose background threads start before the first client, so the guard never pays back. The
+peeling pair, the tightest of the four at a resolution floor of 2.5%: 0.9941 [0.9753, 1.0125].
 
 Script: `scripts/40-perf.sh ffmpeg` (about 21 minutes at the default N = 2 and five configurations at 16 threads;
-2.2 hours at N = 5 and twelve). The input is produced before the build by the first of three paths that
-applies (`docs/ffmpeg-input.md`): the prepared reference clip from `ART_FFMPEG_CLIP_URL`, which `env.sh`
-defaults to this repository's GitHub release `inputs-v1`; a local copy of the Blender source in
-`ART_FFMPEG_SOURCE`, cut with the recorded command; or the 557 MB Blender source downloaded, verified and cut.
-The second and third paths re-encode, and a re-encode's sha256 differs from the reference, so every run
-records the input's sha256 and `input_is_reference` (the campaign's own FFmpeg runs predate that field and
-carry the sha256 alone, which equals the reference clip's). The point-in-interval comparison is made only on
-the reference clip; on a regenerated clip the run is valid, but its ratios are reported and not compared. The
-Stage B runs under `data/perf/stageB-d3bf9f8c39fe` are from an earlier compiler and are shipped as data, not as
-claims.
-
-Workload thread counts follow the campaign's rule, set by the harness and recorded per cell: the memcached
-server runs one thread per processor of the pinned set, sysbench three quarters of that, FFmpeg an
-absolute 16 (the campaign's own FFmpeg rows were taken at the paper's 4, which `FF_THREADS=4` reproduces);
-on the 48-processor set the intervals describe, that is 48 and 36, and each cell's `meta.json` carries the
-value it ran with. To compare a point with these intervals, pin the campaign's shape, 24 physical cores with
-both SMT threads (48 logical processors; `evaluate.sh` chooses such a set when the machine has one); on
-another count the rule yields that machine's point and the row is reported with its thread count rather
-than compared (`docs/campaign-parameters.md`).
-
-A disturbed leg costs about double: every cell the gate retires is run once more before it is dropped,
-so a two-hour leg on a machine with foreign load can take four hours and end with no data. The
-estimates below are for a quiet machine.
+2.2 hours at N = 5 and twelve). Only runs on the reference clip (`ART_FFMPEG_CLIP_URL`, by default this repository's
+GitHub release `inputs-v1`) are compared; a re-encode of the Blender source (`docs/ffmpeg-input.md`) has another
+sha256, and every run records its input's sha256 and `input_is_reference` (the campaign's own FFmpeg runs predate
+the field and carry the reference sha256). Stage B (`data/perf/stageB-d3bf9f8c39fe`) is an earlier compiler's,
+shipped as data.
 
 ### Upstream flag `-tsan-instrument-func-entry-exit=false` (measured, not claimed)
 
-**An upstream flag, not this paper's contribution.** The option is ThreadSanitizer's own
-(`ClInstrumentFuncEntryExit` in upstream LLVM's `ThreadSanitizer.cpp`, default on); with it off the compiler
-emits no `__tsan_func_entry` and `__tsan_func_exit` calls, so the runtime keeps no shadow call stack, and
-every memory access stays instrumented. It is orthogonal to the five analyses, which remove memory-access
-instrumentation. The rows below measure it on stock ThreadSanitizer and on our configurations, on the
-shipped compiler. They are not rows of the paper: no badge rests on them, the comparator reports them as
-measured and not claimed, and `scripts/40-perf.sh` runs them only when asked (`--configs` with the `-nofe`
-names: `tsan-nofe`, `tsan-sound-nofe`, `tsan-dom_peeling-ea-lo-st-swmr-nofe`,
-`tsan-dom_peeling-ea-lo-st-swmr-stmt-nofe`; the token composes for every application).
+**Not this paper's contribution.** An upstream option (`ClInstrumentFuncEntryExit` in LLVM's `ThreadSanitizer.cpp`,
+default on): off, no `__tsan_func_entry` or `__tsan_func_exit` calls and so no shadow call stack, every memory access
+still instrumented. No badge rests on these rows, the comparator reports them as "measured, not claimed", the
+submitted paper does not use the flag, and `scripts/40-perf.sh` runs them only when asked (`--configs` with
+`tsan-nofe`, `tsan-sound-nofe`, `tsan-dom_peeling-ea-lo-st-swmr-nofe` or `tsan-dom_peeling-ea-lo-st-swmr-stmt-nofe`;
+the token composes for every application).
 
-**What the flag costs.** The regression-suite gate of section 1, first row, was run with `tsan-nofe` and
-`tsan-dom_peeling-ea-lo-st-swmr-stmt-nofe` added, K = 5, on the second host
-(`data/suite/preservation-suite-20260921T135253Z-nofe-amd/`; stock 0 failures): **20 candidate losses under
-each, the same twenty**: `atexit4`, `atexit5`,
-`deadlock_detector_stress_test`, `deep_stack1`, `free_race`, `free_race2`, `ignorelist2`, `longjmp3`,
-`longjmp4`, `mutex_held_wrong_context`, `on_exit`, `race_on_heap`, `race_with_finished_thread`,
-`signal_errno`, `signal_malloc`, `simple_stack`, `simple_stack2`, `sleep_sync`, `suppressions_mutex`,
-`unaligned_race`. Classified by running each with `lit -v -a` and reading the reports: eighteen fail on
-report content, the race is reported and the frames below the top one are missing (the top frame comes
-from the access's own PC, the rest from the shadow stack the flag removed); `suppressions_mutex` fails
-because a suppression by function name no longer matches a frame that is no longer there; `unaligned_race`
-reports 128 races instead of 224, adjacent unaligned accesses in one function collapsing into one report
-once their stacks are identical. So in the suite the flag loses no race at the location level and changes what a
-report says. On the applications
-(`scripts/31-preservation-apps.sh <app> 10` on the second host, stock against `tsan-nofe` and against AllOpt with
-peeling and the flag; `data/preservation/{sqlite,memcached}/2026-09-21-nofe-amd-f3deebfbab60/`, verdicts at all
-three levels): no site LOST under either configuration on either application, and the report keys are the same
-strings under the flag as under stock at L1, L2 and L3, because the keys are built from the access PC. memcached:
-every site stock reports in ten of ten runs (eight at L1) is reported in ten of ten under the flag alone; under
-AllOpt with peeling and the flag it shows the one relocation section 1's last row describes for AllOpt with peeling
-without the flag (`conn_new@memcached.c:761` paired with `clock_handler` 0 of 10 at L1 and L2, the location kept 10
-of 10 at L3), the same shape, so it is the bundle's and not the flag's. SQLite resolves less on that host, where
-stock itself reports its sites in 1 to 6 of 10 runs (10 of 10 for two of them on the campaign's host, section 1,
-last row): the site stock reports most often, `walIndexRecover`, 6 of 10, is KEPT under the flag (3 of 10) and
-under the bundle with the flag (2 of 10); the three sites stock reports 1 or 2 times in 10 are 0 of 10 under the
-flag and UNDETERMINED at this N. That is the trade: about 11 per cent on Redis for report stacks of one frame.
-The submitted paper does not use the flag.
+**What it costs: report content, not races.** Section 1's suite gate with `tsan-nofe` and
+`tsan-dom_peeling-ea-lo-st-swmr-stmt-nofe` (K = 5, second host,
+`data/suite/preservation-suite-20260921T135253Z-nofe-amd/`, stock 0 failures) finds the same 20 candidate losses under
+each (its `report.txt`): eighteen report the race without the frames below the top one, `suppressions_mutex` loses a
+suppression by function name, and `unaligned_race` reports 128 races instead of 224. On memcached and SQLite
+(`scripts/31-preservation-apps.sh <app> 10`, second host; per-site counts in
+`data/preservation/{sqlite,memcached}/2026-09-21-nofe-amd-f3deebfbab60/verdict-L3.txt`) no site is LOST under either
+configuration at any level, and AllOpt with peeling and the flag shows section 1's `conn_new` relocation, which is
+therefore the bundle's and not the flag's. The trade: about 11 per cent on Redis for report stacks of one frame.
 
-Rows (N = 5, 95% intervals, the campaign's set and shape, 21-22 Sep 2026; the Redis leg had two cells retired
-by the disturbance gate, `outside_busy` 0.107 against the bar of 0.10, and re-run to completion; the memcached
-and SQLite legs, 25 measured cells (five configurations) each, and the MySQL leg, 20 cells (four
-configurations), none retired; "stock" is stock ThreadSanitizer; the SQLite "resolvable" figures are over the
-4 of 7 subtests whose pooled run-to-run variation in this leg is at most 5 per cent (5 of 7 in the campaign's
-leg); runs under `data/perf/campaign-f3deebfbab60/flag-<application>/` and,
-for FFmpeg, `ffmpeg-t16/`):
+Rows: N = 5, the campaign's set and shape, 21-22 Sep 2026 (`data/perf/campaign-f3deebfbab60/flag-<application>/`
+and `ffmpeg-t16/`; two Redis cells retired and re-run). SQLite's "resolvable" is 4 of 7 subtests in this leg.
 
 | Application | Configuration | All five runs [95%] | Runs 2-5, point | Reading (no row here is the paper's) |
 |---|---|---|---|---|
@@ -457,49 +347,30 @@ for FFmpeg, `ffmpeg-t16/`):
 | MySQL (36 threads) | stock with the flag | 1.094 [1.068, 1.154] | 1.102 | the flag alone, and the largest effect it has on any application here |
 | MySQL (36 threads) | AllOpt with peeling and the flag | 1.090 [1.057, 1.157] | 1.101 | ours on top of it: the same, within the intervals |
 
-**Does the flag gain more with our analyses than on stock?** No more than the product of the two. Redis: the
-flag alone 1.107, AllOpt with peeling alone 1.008, their product 1.116, and the combination 1.138 [1.109, 1.161],
-whose interval contains the product; an interaction of up to about three points is allowed and not
-established. FFmpeg: 1.016 x 1.187 = 1.206 against 1.200 [1.185, 1.221] measured. memcached resolves nothing
-either way (the flag alone 1.000 [0.914, 1.040], the combination 1.019 [0.925, 1.058], every interval
-containing 1.0 and the product). MySQL, the flag's best application: 1.094 [1.068, 1.154] for the flag alone
-against 1.090 [1.057, 1.157] with AllOpt and peeling on top of it, beside the campaign's 1.042 [0.985, 1.062]
-for AllOpt with peeling without the flag. SQLite, on the resolvable subtests: the flag alone 1.021 [0.994,
-1.040], ours alone 1.005 [0.980, 1.029], the two together 1.023 [0.991, 1.049], each interval containing 1.0
-and the product; the previous compiler's leg had the flag on the sound bundle at 1.044 [1.025, 1.060] on
-SQLite, which this leg does not reproduce. Stock ThreadSanitizer with the flag against native: Redis 7.60x [7.41, 7.81] against
-8.42x without; FFmpeg at 16 threads 2.84x [2.75, 2.87] against 2.88x; memcached 3.68x [3.59, 3.92] against
-3.68x [3.54, 3.77], the flag buying nothing measurable there; SQLite 3.27x [2.90, 3.54] against 3.34x [2.97, 3.60];
-MySQL 9.04x [8.44, 9.37] against 9.90x [9.31, 10.43].
-
-The earlier leg on the previous compiler (`data/perf/nofe-d3bf9f8c39fe`, 15 Sep 2026, the sound bundle
-with and without the flag: Redis 1.233 [1.183, 1.254], MySQL 1.136 [1.081, 1.188], SQLite 1.044 [1.025,
-1.060]) is shipped as data. Its Redis figure exceeds this leg's 1.115 by more than either interval: the Redis
-session drift `docs/confounds.md` describes.
+No combination gains more than the product of its two parts (Redis 1.116, FFmpeg 1.016 x 1.187 = 1.206, both inside
+the measured intervals). Stock ThreadSanitizer with the flag against native, then without: Redis 7.60x [7.41, 7.81]
+and 8.42x; FFmpeg at 16 threads 2.84x [2.75, 2.87] and 2.88x; memcached 3.68x [3.59, 3.92] and 3.68x [3.54, 3.77];
+SQLite 3.27x [2.90, 3.54] and 3.34x [2.97, 3.60]; MySQL 9.04x [8.44, 9.37] and 9.90x [9.31, 10.43]. An earlier leg on
+the previous compiler (`data/perf/nofe-d3bf9f8c39fe`, 15 Sep 2026, the sound bundle with the flag: Redis 1.233 [1.183,
+1.254], MySQL 1.136 [1.081, 1.188], SQLite 1.044 [1.025, 1.060]) is shipped as data; this leg reproduces neither its
+SQLite gain nor its Redis figure (the session drift of `docs/confounds.md`).
 
 ### Concurrency curves and whole-program summaries, measured after the campaign (not claims)
 
-**What these are.** The campaign fixed each application's concurrency before any number was seen
-(`data/notes/preregistration-2026-09-13.md`), and measured each at that value: one point per application, two
-for memcached and Redis counting the `r2` leg. After the campaign we measured, on the shipped compiler,
-memcached's server threads and Redis's client count on both hosts, SQLite's walthread1 threads on ours, and
-the one combination of our own analyses the campaign never tried, whole-program summaries together with
-DynSTC. (Earlier curves for SQLite and Redis, `data/perf/contention-d3bf9f8c39fe`, are on an earlier
-compiler.) **No row below is a claim, no badge rests on one, and the comparator does not judge against these
-tables**: `compare_with_claims.py` reads a table only when its header line begins `| Configuration |` or
-`| Application |` and carries a column named "All five runs [95%]", and none of the tables below does (the
-first column of the last table is headed "Program" for that reason). What is claimed is in the application
-sections above, at the pre-registered concurrency.
+**Not claims**: no badge rests on these rows, and the comparator judges none of these tables (none has an
+"All five runs [95%]" column); the claims are the sections above, at the concurrency fixed before the campaign
+(`data/notes/preregistration-2026-09-13.md`). Measured afterwards on the shipped compiler with the campaign's method
+(N = 5 after a warm-up, run-major, its set and shape on each host: 4-27,60-83 here, 0-23,32-55 on the second host;
+quiet machine, 0.10 gate; two cells retired on the second host, re-run and shipped). Data: `sweep-*` and
+`wp-dynstc-*` under `data/perf/campaign-f3deebfbab60/`, and `data/perf/sweep-amd-f3deebfbab60/` (layout:
+`docs/campaign-parameters.md`, "Curves measured after the campaign"), regenerated by `scripts/90-tables.sh` and
+checked strictly by `scripts/91-verify-provenance.sh`; earlier-compiler curves in `data/perf/contention-d3bf9f8c39fe`.
 
-**The rule, set before the legs ran, and what it decided.** A value would replace the campaign's default only
-if, at five runs on the campaign's host, its interval for the best configuration were no wider than the
-current one and its point higher. **No default changed.** Two arms meet the rule by the letter and were not
-acted on: memcached at 24 server threads reads 1.021 against 48's 1.019 with an interval 0.119 wide against
-0.128, and Redis at 512 clients reads 1.007 against the default's 1.000 with an interval 0.026 against 0.043.
-Both gaps are far inside the intervals they are measured with (0.002 against a width of 0.12 for memcached,
-0.007 against 0.03 for Redis); 24 server threads contradicts the one-thread-per-pinned-processor rule the
-comparison condition rests on; and on the second host the same change of Redis's client count moves that
-configuration the other way (1.014 at 50 clients, 0.991 at 512).
+**No default changed.** The rule, set before the legs ran: a value replaces the campaign's default only if, at five
+runs on our host, its interval for the best configuration is no wider and its point higher. memcached at 24 server
+threads (1.021 against 1.019, width 0.119 against 0.128) and Redis at 512 clients (1.007 against 1.000, 0.026 against
+0.043) meet it by the letter and were not adopted: both gaps are far inside the intervals, 24 threads breaks the
+one-thread-per-pinned-processor rule, and on the second host the same Redis change goes the other way.
 
 #### memcached: server threads (`MC_THREADS`), five runs, one warm-up
 
@@ -515,17 +386,10 @@ configuration the other way (1.014 at 50 clients, 0.991 at 512).
 | 96 | second host | 5.23 [4.95, 5.78] | 0.995 [0.930, 1.076] | 1.027 [0.960, 1.118] | 1.005 [0.925, 1.080] |
 | 112 | second host | 5.98 [5.70, 6.40] | 1.023 [0.959, 1.077] | 1.035 [1.014, 1.085] | 1.019 [0.945, 1.071] |
 
-Twenty-five of the twenty-six configuration entries contain 1.0, and above 48 threads our host stops
-resolving anything: its intervals are 0.10 to 0.14 wide at 24 and 48 and 0.27 to 0.34 at 96 and 112, which is
-what running 96 or 112 server threads on 48 pinned processors does. The second host, which pins 48 of its 64
-processors, stays between 0.07 and 0.16 at every count. So the highest point in the table, 1.063 for AllOpt
-with peeling at 96 threads on our host, is also its least resolved, and the same point measured twice on our
-host in different sessions reads 1.089 and 1.006 for AllOpt with peeling and DynSTC.
-
-The exception is the second host at 112 threads, AllOpt with peeling and DynSTC, 1.035 [1.014, 1.085], the only
-separating memcached row in any leg on either host. It is not claimed: one row in twenty-six is about what
-chance produces at a 95 % interval, and it is reproduced neither at 96 nor at 24 on the same host nor at 112 on
-ours (1.006 [0.884, 1.189]).
+Twenty-five of the twenty-six configuration entries contain 1.0; our host's intervals widen from 0.10-0.14 at 24 and
+48 threads to 0.27-0.34 at 96 and 112, the second host's stay at 0.07-0.16. The one separating row (second host, 112
+threads, AllOpt with peeling and DynSTC) is not claimed: one in twenty-six is about chance at 95 %, and it reproduces
+at no other count on that host nor at 112 on ours.
 
 #### Redis: `redis-benchmark` clients (`REDIS_BENCH_CLIENTS`), pipeline 1024
 
@@ -540,20 +404,12 @@ ours (1.006 [0.884, 1.189]).
 | 256 | second host | 7.79 [7.23, 8.73] | 1.041 [1.008, 1.149] | 0.999 [0.913, 1.073] | 1.008 [0.970, 1.111] |
 | 512 | second host | 6.78 [6.77, 8.49] | 0.991 [0.936, 1.135] | 0.976 [0.866, 1.072] | 0.971 [0.928, 1.116] |
 
-**On our host the campaign's directional result holds at every client count; on the second host it does
-not.** On our host DynSTC's cost has an interval excluding 1.0 at every client count (0.944, 0.967, 0.975,
-0.975), and so does AllOpt with peeling and DynSTC: eight rows of eight. The smaller magnitude at 256 and 512
-is not reported as an effect of the client count: at pipeline depth 1024 this workload is insensitive to the
-count on this host (stock GET reads 3.74, 3.83 and 3.72 million operations per second at 50, 256 and 512, a
-spread smaller than the spread between runs of one arm; the count was confirmed to reach the tool from the
-live process's arguments), and magnitudes are not compared across sessions. On the second host stock
-throughput falls by about a quarter across the four counts, though the spread between runs of its 512-client
-arm is wider than the fall. There DynSTC reads 0.985, 1.035, 1.008 and 0.971 across the four counts, no
-interval excluding 1.0 and the sign changing twice, and that host's N = 2 run at the campaign's shape read
-1.066 (the comparison table under "The comparison condition" below). Redis's DynSTC cost is therefore a result
-on the campaign's host, robust to a tenfold change of client count there, and not a portable one. The second
-host's 256-client arm has AllOpt with peeling at 1.041 [1.008, 1.149], excluding 1.0, corroborated at no
-other count on either host and not claimed.
+**On our host DynSTC's cost holds at every client count; on the second host it does not.** On ours DynSTC, alone and
+with AllOpt with peeling, excludes 1.0 in all eight rows; the smaller magnitude at 256 and 512 is not a client-count
+effect (at pipeline depth 1024 stock GET reads 3.74, 3.83 and 3.72 million operations per second at 50, 256 and 512,
+within the spread between runs). On the second host DynSTC changes sign twice with no interval excluding 1.0. Redis's
+DynSTC cost is a result on the campaign's host, robust there to a tenfold change of client count, and not a portable
+one. The second host's AllOpt with peeling at 256 clients (1.041) is corroborated nowhere and not claimed.
 
 #### SQLite: `threadtest3 walthread1` threads (`SQLITE_W1_THREADS`), our host
 
@@ -566,16 +422,11 @@ other count on either host and not claimed.
 | 96 | 1.944 [1.904, 1.975] | 1.003 [0.993, 1.016] | 0.984 [0.975, 0.998] | 0.976 [0.965, 0.986] |
 | 112 | 1.940 [1.913, 1.966] | 1.009 [1.000, 1.020] | 0.991 [0.983, 1.005] | 0.980 [0.978, 0.994] |
 
-walthread1 alone is steady enough to resolve a two per cent effect. DynSTC's cost has an interval excluding
-1.0 at every one of the six thread counts, and AllOpt with peeling and DynSTC at four of the six. AllOpt with
-peeling is a well-resolved null at all six: 1.002 to 1.009, no interval wider than 0.04.
-
-These rows are a different workload from the campaign's SQLite rows (one twenty-second test, not the
-seven-subtest run; stock against native 1.83 to 1.94 here against 2.96 there, intervals three to eight times
-narrower), so they neither correct nor contradict them: the campaign's DynSTC row, 0.995 [0.928, 1.082],
-contains 1.0 and every number in this table. Together they say that SQLite's campaign rows are unresolved
-rather than null, and that on walthread1 DynSTC costs about two per cent. The SQLite section above makes its
-claim on the seven-subtest workload, so this row is reported here and not there.
+walthread1 alone resolves a two per cent effect: DynSTC's cost excludes 1.0 at all six counts, and with AllOpt with
+peeling at four; AllOpt with peeling is a well-resolved null (1.002 to 1.009, no interval wider than 0.04). It is a
+different workload from the campaign's seven subtests (stock against native 1.83 to 1.94 against 2.96), and the
+campaign's DynSTC row, 0.995 [0.928, 1.082], contains every number here: SQLite's campaign rows are unresolved rather
+than null, and the SQLite claim stays on the seven subtests.
 
 #### Whole-program summaries on top of DynSTC (`-wp`), our host, five runs
 
@@ -585,33 +436,17 @@ claim on the seven-subtest workload, so this row is reported here and not there.
 | SQLite | 1.026 [0.916, 1.101] | 0.951 [0.880, 1.020] | 0.969 [0.901, 1.062] | 61 897 → 61 793 |
 | memcached | 1.000 [0.935, 1.046] | 0.991 [0.930, 1.036] | 1.004 [0.950, 1.028] | 7 183 → 6 743 |
 
-A measured null on three applications, alone and on top of DynSTC: every interval contains 1.0, Redis's
-whole-program row reaching it exactly at 1.000. Summaries do remove instrumentation (2 566 static sites on
-Redis, 440 on memcached, 104 on SQLite), and removing it buys no time: as the results ledger found for
-dominance elimination, these analyses remove accesses the runtime's own fast path already answers in about
-fifteen cycles. The counters' earlier finding that summaries add 5.73 % executed accesses on SQLite remains an
-open discrepancy (`data/tools/perf/RESULTS.md`); this leg measures time and does not address it.
-
-**Conditions.** Every arm: five runs and a warm-up per configuration, run-major, the campaign's set and
-shape on each host (4-27,60-83 here, 0-23,32-55 on the second host), the machine otherwise quiet, the 0.10
-foreign-activity gate in force. On this host no cell was retired (highest outside-busy share 0.028). On the
-second host two native cells were (0.1076 in the 96-thread arm, 0.1088 in the 24-thread arm), re-run to
-completion inside their legs; both ship beside their replacements.
-
-**Where the data is.** Ours, under `data/perf/campaign-f3deebfbab60/`: `sweep-memcached-t{24,96,112}`,
-`sweep-redis-c{256,512}`, `sweep-sqlite-w1t*` and `wp-dynstc-{redis,sqlite,memcached}`. The second host's:
-`data/perf/sweep-amd-f3deebfbab60/`, one processor set per arm, the shipped compiler's hash in every cell. A
-cell records the thread count but not Redis's clients or SQLite's walthread1 threads, so each root ships the
-driver and its log, which name every arm with its knob value and its start and end. `scripts/90-tables.sh` regenerates every table above from those cells, and
-`scripts/91-verify-provenance.sh` checks both roots strictly.
+A measured null, alone and on top of DynSTC: the summaries remove sites (2 566 on Redis, 440 on memcached, 104 on
+SQLite) but not time, since, as the results ledger found for dominance elimination, the runtime's fast path already
+answers those accesses in about fifteen cycles. The counters' earlier finding of 5.73 % more executed accesses on
+SQLite remains an open discrepancy (`data/tools/perf/RESULTS.md`) that this time-only leg does not address.
 
 ### What an evaluator actually has to run
 
-Reproducing all five applications at fourteen configurations with five runs each took our campaign
-32 hours of measurement after about 7 hours of builds. The claims are per row, so a subset reproduces
-a subset, and the cost is linear in configurations and in runs. Measured from the campaign's per-cell
-costs (Redis 86 s, memcached 169 s, FFmpeg 110 s, SQLite 291 s, MySQL 1012 s), with one warm-up plus
-N runs per configuration:
+All five applications at fourteen configurations and N = 5 took our campaign 32 hours of measurement after about 7
+hours of builds. The claims are per row, so a subset reproduces a subset, and the cost is linear in configurations
+and runs. From the per-cell costs (Redis 86 s, memcached 169 s, FFmpeg 110 s, SQLite 291 s, MySQL 1012 s), with one
+warm-up plus N runs per configuration:
 
 | Mode | Runs | Configurations | Time on 48 processors | What a row yields |
 |---|---|---|---|---|
@@ -619,22 +454,28 @@ N runs per configuration:
 | everything at the default | N = 2 | all fourteen (MySQL four) | Redis 1.0 h, memcached 2.0, FFmpeg 1.2, SQLite 3.4, MySQL 3.4: **about 11 h**, 14 h with the builds | a point estimate, no interval |
 | our campaign | N = 5 | any of the above | twice the figures above (one warm-up plus five runs against one plus two); everything, 32 h of legs plus builds | a 95% interval |
 
+The times assume a quiet machine: a retired cell is run once more before it is dropped, so foreign load can double
+a leg and leave no data. The four default configurations decide everything the paper's figure turns on; Redis,
+memcached and FFmpeg, about an hour and a quarter together, cover what the campaign found.
+
 ```
 ./docker/run.sh scripts/40-perf.sh redis                 # default: four configurations, N = 2
 ART_RUNS=5 ./docker/run.sh scripts/40-perf.sh redis      # our setting: intervals
 ./docker/run.sh scripts/40-perf.sh redis --all-configs   # all fourteen
 ```
 
-Our own runs of the artifact the way an evaluator runs it, on this host and on the second host, are
-tabulated in `docs/evaluator-runs.md`.
+Our own evaluator-style runs on both hosts: `docs/evaluator-runs.md`. Below five runs a row is a point labelled
+"N = k, no interval; compare with the shipped interval", never a bootstrap over too few samples
+(`docs/confounds.md`, "Lower N is not a smaller interval"). `ART_SMOKE=1` only checks that the pipeline runs, and
+prints "not a measurement"; it does not shorten SQLite (`docs/campaign-parameters.md`, "Smoke mode").
 
-**The comparison condition.** A run is compared with these intervals when it is pinned to
-24 physical cores with both SMT threads of each (48 logical processors; `evaluate.sh` chooses such a set itself where
-the machine has one, 4-27,60-83 here and 0-23,32-55 on the second host), the machine is otherwise quiet, and the
-thread counts follow the campaign's rule (memcached one per logical processor, sysbench three quarters, FFmpeg an
-absolute 16). At the default N = 2 the criterion is that the point falls inside our interval; at N = 5 it
-is that the intervals overlap. The two runs of 22 Sep 2026 under exactly that condition, ours and the second host's,
-side by side (N = 2 each, no cell retired anywhere):
+**The comparison condition.** A run is compared with these intervals when it is pinned to 24 physical cores with both
+SMT threads of each (48 logical processors; `evaluate.sh` chooses such a set itself where the machine has one,
+4-27,60-83 here and 0-23,32-55 on the second host), the machine is otherwise quiet, and the thread counts follow the
+campaign's rule: the memcached server one thread per logical processor, sysbench three quarters of that, FFmpeg an
+absolute 16 (48, 36 and 16 on the 48-processor set; each cell's `meta.json` records its value). On another shape or
+processor count a row is reported with its thread count rather than compared (`docs/campaign-parameters.md`). The
+two runs of 22 Sep 2026 under exactly this condition, ours and the second host's (N = 2 each, no cell retired):
 
 | Row | This host | The second host | Shipped interval (N = 5) |
 |---|---|---|---|
@@ -648,93 +489,58 @@ side by side (N = 2 each, no cell retired anywhere):
 | SQLite, AllOpt with peeling | 1.032 | 1.113 | 1.023 [0.942, 1.061] |
 | SQLite, DynSTC | 0.930 | 1.122 | 0.995 [0.928, 1.082] |
 
-The four configurations decide everything the paper's figure turns on, and Redis, memcached and
-FFmpeg together, about an hour and a quarter, cover what this campaign found: DynSTC's cost on Redis and its
-gain on FFmpeg (about 19 per cent at 16 threads together with AllOpt with peeling), and the absence of a
-measurable effect elsewhere. MySQL is the expensive one and its
-table ships, so `scripts/90-tables.sh` gives it without running anything.
+**Match criterion for every configuration row.** At the default N = 2: the evaluator's point estimate falls inside
+our 95% interval, and for the rows whose interval excludes 1.0 (Redis under DynSTC, alone and with AllOpt with
+peeling; FFmpeg's three rows at 16 threads; FFmpeg's DynSTC row and its AllOpt-with-peeling-and-DynSTC row at 4
+threads) on the same side of 1.0. At N = 5: the evaluator's interval overlaps ours, a row whose interval contains 1.0
+here contains 1.0 there, and a row that excludes it excludes it on comparable hardware. The criterion applies to the
+configuration rows, each a ratio against stock ThreadSanitizer on the same machine in the same session, and not to the
+stock-against-native ratio at the top of each application, which the session drift governs: a value a few per cent
+outside that interval is the drift, not a mismatch. What makes each application's rows vary: `docs/confounds.md`.
 
-Two runs give no confidence interval, and the artifact does not print one: below five runs a row is
-rendered as a point estimate labelled "N = k, no interval; compare with the shipped interval", never
-as a bootstrap over too few samples (at N = 3 such an interval is narrower than at N = 5 while the
-point moves by about four points with the choice of runs, which is precision that is not there).
-`ART_SMOKE=1` is for checking that the pipeline runs and prints "not a measurement" on its own output. It
-drops to one run with no warm-up everywhere, but shortens the WORKLOAD only for memcached and MySQL; SQLite
-is not shortened at all and costs about what its measurement costs (`docs/campaign-parameters.md`,
-"Smoke mode", for what each application actually gets).
-
-**Match criterion for every configuration row.** At the default N = 2: the evaluator's point estimate
-falls inside our 95% interval, and for the rows whose interval excludes 1.0 (Redis under DynSTC, alone
-and with AllOpt with peeling; FFmpeg's three rows at 16 threads; FFmpeg's DynSTC row and its AllOpt-with-peeling-and-DynSTC row at 4
-threads) it
-falls on the same side of 1.0. At N = 5: the evaluator's interval overlaps ours, a
-row whose interval contains 1.0 here contains 1.0 there, and a row that excludes it excludes it on
-comparable hardware. The criterion applies to the configuration rows, each a ratio against stock
-ThreadSanitizer on the same machine in the same session. It does not apply to the stock-against-native
-ratio printed at the top of each application: that number is governed by the drift condition stated
-with the Redis rows (byte-identical binaries differed by 14% and 5% six days apart on this host), and an
-evaluator's value a few per cent outside its interval is that condition, not a mismatch.
-`docs/confounds.md` lists what makes this vary: memcached's throughput
-varies 1 to 3 per cent per configuration at N = 5 while its speedup intervals are 12 to 16 points wide
-(a ratio's bootstrap over five runs), SQLite's seven subtests are
-heterogeneous and two of them carry about 15 per cent run-to-run variation, and absolute
-overheads are not comparable across compiler trees even when ratios are.
-
-**What to conclude from a row outside its interval.** The comparator prints the distance. At N = 2 an
-outside row is first of all a two-run point against a five-run interval: re-run that application with
-`ART_RUNS=5 ./docker/run.sh scripts/40-perf.sh <app>` (about twice the default's time) and apply the
-N = 5 criterion (`docs/evaluator-runs.md` has an example). If it still falls outside: for a row whose shipped
-interval excludes 1.0 (the directional claims: DynSTC's cost on Redis, its gain on FFmpeg, and the FFmpeg rows at
-16 threads), the claim is
-reproduced when the evaluator's interval lies on the same side of 1.0 and not reproduced otherwise; for a
-row whose shipped interval contains 1.0 (claimed as no measurable change), an evaluator's interval that
-also contains 1.0 reproduces the claim whatever its width, and one that excludes 1.0 is a measurable
-effect we did not see, to be reported as such. The intervals describe our host. A machine of the same shape
-with another processor is judged all the same, and the second host's column above shows what that can give:
-FFmpeg's DynSTC gain appears on both hosts, while Redis's DynSTC cost does not reproduce there (1.066 at
-N = 2; 0.971 to 1.035 at N = 5 across four client counts, no interval excluding 1.0; the Redis curves above).
+**What to conclude from a row outside its interval.** The comparator prints the distance. At N = 2 it is first a
+two-run point against a five-run interval: re-run that application with
+`ART_RUNS=5 ./docker/run.sh scripts/40-perf.sh <app>` (about twice the default's time; `docs/evaluator-runs.md` has an
+example). If it is still outside, a directional row (DynSTC's cost on Redis, its gain on FFmpeg, the FFmpeg rows at 16
+threads) is reproduced when the evaluator's interval lies on the same side of 1.0 and not otherwise; a row claimed as
+no measurable change is reproduced by any interval containing 1.0, whatever its width, and one excluding 1.0 is an
+effect we did not see, to be reported as such. A machine of the same shape with another processor is judged all the
+same: on the second host FFmpeg's DynSTC gain appears, while Redis's DynSTC cost does not reproduce (1.066 at N = 2;
+0.971 to 1.035 at N = 5 across four client counts, no interval excluding 1.0).
 
 ## 6. Bounded shadow state
 
-The shipped data here come from compilers `f80e80b1dbe6` (the two-race experiment) and
-`e90a3fc41004` and `89e5d0078d2f` (the occupied-granule experiment), as `data/README.md` records; the
-script re-runs the occupied-granule experiment on the shipped compiler.
+The shipped data here come from compilers `f80e80b1dbe6` (the two-race experiment) and `e90a3fc41004` and
+`89e5d0078d2f` (the occupied-granule experiment), as `data/README.md` records; the script re-runs the
+occupied-granule experiment on the shipped compiler.
 
 | Claim | Script | Match criterion |
 |---|---|---|
 | ThreadSanitizer itself fails to report a planted race in about a quarter of runs on a fully occupied granule; the optimized builds sit in the same range where the burst remains instrumented | `scripts/50-eviction-stress.sh` | within the confidence intervals: stock about 75%, optimized 74 to 76% |
-| Dominance elimination trades losses against gains rather than only losing. The program plants two races on one granule, A-B and C-B, and a third thread's burst evicts A's record in 236 of 1000 runs (the same 236 under every build, since the burst is the same). **In those 236 runs DE reports A-B in 0 and stock in 54**: stock's second, dominated store of A re-inserts the record, DE has removed that store. In the other 764 runs both report A-B in exactly 174, so DE's loss on A-B is confined to the evicted runs. Conversely that re-inserting store of stock's evicts C's record in 71 runs, all among the 236, and stock reports C-B in none of those 71 (165 of 236), while DE, which never executes it, reports C-B in 236 of 236. Overall 0.93 reports per run against stock's 0.91 | recorded in `data/eviction-stress/de2-2026-09-03-f80e80b1dbe6/report.md`, not re-run: `scripts/50-eviction-stress.sh` runs experiment (a) only | the conditional counts, within their intervals: A-B given the eviction near 0 under DE and near a fifth under stock; C-B given the eviction all of them under DE and about two thirds under stock; outside the eviction the two builds equal |
+| Dominance elimination trades losses against gains rather than only losing. The program plants two races on one granule, A-B and C-B, and a third thread's burst evicts A's record in 236 of 1000 runs (the same 236 under every build, since the burst is the same). **In those 236 runs DE reports A-B in 0 and stock in 54**: stock's second, dominated store of A re-inserts the record, and DE has removed that store. In the other 764 runs both report A-B in exactly 174, so DE's loss on A-B is confined to the evicted runs. Conversely, that re-inserting store evicts C's record in 71 runs, all among the 236; stock reports C-B in none of those 71 (165 of 236), while DE, which never executes it, reports C-B in 236 of 236. Overall 0.93 reports per run against stock's 0.91 | recorded in `data/eviction-stress/de2-2026-09-03-f80e80b1dbe6/report.md`, not re-run: `scripts/50-eviction-stress.sh` runs experiment (a) only | the conditional counts, within their intervals: A-B given the eviction near 0 under DE and near a fifth under stock; C-B given the eviction all of them under DE and about two thirds under stock; outside the eviction the two builds equal |
 
 ## 7. Not claimed here
 
-Six things the submitted paper reports that this artifact does not support, named here so that a reader
-following the paper does not look for them:
-- **The static-reduction figures of the submitted version** (up to 65 %; 60.8, 34.7, 64.9, 55.6 and 14.5 %
-  per application). Measured with the submitted compiler. On the shipped compiler AllOpt without peeling
-  removes 2 to 8 per cent and AllOpt with peeling adds 5 to 14 per cent (section 3); the camera-ready
-  reports those.
+Six things the submitted paper reports that this artifact does not support:
+- **The static-reduction figures of the submitted version** (up to 65 %; 60.8, 34.7, 64.9, 55.6 and 14.5 % per
+  application), measured with the submitted compiler. On the shipped compiler AllOpt without peeling removes 2 to 8
+  per cent and AllOpt with peeling adds 5 to 14 per cent (section 3); the camera-ready reports those.
+- **Executed instrumentation per unit of work** (the paper's dynamic-reduction figures, 23 to 58 per cent). Not
+  re-measured on the shipped compiler; the counter runs under `data/perf/*-counters` are from an earlier compiler
+  and carry no stock baseline, so no comparison can be derived from them.
+- **Memory overhead** (the paper's shadow-memory reduction figures). Not measured; no data is shipped for it.
+- **The ReX comparison and the access-trace oracle** (the paper's appendix). The filter is research code behind a
+  build flag that is off by default and the oracle a tool on an internal branch; neither is in this repository, and
+  neither number can be reproduced from it.
+- **Chromium.** No performance number. Our only Chromium build is on an earlier compiler and corresponds to no
+  measurement in the paper; `docs/chromium.md` records the revision (`bdef6783a05f0b3f885591e7d2c7b2aec1a89dea`),
+  the configuration and the timeout patch.
+- **Loop peeling in isolation.** The peeling pair (AllOpt with against without peeling) crosses 1.0 on all four
+  applications where it was measured, at resolution floors of 2.5 to 5.7 per cent (section 5). The artifact claims
+  the static cost peeling carries (section 3) and no runtime verdict either way.
 
-- **Executed instrumentation per unit of work** (the paper's dynamic-reduction figures, 23 to 58 per
-  cent). Not re-measured on the shipped compiler. The counter runs under `data/perf/*-counters` are
-  from an earlier compiler and carry no stock baseline, so no comparison can be derived from them.
-- **Memory overhead** (the paper's shadow-memory reduction figures). Not measured in this campaign and
-  no data is shipped for it.
-- **The ReX comparison and the access-trace oracle** (the paper's appendix). The filter is research
-  code behind a build flag that is off by default, and the oracle is a tool on an internal branch;
-  neither is in this repository, and neither number can be reproduced from it.
-- **Chromium.** No performance number. The only Chromium build we have is on an earlier compiler
-  and corresponds to no measurement in the paper. `docs/chromium.md` records the revision
-  (`bdef6783a05f0b3f885591e7d2c7b2aec1a89dea`), the configuration and the timeout patch.
-- **Loop peeling in isolation.** Its runtime effect is smaller than any of these workloads resolves:
-  the peeling pair (AllOpt with against without peeling) crosses 1.0 on all four applications where it was
-  measured, at resolution floors of 2.5 to 5.7 per cent (section 5). The artifact claims the static cost
-  peeling carries (section 3) and not a runtime verdict either way.
-
-Expensive rather than unclaimed, and the distinction matters: **MySQL performance is claimed** in
-section 5 like every other application, from campaign runs that ship with the rest. What it is not is
-cheap to re-run: four configurations, four builds of about 8 minutes each on the shipped compiler, about
-3.4 hours of runs at the default N = 2 and seven at N = 5, and about 100 GB of disk. An evaluator who does not spend that gets the table from the shipped runs with
-`scripts/90-tables.sh`, which regenerates it without running anything; one who does gets the same
-comparison we made. It is measured at four configurations rather than fourteen because the campaign's
-configuration set was fixed when a build with the escape analysis took about 2.2 hours on the previous
-compiler; `docs/mysql.md`.
+Expensive rather than unclaimed: **MySQL performance is claimed** in section 5, from campaign runs that ship with the
+rest. Re-running it takes the time its script line gives and about 100 GB of disk; `scripts/90-tables.sh` regenerates
+its table from the shipped runs without running anything. Four configurations rather than fourteen, because the
+configuration set was fixed when a build with the escape analysis took about 2.2 hours on the previous compiler
+(`docs/mysql.md`).

@@ -39,7 +39,7 @@ git clone https://github.com/apaznikov/tsan-atc26-artifact.git && cd tsan-atc26-
 ./evaluate.sh reproduced     # Reproduced badge: the above, then the performance subset. About 3 hours (2 h 38 min on our host)
 ```
 
-Each tier contains the one before it, so one command is the whole job for a badge. `./evaluate.sh` with no
+Each tier contains the one before it, so run the one for your badge and not the others after it: chaining them repeats the correctness set each time. `./evaluate.sh` with no
 tier lists them and runs nothing; `<tier> --plan` prints a tier's steps and their expected times; `--rebuild`
 builds the image again from nothing; `everything` adds MySQL and all fourteen configurations, about 14 hours.
 Nothing asks a question once a tier starts.
