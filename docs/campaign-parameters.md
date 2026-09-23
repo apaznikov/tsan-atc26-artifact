@@ -60,7 +60,14 @@ the rule at the 48-processor pinned set. The intervals in `CLAIMS.md` describe t
 with them, pin 48 processors, where the rule reproduces 48 and 36 exactly. On a different count the rule
 yields that machine's point on the paper's own design, every cell records the value it ran with
 (`threads_setting` is the value it ran with, and `threads_from_env` says whether `MC_THREADS`,
-`MYSQL_THREADS` or `FF_THREADS` overrode it), and such a row is reported with its thread count rather than compared. Defect found by the
+`MYSQL_THREADS` or `FF_THREADS` overrode it), and such a row is reported with its thread count rather than
+compared. **`threads_from_env` is not trustworthy in a smoke run**, and an evaluator can meet that: the flag
+is decided from the three variables concatenated, `40-perf.sh` exports `FF_THREADS` in its smoke branch, so
+a smoke cell of any application records the flag as true whether or not the reader set anything. Confirmed
+on 23 Sep 2026 by a memcached smoke cell reading `threads_setting 28, threads_from_env True` with nothing
+exported: the 28 is the rule's own value for that processor set. Smoke output carries the NOT A MEASUREMENT
+marker and no shipped number is affected, so this is left for after the submission, to be repaired the way
+the workload knob already is — each flag decided from its own variable. Defect found by the
 rehearsal of 17 Sep 2026: the shipped defaults carried one erroneous `/2` (`NCPU/2` and `NCPU/2*3/4`), so
 the evaluator path ran memcached at 24 threads and would have run sysbench at 18 on the 48-processor set,
 while the campaign's values were set only by a lab launcher that is not shipped; the defaults now implement
@@ -359,7 +366,8 @@ evaluators) prints its numbers with an explicit "not a measurement" marker. What
 suggests, and was read out of `40-perf.sh:78-83` rather than assumed: the run count drops to one with no
 warm-up for every application, but the WORKLOAD is cut only for memcached (`MC_REQUESTS=2000`) and MySQL
 (`MYSQL_SECONDS=20`). `FF_THREADS=16` is a thread count, not a smaller job, so FFmpeg encodes the whole
-clip; Redis gets no workload variable at all and is short enough without one. And `SQLITE_TESTS=walthread1`
+clip; since the FFmpeg default itself became 16, that assignment now restates the default and its only
+remaining effect is the `threads_from_env` collision described above; Redis gets no workload variable at all and is short enough without one. And `SQLITE_TESTS=walthread1`
 has no effect on the default path: `run_sqlite_test.sh` reads that variable only inside its `--w1-threads`
 contention branch, so a smoke with the thread knob unset passes threadtest3 no test argument and its own
 substArgv expands that to the whole seven-subtest suite. Found by
