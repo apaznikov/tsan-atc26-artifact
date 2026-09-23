@@ -355,5 +355,11 @@ machine ten minutes apart differ in it.
 ## Smoke mode
 
 The artifact's `ART_SMOKE=1` mode (N = 1, reduced test lists, short durations, for laptop-class
-evaluators) prints its numbers with an explicit "not a measurement" marker: a single run has no
+evaluators) prints its numbers with an explicit "not a measurement" marker. One application is not
+shortened by it: `40-perf.sh` exports `SQLITE_TESTS=walthread1` in smoke mode, and `run_sqlite_test.sh`
+reads that variable only on its `--w1-threads` contention path, so a smoke run with the thread knob unset
+— the default — passes threadtest3 no test argument and gets the whole seven-subtest suite. Found by
+running one on 23 Sep 2026; not fixed then, because the one-line repair changes the command threadtest3
+receives on the default path, which is the path every shipped SQLite number came from, and that is not a
+change to make beside a verification run. The marker itself is sound: a single run has no
 interval and cannot have one, and a bare figure would be quoted.

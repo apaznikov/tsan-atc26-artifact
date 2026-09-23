@@ -82,6 +82,17 @@ prints a warning naming the daemon's set when it is less than asked; choose `ART
 set. The correctness set refuses below 8 processors for a reason stated in its message: below that,
 tests that pass by reporting nothing can pass for want of an interleaving.
 
+## `ART_SMOKE=1 scripts/40-perf.sh sqlite` is not short
+
+It is not hung: SQLite is the one application whose smoke run is not shortened. Smoke mode exports
+`SQLITE_TESTS=walthread1`, and `run_sqlite_test.sh` reads that variable only on its `--w1-threads`
+contention path; with the thread knob unset, which is the default, threadtest3 is invoked with no test
+argument and runs the whole seven-subtest suite on each of the four builds. Expect roughly the time of a
+SQLite measurement rather than a few minutes. To check that the pipeline works on your machine, smoke
+Redis or memcached instead; both are a couple of minutes. (Found 23 September 2026 by running one; the
+repair changes the command threadtest3 receives on the path every shipped SQLite number came from, so it
+is deliberately not in this release.)
+
 ## "Instrumentation counts differ from CLAIMS.md by a few calls"
 
 The counts are of `__tsan_read*`/`__tsan_write*` calls in the whole binary and include code that

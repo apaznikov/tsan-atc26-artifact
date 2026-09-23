@@ -740,7 +740,9 @@ Two runs give no confidence interval, and the artifact does not print one: below
 rendered as a point estimate labelled "N = k, no interval; compare with the shipped interval", never
 as a bootstrap over too few samples (at N = 3 such an interval is narrower than at N = 5 while the
 point moves by about four points with the choice of runs, which is precision that is not there).
-`ART_SMOKE=1` is for checking that the pipeline runs and prints "not a measurement" on its own output.
+`ART_SMOKE=1` is for checking that the pipeline runs and prints "not a measurement" on its own output. It
+shortens the workload for every application except SQLite, whose smoke run executes the full seven-subtest
+suite and therefore takes about as long as a measurement (`docs/campaign-parameters.md`, "Smoke mode").
 
 **Match criterion for every configuration row.** At the default N = 2: the evaluator's point estimate
 falls inside our 95% interval, and for the rows whose interval excludes 1.0 (Redis under DynSTC, alone
