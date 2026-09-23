@@ -1,8 +1,0 @@
---- Running Benchmark for: tsan-sound ---
-Executable: build/test-tsan-sound/threadtest3
-Full Command: build/test-tsan-sound/threadtest3
-Output will be saved to: results/tsan-sound.log
-Memory usage will be saved to: results/memory.txt
-Running, please wait...
---- Benchmark for [tsan-sound] completed successfully. ---
-

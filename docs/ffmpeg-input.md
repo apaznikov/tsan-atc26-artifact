@@ -46,14 +46,14 @@ audio track like the clip it replaces.
 | video bit rate | 6.41 Mbit/s | 6.52 Mbit/s |
 | audio | Vorbis 48 kHz stereo | Vorbis 48 kHz stereo |
 
-The paper's FFmpeg column and the Stage B runs used the retired clip; within the campaign every
+The paper's FFmpeg column and the runs of the earlier campaign (compiler `d3bf9f8c39fe`) used the retired clip; within the campaign every
 configuration shares this clip. A control leg on the campaign compiler with the retired clip, four
 configurations, measures the clip's own contribution: its ratios agree with the reference clip's within
-their intervals (`CLAIMS.md`, the FFmpeg section at `-threads 4`). Its runs are not shipped, because the
+their intervals (`PERFORMANCE.md`, the FFmpeg section at `-threads 4`). Its runs are not shipped, because the
 retired clip has no recorded provenance or licence and cannot be redistributed.
 
 Why a real clip and not a synthetic pattern: the one substantial FFmpeg result in the paper
-(DynSTC, about 1.12x) depends on the workload having genuinely single-threaded phases; a synthetic
+(DynSTC, 1.15) depends on the workload having genuinely single-threaded phases; a synthetic
 test source compresses trivially and does not exercise them.
 
 `harness/projects/ffmpeg/ensure_input_clip.sh`, run by the FFmpeg build before anything is compiled,

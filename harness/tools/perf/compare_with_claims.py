@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """compare_with_claims.py — did your run reproduce ours?
 
-    compare_with_claims.py CLAIMS.md results/perf-redis-20260918-120000 [more trees...]
+    compare_with_claims.py PERFORMANCE.md results/perf-redis-20260918-120000 [more trees...]
 
 For every configuration row the artifact claims, prints your value, our shipped interval, and a verdict.
 Exit codes, because three outcomes were being spelled as two:
@@ -53,7 +53,7 @@ def _heading_threads(line):
     return None
 
 def claims_rows(path):
-    """{app: {threads_key: {row: (point, lo, hi)}}} from CLAIMS.md's own tables.
+    """{app: {threads_key: {row: (point, lo, hi)}}} from PERFORMANCE.md's own tables.
 
     threads_key is the count the section heading states, or None where it states none (Redis, SQLite).
     The upstream-flag table is stored under the extra key "flag": {threads_key: {configuration: iv}},
@@ -266,9 +266,9 @@ def main():
     not_comparable = other_unjudged = 0
     # WHICH FIGURES THESE VERDICTS ARE AGAINST, said before the table rather than left to be inferred.
     # The artifact's intervals are the campaign on the shipped compiler, which is the camera-ready's set of
-    # figures; the submitted version's numbers are a separate column in CLAIMS.md and are not what a row is
+    # figures; the submitted version's numbers are a separate column in PERFORMANCE.md and are not what a row is
     # judged against. A reader who assumes the wrong one misreads every line below. (2026-09-21.)
-    print("Verdicts are against the intervals in CLAIMS.md section 5: the campaign on the shipped compiler,")
+    print("Verdicts are against the intervals in PERFORMANCE.md: the campaign on the shipped compiler,")
     print("the camera-ready's figures. The submitted version's figures are in that file's 'Paper' column.")
     print()
     print(f"{'app':10} {'row':24} {'yours':>22}  {'ours (N=5)':22} verdict")
@@ -330,7 +330,7 @@ def main():
             if threads and threads in buckets:
                 bucket, tkey = buckets[threads], threads
             elif threads:
-                why = why or (f"not comparable: {threads} threads; CLAIMS.md has rows at {', '.join(tkeys)}")
+                why = why or (f"not comparable: {threads} threads; PERFORMANCE.md has rows at {', '.join(tkeys)}")
             else:
                 why = why or "not judged: this run records no effective thread count"
         else:
@@ -392,7 +392,7 @@ def main():
                     reason = (f"no label for configuration {label[13:]!r}; add it to LABEL in "
                               "compare_with_claims.py so this row can be compared")
                 else:
-                    reason = why or "not in CLAIMS.md for this application at this thread count"
+                    reason = why or "not in PERFORMANCE.md for this application at this thread count"
                 if label != "stock vs native":
                     if why and why.startswith("not comparable") and not label.startswith("(unlabelled) "):
                         not_comparable += 1
@@ -436,15 +436,15 @@ def main():
             print(f"{'':10}   basis: {basis}")
         missing = [r for r in bucket if r not in rows]
         if printed and missing:
-            print(f"{app:10} {len(missing)} of {len(bucket)} rows CLAIMS.md ships for this application"
+            print(f"{app:10} {len(missing)} of {len(bucket)} rows PERFORMANCE.md ships for this application"
                   + (f" at {tkey} threads" if tkey else "")
                   + " were not produced by this run"
                   + (" (the default subset)" if len(rows) <= 4 else "") + "; nothing is judged for them.")
         if not printed:
-            cl = sorted(bucket) or ["(none parsed from CLAIMS.md)"]
+            cl = sorted(bucket) or ["(none parsed from PERFORMANCE.md)"]
             rn = sorted(rows) or ["(none parsed from the run's table)"]
             print(f"{app:10} {'-':24} {'':>22}  {'':22} TABLES COULD NOT BE MATCHED")
-            print(f"{'':10}   CLAIMS.md offers: {', '.join(cl)}")
+            print(f"{'':10}   PERFORMANCE.md offers: {', '.join(cl)}")
             print(f"{'':10}   the run offers:   {', '.join(rn)}")
             print(f"{'':10}   no row name appears on both sides, so nothing could be compared.")
             unjudged += 1

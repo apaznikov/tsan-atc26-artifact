@@ -17,7 +17,7 @@ export ART_DATA="${ART_DATA:-$ART_ROOT/data}"
 # the CPUs OUTSIDE the set, and with no set there is nothing to measure. Unpinned runs record
 # outside_busy_share = null with gate_checked = false in session.json and print "not gate-checked"; do not
 # compare them with the pinned numbers in
-# CLAIMS.md as if the conditions matched.
+# PERFORMANCE.md as if the conditions matched.
 export ART_CPUSET="${ART_CPUSET:-}"
 # Memory cap for the container (docker --memory), empty for none; e.g. ART_MEMORY=16g for the README's minimum.
 export ART_MEMORY="${ART_MEMORY:-}"
@@ -27,7 +27,7 @@ export ART_IMAGE="${ART_IMAGE:-tsan-atc26}"
 # Number of measured runs per configuration and whether a discarded warm-up run precedes them.
 # Three modes, and the tables say which one produced them:
 #   ART_RUNS=2  (default)  a point estimate per row, no confidence interval; the reviewer's mode.
-#                          Match criterion: the point falls inside the interval shipped in CLAIMS.md.
+#                          Match criterion: the point falls inside the interval shipped in PERFORMANCE.md.
 #   ART_RUNS=5             our campaign; a 95% bootstrap interval per row; criterion: intervals overlap.
 #   ART_SMOKE=1            one run, reduced workloads; printed as "not a measurement".
 # No interval is ever printed for fewer than five runs.
@@ -51,7 +51,7 @@ export ART_FFMPEG_SOURCE="${ART_FFMPEG_SOURCE:-}"
 # Workload thread counts. Empty means the campaign's rule (docs/campaign-parameters.md): one memcached server
 # thread per processor of the pinned set, three quarters of that for sysbench, FFmpeg at an absolute 16
 # (libx265's ceiling, where the thread sweep found the paper's transforms gain most; the paper's
-# own count was 4, and FF_THREADS=4 is compared with the 4-thread rows of CLAIMS.md). Set
+# own count was 4, and FF_THREADS=4 is compared with the 4-thread rows of PERFORMANCE.md). Set
 # one to measure a different point; every cell records the value it ran with (threads_setting) and whether
 # it was overridden (threads_from_env). docker/run.sh forwards all three.
 export MC_THREADS="${MC_THREADS:-}"

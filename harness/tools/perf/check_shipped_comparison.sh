@@ -2,7 +2,7 @@
 # check_shipped_comparison.sh [<artifact-root>] — does the shipped campaign still reproduce ITSELF?
 #
 # Runs compare_with_claims.py over the shipped campaign data as if it were an evaluator's run. If the
-# numbers in CLAIMS.md no longer agree with the data CLAIMS.md ships, that is a documentation defect the
+# numbers in PERFORMANCE.md no longer agree with the data it ships, that is a documentation defect the
 # artifact can detect on its own, without a machine and without measuring anything.
 #
 # THE ROOT IS NOT NAMED perf-<app>-<stamp>, which is how the tool resolves the application, so five
@@ -10,7 +10,7 @@
 # construction, 2026-09-20.)
 #
 # WHAT IS ASSERTED, AND WHY NOT THE ROW COUNT. Two conditions: at least one row was judged, and none was
-# outside. The count itself is PRINTED, not asserted: the shipped data is frozen but CLAIMS.md is not, so
+# outside. The count itself is PRINTED, not asserted: the shipped data is frozen but the document is not, so
 # a configuration row added to the documents would change the count and fail a hardcoded 48 for a reason
 # that is not a defect. Asserting "some rows judged" is what stops the vacuous pass, which is the failure
 # that matters -- "0 judged, 0 outside" must never read as success.
@@ -29,9 +29,9 @@ if [ -z "$ART" ]; then
   [ -n "$ART" ] || { echo "cannot find the artifact root: tried $HERE/../../.. and $HOME/tsan-atc26-artifact" >&2
                      echo "  pass it as the first argument" >&2; exit 2; }
 fi
-CLAIMS="$ART/CLAIMS.md"
+CLAIMS="$ART/PERFORMANCE.md"
 ROOT=$(ls -d "$ART"/data/perf/campaign-*/primary 2>/dev/null | head -1)
-[ -f "$CLAIMS" ] || { echo "no CLAIMS.md at $CLAIMS" >&2; exit 2; }
+[ -f "$CLAIMS" ] || { echo "no PERFORMANCE.md at $CLAIMS" >&2; exit 2; }
 [ -n "$ROOT" ]   || { echo "no data/perf/campaign-*/primary under $ART" >&2; exit 2; }
 
 # THE TWO FILES AGREE BY CONVENTION; THIS MAKES THE CONVENTION FAIL BY NAME. compare_with_claims.py finds
@@ -75,8 +75,8 @@ if [ -z "${judged:-}" ] || [ "${judged:-0}" -eq 0 ]; then
   exit 1
 fi
 if [ "${outside:-1}" -ne 0 ]; then
-  echo "FAIL: $outside of $judged shipped rows fall outside the intervals CLAIMS.md prints for them."
+  echo "FAIL: $outside of $judged shipped rows fall outside the intervals PERFORMANCE.md prints for them."
   echo "      The documents and the data they ship disagree; one of them is wrong."
   exit 1
 fi
-echo "ok: $judged shipped rows judged, none outside — CLAIMS.md agrees with the data it ships."
+echo "ok: $judged shipped rows judged, none outside — PERFORMANCE.md agrees with the data it ships."

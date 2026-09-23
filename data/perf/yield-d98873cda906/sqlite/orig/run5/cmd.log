@@ -1,8 +1,0 @@
---- Running Benchmark for: orig ---
-Executable: build/test-orig/threadtest3
-Full Command: build/test-orig/threadtest3
-Output will be saved to: results/orig.log
-Memory usage will be saved to: results/memory.txt
-Running, please wait...
---- Benchmark for [orig] completed successfully. ---
-

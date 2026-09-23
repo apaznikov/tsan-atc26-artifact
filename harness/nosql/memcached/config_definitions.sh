@@ -39,21 +39,8 @@ CONFIG_DETAILS["tsan-sound"]="-mllvm -tsan-use-escape-analysis-global \
 # symbol names, outside the linked IR, no threads, no callbacks — list of 2026-09-05):
 # memcached's libevent setup calls before the first thread, plus glibc 2.38's __isoc23_* conversion aliases
 # and getsubopt/__getdelim/preadv, which neither TargetLibraryInfo nor the built-in list knows yet.
-# tsan-yoff: turn the yield copy's seven changes off inside the same compiler
-# (a frozen copy of d98873cda906, where all six switches default to on). A "-yoff" row is the
-# A/B partner of the same configuration without the suffix: same compiler, same binary layout, only the yield
-# changes differ, so the pair isolates them from the stage-b2 changes underneath.
-CONFIG_DETAILS["tsan-yoff"]="-mllvm -tsan-dynstc-runs-across-thread-free-calls=false \
-                             -mllvm -tsan-de-atomics-by-ordering=false \
-                             -mllvm -tsan-de-cover-containment=false \
-                             -mllvm -tsan-swmr-readonly-call-args=false \
-                             -mllvm -tsan-ea-later-escape-uses-summaries=false \
-                             -mllvm -tsan-intercepted-call-table=false"
-
 # tsan-nofe: drop the shadow-stack maintenance (__tsan_func_entry/__tsan_func_exit) and keep every memory-access
 # callback. Loses no race — each access is still instrumented and recorded — but reports lose their calling
 # context, so L1 and L2 keys move while L3 is unaffected. A profiling arm, not a shippable configuration.
 CONFIG_DETAILS["tsan-nofe"]="-mllvm -tsan-instrument-func-entry-exit=false"
 
-# tsan-nomerge: the granule merge off, for the A/B inside tsan-merge-afe47a2a75a5(-astats), where it defaults ON.
-CONFIG_DETAILS["tsan-nomerge"]="-mllvm -tsan-merge-granule-accesses=false"

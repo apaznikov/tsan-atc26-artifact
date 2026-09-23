@@ -1,8 +1,8 @@
 # Campaign parameters
 
-Every parameter of the performance campaign that `CLAIMS.md` section 5 rests on
+Every parameter of the performance campaign that `PERFORMANCE.md` rests on
 (`data/perf/campaign-f3deebfbab60/`), so that any run can be repeated exactly. The concurrency of each
-application was fixed before the campaign ran (`data/notes/preregistration-2026-09-13.md`).
+application was fixed before the campaign ran; the table below gives it.
 
 ## Machine and compiler
 
@@ -25,7 +25,7 @@ application was fixed before the campaign ran (`data/notes/preregistration-2026-
 FFmpeg, SQLite and Redis run at the parameters of the paper's original measurements. memcached and MySQL run
 at the pinned set's values, with the whole-machine values (112 and 84, the paper's original policy) as the
 second row. FFmpeg's resolvable set is all four codecs; SQLite's resolvable set is decided per leg from the
-stock baseline's pooled coefficient of variation (`CLAIMS.md` section 5).
+stock baseline's pooled coefficient of variation (`PERFORMANCE.md`, "The campaign").
 
 **The thread rule.** The memcached server runs one thread per logical processor of the set it is pinned to,
 sysbench three quarters of that, and FFmpeg an absolute `-threads 16` (libx265's ceiling: it refuses more
@@ -87,7 +87,7 @@ bench set still puts the outside processors several times over the gate.
 Equal logical-processor counts are not equal machines. The campaign's 48 logical processors are 24 physical
 cores with both SMT siblings of each; 48 contiguous processors on another host can be 48 separate cores, twice
 the compute under the same count, or, on a 2-socket 16-core host, 32 cores with 16 of them doubled. Every cell
-records `n_physical_cores` and `smt_pairs_complete` (from `tools/perf/cpu_snapshot.py --topology`); the
+records `n_physical_cores` and `smt_pairs_complete` (from `harness/tools/perf/cpu_snapshot.py --topology`); the
 campaign's cells predate those fields, so its shape ships as `shape.json`. `evaluate.sh` chooses the first 24
 complete sibling pairs the Docker daemon grants (4-27,60-83 on our host; 0-23,32-55 on the AMD host), and the
 comparator refuses a run of another shape. `docs/evaluator-runs.md` shows what another shape did to memcached.
@@ -112,19 +112,18 @@ On the shipped compiler, after the campaign: memcached's server threads at 24, 9
 256 and 512, SQLite's walthread1 threads at six counts, whole-program summaries with DynSTC, and the memcached
 and Redis curves on the AMD host. A value would have replaced the campaign's default only if, at five runs on
 the campaign's host, its interval for the best configuration were no wider and its point higher; no default
-changed. The arms, their intervals and the reasons are in `CLAIMS.md` section 5, "Concurrency curves and
-whole-program summaries"; the data is under `data/perf/campaign-f3deebfbab60/sweep-*`,
+changed. The arms, their intervals and the reasons are in `PERFORMANCE.md`, "Concurrency curves and
+whole-program summaries, measured after the campaign"; the data is under `data/perf/campaign-f3deebfbab60/sweep-*`,
 `data/perf/campaign-f3deebfbab60/wp-dynstc-*` and `data/perf/sweep-amd-f3deebfbab60/`. These cells record the
 thread count but not Redis's clients or SQLite's walthread1 threads, so `sweep-legs.log` and `sweep-legs.sh`
-(and `legs.log`, `legs.sh` on the AMD root) name each arm with its knob value; the harness now writes the knob
+(and `legs.log`, `legs.sh` on the AMD root) name each arm with its knob value; the shipped harness writes the knob
 into every cell's metadata.
 
 ## Earlier trees
 
 The trees shipped beside the campaign were recorded on earlier compilers and support no claim;
-`scripts/91-verify-provenance.sh` checks each against its own compiler. Stage B
-(`data/perf/stageB-d3bf9f8c39fe`) is internally consistent: 500 runs, one compiler, one processor set, one
+`scripts/91-verify-provenance.sh` checks each against its own compiler. The earlier campaign on compiler
+`d3bf9f8c39fe` (`data/perf/stageB-d3bf9f8c39fe`, "Stage B" in the tree names) is internally consistent: 500 runs, one compiler, one processor set, one
 mode. Its FFmpeg runs record an empty input hash (a relative input path, fixed in the campaign's harness), and
-five of its 500 runs sit above today's 0.10 gate (0.103 to 0.166), inside the 0.25 gate in force when they
-were taken. The counter and profile trees (`combo-counters`, `merge-counters`, `profile-2026-09-09*`) record
-no compiler per run; their compiler is named in their build logs and in `data/README.md`.
+five of its 500 runs sit above the campaign's 0.10 gate (0.103 to 0.166), inside the 0.25 gate in force when they
+were taken.

@@ -1,8 +1,8 @@
 # Shadow-cell pressure and instrumentation elision
 
-Documents `evict_stress.c`, `merge_stress.c`, `de_stress.c`, `de_stress2.c` and the scripts that build and
-run them (`build.sh`, `run.sh`, `de_run.sh`, `de_run2.sh`). The question: when instrumentation is elided,
-does TSan miss races it would otherwise find under shadow-cell pressure?
+Documents `evict_stress.c` and `de_stress2.c` and the scripts that build and run them (`build.sh`,
+`run.sh`, `de_run2.sh`). The question: when instrumentation is elided, does TSan miss races it would
+otherwise find under shadow-cell pressure?
 
 ## Program (`evict_stress.c`)
 
@@ -46,10 +46,6 @@ outcomes are kept next to the report. Set `LLVM_TSAN_ROOT` to build against anot
   same builds report the race in 0 % of runs. Read the constant, not its value.
 
 ## Variants
-
-`de_stress.c` / `de_run.sh`: thread A stores `x` twice in one function with no synchronization between them,
-so the second store is dominated and elided by dominance analysis; the question is whether the surviving
-record still reports.
 
 `de_stress2.c` / `de_run2.sh`: two planted races on one granule, exercising both of dominance analysis's
 bounded-shadow effects at once.

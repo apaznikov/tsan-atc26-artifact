@@ -36,7 +36,7 @@ host's `libsqlite3-dev`, which declares SQLite 3.45.1, while linking the amalgam
 archive produces: the build script's include path did not carry the amalgamation's own header, so a system
 header was used when one was installed. We checked the two structures the SQLite test shim depends on,
 `sqlite3_vfs` and `sqlite3_io_methods`, and they are byte-for-byte identical between 3.45.1 and 3.50.2, so
-this is a provenance discrepancy and not a correctness one. The build script now puts the amalgamation's
+this is a provenance discrepancy and not a correctness one. The shipped build script puts the amalgamation's
 own header first (`-I build/`), so every build compiles against the version the archive pins, and a host
 with no `libsqlite3-dev` builds correctly.
 

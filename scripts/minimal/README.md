@@ -10,6 +10,7 @@ To add a case of your own: put the program in this directory, add one line to th
 the script. A case is only evidence if the removal it shows cannot happen without the
 analysis: keep the flags minimal, and check that the stock build instruments the access you expect by reading
 the two counts the script prints rather than the difference alone. `tests/ir/` holds the same idea at the IR
-level, where each removal test has a negative control that must keep the instrumentation, and
-`scripts/11-soundness-shapes.sh` runs them with a check that refuses a test that would pass with the analysis
-switched off.
+level, in the ledger's terms (`compiler/TSanAnalysesAudit.md`, "Method"): each fixed shape has a negative test
+that must keep the instrumentation and fails on the commit before the fix, and a positive control that must
+still remove it. `scripts/11-soundness-shapes.sh` runs them with a check that refuses a removal test that would
+pass with the analysis switched off.

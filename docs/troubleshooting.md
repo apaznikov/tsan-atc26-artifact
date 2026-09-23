@@ -74,7 +74,7 @@ container, for example) loses the table and not the runs. Regenerate it from the
 
 The processor set you pass is intersected with the set the Docker daemon itself is allowed to use, and
 a daemon confined by systemd (`AllowedCPUs=` on `docker.slice`) may not have every processor; on our
-host a request for 0-7 gives the container 4-7. `docker/run.sh` now asks the container what it got and
+host a request for 0-7 gives the container 4-7. `docker/run.sh` asks the container what it got and
 prints a warning naming the daemon's set when it is less than asked; choose `ART_CPUSET` inside that
 set. The correctness set refuses below 8 processors for a reason stated in its message: below that,
 tests that pass by reporting nothing can pass for want of an interleaving.
@@ -157,11 +157,11 @@ container writes); the "started HH:MM:SS" lines on the console are local time.
 
 Not a failure. Every step passed and the performance run is valid; no row was judged because this machine's
 processor-set shape (physical cores and complete SMT sibling pairs, recorded per cell), thread count or FFmpeg
-input is not the campaign's, and the comparator says which on each row. The intervals in `CLAIMS.md` section 5
+input is not the campaign's, and the comparator says which on each row. The intervals in `PERFORMANCE.md`
 describe 24 physical cores with both SMT threads (48 logical processors); on such a machine `evaluate.sh` pins
 that set itself, elsewhere set `ART_CPUSET` to a set of that shape if the machine has one. On any other shape
 read the ratios beside the intervals by eye: FFmpeg's DynSTC gain appeared on both hosts we ran, while Redis's
-DynSTC cost did not reproduce on the second one (`CLAIMS.md` section 5). Exit status 3 distinguishes this from a clean
+DynSTC cost did not reproduce on the second one (`PERFORMANCE.md`, the Redis curves). Exit status 3 distinguishes this from a clean
 comparison (0) and from a judged row outside its interval (1).
 
 ## The image build stops in an `apt-get install` layer with "did not complete successfully: exit code: 100"

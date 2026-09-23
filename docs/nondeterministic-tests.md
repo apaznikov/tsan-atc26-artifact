@@ -22,7 +22,7 @@ ours on any machine; a pass count taken on one core is not, and we do not quote 
 
 `31-preservation-apps.sh` runs each application with reporting on, N times per configuration, and
 compares the sites reported. Detection there is schedule-dependent, so the set of sites we saw (five
-on SQLite over 10 runs) is what our schedule produced, and a reviewer's run can legitimately see
+on SQLite over 10 runs) is what our schedule produced, and an evaluator's run can legitimately see
 fewer or more. The script therefore never compares against a fixed set. It prints, for stock and for
 each configuration, how many of the N runs reported each site, and classifies each site by the
 configuration's count first. KEPT: the configuration reported it in at least one run, so it can find

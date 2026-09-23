@@ -1,7 +1,7 @@
 # Chromium: documented, not runnable here
 
-The paper's Chromium column is not claimed by this artifact. Reasons, and what is recorded so the
-experiment is reproducible in principle:
+The paper's Chromium column is not claimed by this artifact. Reasons, and what is recorded about the
+experiment:
 
 - A Chromium checkout is over a terabyte and a single instrumented build takes hours per
   configuration; no evaluator can be asked to do that, and it does not fit the container.
@@ -20,5 +20,6 @@ What is recorded:
 | CPU set | 16 to 48 pinned CPUs; a private Xvfb; Telemetry's browser-startup timeout raised from 60 s to 600 s |
 | Known issue | `SierpinskiCarpet` in `blink_perf.svg` exceeds Telemetry's 10-minute per-story cap under ThreadSanitizer and is absent from instrumented rows |
 
-The table above is what a reader would need to rebuild the experiment from a Chromium checkout at that
-revision; budget days, not hours.
+The table records what the experiment used. The build configuration, the compiler-flag line and the
+Telemetry timeout changes are described but not shipped, so the experiment cannot be rebuilt from this
+repository alone.

@@ -10,7 +10,7 @@
 #                                64 processors, 48 min on 8).
 #   ./evaluate.sh reproduced     Optional: the whole functional tier first, then the performance
 #                                subset, Redis, memcached, FFmpeg and SQLite at the defaults (four configurations,
-#                                two runs), compared with the intervals CLAIMS.md ships. About 3 hours (2 h 38 min
+#                                two runs), compared with the intervals PERFORMANCE.md ships. About 3 hours (2 h 38 min
 #                                measured on our host). Runs on any processor count; the comparison with our
 #                                intervals needs the campaign's shape pinned, 24 physical cores with both SMT
 #                                threads (48 logical processors, chosen here when the machine has them), and a
@@ -142,7 +142,7 @@ if [ "$perf_tier" = 1 ]; then
     echo "     ART_CPUSET=$ART_CPUSET (our runs used 48 processors, 4-27 and 60-83 on our host)."
   fi
   echo "  2. Names. The tables use the harness's configuration names: orig = native, no ThreadSanitizer; tsan ="
-  echo "     stock ThreadSanitizer; tsan-dom_peeling-ea-lo-st-swmr = AllOpt with peeling, the paper's AllOpt;"
+  echo "     stock ThreadSanitizer; tsan-dom_peeling-ea-lo-st-swmr = AllOpt with peeling;"
   echo "     tsan-stmt = DynSTC. Each configuration row is a ratio against tsan: above 1.0 is faster than stock."
   if [ -n "${ART_FFMPEG_CLIP_URL:-}" ]; then
     echo "  3. FFmpeg. The reference clip is fetched from the artifact's GitHub release (78 MB) and verified by sha256,"
@@ -152,9 +152,9 @@ if [ "$perf_tier" = 1 ]; then
     echo "  3. FFmpeg. ART_FFMPEG_CLIP_URL is empty: the run regenerates the input from the Blender source (557 MB), its"
     echo "     timings are valid, and its three rows print 'not comparable' by design (docs/ffmpeg-input.md)."
   fi
-  echo "  4. The end. The tier ends with one line per configuration row of this run against the interval CLAIMS.md"
+  echo "  4. The end. The tier ends with one line per configuration row of this run against the interval PERFORMANCE.md"
   echo "     ships for it (IN; OUT with the distance; not judged; not comparable) and 'N rows judged'. What an OUT"
-  echo "     row can mean, and the five-run re-check for it, is CLAIMS.md section 5, 'Match criterion'."
+  echo "     row can mean, and the five-run re-check for it, is PERFORMANCE.md, 'Match criterion'."
   # No question: a reader who named a tier meant it, --plan exists for looking first, and a prompt breaks
   # every run under nohup, tmux scripts and CI. --yes is accepted and ignored.
   : "$yes"
@@ -275,7 +275,7 @@ for s in "${steps[@]}"; do
   rm -f "$step_out"
 done
 # The performance tiers end with the comparison an evaluator came for: every row this run produced
-# against the interval CLAIMS.md ships for it. The script reads the intervals out of CLAIMS.md's own
+# against the interval PERFORMANCE.md ships for it. The script reads the intervals out of PERFORMANCE.md's own
 # tables and the expected thread counts out of the shipped campaign runs, so nothing is hardcoded; its
 # silence is never a pass, six of its nine output states are refusals, and its "rows judged" line is
 # the one to read first. A judged row outside its interval is reported as such, not as a failure of
@@ -289,14 +289,14 @@ if [ "$perf_tier" = 1 ] && [ "$verdict" != FAIL ]; then
     # is a failure of the tier and not a silent skip: without this the whole tier could report PASS
     # having compared nothing at all.
     echo
-    echo "No performance results were produced by this run, so nothing could be compared with CLAIMS.md."
+    echo "No performance results were produced by this run, so nothing could be compared with PERFORMANCE.md."
     echo "Looked for directories named perf-* under results/ created after the run began."
     verdict=FAIL; failed="the performance tier produced no results to compare"
   fi
   if [ -n "$trees" ]; then
     echo
-    echo "Comparison with the intervals in CLAIMS.md (section 5):"
-    ./docker/run.sh python3 harness/tools/perf/compare_with_claims.py CLAIMS.md $trees 2>&1 | tee -a "$log"
+    echo "Comparison with the intervals in PERFORMANCE.md:"
+    ./docker/run.sh python3 harness/tools/perf/compare_with_claims.py PERFORMANCE.md $trees 2>&1 | tee -a "$log"
     cmp_rc=${PIPESTATUS[0]}
     # 0: every judged row inside. 2: nothing could be compared for a machine reason (the processor-set shape,
     # a thread count, the input) and nothing was outside: the run is valid and unjudged, which is not a failure
@@ -315,13 +315,13 @@ if [ "$verdict" = PASS ] && [ "${compared:-}" = NOTAPPLICABLE ]; then
   echo "Every step ran and passed. No performance row could be compared with our intervals, for the reason each row"
   echo "prints (this machine's processor-set shape, thread count or input is not the campaign's); the run is a valid"
   echo "measurement and its ratios stand beside the intervals above, unjudged. To be judged, pin 24 physical cores with"
-  echo "both SMT threads (48 logical processors) with ART_CPUSET, as CLAIMS.md section 5 describes. Exit status 3."
+  echo "both SMT threads (48 logical processors) with ART_CPUSET, as PERFORMANCE.md describes. Exit status 3."
 elif [ "$verdict" = PASS ] && [ -n "${compared:-}" ]; then
   # Not "PASS, rows outside": every step ran, and the comparison is the tier's question, so the line
   # must say the comparison did not come back clean. The exit status says the same.
   echo "evaluate.sh: PASS on every step, COMPARISON NOT CLEAN  $where"
   echo "Every step ran and passed, and the comparison above did not come back clean: a judged row lies outside"
-  echo "its shipped interval, or no row could be judged at all. Its own output says which. CLAIMS.md section 5"
+  echo "its shipped interval, or no row could be judged at all. Its own output says which. PERFORMANCE.md"
   echo "('Match criterion') says what an outside row can mean and gives the five-run re-check for it."
 else
   vline="$verdict"
@@ -337,13 +337,15 @@ else
         echo "claims and the race is still reported, and the shipped tables follow from the shipped runs. This is the check,"
         echo "not the Functional badge: the regression suite (no configuration loses a race) runs in ./evaluate.sh functional." ;;
       functional)
-        echo "Every step ran and passed: the image is our compiler built from the patch series, the analyses, the regression suite and the shipped tables (what"
-        echo "each step established is CLAIMS.md sections 1 to 4). This tier says nothing about speed." ;;
+        echo "Every step ran and passed: the image is our compiler built from the patch series and emits the instrumentation of the"
+        echo "measured compiler; the 23 soundness shapes hold; the regression suite loses no race in twelve configurations; every"
+        echo "shipped run is attributable; the shipped tables follow from the shipped runs (CLAIMS.md says which row each step checks)."
+        echo "This tier says nothing about speed." ;;
       *)
         echo "Every step ran and passed, and every judged performance row lies inside its shipped interval (the table above)." ;;
     esac ;;
     INCOMPLETE) echo "Nothing failed, but a check could not be made here (its prerequisite is absent); the log names it. A skipped check is neither a pass nor a failure."
-                [ "${compared:-}" = OUTSIDE ] && echo "And the comparison above did not come back clean: a judged row lies outside its shipped interval, or no row could be judged; CLAIMS.md section 5 ('Match criterion') says what that can mean."
+                [ "${compared:-}" = OUTSIDE ] && echo "And the comparison above did not come back clean: a judged row lies outside its shipped interval, or no row could be judged; PERFORMANCE.md ('Match criterion') says what that can mean."
                 [ "${compared:-}" = NOTAPPLICABLE ] && echo "And no performance row could be compared on this machine (each row prints why); the ratios stand unjudged." ;;
     FAIL) echo "Stopped at: $failed. docs/troubleshooting.md lists the failures we know; the log has the rest." ;;
   esac

@@ -15,7 +15,7 @@ from the originals so the difference is visible.
 | Boost | 1.77 | BSL-1.0 | fetched by MySQL's own build (`everything` tier only); see `third-party/SOURCES.md` | none |
 | FFmpeg | n4.3.9, built with `--enable-gpl` (libx264, libx265) | GPL-2.0 (with those options) | the upstream source archive ships unmodified in `third-party/sources/`, sha256 pinned in `third-party/SOURCES.md` | none |
 | FFmpeg input clip | Blender Foundation open movie cut, see `docs/ffmpeg-input.md` | CC BY 3.0 | redistributed as an asset of this repository's GitHub release `inputs-v1`, with attribution in the release notes (Blender Foundation, mango.blender.org); also derivable from the source URL by the exact ffmpeg command in `docs/ffmpeg-input.md` | derived cut: 100 s from 06:00, cropped and scaled to 1366x768, re-encoded |
-| Chromium | revision `bdef6783a05f0b3f885591e7d2c7b2aec1a89dea` | BSD-3-Clause | not included (documented only, `docs/chromium.md`) | four Telemetry files with raised timeouts and one build-flag line, neither shipped (`docs/chromium.md` records what they were); neither is exercised here, since Chromium is documented rather than run |
+| Chromium | revision `bdef6783a05f0b3f885591e7d2c7b2aec1a89dea` | BSD-3-Clause | not included (documented only, `docs/chromium.md`) | four Telemetry files with raised timeouts and one build-flag line, neither shipped (`docs/chromium.md` describes them); neither is exercised here, since Chromium is documented rather than run |
 
 Paths beginning `harness/` are in the measurement harness, our own code, copied into this repository from the authors' harness repository; `harness/MANIFEST.tsv` lists every file
 with its sha256.

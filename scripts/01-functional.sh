@@ -30,7 +30,7 @@ steps=(
   "30-preservation-suite.sh --self-test|the preservation harness can detect a lost race at all"
   "30-preservation-suite.sh 5|no configuration loses a race that stock ThreadSanitizer reports"
 )
-steps+=( "90-tables.sh|every table in the paper follows from the shipped runs" )
+steps+=( "90-tables.sh|the performance and eviction tables follow from the shipped runs" )
 
 if [ "$quick" = 1 ]; then budget "the quick correctness set (${#steps[@]} steps, no regression suite)" "2 min" "1 min" "2 GB"
 else budget "the correctness set (${#steps[@]} steps)" "48 min" "25 min (23 min on 64)" "2 GB"; fi
@@ -62,4 +62,4 @@ else
   if [ "$quick" = 1 ]; then printf '\nThe quick correctness set passed: every step above, without the regression suite (the Functional tier is the full set).\n'
   else printf '\nThe correctness set passed, in full.\n'; fi
 fi
-printf 'What it does NOT cover: performance (scripts/40-perf.sh and CLAIMS.md section 5), which compares\nwith our intervals only on 48 pinned processors and a quiet machine.\n'
+printf 'What it does NOT cover: performance (scripts/40-perf.sh and PERFORMANCE.md; optional, not submitted for evaluation), which compares\nwith our intervals only on 48 pinned processors and a quiet machine.\n'

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Regenerates every table from recorded runs: the per-application performance tables (aggregate.py),
-# the results ledger (results_ledger.py), and the preservation and eviction tables. Works on the
+# and the preservation and eviction tables. Works on the
 # data we shipped (default) or on a results tree you produced with 40-perf.sh.
 #
-#   scripts/90-tables.sh                     # from the shipped campaign roots and sweep under data/perf, plus the ledger trees
+#   scripts/90-tables.sh                     # from the shipped campaign roots and sweep under data/perf
 #   scripts/90-tables.sh results/perf-XXXX   # from your own run
 #
 # Nothing is written into data/: the trees are copied to results/tables/<name>/ and regenerated there,
@@ -60,10 +60,6 @@ if [ $# -eq 0 ]; then
   regen_perf "$ART_DATA/perf/stageB-d3bf9f8c39fe" || rc=1
   regen_perf "$ART_DATA/perf/redis-stageB-repeat-2026-09-14" || rc=1
   echo
-  echo "Regenerating the results ledger (what each configuration is worth):"
-  python3 "$tools/results_ledger.py" --print >"$out/results-ledger-tables.md"
-  echo "  $out/results-ledger-tables.md ($(wc -l <"$out/results-ledger-tables.md") lines)"
-  echo
   echo "Preservation tables (race reports per configuration): shipped as data/preservation/*/preservation_<app>.md;"
   echo "regenerate one with: python3 $ART_DATA/tools/preservation/tsan_reports.py <tree>  (see its --help)"
 else
@@ -92,7 +88,7 @@ if [ $# -eq 0 ]; then
   done < <(cd "$src" && find ffmpeg -name meta.json)
   # Captured, then searched: `python3 ... | grep -q` under pipefail reports failure when grep closes the pipe
   # on the first match and the comparator dies of SIGPIPE, which is how this control failed on its first run.
-  cout=$(python3 "$ART_ROOT/harness/tools/perf/compare_with_claims.py" "$ART_ROOT/CLAIMS.md" "$t" 2>&1 || true)
+  cout=$(python3 "$ART_ROOT/harness/tools/perf/compare_with_claims.py" "$ART_ROOT/PERFORMANCE.md" "$t" 2>&1 || true)
   if printf '%s\n' "$cout" | grep -c 'not comparable: not the reference clip' >/dev/null; then
     echo "  ok: a run on a clip that is not the reference is refused, not judged (control)"
   else

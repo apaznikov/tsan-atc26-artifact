@@ -1,13 +1,13 @@
 # What makes the performance numbers vary, and by how much
 
-Read this before comparing your run with `CLAIMS.md`. Every item below was measured, not assumed.
+Read this before comparing your run with `PERFORMANCE.md`. Every item below was measured, not assumed.
 
 ## Speedup ratios travel; absolute overheads do not
 
 Every speedup in the paper is a ratio against stock ThreadSanitizer built by the same compiler tree
 and run in the same window. Ratios are stable across trees because both sides share the runtime;
 absolute "x times native" figures are not comparable across compiler trees, and one of ours was
-inflated by a runtime counter that has since been compiled out. Compare your ratios with ours;
+inflated by a runtime eviction counter that the shipped runtime does not compile in. Compare your ratios with ours;
 compare your absolute overheads only with each other.
 
 ## The shared denominator
@@ -36,7 +36,7 @@ we measured:
 The sweep in `data/perf/contention-d3bf9f8c39fe`, taken with an earlier compiler, shows the speedup flat
 from 2 to 112 threads on SQLite's walthread1 and from 50 to 512 clients on Redis, and rising on FFmpeg's
 AllOpt with peeling from 1.007 at 2 threads to 1.055 at 16 (libx265's ceiling). The curves on the shipped
-compiler are in `CLAIMS.md` section 5: FFmpeg's thread sweep (AllOpt with peeling 1.005 and 1.010 at 2 and 4
+compiler are in `PERFORMANCE.md`: FFmpeg's thread sweep (AllOpt with peeling 1.005 and 1.010 at 2 and 4
 threads, 1.063 and 1.065 at 8 and 16; DynSTC about 1.11 at every count) and, measured after the campaign,
 memcached's server threads, Redis's clients and SQLite's walthread1 threads. FFmpeg's rows are compared at
 16 threads by default and at the paper's 4 with `FF_THREADS=4`; the other applications at the campaign's
@@ -102,7 +102,7 @@ with run duration at r = 0.18 over the same 211 runs, and configurations differ 
 **The intruder fields record presence, not consumption.** Each run's `meta.json` carries
 `cpuset_intruders` (how many foreign processes were seen on the pinned CPUs) and
 `cpuset_intruder_peak_pcpu`; the per-sample list of process names behind them is written during a run
-but not shipped. The counts come from `ps -eo psr,pcpu,comm`, sampled every two seconds. They come from `ps -eo psr,pcpu,comm`, where `pcpu` is a process's average CPU
+but not shipped. The counts come from `ps -eo psr,pcpu,comm`, sampled every two seconds, where `pcpu` is a process's average CPU
 over its whole lifetime and `psr` is merely the processor it was last seen on. A peak reading 2586
 therefore means "a process whose lifetime average is about 26 cores was, at one sampling instant, last
 seen on one of our processors"; it says nothing about what that process took during the run. Use the
@@ -130,7 +130,7 @@ the leg on a quiet machine.
 With 48 processors pinned on a 112-thread host, 64 processors are watched, and 0.10 of them is about six
 cores of anything at all. Pinning fewer processors does not help; it enlarges the watched set. The
 campaign's cells record `n_outside: 56` because `harness/tools/perf/ignore_cpus` then excluded eight
-processors from the watched set; that file now excludes nothing, so an evaluator's gate watches every
+processors from the watched set; the shipped file excludes nothing, so an evaluator's gate watches every
 processor outside the set. The threshold is the campaign's (`P5_FOREIGN_MAX`, 0.10), and every session
 records the value in force as `foreign_max` in `session.json`; a run at a looser threshold is possible,
 and the record then says so beside every cell.
@@ -156,8 +156,8 @@ want a run that can be compared with ours.
 At N = 3 the percentile bootstrap interval is 6-14% *narrower* than at N = 5 while the point
 estimate moves by about 4 points depending on which three runs are kept. `ART_SMOKE=1` mode (N = 1)
 therefore prints its numbers with an explicit "not a measurement" marker. A result from two to four runs
-is compared with `CLAIMS.md` as a point against the shipped interval, never as an interval of its own
-(the N = 2 criterion in `CLAIMS.md` section 5).
+is compared with `PERFORMANCE.md` as a point against the shipped interval, never as an interval of its own
+(`PERFORMANCE.md`, "Match criterion for every configuration row").
 
 ## Foreign load inside the pinned set is invisible from inside the container
 

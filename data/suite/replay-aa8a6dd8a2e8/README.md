@@ -7,7 +7,7 @@ The run `CLAIMS.md` section 1, third row (report keys), cites. `replay-output.tx
     tests           293 executable tests, replayed 5 times under each configuration
     configurations  12 (stock plus 11 compared against it)
     keys            harness/tools/preservation/tsan_reports.py
-                    L1 = kind + both frames (function@file:line) + location
+                    L1 = kind + both stacks' frames (function@file:line) + location
                     L2 = functions only
     date            15 Sep 2026
 

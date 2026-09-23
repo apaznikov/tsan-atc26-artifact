@@ -1,6 +1,6 @@
 # What an N = 2 run would have read, from an N = 5 leg
 
-CLAIMS.md's intervals are N = 5; an evaluator's default is N = 2. When an N = 2 point falls outside an
+The intervals in `PERFORMANCE.md` are N = 5; an evaluator's default is N = 2. When an N = 2 point falls outside an
 interval the question is whether that is a disagreement or the spread of a two-run estimate — and it is
 answerable from a leg already on disk, without measuring anything.
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-count_tsan_instrumentation.py - Count __tsan_* instrumentation calls in a binary.
+static_count_tsan_instrumentation.py - Count __tsan_* instrumentation calls in a binary.
 
 Usage:
-    python3 count_tsan_instrumentation.py <binary> [--nm NM_PATH] [--objdump OBJDUMP_PATH]
-    python3 count_tsan_instrumentation.py <binary> --verbose
-    python3 count_tsan_instrumentation.py <binary> --summary
+    python3 static_count_tsan_instrumentation.py <binary> [--nm NM_PATH] [--objdump OBJDUMP_PATH]
+    python3 static_count_tsan_instrumentation.py <binary> --verbose
+    python3 static_count_tsan_instrumentation.py <binary> --summary
 
 This script uses `nm` to list symbols and `objdump` (or `llvm-objdump`) to
 disassemble the binary, then counts call-site references to each __tsan_* function.

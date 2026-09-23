@@ -4,6 +4,9 @@ This is the artifact for the ATC '26 paper *Instrumentation Optimization for Pra
 Detection*. It contains the modified LLVM/ThreadSanitizer compiler the paper describes, its test suites and
 audit ledger, the benchmark harness, the runs every claim rests on, and one script per experiment.
 
+It is submitted for the **Available** and **Functional** badges. Its performance campaign ships in
+`PERFORMANCE.md` and is not submitted for evaluation.
+
 `CLAIMS.md` is the contract: each claim the paper makes, the script that produces it, and what counts as a
 match. Nothing outside that file is claimed here.
 
@@ -17,13 +20,14 @@ command builds in 15 to 25 minutes.
 | For | Processors | Memory | Disk |
 |---|---|---|---|
 | the correctness set | 8 | 16 GB | 20 GB |
-| performance, compared with our intervals | 48 logical, being 24 physical cores with both SMT threads, and otherwise idle | 16 GB | 20 GB |
-| performance including MySQL | the same | 16 GB | 100 GB |
+| performance (optional, not submitted for evaluation), compared with our intervals | 48 logical, being 24 physical cores with both SMT threads, and otherwise idle | 16 GB | 20 GB |
+| performance including MySQL (optional) | the same | 16 GB | 100 GB |
 
 We measured on an Intel Xeon w9-3495X (56 cores, 112 threads), 250 GB, Ubuntu 24.04, kernel 6.8.0-40-generic,
-with 24 cores and both SMT threads of each pinned, and repeated the whole evaluation on an AMD EPYC 9115
-(32 cores, 64 threads). On fewer processors, or on a set of another shape, every step still runs and the
-performance rows are reported rather than judged; `CLAIMS.md` section 5 says why.
+with 24 cores and both SMT threads of each pinned, and repeated the correctness set and the default N = 2
+performance runs on an AMD EPYC 9115 (32 cores, 64 threads; `docs/evaluator-runs.md`). On fewer processors, or
+on a set of another shape, every step still runs and the performance rows are reported rather than judged;
+`PERFORMANCE.md`, "The comparison condition", says why.
 
 The network is used twice: while the image builds (Ubuntu packages and a shallow clone of upstream LLVM) and
 for FFmpeg's input clip, 78 MB from this repository's GitHub release. The other application sources ship in
@@ -48,55 +52,51 @@ Nothing asks a question once a tier starts.
 
 Every step prints its own result, and the run ends with one verdict line:
 
-- **PASS**: every step did what it claims. On the performance tiers it also means every judged row lies
-  inside the interval `CLAIMS.md` ships for it.
-- **PASS on every step, COMPARISON NOT CLEAN**: the steps passed and a judged row lies outside its interval.
-  `CLAIMS.md` section 5, "Match criterion", says what that can mean and how to re-check it.
-- **PASS on every step; COMPARISON NOT APPLICABLE ON THIS MACHINE** (exit status 3): the steps passed and no
-  row could be compared, because this machine's processor-set shape, thread count or FFmpeg input is not the
-  one the intervals describe. The run is valid and its ratios are printed beside ours, unjudged.
+- **PASS**: every step did what it claims.
 - **INCOMPLETE**: nothing failed, but a check could not be made here; the log names it.
 - **FAIL**: the step that stopped it is named, and `docs/troubleshooting.md` lists the failures we have seen.
 
-Results land in `results/`: `evaluate-<tier>-<stamp>.log` is the whole run, `perf-<app>-<stamp>/perf_<app>.md`
-is one application's table with every configuration and subtest, and the performance tiers end with the
-comparison against `CLAIMS.md`. This is one of our own runs, on the machine and processor set the intervals
-describe, with the rows that are not compared left out:
+The optional performance tier adds two verdicts, **PASS on every step, COMPARISON NOT CLEAN** and **PASS on every
+step; COMPARISON NOT APPLICABLE ON THIS MACHINE** (exit status 3), which `PERFORMANCE.md` explains.
+
+Results land in `results/`: `evaluate-<tier>-<stamp>.log` is the whole run. This is the end of a Functional run
+from a fresh clone on our 112-thread host (23 Sep 2026, image build included), trimmed to its per-step verdicts:
 
 ```
-app        row                                       yours  ours (N=5)             verdict
-----------------------------------------------------------------------------------------------------
-ffmpeg     AllOpt with peeling                 1.058 (N=2)  1.067 [1.050, 1.079]   IN , same side of 1.0
-ffmpeg     AllOpt with peeling and DynSTC      1.191 (N=2)  1.187 [1.171, 1.201]   IN , same side of 1.0
-ffmpeg     DynSTC                              1.130 (N=2)  1.133 [1.114, 1.146]   IN , same side of 1.0
-memcached  AllOpt with peeling                 1.016 (N=2)  1.019 [0.951, 1.079]   IN
-memcached  DynSTC                              1.002 (N=2)  0.986 [0.944, 1.063]   IN
-redis      AllOpt with peeling                 0.993 (N=2)  1.000 [0.983, 1.026]   IN
-redis      DynSTC                              0.957 (N=2)  0.944 [0.927, 0.970]   IN , same side of 1.0
-sqlite     AllOpt with peeling                 1.054 (N=2)  1.023 [0.942, 1.061]   IN
-sqlite     DynSTC                              1.044 (N=2)  0.995 [0.928, 1.082]   IN
-----------------------------------------------------------------------------------------------------
-9 rows judged, 0 outside their intervals.
-evaluate.sh: PASS  (tier reproduced, 2h38m)
-```
+PASS  10-minimal-example.sh
+PASS  11-soundness-shapes.sh
+PASS  12-compiler-equivalence.sh
+PASS  91-verify-provenance.sh
+PASS  14-tool-copies.sh
+PASS  15-verdict-rules.sh
+PASS  30-preservation-suite.sh --self-test
+PASS  30-preservation-suite.sh 5
+PASS  90-tables.sh
 
-A reviewer's run is N = 2, a point compared against our N = 5 interval; our own campaign is N = 5 with 95 %
-bootstrap intervals. Our other runs, including ones with a row outside its interval and what that meant, are
-in `docs/evaluator-runs.md`.
+The correctness set passed, in full.
+evaluate.sh: PASS  (tier functional, 42m47s; full log in results/evaluate-functional-20260923-065547.log)
+```
 
 ## What is claimed
 
-The camera-ready's performance section was re-measured with the compiler released here, which carries 23
-soundness fixes made while preparing the artifact and still finds every race stock ThreadSanitizer finds. What
-the campaign establishes: DynSTC changes performance measurably (FFmpeg +11 % at the paper's four threads,
-Redis −5.6 %); at 16 threads, FFmpeg's default here, AllOpt with peeling is +6.7 % and AllOpt with peeling and
-DynSTC +19 %. Every other configuration is indistinguishable from stock ThreadSanitizer (its interval contains
-1.0). Redis's cost holds on our host at four client counts but did not reproduce on the second host; FFmpeg's
-gain did. Statically, AllOpt without peeling removes 2 to 8 per cent of the instrumentation; with loop
-peeling, the configuration measured by default, the static count rises by 5 to 14 per cent, because peeling
-duplicates loop bodies. The submitted paper's figures, measured before those fixes, stay in `CLAIMS.md`'s
-"Paper" column beside ours. `CLAIMS.md` section 7 lists what this artifact does not support, Chromium and the
-ReX comparison among them.
+The camera-ready paper describes the compiler released here, which carries 23 soundness fixes made while
+preparing the artifact. The Functional claims, each with its script and match criterion in `CLAIMS.md`:
+
+- **Race detection is preserved.** No race is lost on ThreadSanitizer's regression suite in any of twelve
+  configurations. On SQLite and memcached at N = 10, no race is lost at the level of the racing location (L3);
+  one memcached report moves to another reader of the same location (`CLAIMS.md` section 1).
+- **The analyses are sound on 23 code shapes** in which an optimized build could fail to report a race, each
+  pinned by a test that fails on the commit before its fix (section 2, with the assumptions the argument
+  rests on).
+- **Instrumentation counts**: static instrumentation sites per application and configuration, and a compiler
+  built from the patch series that emits the same instrumentation as the measured compiler on 112 corpus rows
+  (section 3).
+- **Compile time**: the script that measures the analyses' overhead, and its criterion (section 4).
+- **Bounded shadow state**: how ThreadSanitizer's four shadow slots per granule interact with the optimized
+  builds (section 6).
+
+Performance, re-measured with this compiler, ships in `PERFORMANCE.md` and is not submitted for evaluation.
+`CLAIMS.md` section 7 lists what this artifact does not support, Chromium and the ReX comparison among them.
 
 ## What is in here
 
@@ -135,15 +135,15 @@ twice is safe: every run writes a new directory, and the tables are regenerated 
 | Script | What it checks | Time |
 |---|---|---|
 | `10-minimal-example.sh` | one small program per analysis: what the analysis removes, and that a real race is still reported (`scripts/minimal/README.md` says how to add a case of your own) | under a minute |
-| `11-soundness-shapes.sh` | 23 fixed lost-race shapes, each against its negative control | 2 min |
+| `11-soundness-shapes.sh` | the 23 fixed lost-race shapes: the 62 IR tests, and a control that every removal test fails without its analysis | 2 min |
 | `12-compiler-equivalence.sh` | the image's compiler emits the instrumentation our measurements were taken on | 3 min |
 | `20-static-counts.sh` | static instrumentation per application and configuration | 5 min |
 | `21-compile-time.sh <app>` | compile-time overhead, three clean builds per configuration | 20 min to 3 h; MySQL twelve builds of 5 to 8 min each at 56 jobs, longer on fewer processors |
 | `30-preservation-suite.sh` | ThreadSanitizer's regression suite in 12 configurations: no configuration may lose a race | most of the functional tier: 23 min on 64 processors, 48 min on 8 |
 | `31-preservation-apps.sh <app> 10` | races reported on an application against stock, N = 10 for a verdict | 1.5 to 3 h |
-| `40-perf.sh <app>` | the performance table for one application | Redis 15 min, memcached 30, FFmpeg 25, SQLite 70, MySQL 3.5 h |
+| `40-perf.sh <app>` | the performance table for one application (optional; `PERFORMANCE.md`) | Redis 15 min, memcached 30, FFmpeg 25, SQLite 70, MySQL 3.5 h |
 | `50-eviction-stress.sh` | the bounded-shadow experiments | 15 min to 1 h |
-| `90-tables.sh` | regenerates the performance tables, the results ledger and the eviction tables from recorded runs | 1 min |
+| `90-tables.sh` | regenerates the performance tables and the eviction tables from recorded runs | 1 min |
 | `91-verify-provenance.sh` | every recorded run against its own metadata: one compiler, one processor set, one mode per leg, and the campaign's compiler hash where a claim rests on it | 2 min |
 | `92-figures.sh` | one bar chart per application, our campaign with its intervals, and your own run's points beside it when you name a results directory | 1 min |
 
